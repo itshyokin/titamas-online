@@ -27,127 +27,127 @@ roughness = 0.9
 albedo_color = Color(0.5, 0.36, 0.22, 1)
 roughness = 0.9
 
-[node name="TestLevel" type="Node3D" unique_id=2120621710]
+[node name="TestLevel" type="Node3D" unique_id=1549579432]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=842024713]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=469995576]
 environment = SubResource("Environment_v45ci")
 
-[node name="Sun" type="DirectionalLight3D" parent="." unique_id=122095359]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=570093464]
 transform = Transform3D(0.81915206, 0.43938506, -0.36868784, 0, 0.64278764, 0.76604444, 0.57357645, -0.62750685, 0.5265408, 0, 0, 0)
 light_energy = 0.8
 shadow_enabled = true
 
-[node name="Blockout" type="Node3D" parent="." unique_id=1601909761]
+[node name="Blockout" type="Node3D" parent="." unique_id=471630882]
 
-[node name="Ground" type="CSGBox3D" parent="Blockout" unique_id=1569122748]
+[node name="Ground" type="CSGBox3D" parent="Blockout" unique_id=1510694440]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 use_collision = true
 size = Vector3(120, 1, 120)
 material = SubResource("StandardMaterial3D_48ne7")
 
-[node name="Ramp" type="CSGBox3D" parent="Blockout" unique_id=714968632]
+[node name="Ramp" type="CSGBox3D" parent="Blockout" unique_id=234733956]
 transform = Transform3D(1, 0, 0, 0, 0.9659258, -0.25881904, 0, 0.25881904, 0.9659258, 8, 1.2, -10)
 use_collision = true
 size = Vector3(4, 0.5, 10)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="RampTop" type="CSGBox3D" parent="Blockout" unique_id=720474260]
+[node name="RampTop" type="CSGBox3D" parent="Blockout" unique_id=1023842198]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.3, -17.5)
 use_collision = true
 size = Vector3(4, 2.6, 6)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Crate1" type="CSGBox3D" parent="Blockout" unique_id=1882547902]
+[node name="Crate1" type="CSGBox3D" parent="Blockout" unique_id=2052931497]
 transform = Transform3D(0.9396926, 0, 0.34202012, 0, 1, 0, -0.34202012, 0, 0.9396926, -4, 0.75, -6)
 use_collision = true
 size = Vector3(1.5, 1.5, 1.5)
 material = SubResource("StandardMaterial3D_cyt5c")
 
-[node name="Crate2" type="CSGBox3D" parent="Blockout" unique_id=948868101]
+[node name="Crate2" type="CSGBox3D" parent="Blockout" unique_id=1485738918]
 transform = Transform3D(0.9848077, 0, -0.17364818, 0, 1, 0, 0.17364818, 0, 0.9848077, -5.2, 0.75, -4.6)
 use_collision = true
 size = Vector3(1.5, 1.5, 1.5)
 material = SubResource("StandardMaterial3D_cyt5c")
 
-[node name="Crate3" type="CSGBox3D" parent="Blockout" unique_id=20291260]
+[node name="Crate3" type="CSGBox3D" parent="Blockout" unique_id=483813042]
 transform = Transform3D(0.81915206, 0, 0.57357645, 0, 1, 0, -0.57357645, 0, 0.81915206, -4.6, 2.25, -5.3)
 use_collision = true
 size = Vector3(1.5, 1.5, 1.5)
 material = SubResource("StandardMaterial3D_cyt5c")
 
-[node name="Wall" type="CSGBox3D" parent="Blockout" unique_id=2009280833]
+[node name="Wall" type="CSGBox3D" parent="Blockout" unique_id=1286044232]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2, -14)
 use_collision = true
 size = Vector3(14, 4, 1)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Pillar1" type="CSGBox3D" parent="Blockout" unique_id=1844158074]
+[node name="Pillar1" type="CSGBox3D" parent="Blockout" unique_id=445297608]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 3, 4)
 use_collision = true
 size = Vector3(1.2, 6, 1.2)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Pillar2" type="CSGBox3D" parent="Blockout" unique_id=1934220163]
+[node name="Pillar2" type="CSGBox3D" parent="Blockout" unique_id=501758257]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 3, 10)
 use_collision = true
 size = Vector3(1.2, 6, 1.2)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Bridge" type="CSGBox3D" parent="Blockout" unique_id=324282323]
+[node name="Bridge" type="CSGBox3D" parent="Blockout" unique_id=41527696]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 6.2, 7)
 use_collision = true
 size = Vector3(2.5, 0.4, 7.2)
 material = SubResource("StandardMaterial3D_cyt5c")
 
-[node name="Step1" type="CSGBox3D" parent="Blockout" unique_id=1294318637]
+[node name="Step1" type="CSGBox3D" parent="Blockout" unique_id=1514434374]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.15, 2)
 use_collision = true
 size = Vector3(3, 0.3, 0.8)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Step2" type="CSGBox3D" parent="Blockout" unique_id=671544916]
+[node name="Step2" type="CSGBox3D" parent="Blockout" unique_id=1157882979]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.3, 1.2)
 use_collision = true
 size = Vector3(3, 0.6, 0.8)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Step3" type="CSGBox3D" parent="Blockout" unique_id=448524306]
+[node name="Step3" type="CSGBox3D" parent="Blockout" unique_id=1808352460]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.45, 0.4)
 use_collision = true
 size = Vector3(3, 0.9, 0.8)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Step4" type="CSGBox3D" parent="Blockout" unique_id=497529182]
+[node name="Step4" type="CSGBox3D" parent="Blockout" unique_id=444922150]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.6, -0.4)
 use_collision = true
 size = Vector3(3, 1.2, 0.8)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Step5" type="CSGBox3D" parent="Blockout" unique_id=494596048]
+[node name="Step5" type="CSGBox3D" parent="Blockout" unique_id=604134191]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.75, -1.2)
 use_collision = true
 size = Vector3(3, 1.5, 0.8)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Step6" type="CSGBox3D" parent="Blockout" unique_id=823635288]
+[node name="Step6" type="CSGBox3D" parent="Blockout" unique_id=1692290202]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.9, -2)
 use_collision = true
 size = Vector3(3, 1.8, 0.8)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Step7" type="CSGBox3D" parent="Blockout" unique_id=1485125696]
+[node name="Step7" type="CSGBox3D" parent="Blockout" unique_id=1164408744]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1.05, -2.8)
 use_collision = true
 size = Vector3(3, 2.1, 0.8)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="Step8" type="CSGBox3D" parent="Blockout" unique_id=1849373551]
+[node name="Step8" type="CSGBox3D" parent="Blockout" unique_id=1742946280]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1.2, -3.6)
 use_collision = true
 size = Vector3(3, 2.4, 0.8)
 material = SubResource("StandardMaterial3D_6xh4u")
 
-[node name="PlayerSpawn" type="Marker3D" parent="." unique_id=1710637051]
+[node name="PlayerSpawn" type="Marker3D" parent="." unique_id=488487177]
 
-[node name="Player" parent="." unique_id=1791809857 instance=ExtResource("1_jbqir")]
+[node name="Player" parent="." unique_id=1365491037 instance=ExtResource("1_jbqir")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 4)

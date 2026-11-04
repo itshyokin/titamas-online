@@ -8,7 +8,7 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 2. Open Godot 4.6, click **Import**, pick this folder's `project.godot`.
 3. Press **F5** (Play). The overworld test loads your terrain chunks. The gray-box test level is `scenes/levels/test_level.tscn` (open it and press **F6**).
 
-**Controls (milestone 1):** WASD move (runs by default) · hold Ctrl to walk · Shift sprint · Space jump · hold right mouse to look · mouse wheel zoom.
+**Controls (milestone 1):** WASD move (runs by default) · hold Ctrl to walk · Shift sprint · Space jump · Alt dodge · hold right mouse to look · mouse wheel zoom.
 
 ## Folder layout
 

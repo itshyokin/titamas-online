@@ -15,37 +15,37 @@ height = 1.85
 [sub_resource type="SphereShape3D" id="SphereShape3D_fcs02"]
 radius = 0.25
 
-[node name="Player" type="CharacterBody3D" unique_id=1791809857]
+[node name="Player" type="CharacterBody3D" unique_id=1365491037]
 collision_layer = 2
 collision_mask = 5
 script = ExtResource("1_0owmy")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=608477206]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=755826447]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.925, 0)
 shape = SubResource("CapsuleShape3D_ugbui")
 
-[node name="Model" type="Node3D" parent="." unique_id=184754986]
+[node name="Model" type="Node3D" parent="." unique_id=687454983]
 
 [node name="Character" parent="Model" unique_id=714591041 instance=ExtResource("2_qek5x")]
 script = ExtResource("3_5gtgg")
 
-[node name="Stats" type="Node" parent="." unique_id=651142383]
+[node name="Stats" type="Node" parent="." unique_id=1299906396]
 script = ExtResource("4_h17s1")
 
-[node name="PlayerAnimator" type="Node" parent="." unique_id=550847471]
+[node name="PlayerAnimator" type="Node" parent="." unique_id=407093613]
 script = ExtResource("5_je7p5")
 
-[node name="CameraRig" type="Node3D" parent="." unique_id=908475004]
+[node name="CameraRig" type="Node3D" parent="." unique_id=23960390]
 script = ExtResource("6_fm80t")
 
-[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig" unique_id=1788891342]
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig" unique_id=462084110]
 shape = SubResource("SphereShape3D_fcs02")
 spring_length = 5.0
 margin = 0.2
 
-[node name="Camera3D" type="Camera3D" parent="CameraRig/SpringArm3D" unique_id=505686458]
+[node name="Camera3D" type="Camera3D" parent="CameraRig/SpringArm3D" unique_id=1079382560]
 current = true
 fov = 70.0
 
-[node name="HUD" parent="." unique_id=1352473114 instance=ExtResource("7_gx1jg")]
+[node name="HUD" parent="." unique_id=125900811 instance=ExtResource("7_gx1jg")]
 stats_path = NodePath("../Stats")

@@ -23,6 +23,10 @@ const LOOPING := [
 ]
 ## Looping animations whose hips should not drift horizontally (in-place).
 const IN_PLACE := LOOPING
+## One-shot animations that travel: their horizontal hip movement is stripped from the
+## pose and stored as metadata "root_motion" (PackedVector3Array, one offset per frame at
+## FPS, in the character's local space, facing -Z) so the game can move the body itself.
+const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back"]
 ## Animations whose hips may dip but not rise; the physics jump provides the height.
 const NO_HIP_RISE := ["jumping"]
 ## Extra outward angle (degrees) for each body's arms. Our bodies are broader than the
@@ -177,6 +181,7 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 		out.track_set_path(out_pos, NodePath("Skeleton3D:" + ROOT_BONE))
 
 	var frames := int(round(src_anim.length * FPS))
+	var root_motion := PackedVector3Array()
 	var first_offset := Vector3.ZERO
 	var last_offset := Vector3.ZERO
 	for f in frames + 1:
@@ -221,7 +226,9 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 			if f == 0:
 				first_offset = offset_w
 			last_offset = offset_w
-			if anim_name in IN_PLACE:
+			if anim_name in ROOT_MOTION:
+				root_motion.append(Vector3(offset_w.x, 0.0, offset_w.z) - Vector3(first_offset.x, 0.0, first_offset.z))
+			if anim_name in IN_PLACE or anim_name in ROOT_MOTION:
 				offset_w.x = 0.0
 				offset_w.z = 0.0
 			if anim_name in NO_HIP_RISE:
@@ -231,6 +238,13 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 
 	if anim_name == "idle":
 		print("  facing: source %s  target %s" % [src_fwd.snapped(Vector3.ONE * 0.01), dst_fwd.snapped(Vector3.ONE * 0.01)])
+	if not root_motion.is_empty():
+		out.set_meta("root_motion", root_motion)
+		var total := root_motion[root_motion.size() - 1].length()
+		var done := 0
+		while done < root_motion.size() and root_motion[done].length() < total * 0.95:
+			done += 1
+		print("  %-20s root motion %.2f m, 95%% done at %.2fs" % [anim_name, total, done / FPS])
 	var travel := last_offset - first_offset
 	print("  %-20s %5.2fs  hips travel x=%.2f y=%.2f z=%.2f m" % [anim_name, src_anim.length, travel.x, travel.y, travel.z])
 	return out
