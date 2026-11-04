@@ -8,7 +8,7 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 2. Open Godot 4.6, click **Import**, pick this folder's `project.godot`.
 3. Press **F5** (Play). The overworld test loads your terrain chunks. The gray-box test level is `scenes/levels/test_level.tscn` (open it and press **F6**).
 
-**Controls (milestone 1):** WASD move · Shift sprint · Space jump · hold right mouse to look · mouse wheel zoom.
+**Controls (milestone 1):** WASD move (runs by default) · hold Ctrl to walk · Shift sprint · Space jump · hold right mouse to look · mouse wheel zoom.
 
 ## Folder layout
 
@@ -53,6 +53,13 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 7. Copy the .glb files into `assets/levels/overworld/`. The `ChunkStreamer` finds them by name, places them on the grid and loads/unloads them around the player.
 
 **Materials:** give the master terrain a named material in Blender (Principled BSDF + an image texture into Base Color). The add-on generates world-space UVs (one texture repeat per 4 m by default), so textures line up across seams. Chunks with no material get a plain grass colour in Godot.
+
+## Animations
+
+1. Download from Mixamo (same character as the base bodies): FBX, **Without Skin**, 30 fps. Tick **In Place** for looping movement.
+2. Put the files in `assets/animations/mixamo/` with lowercase names (e.g. `running.fbx`).
+3. New looping animations: add the name to `LOOPING` at the top of `tools/godot/retarget_mixamo.gd`.
+4. Ask Claude to rebuild, or run `godot --headless --path . --script res://tools/godot/retarget_mixamo.gd`. This writes `assets/animations/masc.res` and `femme.res`.
 
 ## Milestones
 

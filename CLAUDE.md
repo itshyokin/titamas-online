@@ -11,3 +11,5 @@
 - Visual checks: `xvfb-run -a godot --path . --rendering-driver opengl3 --script <shot.gd>` renders screenshots (software GL).
 - `base_bodies.glb` holds both bodies; its import uses `root_scale=0.01` because the Mixamo bones come through in centimetres. Keep that setting if the file is re-exported the same way.
 - When building scenes by script, never set `owner` on nodes inside an instanced scene (causes duplicate-node load errors).
+- Animations: Mixamo FBX (Without Skin) go in `assets/animations/mixamo/`; run `godot --headless --path . --script res://tools/godot/retarget_mixamo.gd` to rebuild `masc.res`/`femme.res`. Looping/in-place lists live at the top of that script. Facing is derived from hip anatomy, not bone axes.
+- `PlayerAnimator` picks animations from movement; `CharacterModel.play()/play_from()` crossfade. Animations only run in-game (not in the editor) so bone poses never get saved into scenes.

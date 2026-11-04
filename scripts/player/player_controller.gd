@@ -1,9 +1,12 @@
 class_name PlayerController
 extends CharacterBody3D
-## Milestone 1 movement: camera-relative running, sprinting with stamina, jumping.
-## The character turns to face the way it moves (action-RPG style).
+## Milestone 1 movement: camera-relative running, walking (hold Ctrl), sprinting
+## with stamina, jumping. The character turns to face the way it moves (action-RPG style).
 
-@export var walk_speed := 4.5
+signal jumped
+
+@export var run_speed := 4.5
+@export var walk_speed := 1.8
 @export var sprint_speed := 8.0
 @export var acceleration := 12.0
 @export var air_control := 0.3
@@ -21,7 +24,7 @@ extends CharacterBody3D
 
 var is_sprinting := false
 var _sprint_exhausted := false
-var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 
 func _physics_process(delta: float) -> void:
@@ -32,11 +35,16 @@ func _physics_process(delta: float) -> void:
 	_update_sprint(direction != Vector3.ZERO, delta)
 
 	if not is_on_floor():
-		velocity.y -= _gravity * delta
+		velocity.y -= gravity * delta
 	elif Input.is_action_just_pressed("jump") and stats.use_stamina(jump_stamina_cost):
 		velocity.y = jump_velocity
+		jumped.emit()
 
-	var speed := sprint_speed if is_sprinting else walk_speed
+	var speed := run_speed
+	if is_sprinting:
+		speed = sprint_speed
+	elif Input.is_action_pressed("walk"):
+		speed = walk_speed
 	var target := direction * speed
 	var accel := acceleration if is_on_floor() else acceleration * air_control
 	velocity.x = lerpf(velocity.x, target.x, accel * delta)
