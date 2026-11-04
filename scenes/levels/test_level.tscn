@@ -1,8 +1,8 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://dil5icttc0rtv"]
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_v45ci"]
-[ext_resource type="Script" path="res://scripts/player/stats.gd" id="2_48ne7"]
-[ext_resource type="Script" path="res://scripts/player/third_person_camera.gd" id="3_6xh4u"]
+[ext_resource type="Script" uid="uid://cjg58r0xgp6kb" path="res://scripts/player/stats.gd" id="2_48ne7"]
+[ext_resource type="Script" uid="uid://cqe8qi20xfoun" path="res://scripts/player/third_person_camera.gd" id="3_6xh4u"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="4_cyt5c"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_7x1jh"]
@@ -33,44 +33,6 @@ roughness = 0.9
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qek5x"]
 radius = 0.35
 height = 1.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5gtgg"]
-albedo_color = Color(0.55, 0.6, 0.7, 1)
-roughness = 0.9
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_h17s1"]
-material = SubResource("StandardMaterial3D_5gtgg")
-radius = 0.35
-height = 1.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_je7p5"]
-albedo_color = Color(0.9, 0.75, 0.2, 1)
-roughness = 0.9
-
-[sub_resource type="BoxMesh" id="BoxMesh_fm80t"]
-material = SubResource("StandardMaterial3D_je7p5")
-size = Vector3(0.2, 0.12, 0.25)
-
-[sub_resource type="SphereShape3D" id="SphereShape3D_gx1jg"]
-radius = 0.25
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hqnrr"]
-bg_color = Color(0, 0, 0, 0.55)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bo48s"]
-bg_color = Color(0.75, 0.15, 0.15, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8qguk"]
-bg_color = Color(0, 0, 0, 0.55)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_136eg"]
-bg_color = Color(0.2, 0.35, 0.85, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oj5la"]
-bg_color = Color(0, 0, 0, 0.55)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gss2c"]
-bg_color = Color(0.85, 0.7, 0.15, 1)
 
 [node name="TestLevel" type="Node3D" unique_id=1270205724]
 
@@ -196,77 +158,17 @@ material = SubResource("StandardMaterial3D_eaa0b")
 [node name="Player" parent="." unique_id=1957645400 instance=ExtResource("1_v45ci")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 4)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=554792150]
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="Player" unique_id=554792150]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_qek5x")
 
-[node name="Model" type="Node3D" parent="Player" unique_id=203077600]
+[node name="Model2" type="Node3D" parent="Player" unique_id=203077600]
 
-[node name="PlaceholderBody" type="MeshInstance3D" parent="Player/Model" unique_id=1425337374]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-mesh = SubResource("CapsuleMesh_h17s1")
-
-[node name="FacingMarker" type="MeshInstance3D" parent="Player/Model" unique_id=1748436567]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.38)
-mesh = SubResource("BoxMesh_fm80t")
-
-[node name="Stats" type="Node" parent="Player" unique_id=1298780680]
+[node name="Stats2" type="Node" parent="Player" unique_id=1298780680]
 script = ExtResource("2_48ne7")
 
-[node name="CameraRig" type="Node3D" parent="Player" unique_id=1621913665]
+[node name="CameraRig2" type="Node3D" parent="Player" unique_id=1621913665]
 script = ExtResource("3_6xh4u")
 
-[node name="SpringArm3D" type="SpringArm3D" parent="Player/CameraRig" unique_id=1966390940]
-shape = SubResource("SphereShape3D_gx1jg")
-spring_length = 5.0
-margin = 0.2
-
-[node name="Camera3D" type="Camera3D" parent="Player/CameraRig/SpringArm3D" unique_id=1425378120]
-current = true
-fov = 70.0
-
-[node name="HUD" parent="Player" unique_id=155030158 instance=ExtResource("4_cyt5c")]
+[node name="HUD2" parent="Player" unique_id=155030158 instance=ExtResource("4_cyt5c")]
 stats_path = NodePath("../Stats")
-
-[node name="Bars" type="VBoxContainer" parent="Player/HUD" unique_id=428412301]
-custom_minimum_size = Vector2(260, 0)
-offset_left = 24.0
-offset_top = 24.0
-offset_right = 24.0
-offset_bottom = 24.0
-theme_override_constants/separation = 6
-
-[node name="HealthBar" type="ProgressBar" parent="Player/HUD/Bars" unique_id=1316441528]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 18)
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_hqnrr")
-theme_override_styles/fill = SubResource("StyleBoxFlat_bo48s")
-value = 100.0
-show_percentage = false
-
-[node name="ManaBar" type="ProgressBar" parent="Player/HUD/Bars" unique_id=1143314396]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 18)
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_8qguk")
-theme_override_styles/fill = SubResource("StyleBoxFlat_136eg")
-value = 100.0
-show_percentage = false
-
-[node name="StaminaBar" type="ProgressBar" parent="Player/HUD/Bars" unique_id=162403369]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 18)
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_oj5la")
-theme_override_styles/fill = SubResource("StyleBoxFlat_gss2c")
-value = 100.0
-show_percentage = false
-
-[node name="Controls" type="Label" parent="Player/HUD" unique_id=1928741157]
-offset_left = 24.0
-offset_top = 690.0
-offset_right = 24.0
-offset_bottom = 690.0
-theme_override_font_sizes/font_size = 14
-text = "WASD move · Shift sprint · Space jump · Hold right mouse to look · Wheel zoom"
