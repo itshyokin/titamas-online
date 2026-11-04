@@ -37,7 +37,18 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 - Chunks are square tiles on a fixed grid (64 m × 64 m for now), with the chunk's origin at its centre.
 - No sky cube: the sky is Godot's `WorldEnvironment`. Model only ground and props.
 - Terrain edges must line up with neighbours: border vertices sit exactly on the chunk edge at the same spacing (every 2 m), with matching heights.
+- `chunk_I_J` is centred at Godot (I×64, 0, J×64), which is Blender (I×64, −J×64, 0). I grows east (+X), J grows south (Blender −Y).
 - Connections that aren't on the grid (cave mouths, building doors) use **connector empties** named `CONN_<name>`; matching names snap together.
+
+## Terrain add-on (Blender 4.1)
+
+`tools/blender/titamas_terrain.py` makes and exports seamless chunks.
+
+1. Blender → Edit → Preferences → Add-ons → **Install…** → pick the file → tick **Titamas Terrain Chunks**.
+2. In the 3D Viewport press **N** → **Titamas** tab.
+3. Set how many chunks east and south, press **New Terrain**. It's placed on the grid with 2 m vertex spacing, and sculpting is locked to up/down so the grid stays straight.
+4. Sculpt freely across chunk borders. Save the .blend.
+5. With the terrain selected, press **Export Chunks**. Each chunk is saved as `chunks/chunk_I_J.glb` next to the .blend, with origin and scale set. Your master terrain isn't changed.
 
 ## Milestones
 
