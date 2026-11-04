@@ -8,7 +8,9 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 2. Open Godot 4.6, click **Import**, pick this folder's `project.godot`.
 3. Press **F5** (Play). The overworld test loads your terrain chunks. The gray-box test level is `scenes/levels/test_level.tscn` (open it and press **F6**).
 
-**Controls (milestone 1):** WASD move (runs by default) · hold Ctrl to walk · Shift sprint · Space jump · Alt dodge · hold right mouse to look · mouse wheel zoom.
+**Controls (milestone 1):** WASD move (runs by default) · hold Ctrl to walk · Shift sprint · Space jump · Alt dodge
+
+**Traversal:** jump at a ledge to grab it (A/D shimmy, W or Space pull up, S or Ctrl drop) · jump at a climbable wall, or walk into a ladder, then W/S to climb (Space jumps off, Ctrl lets go) · swim in deep water, Space at an edge climbs out. The gray-box level (`scenes/levels/test_level.tscn`) has a test spot for each. · hold right mouse to look · mouse wheel zoom.
 
 ## Folder layout
 
@@ -53,6 +55,13 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 7. Copy the .glb files into `assets/levels/overworld/`. The `ChunkStreamer` finds them by name, places them on the grid and loads/unloads them around the player.
 
 **Materials:** give the master terrain a named material in Blender (Principled BSDF + an image texture into Base Color). The add-on generates world-space UVs (one texture repeat per 4 m by default), so textures line up across seams. Chunks with no material get a plain grass colour in Godot.
+
+## Level markup
+
+- **Climbable wall:** put the node in the `climbable` group (Node panel → Groups). Players jump onto it.
+- **Ladder:** a thin box in the `ladder` group, with a platform at the top. Players walk into it.
+- **Ledges:** any flat-topped edge 1.5–2.5 m above a jumping player can be grabbed; no markup needed.
+- **Water:** add an `Area3D` with `scripts/world/water_volume.gd` and set its Size. The top of the box is the surface; water deeper than 1.3 m is swimmable.
 
 ## Animations
 

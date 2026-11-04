@@ -29,6 +29,11 @@ const IN_PLACE := LOOPING
 const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back", "hanging_hop_left", "hanging_hop_right"]
 ## Animations whose hips may dip but not rise; the physics jump provides the height.
 const NO_HIP_RISE := ["jumping"]
+## Clips authored facing the other way: extra turn (degrees) so they face forward.
+const YAW_FIX := {"climbing_ladder": 180.0}
+## Clips whose average hip height should match another clip's (Mixamo places some
+## in-place climbing clips at a different height).
+const HEIGHT_MATCH := {"climbing_down_wall": "climbing_up_wall"}
 ## Extra outward angle (degrees) for each body's arms. Our bodies are broader than the
 ## Mixamo skeleton the clips were made on, so without this the hands sink into the thighs.
 ## Applied to the upper arm and everything below it, in every animation.
@@ -46,6 +51,9 @@ func _init() -> void:
 			var src: Dictionary = sources[anim_name]
 			var anim := _retarget(src.skeleton, src.animation, target, anim_name, _spread(body))
 			lib.add_animation(anim_name, anim)
+		for anim_name in HEIGHT_MATCH:
+			if lib.has_animation(anim_name) and lib.has_animation(HEIGHT_MATCH[anim_name]):
+				_match_height(lib.get_animation(anim_name), lib.get_animation(HEIGHT_MATCH[anim_name]), target)
 		var path := "res://assets/animations/%s.res" % body
 		var err := ResourceSaver.save(lib, path)
 		print("saved %s (%d animations) err=%d" % [path, lib.get_animation_list().size(), err])
@@ -98,6 +106,23 @@ func _facing(skel: Skeleton3D, skel_xf: Transform3D, rest: Array[Transform3D]) -
 	return fwd.normalized()
 
 
+## Shifts `anim`'s hip track so its average hip height equals `reference`'s.
+func _match_height(anim: Animation, reference: Animation, skel: Skeleton3D) -> void:
+	var xf := _scene_xform(skel)
+	var mean := func(a: Animation) -> float:
+		var t := a.find_track(NodePath("Skeleton3D:" + ROOT_BONE), Animation.TYPE_POSITION_3D)
+		var total := 0.0
+		for k in a.track_get_key_count(t):
+			total += (xf * (a.track_get_key_value(t, k) as Vector3)).y
+		return total / maxi(a.track_get_key_count(t), 1)
+	var shift_world := Vector3(0, mean.call(reference) - mean.call(anim), 0)
+	var shift_local := xf.basis.inverse() * shift_world
+	var track := anim.find_track(NodePath("Skeleton3D:" + ROOT_BONE), Animation.TYPE_POSITION_3D)
+	for k in anim.track_get_key_count(track):
+		anim.track_set_key_value(track, k, (anim.track_get_key_value(track, k) as Vector3) + shift_local)
+	print("  height-matched clip by %.2f m" % shift_world.y)
+
+
 func _spread(body: String) -> float:
 	var override := OS.get_environment("ARM_SPREAD")  # for quick previews
 	return float(override) if not override.is_empty() else float(ARM_SPREAD[body])
@@ -132,6 +157,8 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 	var src_fwd := _facing(src, src_skel_xf, src_rest)
 	var dst_fwd := _facing(dst, dst_skel_xf, dst_rest)
 	var align := Quaternion(Vector3.UP, atan2(src_fwd.x, src_fwd.z) * -1.0 + atan2(dst_fwd.x, dst_fwd.z))
+	# Whole-body turn for clips authored facing the other way.
+	var turn := Quaternion(Vector3.UP, deg_to_rad(YAW_FIX.get(anim_name, 0.0)))
 
 	# Arm spread: swing each whole arm outward about the character's forward axis.
 	var left_dir := Vector3.UP.cross(dst_fwd)
@@ -204,7 +231,7 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 			var world: Quaternion
 			if src_pose_w.has(name):
 				var delta: Quaternion = src_pose_w[name] * src_rest_w[name].inverse()
-				world = align * delta * align.inverse() * dst_rest_w[name]
+				world = turn * align * delta * align.inverse() * dst_rest_w[name]
 				if left_arm.has(i):
 					world = spread_left * world
 				elif right_arm.has(i):
@@ -222,7 +249,7 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 		if out_pos >= 0:
 			var src_pos: Vector3 = src_anim.position_track_interpolate(pos_track, time)
 			# Hip movement in source world space, rescaled by hip height and turned to the target's facing.
-			var offset_w := align * (src_skel_xf.basis.orthonormalized() * (src_pos - src_rest[src_root].origin) * scale)
+			var offset_w := turn * align * (src_skel_xf.basis.orthonormalized() * (src_pos - src_rest[src_root].origin) * scale)
 			if f == 0:
 				first_offset = offset_w
 			last_offset = offset_w

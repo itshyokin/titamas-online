@@ -1,7 +1,7 @@
 class_name PlayerController
 extends CharacterBody3D
 ## Player movement: camera-relative running, walking (hold Ctrl), sprinting with
-## stamina, jumping, dodging and ledge grabbing. The character turns to face the way
+## stamina, jumping, dodging, ledge grabbing, wall/ladder climbing and swimming. The character turns to face the way
 ## it moves (action-RPG style). Movement modes live in `state`; PlayerAnimator picks
 ## animations in NORMAL and plays the ones requested via `action_animation` otherwise.
 
@@ -11,9 +11,10 @@ signal dodged(anim: String, start_time: float)
 ## Asks the animator to play a specific animation (special moves).
 signal action_animation(anim: String, start_time: float, blend: float, speed: float)
 
-enum State { NORMAL, DODGE, HANG, LEDGE_CLIMB }
+enum State { NORMAL, DODGE, HANG, LEDGE_CLIMB, WALL_CLIMB, LADDER, SWIM }
 
 const WORLD_MASK := 1
+const WATER_MASK := 8  # layer 4
 
 @export_group("Movement")
 @export var run_speed := 4.5
@@ -55,6 +56,29 @@ const WORLD_MASK := 1
 ## How far onto the ledge the character stands after climbing up.
 @export var climb_onto_distance := 0.35
 
+@export_group("Climbing")
+## Surfaces are climbable when their node is in the "climbable" group (jump onto them)
+## or the "ladder" group (walk into them).
+@export var wall_climb_speed := 1.0
+@export var ladder_speed := 1.2
+## Distance from the feet origin to the surface while climbing.
+@export var wall_climb_distance := 0.32
+@export var ladder_distance := 0.45
+## How far above the origin the feet sit in the climbing clips.
+@export var wall_climb_feet := 0.5
+@export var ladder_feet := 1.15
+## Climb speed (m/s) the clips look right at, for matching animation speed.
+@export var wall_climb_anim_rate := 0.5
+@export var ladder_anim_rate := 0.8
+
+@export_group("Swimming")
+@export var swim_speed := 2.2
+## Water deeper than this (surface above the feet) makes the character swim.
+@export var swim_depth := 1.3
+## Origin depth below the surface when treading water and when swimming forward.
+@export var tread_depth := 1.45
+@export var stroke_depth := 0.85
+
 @onready var stats: Stats = $Stats
 @onready var camera_rig: ThirdPersonCamera = $CameraRig
 @onready var model: Node3D = $Model
@@ -92,6 +116,9 @@ var _climb_time := 0.0
 var _climb_duration := 0.0
 var _climb_target := Vector3.ZERO
 
+var _surface_normal := Vector3.ZERO  # wall/ladder being climbed
+var _water: WaterVolume
+
 
 func _physics_process(delta: float) -> void:
 	_dodge_cooldown_left = maxf(_dodge_cooldown_left - delta, 0.0)
@@ -107,6 +134,11 @@ func _physics_process(delta: float) -> void:
 			_hang_movement(delta)
 		State.LEDGE_CLIMB:
 			_ledge_climb_movement(delta)
+		State.WALL_CLIMB, State.LADDER:
+			_climb_movement(delta)
+		State.SWIM:
+			_swim_movement(delta)
+			move_and_slide()
 
 
 ## True during the invulnerable part of a dodge.
@@ -132,6 +164,10 @@ func _normal_movement(delta: float) -> void:
 
 	if is_on_floor() and Input.is_action_just_pressed("dodge") and _try_dodge(direction):
 		return
+	if _try_start_swim():
+		return
+	if _grab_cooldown <= 0.0 and direction.dot(_forward()) > 0.5 and _try_attach_surface(is_on_floor()):
+		return
 
 	if not is_on_floor():
 		velocity.y -= gravity * delta
@@ -139,6 +175,8 @@ func _normal_movement(delta: float) -> void:
 			var ledge := _probe_ledge(global_position, _forward())
 			if not ledge.is_empty():
 				_start_hang(ledge)
+				return
+			if _try_attach_surface(false):
 				return
 	elif Input.is_action_just_pressed("jump") and stats.use_stamina(jump_stamina_cost):
 		velocity.y = jump_velocity
@@ -374,6 +412,181 @@ func _drop_from_ledge() -> void:
 	state = State.NORMAL
 	_grab_cooldown = 0.5
 	action_animation.emit("falling_loop", 0.0, 0.2, 1.0)
+
+
+# --- Wall and ladder climbing ------------------------------------------------
+
+## Attaches to a climbable wall (only while airborne) or a ladder in front.
+func _try_attach_surface(on_ground: bool) -> bool:
+	var space := get_world_3d().direct_space_state
+	var chest := global_position + Vector3.UP * 1.2
+	var hit := _ray(space, chest, chest + _forward() * 0.7)
+	if hit.is_empty() or absf(hit.normal.y) > 0.3:
+		return false
+	var node := hit.collider as Node
+	var ladder := node.is_in_group("ladder")
+	if not ladder and not node.is_in_group("climbable"):
+		return false
+	if on_ground and not ladder:
+		return false  # walls need a jump; ladders you just walk into
+	_surface_normal = Vector3(hit.normal.x, 0, hit.normal.z).normalized()
+	state = State.LADDER if ladder else State.WALL_CLIMB
+	velocity = Vector3.ZERO
+	is_sprinting = false
+	model.rotation.y = _yaw_of(-_surface_normal)
+	var dist := ladder_distance if ladder else wall_climb_distance
+	var pos: Vector3 = hit.position + _surface_normal * dist
+	pos.y = global_position.y - ((ladder_feet if ladder else wall_climb_feet) if on_ground else 0.0)
+	global_position = pos
+	character.play("climbing_ladder" if ladder else "climbing_up_wall", 0.2, 0.0)
+	return true
+
+
+func _climb_movement(delta: float) -> void:
+	var ladder := state == State.LADDER
+	var feet := ladder_feet if ladder else wall_climb_feet
+	var space := get_world_3d().direct_space_state
+
+	if Input.is_action_just_pressed("jump"):
+		_jump_off_surface()
+		return
+	if Input.is_action_just_pressed("walk"):
+		_let_go()
+		return
+
+	var climb := Input.get_axis("move_back", "move_forward")
+
+	# Reached the top: pull up onto it.
+	if climb > 0.0:
+		var ledge := _probe_ledge(global_position, -_surface_normal)
+		if not ledge.is_empty() and ledge.edge.y - global_position.y < (2.4 if ladder else 2.2):
+			_start_hang(ledge)
+			_try_climb_up()
+			return
+
+	# Reached the bottom: step off.
+	if climb < 0.0:
+		var foot := global_position + Vector3.UP * feet
+		var ground := _ray(space, foot + Vector3.UP * 0.1, foot - Vector3.UP * 0.2)
+		if not ground.is_empty():
+			global_position.y = ground.position.y
+			state = State.NORMAL
+			_grab_cooldown = 0.4
+			return
+
+	# Stay stuck to the surface; let go if it ends.
+	var chest := global_position + Vector3.UP * (feet + 0.8)
+	var hit := _ray(space, chest, chest - _surface_normal * 1.2)
+	if hit.is_empty() or not ((hit.collider as Node).is_in_group("ladder" if ladder else "climbable")):
+		_let_go()
+		return
+	_surface_normal = Vector3(hit.normal.x, 0, hit.normal.z).normalized()
+	var dist := ladder_distance if ladder else wall_climb_distance
+	var flat: Vector3 = hit.position + _surface_normal * dist
+	global_position = Vector3(flat.x, global_position.y, flat.z)
+	model.rotation.y = _yaw_of(-_surface_normal)
+
+	var speed := ladder_speed if ladder else wall_climb_speed
+	global_position.y += climb * speed * delta
+	var rate := speed / (ladder_anim_rate if ladder else wall_climb_anim_rate)
+	if ladder:
+		character.play("climbing_ladder", 0.2, climb * rate)  # plays backwards going down
+	elif climb > 0.0:
+		character.play("climbing_up_wall", 0.2, rate)
+	elif climb < 0.0:
+		character.play("climbing_down_wall", 0.2, rate)
+	else:
+		character.play(character.current_animation(), 0.2, 0.0)  # hold still on the wall
+
+
+func _jump_off_surface() -> void:
+	velocity = _surface_normal * 3.5 + Vector3.UP * 4.0
+	model.rotation.y = _yaw_of(_surface_normal)
+	global_position += _surface_normal * 0.15
+	state = State.NORMAL
+	_grab_cooldown = 0.6
+	jumped.emit()
+
+
+func _let_go() -> void:
+	global_position += _surface_normal * 0.15
+	velocity = Vector3.ZERO
+	state = State.NORMAL
+	_grab_cooldown = 0.6
+	action_animation.emit("falling_loop", 0.0, 0.2, 1.0)
+
+
+# --- Swimming ----------------------------------------------------------------
+
+func _water_at(point: Vector3) -> WaterVolume:
+	var query := PhysicsPointQueryParameters3D.new()
+	query.position = point
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	query.collision_mask = WATER_MASK
+	for hit in get_world_3d().direct_space_state.intersect_point(query, 4):
+		if hit.collider is WaterVolume:
+			return hit.collider
+	return null
+
+
+## Depth of water at the character's spot (surface to floor), capped at 10 m.
+func _water_depth(water: WaterVolume) -> float:
+	var surface := water.surface_height()
+	var top := Vector3(global_position.x, surface, global_position.z)
+	var floor_hit := _ray(get_world_3d().direct_space_state, top, top - Vector3.UP * 10.0)
+	return surface - floor_hit.position.y if not floor_hit.is_empty() else 10.0
+
+
+func _try_start_swim() -> bool:
+	var water := _water_at(global_position + Vector3.UP * 1.0)
+	if water == null:
+		return false
+	if water.surface_height() - global_position.y < swim_depth or _water_depth(water) < swim_depth:
+		return false
+	_water = water
+	state = State.SWIM
+	is_sprinting = false
+	velocity.y *= 0.3  # splash down softly
+	return true
+
+
+func _swim_movement(delta: float) -> void:
+	if _water == null or not is_instance_valid(_water):
+		state = State.NORMAL
+		return
+	var direction := _input_direction()
+	var target := direction * swim_speed
+	velocity.x = lerpf(velocity.x, target.x, 3.0 * delta)
+	velocity.z = lerpf(velocity.z, target.z, 3.0 * delta)
+	if direction != Vector3.ZERO:
+		model.rotation.y = lerp_angle(model.rotation.y, _yaw_of(direction), turn_speed * 0.5 * delta)
+
+	# Float at the surface: higher when treading, lower when stroking forward.
+	var h_speed := Vector2(velocity.x, velocity.z).length()
+	var stroke := clampf(h_speed / swim_speed, 0.0, 1.0)
+	var target_y := _water.surface_height() - lerpf(tread_depth, stroke_depth, stroke)
+	velocity.y = (target_y - global_position.y) * 4.0
+
+	if stroke > 0.3:
+		character.play("swimming", 0.4, clampf(h_speed / swim_speed, 0.6, 1.3))
+	else:
+		character.play("treading_water", 0.4)
+
+	# Climb out at an edge.
+	if Input.is_action_just_pressed("jump"):
+		var feet := Vector3(global_position.x, _water.surface_height() - tread_depth, global_position.z)
+		var ledge := _probe_ledge(feet, _forward())
+		if not ledge.is_empty():
+			global_position = feet
+			_start_hang(ledge)
+			_try_climb_up()
+			return
+
+	# Left the water, or it got shallow enough to stand.
+	var still_in := _water_at(Vector3(global_position.x, _water.surface_height() - 0.2, global_position.z)) != null
+	if not still_in or _water_depth(_water) < swim_depth - 0.1:
+		state = State.NORMAL
 
 
 # --- Helpers -----------------------------------------------------------------
