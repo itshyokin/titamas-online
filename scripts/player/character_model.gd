@@ -60,6 +60,20 @@ func play_from(anim: String, time: float, blend := 0.15, speed := 1.0) -> void:
 	_animator.seek(time, true)
 
 
+## Horizontal travel baked out of a one-shot animation (see retarget_mixamo.gd),
+## one character-local offset per frame at 30 fps. Empty if the animation has none.
+func get_root_motion(anim: String) -> PackedVector3Array:
+	if _animator == null or not _animator.has_animation(anim):
+		return PackedVector3Array()
+	return _animator.get_animation(anim).get_meta("root_motion", PackedVector3Array())
+
+
+func get_animation_length(anim: String) -> float:
+	if _animator == null or not _animator.has_animation(anim):
+		return 0.0
+	return _animator.get_animation(anim).length
+
+
 func current_animation() -> String:
 	return _animator.current_animation if _animator else ""
 

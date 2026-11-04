@@ -26,11 +26,18 @@ var _jump_air := 0.0  # expected airtime of the current jump; 0 when not jumping
 
 func _ready() -> void:
 	player.jumped.connect(_on_jumped)
+	player.action_animation.connect(_on_action_animation)
 
 
 func _physics_process(delta: float) -> void:
 	var h_speed := Vector2(player.velocity.x, player.velocity.z).length()
 	var on_floor := player.is_on_floor()
+	if player.state != PlayerController.State.NORMAL:
+		# Special moves play their own animations (started by signals).
+		_was_on_floor = on_floor
+		_air_time = 0.0
+		_landing_lock = 0.0
+		return
 
 	if on_floor:
 		if not _was_on_floor:
@@ -66,6 +73,11 @@ func _on_jumped() -> void:
 	_jump_air = 2.0 * player.jump_velocity / player.gravity
 	var speed := (jump_touchdown - jump_takeoff) / _jump_air
 	character.play_from("jumping", jump_takeoff, 0.1, speed)
+
+
+func _on_action_animation(anim: String, start_time: float, blend: float, speed: float) -> void:
+	_jump_air = 0.0
+	character.play_from(anim, start_time, blend, speed)
 
 
 func _on_landed(h_speed: float) -> void:

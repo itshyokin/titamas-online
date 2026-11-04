@@ -13,3 +13,5 @@
 - When building scenes by script, never set `owner` on nodes inside an instanced scene (causes duplicate-node load errors).
 - Animations: Mixamo FBX (Without Skin) go in `assets/animations/mixamo/`; run `godot --headless --path . --script res://tools/godot/retarget_mixamo.gd` to rebuild `masc.res`/`femme.res`. Looping/in-place lists live at the top of that script. Facing is derived from hip anatomy, not bone axes.
 - `PlayerAnimator` picks animations from movement; `CharacterModel.play()/play_from()` crossfade. Animations only run in-game (not in the editor) so bone poses never get saved into scenes.
+- Player states (PlayerController.State): NORMAL, DODGE, HANG, LEDGE_CLIMB, WALL_CLIMB, LADDER, SWIM. Groups `climbable`/`ladder` mark surfaces; `WaterVolume` (physics layer 4) marks water. One-shot moves emit `action_animation`; continuous states call `character.play()` directly.
+- Converter extras: `ROOT_MOTION` (travel baked to metadata), `YAW_FIX` (clips facing backwards), `HEIGHT_MATCH`, `ARM_SPREAD`.
