@@ -8,3 +8,6 @@
 - Physics layers: 1 world, 2 players, 3 enemies.
 - Character rig: Mixamo (`mixamorig:` bones), shared by masc and femme bodies. Femme body parts are prefixed `f_`.
 - Design doc lives as a Claude doc ("Titamas Online — Design Doc"); README has Blender and level-chunk conventions.
+- Visual checks: `xvfb-run -a godot --path . --rendering-driver opengl3 --script <shot.gd>` renders screenshots (software GL).
+- `base_bodies.glb` holds both bodies; its import uses `root_scale=0.01` because the Mixamo bones come through in centimetres. Keep that setting if the file is re-exported the same way.
+- When building scenes by script, never set `owner` on nodes inside an instanced scene (causes duplicate-node load errors).

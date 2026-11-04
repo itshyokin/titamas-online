@@ -1,128 +1,47 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_lvxji"]
-[ext_resource type="Script" path="res://scripts/player/stats.gd" id="2_p47bc"]
-[ext_resource type="Script" path="res://scripts/player/third_person_camera.gd" id="3_75vfm"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="4_0owmy"]
+[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_75vfm"]
+[ext_resource type="PackedScene" path="res://assets/models/characters/base_bodies.glb" id="2_0owmy"]
+[ext_resource type="Script" path="res://scripts/player/character_model.gd" id="3_qek5x"]
+[ext_resource type="Script" path="res://scripts/player/stats.gd" id="4_5gtgg"]
+[ext_resource type="Script" path="res://scripts/player/third_person_camera.gd" id="5_h17s1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="6_je7p5"]
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qek5x"]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_fm80t"]
 radius = 0.35
-height = 1.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5gtgg"]
-albedo_color = Color(0.55, 0.6, 0.7, 1)
-roughness = 0.9
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_h17s1"]
-material = SubResource("StandardMaterial3D_5gtgg")
-radius = 0.35
-height = 1.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_je7p5"]
-albedo_color = Color(0.9, 0.75, 0.2, 1)
-roughness = 0.9
-
-[sub_resource type="BoxMesh" id="BoxMesh_fm80t"]
-material = SubResource("StandardMaterial3D_je7p5")
-size = Vector3(0.2, 0.12, 0.25)
+height = 1.85
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_gx1jg"]
 radius = 0.25
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hqnrr"]
-bg_color = Color(0, 0, 0, 0.55)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bo48s"]
-bg_color = Color(0.75, 0.15, 0.15, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8qguk"]
-bg_color = Color(0, 0, 0, 0.55)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_136eg"]
-bg_color = Color(0.2, 0.35, 0.85, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oj5la"]
-bg_color = Color(0, 0, 0, 0.55)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gss2c"]
-bg_color = Color(0.85, 0.7, 0.15, 1)
-
-[node name="Player" type="CharacterBody3D" unique_id=1957645400]
+[node name="Player" type="CharacterBody3D" unique_id=86567346]
 collision_layer = 2
 collision_mask = 5
-script = ExtResource("1_lvxji")
+script = ExtResource("1_75vfm")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=554792150]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-shape = SubResource("CapsuleShape3D_qek5x")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1558769712]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.925, 0)
+shape = SubResource("CapsuleShape3D_fm80t")
 
-[node name="Model" type="Node3D" parent="." unique_id=203077600]
+[node name="Model" type="Node3D" parent="." unique_id=379129217]
 
-[node name="PlaceholderBody" type="MeshInstance3D" parent="Model" unique_id=1425337374]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-mesh = SubResource("CapsuleMesh_h17s1")
+[node name="Character" parent="Model" unique_id=714591041 instance=ExtResource("2_0owmy")]
+script = ExtResource("3_qek5x")
 
-[node name="FacingMarker" type="MeshInstance3D" parent="Model" unique_id=1748436567]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.38)
-mesh = SubResource("BoxMesh_fm80t")
+[node name="Stats" type="Node" parent="." unique_id=1666895768]
+script = ExtResource("4_5gtgg")
 
-[node name="Stats" type="Node" parent="." unique_id=1298780680]
-script = ExtResource("2_p47bc")
+[node name="CameraRig" type="Node3D" parent="." unique_id=244882990]
+script = ExtResource("5_h17s1")
 
-[node name="CameraRig" type="Node3D" parent="." unique_id=1621913665]
-script = ExtResource("3_75vfm")
-
-[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig" unique_id=1966390940]
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig" unique_id=1510997176]
 shape = SubResource("SphereShape3D_gx1jg")
 spring_length = 5.0
 margin = 0.2
 
-[node name="Camera3D" type="Camera3D" parent="CameraRig/SpringArm3D" unique_id=1425378120]
+[node name="Camera3D" type="Camera3D" parent="CameraRig/SpringArm3D" unique_id=2112762851]
 current = true
 fov = 70.0
 
-[node name="HUD" parent="." unique_id=155030158 instance=ExtResource("4_0owmy")]
+[node name="HUD" parent="." unique_id=1737377285 instance=ExtResource("6_je7p5")]
 stats_path = NodePath("../Stats")
-
-[node name="Bars" type="VBoxContainer" parent="HUD" unique_id=428412301]
-custom_minimum_size = Vector2(260, 0)
-offset_left = 24.0
-offset_top = 24.0
-offset_right = 24.0
-offset_bottom = 24.0
-theme_override_constants/separation = 6
-
-[node name="HealthBar" type="ProgressBar" parent="HUD/Bars" unique_id=1316441528]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 18)
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_hqnrr")
-theme_override_styles/fill = SubResource("StyleBoxFlat_bo48s")
-value = 100.0
-show_percentage = false
-
-[node name="ManaBar" type="ProgressBar" parent="HUD/Bars" unique_id=1143314396]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 18)
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_8qguk")
-theme_override_styles/fill = SubResource("StyleBoxFlat_136eg")
-value = 100.0
-show_percentage = false
-
-[node name="StaminaBar" type="ProgressBar" parent="HUD/Bars" unique_id=162403369]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 18)
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_oj5la")
-theme_override_styles/fill = SubResource("StyleBoxFlat_gss2c")
-value = 100.0
-show_percentage = false
-
-[node name="Controls" type="Label" parent="HUD" unique_id=1928741157]
-offset_left = 24.0
-offset_top = 690.0
-offset_right = 24.0
-offset_bottom = 690.0
-theme_override_font_sizes/font_size = 14
-text = "WASD move · Shift sprint · Space jump · Hold right mouse to look · Wheel zoom"
