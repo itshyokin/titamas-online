@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/chunk_streamer.gd" id="1_if05v"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_b0syn"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fy82d"]
+
+[sub_resource type="Sky" id="Sky_sue7h"]
+sky_material = SubResource("ProceduralSkyMaterial_fy82d")
+
+[sub_resource type="Environment" id="Environment_w2htm"]
+background_mode = 2
+sky = SubResource("Sky_sue7h")
+ambient_light_source = 3
+ambient_light_energy = 0.55
+tonemap_mode = 2
+fog_enabled = true
+fog_density = 0.0025
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5jum4"]
+albedo_color = Color(0.36, 0.5, 0.28, 1)
+
+[node name="OverworldTest" type="Node3D" unique_id=819707508]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=538132641]
+environment = SubResource("Environment_w2htm")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1405544104]
+transform = Transform3D(0.81915206, 0.43938506, -0.36868784, 0, 0.64278764, 0.76604444, 0.57357645, -0.62750685, 0.5265408, 0, 0, 0)
+light_energy = 1.1
+shadow_enabled = true
+
+[node name="ChunkStreamer" type="Node3D" parent="." unique_id=561324320]
+script = ExtResource("1_if05v")
+target_path = NodePath("../Player")
+default_material = SubResource("StandardMaterial3D_5jum4")
+
+[node name="Player" parent="." unique_id=86567346 instance=ExtResource("2_b0syn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)

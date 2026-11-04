@@ -6,7 +6,7 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 
 1. Pull with GitHub Desktop.
 2. Open Godot 4.6, click **Import**, pick this folder's `project.godot`.
-3. Press **F5** (Play). The test level loads.
+3. Press **F5** (Play). The overworld test loads your terrain chunks. The gray-box test level is `scenes/levels/test_level.tscn` (open it and press **F6**).
 
 **Controls (milestone 1):** WASD move · Shift sprint · Space jump · hold right mouse to look · mouse wheel zoom.
 
@@ -49,6 +49,7 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 3. Set how many chunks east and south, press **New Terrain**. It's placed on the grid with 2 m vertex spacing, and sculpting is locked to up/down so the grid stays straight.
 4. Sculpt freely across chunk borders. Save the .blend.
 5. With the terrain selected, press **Export Chunks**. Each chunk is saved as `chunks/chunk_I_J.glb` next to the .blend, with origin and scale set. Your master terrain isn't changed.
+6. Copy the .glb files into `assets/levels/overworld/`. The `ChunkStreamer` in the overworld scene finds them by name, places them on the grid and loads/unloads them around the player.
 
 ## Milestones
 
