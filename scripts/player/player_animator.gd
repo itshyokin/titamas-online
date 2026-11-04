@@ -26,7 +26,7 @@ var _jump_air := 0.0  # expected airtime of the current jump; 0 when not jumping
 
 func _ready() -> void:
 	player.jumped.connect(_on_jumped)
-	player.dodged.connect(_on_dodged)
+	player.action_animation.connect(_on_action_animation)
 
 
 func _physics_process(delta: float) -> void:
@@ -75,9 +75,9 @@ func _on_jumped() -> void:
 	character.play_from("jumping", jump_takeoff, 0.1, speed)
 
 
-func _on_dodged(anim: String, start_time: float) -> void:
+func _on_action_animation(anim: String, start_time: float, blend: float, speed: float) -> void:
 	_jump_air = 0.0
-	character.play_from(anim, start_time, 0.08)
+	character.play_from(anim, start_time, blend, speed)
 
 
 func _on_landed(h_speed: float) -> void:

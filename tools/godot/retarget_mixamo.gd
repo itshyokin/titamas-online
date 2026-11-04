@@ -26,7 +26,7 @@ const IN_PLACE := LOOPING
 ## One-shot animations that travel: their horizontal hip movement is stripped from the
 ## pose and stored as metadata "root_motion" (PackedVector3Array, one offset per frame at
 ## FPS, in the character's local space, facing -Z) so the game can move the body itself.
-const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back"]
+const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back", "hanging_hop_left", "hanging_hop_right"]
 ## Animations whose hips may dip but not rise; the physics jump provides the height.
 const NO_HIP_RISE := ["jumping"]
 ## Extra outward angle (degrees) for each body's arms. Our bodies are broader than the
