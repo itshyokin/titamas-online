@@ -1,0 +1,76 @@
+; Engine configuration file.
+; Edit through Project > Project Settings in the Godot editor when possible.
+
+config_version=5
+
+[application]
+
+config/name="Titamas Online"
+config/description="Small-group co-op 3D RPG set in the world of Titamas."
+run/main_scene="res://scenes/levels/test_level.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[input]
+
+move_forward={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":87)
+, Object(InputEventKey,"physical_keycode":4194320)
+]
+}
+move_back={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":83)
+, Object(InputEventKey,"physical_keycode":4194322)
+]
+}
+move_left={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":65)
+]
+}
+move_right={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":68)
+]
+}
+jump={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":32)
+]
+}
+sprint={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":4194325)
+]
+}
+camera_look={
+"deadzone": 0.2,
+"events": [Object(InputEventMouseButton,"button_index":2)
+]
+}
+zoom_in={
+"deadzone": 0.2,
+"events": [Object(InputEventMouseButton,"button_index":4)
+]
+}
+zoom_out={
+"deadzone": 0.2,
+"events": [Object(InputEventMouseButton,"button_index":5)
+]
+}
+
+[layer_names]
+
+3d_physics/layer_1="world"
+3d_physics/layer_2="players"
+3d_physics/layer_3="enemies"
+
+[physics]
+
+common/physics_ticks_per_second=60
