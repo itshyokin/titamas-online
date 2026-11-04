@@ -30,6 +30,7 @@ const LIBRARIES := {
 
 var _skin_material := StandardMaterial3D.new()
 var _animator: AnimationPlayer
+var _measure_cache := {}
 
 
 func _ready() -> void:
@@ -66,6 +67,37 @@ func get_root_motion(anim: String) -> PackedVector3Array:
 	if _animator == null or not _animator.has_animation(anim):
 		return PackedVector3Array()
 	return _animator.get_animation(anim).get_meta("root_motion", PackedVector3Array())
+
+
+## Where the fingertips and toe tips are at `time` into `anim`, in the character's
+## own space (feet origin, facing -Z): {"hands": Vector3, "toes": Vector3}.
+## Used to line hands up with ledges and rungs. Measured on the actual body, cached.
+func measure(anim: String, time: float) -> Dictionary:
+	var key := "%s@%.3f" % [anim, time]
+	if _measure_cache.has(key):
+		return _measure_cache[key]
+	if _animator == null or not _animator.has_animation(anim):
+		return {}
+	var prev := _animator.current_animation
+	var prev_pos := animation_position()
+	var prev_speed := _animator.speed_scale
+	_animator.speed_scale = 1.0
+	_animator.play(anim, 0.0)
+	_animator.seek(time, true)
+	var skel := get_skeleton()
+	# Measure in the parent's space: this node may carry the import's root scale.
+	var to_local := (get_parent() as Node3D).global_transform.affine_inverse() * skel.global_transform
+	var bone := func(n: String) -> Vector3: return to_local * skel.get_bone_global_pose(skel.find_bone(n)).origin
+	var result := {
+		"hands": (bone.call("mixamorig_LeftHandIndex4") + bone.call("mixamorig_RightHandIndex4")) * 0.5,
+		"toes": (bone.call("mixamorig_LeftToe_End") + bone.call("mixamorig_RightToe_End")) * 0.5,
+	}
+	_animator.speed_scale = prev_speed
+	if not prev.is_empty():
+		_animator.play(prev, 0.0)
+		_animator.seek(prev_pos, true)
+	_measure_cache[key] = result
+	return result
 
 
 func get_animation_length(anim: String) -> float:
@@ -114,6 +146,7 @@ func _setup_animator() -> void:
 	# Tracks are "Skeleton3D:<bone>", relative to the visible armature.
 	_animator.root_node = _animator.get_path_to(get_node(_armature_name(body_type)))
 	_animator.add_animation_library("", lib)
+	_measure_cache.clear()
 	_animator.play(current if not current.is_empty() else default_animation)
 
 

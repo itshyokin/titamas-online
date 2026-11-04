@@ -46,24 +46,22 @@ const WATER_MASK := 8  # layer 4
 ## Ledge height above the feet that can be grabbed while in the air.
 @export var grab_reach_min := 1.5
 @export var grab_reach_max := 2.5
-## Hands above the feet in "hanging_idle", and feet distance from the wall face.
-@export var hang_hands_height := 2.3
-@export var hang_wall_distance := 0.3
-## Hands position in the first frame of "hanging_climb_up" (above / in front of the feet).
-@export var climb_hands_height := 1.35
-@export var climb_hands_forward := 0.39
+## Hanging and climbing up are lined up from the clips themselves: the character's
+## fingertips are measured in "hanging_idle" and "hanging_climb_up" so they sit on the edge.
+## Extra gap between the fingertips and the edge, if the hands should sit further back.
+@export var hang_edge_gap := 0.0
 @export var shimmy_speed := 1.4
-## How far onto the ledge the character stands after climbing up.
-@export var climb_onto_distance := 0.35
+## How far onto the ledge the character stands after climbing up (at least the body radius).
+@export var climb_onto_distance := 0.4
 
 @export_group("Climbing")
 ## Surfaces are climbable when their node is in the "climbable" group (jump onto them)
 ## or the "ladder" group (walk into them).
 @export var wall_climb_speed := 1.0
 @export var ladder_speed := 1.2
-## Distance from the feet origin to the surface while climbing.
+## Distance from the feet origin to the wall while climbing. Ladders are measured from
+## the clip (fingertips on the rungs) instead.
 @export var wall_climb_distance := 0.32
-@export var ladder_distance := 0.45
 ## How far above the origin the feet sit in the climbing clips.
 @export var wall_climb_feet := 0.5
 @export var ladder_feet := 1.15
@@ -115,6 +113,8 @@ var _hop_target := {}
 var _climb_time := 0.0
 var _climb_duration := 0.0
 var _climb_target := Vector3.ZERO
+var _climb_lift := 0.0  # model raised this much at the start of the climb-up, easing to 0
+var _ladder_distance := 0.35
 
 var _surface_normal := Vector3.ZERO  # wall/ladder being climbed
 var _water: WaterVolume
@@ -316,7 +316,9 @@ func _start_hang(ledge: Dictionary) -> void:
 
 
 func _hang_position(edge: Vector3) -> Vector3:
-	return edge + _ledge_normal * hang_wall_distance - Vector3.UP * hang_hands_height
+	# Fingertips (character space, facing -Z) onto the edge. Character +Z points out of the wall.
+	var hands: Vector3 = character.measure("hanging_idle", 0.0).get("hands", Vector3(0, 2.38, -0.05))
+	return edge - _ledge_normal * (hands.z - hang_edge_gap) - Vector3.UP * hands.y
 
 
 func _hang_movement(delta: float) -> void:
@@ -377,7 +379,11 @@ func _hop_movement(delta: float) -> void:
 
 
 func _try_climb_up() -> bool:
-	var target := _ledge_edge - _ledge_normal * climb_onto_distance
+	var length := character.get_animation_length("hanging_climb_up")
+	var hands: Vector3 = character.measure("hanging_climb_up", 0.0).get("hands", Vector3(0, 1.4, -0.45))
+	var feet: Vector3 = character.measure("hanging_climb_up", length).get("toes", Vector3(0, 2.0, -0.59))
+	# Where the clip's feet end up past the edge, but far enough in for the body to fit.
+	var target := _ledge_edge - _ledge_normal * maxf(climb_onto_distance, hands.z - feet.z)
 	# Room to stand on top?
 	var params := PhysicsShapeQueryParameters3D.new()
 	params.shape = collision.shape
@@ -388,9 +394,15 @@ func _try_climb_up() -> bool:
 		return false
 	_climb_target = target
 	_climb_time = 0.0
-	_climb_duration = character.get_animation_length("hanging_climb_up")
-	# Line the climb clip's hands up with the edge.
-	global_position = _ledge_edge + _ledge_normal * climb_hands_forward - Vector3.UP * climb_hands_height
+	_climb_duration = length
+	# The clip ends with its feet higher than its hands start. Place the body so the
+	# feet finish exactly on the ledge, and raise the model at the start so the hands
+	# begin on the edge; that lift eases away over the climb.
+	var start := _ledge_edge - _ledge_normal * hands.z
+	start.y = _ledge_edge.y - feet.y
+	global_position = start
+	_climb_lift = feet.y - hands.y
+	model.position = Vector3(0, _climb_lift, 0)
 	state = State.LEDGE_CLIMB
 	action_animation.emit("hanging_climb_up", 0.0, 0.15, 1.0)
 	return true
@@ -398,7 +410,10 @@ func _try_climb_up() -> bool:
 
 func _ledge_climb_movement(delta: float) -> void:
 	_climb_time += delta
+	var t := clampf(_climb_time / _climb_duration, 0.0, 1.0)
+	model.position = Vector3(0, _climb_lift * (1.0 - smoothstep(0.0, 0.85, t)), 0)
 	if _climb_time >= _climb_duration - 0.05:
+		model.position = Vector3.ZERO
 		global_position = _climb_target
 		velocity = Vector3.ZERO
 		state = State.NORMAL
@@ -434,7 +449,9 @@ func _try_attach_surface(on_ground: bool) -> bool:
 	velocity = Vector3.ZERO
 	is_sprinting = false
 	model.rotation.y = _yaw_of(-_surface_normal)
-	var dist := ladder_distance if ladder else wall_climb_distance
+	if ladder:
+		_ladder_distance = _measure_ladder_distance()
+	var dist := _ladder_distance if ladder else wall_climb_distance
 	var pos: Vector3 = hit.position + _surface_normal * dist
 	pos.y = global_position.y - ((ladder_feet if ladder else wall_climb_feet) if on_ground else 0.0)
 	global_position = pos
@@ -481,7 +498,7 @@ func _climb_movement(delta: float) -> void:
 		_let_go()
 		return
 	_surface_normal = Vector3(hit.normal.x, 0, hit.normal.z).normalized()
-	var dist := ladder_distance if ladder else wall_climb_distance
+	var dist := _ladder_distance if ladder else wall_climb_distance
 	var flat: Vector3 = hit.position + _surface_normal * dist
 	global_position = Vector3(flat.x, global_position.y, flat.z)
 	model.rotation.y = _yaw_of(-_surface_normal)
@@ -497,6 +514,18 @@ func _climb_movement(delta: float) -> void:
 		character.play("climbing_down_wall", 0.2, rate)
 	else:
 		character.play(character.current_animation(), 0.2, 0.0)  # hold still on the wall
+
+
+## Distance from the feet origin to the ladder so the fingertips meet the rungs
+## (averaged over the climb cycle).
+func _measure_ladder_distance() -> float:
+	var length := character.get_animation_length("climbing_ladder")
+	if length <= 0.0:
+		return 0.35
+	var total := 0.0
+	for i in 4:
+		total += character.measure("climbing_ladder", length * i / 4.0).get("hands", Vector3(0, 0, -0.35)).z
+	return -total / 4.0
 
 
 func _jump_off_surface() -> void:

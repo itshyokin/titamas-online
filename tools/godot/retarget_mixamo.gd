@@ -38,6 +38,8 @@ const HEIGHT_MATCH := {"climbing_down_wall": "climbing_up_wall"}
 ## Mixamo skeleton the clips were made on, so without this the hands sink into the thighs.
 ## Applied to the upper arm and everything below it, in every animation.
 const ARM_SPREAD := {"masc": 18.0, "femme": 14.0}
+## Clips that keep the original arm angles (hands must land on walls, ledges and rungs).
+const NO_ARM_SPREAD_PREFIXES := ["climbing_", "hanging_"]
 
 
 func _init() -> void:
@@ -49,7 +51,8 @@ func _init() -> void:
 		var lib := AnimationLibrary.new()
 		for anim_name in sources:
 			var src: Dictionary = sources[anim_name]
-			var anim := _retarget(src.skeleton, src.animation, target, anim_name, _spread(body))
+			var spread := 0.0 if NO_ARM_SPREAD_PREFIXES.any(func(p: String) -> bool: return anim_name.begins_with(p)) else _spread(body)
+			var anim := _retarget(src.skeleton, src.animation, target, anim_name, spread)
 			lib.add_animation(anim_name, anim)
 		for anim_name in HEIGHT_MATCH:
 			if lib.has_animation(anim_name) and lib.has_animation(HEIGHT_MATCH[anim_name]):
