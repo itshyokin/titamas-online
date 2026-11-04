@@ -42,14 +42,17 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 
 ## Terrain add-on (Blender 4.1)
 
-`tools/blender/titamas_terrain.py` makes and exports seamless chunks.
+`tools/blender/titamas_terrain.py` makes and exports seamless chunks. Keep **one master terrain** and grow it.
 
-1. Blender → Edit → Preferences → Add-ons → **Install…** → pick the file → tick **Titamas Terrain Chunks**.
+1. Blender → Edit → Preferences → Add-ons → **Install…** → pick the file → tick **Titamas Terrain Chunks**. (To update: remove the old version first, then install the new file.)
 2. In the 3D Viewport press **N** → **Titamas** tab.
-3. Set how many chunks east and south, press **New Terrain**. It's placed on the grid with 2 m vertex spacing, and sculpting is locked to up/down so the grid stays straight.
-4. Sculpt freely across chunk borders. Save the .blend.
-5. With the terrain selected, press **Export Chunks**. Each chunk is saved as `chunks/chunk_I_J.glb` next to the .blend, with origin and scale set. Your master terrain isn't changed.
-6. Copy the .glb files into `assets/levels/overworld/`. The `ChunkStreamer` in the overworld scene finds them by name, places them on the grid and loads/unloads them around the player.
+3. **Start:** set Chunk X/Y and how many chunks east/south, press **New Terrain**.
+4. **Grow it:** select the master terrain, set Chunk X/Y to where the new chunks go (e.g. X 2, Y 0 = east of chunk_1_0; Y 1 = south), press **Add Chunks to Terrain**. New chunks weld onto the existing edges, keeping their sculpted heights; sculpt across the seam to blend them in.
+5. Sculpting is locked to up/down so the grid stays straight. Save the .blend.
+6. With the terrain selected, press **Export Chunks**. Each chunk is saved as `chunks/chunk_I_J.glb` next to the .blend. Your master terrain isn't changed.
+7. Copy the .glb files into `assets/levels/overworld/`. The `ChunkStreamer` finds them by name, places them on the grid and loads/unloads them around the player.
+
+**Materials:** give the master terrain a named material in Blender (Principled BSDF + an image texture into Base Color). The add-on generates world-space UVs (one texture repeat per 4 m by default), so textures line up across seams. Chunks with no material get a plain grass colour in Godot.
 
 ## Milestones
 
