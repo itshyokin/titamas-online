@@ -25,6 +25,10 @@ const LOOPING := [
 const IN_PLACE := LOOPING
 ## Animations whose hips may dip but not rise; the physics jump provides the height.
 const NO_HIP_RISE := ["jumping"]
+## Extra outward angle (degrees) for each body's arms. Our bodies are broader than the
+## Mixamo skeleton the clips were made on, so without this the hands sink into the thighs.
+## Applied to the upper arm and everything below it, in every animation.
+const ARM_SPREAD := {"masc": 18.0, "femme": 14.0}
 
 
 func _init() -> void:
@@ -36,7 +40,7 @@ func _init() -> void:
 		var lib := AnimationLibrary.new()
 		for anim_name in sources:
 			var src: Dictionary = sources[anim_name]
-			var anim := _retarget(src.skeleton, src.animation, target, anim_name)
+			var anim := _retarget(src.skeleton, src.animation, target, anim_name, _spread(body))
 			lib.add_animation(anim_name, anim)
 		var path := "res://assets/animations/%s.res" % body
 		var err := ResourceSaver.save(lib, path)
@@ -90,7 +94,20 @@ func _facing(skel: Skeleton3D, skel_xf: Transform3D, rest: Array[Transform3D]) -
 	return fwd.normalized()
 
 
-func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name: String) -> Animation:
+func _spread(body: String) -> float:
+	var override := OS.get_environment("ARM_SPREAD")  # for quick previews
+	return float(override) if not override.is_empty() else float(ARM_SPREAD[body])
+
+
+## Bone indices of a bone and all its descendants.
+func _subtree(skel: Skeleton3D, bone: int) -> Dictionary:
+	var out := {bone: true}
+	for child in skel.get_bone_children(bone):
+		out.merge(_subtree(skel, child))
+	return out
+
+
+func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name: String, arm_spread := 0.0) -> Animation:
 	var src_skel_xf := _scene_xform(src)
 	var dst_skel_xf := _scene_xform(dst)
 	var src_skel_rot := src_skel_xf.basis.orthonormalized().get_rotation_quaternion()
@@ -111,6 +128,13 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 	var src_fwd := _facing(src, src_skel_xf, src_rest)
 	var dst_fwd := _facing(dst, dst_skel_xf, dst_rest)
 	var align := Quaternion(Vector3.UP, atan2(src_fwd.x, src_fwd.z) * -1.0 + atan2(dst_fwd.x, dst_fwd.z))
+
+	# Arm spread: swing each whole arm outward about the character's forward axis.
+	var left_dir := Vector3.UP.cross(dst_fwd)
+	var spread_left := Quaternion(Vector3.DOWN.cross(left_dir).normalized(), deg_to_rad(arm_spread))
+	var spread_right := Quaternion(Vector3.DOWN.cross(-left_dir).normalized(), deg_to_rad(arm_spread))
+	var left_arm := _subtree(dst, dst.find_bone("mixamorig_LeftArm"))
+	var right_arm := _subtree(dst, dst.find_bone("mixamorig_RightArm"))
 
 	# Hip height ratio converts source hip movement (cm, Mixamo size) to target metres.
 	var src_root := src.find_bone(ROOT_BONE)
@@ -176,6 +200,10 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 			if src_pose_w.has(name):
 				var delta: Quaternion = src_pose_w[name] * src_rest_w[name].inverse()
 				world = align * delta * align.inverse() * dst_rest_w[name]
+				if left_arm.has(i):
+					world = spread_left * world
+				elif right_arm.has(i):
+					world = spread_right * world
 			else:
 				var p := dst.get_bone_parent(i)
 				var parent_w: Quaternion = dst_skel_rot if p < 0 else dst_pose_w[dst.get_bone_name(p)]
