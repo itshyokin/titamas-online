@@ -1,7 +1,7 @@
 bl_info = {
 	"name": "Titamas Terrain Chunks",
 	"author": "Titamas Online",
-	"version": (1, 2, 0),
+	"version": (1, 3, 0),
 	"blender": (4, 1, 0),
 	"location": "3D Viewport > Sidebar (N) > Titamas",
 	"description": "Create a sculptable master terrain on the 64 m chunk grid and export it as seamless chunk .glb files",
@@ -30,6 +30,10 @@ bl_info = {
 # terrain's border to the neighbour's exported edge heights (and blends inward).
 #
 # Set Height brush: Object Mode tool that pulls terrain toward a chosen height.
+#
+# Terrain painting: a colour attribute "TerrainPaint" (red = grass, green = dirt, blue =
+# cliff, alpha = optional 4th layer) painted in Vertex Paint mode. Godot's terrain shader
+# mixes the textures by it. Chunks use a single material called "terrain".
 
 import json
 import math
@@ -47,6 +51,10 @@ from mathutils.kdtree import KDTree
 from bpy.props import BoolProperty, FloatProperty, IntProperty, PointerProperty, StringProperty
 
 EPS = 1e-4
+PAINT_ATTR = "TerrainPaint"
+# Which paint channel each of the old per-face materials becomes (matched by name).
+LAYER_KEYWORDS = (("grass", 0), ("dirt", 1), ("path", 1), ("cliff", 2), ("rock", 2), ("stone", 2))
+LAYER_NAMES = ("grass", "dirt", "cliff")
 
 
 class TitamasTerrainSettings(bpy.types.PropertyGroup):
@@ -321,6 +329,7 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 				mesh = bpy.data.meshes.new(name)
 				cell.to_mesh(mesh)
 				cell.free()
+				_activate_paint(mesh)
 				for mat in master.data.materials:
 					mesh.materials.append(mat)
 				obj = bpy.data.objects.new(name + ("-col" if s.add_collision else ""), mesh)
@@ -382,15 +391,183 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 		return {"FINISHED"}
 
 
+def _activate_paint(mesh) -> None:
+	"""Make the paint layer the mesh's active/render colours so the glTF exporter writes it."""
+	attrs = mesh.color_attributes
+	if PAINT_ATTR not in attrs:
+		return
+	for i, a in enumerate(attrs):
+		if a.name == PAINT_ATTR:
+			try:
+				attrs.active_color_index = i
+				attrs.render_color_index = i
+			except AttributeError:
+				attrs.active_color = a
+
+
 def _export_glb(path: str, include_textures: bool) -> None:
 	kwargs = dict(filepath=path, export_format="GLB", use_selection=True, export_apply=True, export_yup=True)
+	# Options whose names differ between Blender versions; unknown ones are dropped.
+	extras = {"export_colors": True, "export_vertex_color": "ACTIVE"}
 	if not include_textures:
+		extras["export_image_format"] = "NONE"
+	while True:
 		try:
-			bpy.ops.export_scene.gltf(**kwargs, export_image_format="NONE")
+			bpy.ops.export_scene.gltf(**kwargs, **extras)
 			return
-		except TypeError:
-			pass  # older exporter without the NONE option: fall back to embedding
-	bpy.ops.export_scene.gltf(**kwargs)
+		except TypeError as err:
+			bad = next((k for k in extras if f'"{k}"' in str(err) or k in str(err)), None)
+			if bad is None:
+				raise
+			del extras[bad]
+
+
+def _first_image(material):
+	if material and material.use_nodes:
+		for node in material.node_tree.nodes:
+			if node.type == "TEX_IMAGE" and node.image:
+				return node.image
+	return None
+
+
+def _build_preview_material():
+	"""A Blender material that previews the painted mix (Godot uses its own shader)."""
+	mat = bpy.data.materials.get("terrain") or bpy.data.materials.new("terrain")
+	mat.use_nodes = True
+	nt = mat.node_tree
+	nt.nodes.clear()
+	out = nt.nodes.new("ShaderNodeOutputMaterial")
+	out.location = (900, 0)
+	bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+	bsdf.location = (600, 0)
+	bsdf.inputs["Roughness"].default_value = 1.0
+	nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+
+	paint = nt.nodes.new("ShaderNodeVertexColor")
+	paint.layer_name = PAINT_ATTR
+	paint.location = (-600, -300)
+	sep = nt.nodes.new("ShaderNodeSeparateColor")
+	sep.location = (-400, -300)
+	nt.links.new(paint.outputs["Color"], sep.inputs["Color"])
+
+	texs = []
+	for i, name in enumerate(LAYER_NAMES):
+		tex = nt.nodes.new("ShaderNodeTexImage")
+		tex.location = (-400, 300 - i * 260)
+		tex.interpolation = "Closest"
+		tex.image = _first_image(bpy.data.materials.get(name))
+		tex.label = name
+		texs.append(tex)
+
+	def math(op, a, b, loc):
+		n = nt.nodes.new("ShaderNodeMath")
+		n.operation = op
+		n.location = loc
+		for sock, val in ((n.inputs[0], a), (n.inputs[1], b)):
+			if isinstance(val, float):
+				sock.default_value = val
+			else:
+				nt.links.new(val, sock)
+		return n.outputs[0]
+
+	r, g, b = sep.outputs[0], sep.outputs[1], sep.outputs[2]
+	rg = math("ADD", r, g, (-200, -400))
+	rgb = math("ADD", rg, b, (-200, -520))
+	f1 = math("DIVIDE", g, math("ADD", rg, 0.0001, (0, -400)), (150, -400))
+	f2 = math("DIVIDE", b, math("ADD", rgb, 0.0001, (0, -520)), (150, -520))
+
+	def mix(fac, a, b2, loc):
+		n = nt.nodes.new("ShaderNodeMixRGB")
+		n.location = loc
+		nt.links.new(fac, n.inputs["Fac"])
+		nt.links.new(a, n.inputs["Color1"])
+		nt.links.new(b2, n.inputs["Color2"])
+		return n.outputs["Color"]
+
+	grass_dirt = mix(f1, texs[0].outputs["Color"], texs[1].outputs["Color"], (300, 200))
+	final = mix(f2, grass_dirt, texs[2].outputs["Color"], (450, 100))
+	nt.links.new(final, bsdf.inputs["Base Color"])
+	return mat
+
+
+class TITAMAS_OT_setup_painting(bpy.types.Operator):
+	bl_idname = "titamas.setup_painting"
+	bl_label = "Setup Terrain Painting"
+	bl_description = (
+		"Add the TerrainPaint layer (red = grass, green = dirt, blue = cliff), fill it from the "
+		"materials already on the terrain, and switch the terrain to one 'terrain' material"
+	)
+	bl_options = {"REGISTER", "UNDO"}
+
+	@classmethod
+	def poll(cls, context):
+		obj = context.active_object
+		return obj is not None and obj.type == "MESH"
+
+	def execute(self, context):
+		obj = context.active_object
+		if obj.mode != "OBJECT":
+			bpy.ops.object.mode_set(mode="OBJECT")
+		mesh = obj.data
+		created = PAINT_ATTR not in mesh.color_attributes
+		if created:
+			attr = mesh.color_attributes.new(PAINT_ATTR, "FLOAT_COLOR", "POINT")
+			# Convert the per-face materials into paint: each vertex takes the share of
+			# its surrounding faces that used grass / dirt / cliff.
+			slot_layer = []
+			for slot in obj.material_slots:
+				name = (slot.material.name if slot.material else "").lower()
+				slot_layer.append(next((ch for key, ch in LAYER_KEYWORDS if key in name), 0))
+			acc = [[0.0, 0.0, 0.0] for _ in mesh.vertices]
+			for poly in mesh.polygons:
+				ch = slot_layer[poly.material_index] if poly.material_index < len(slot_layer) else 0
+				for vi in poly.vertices:
+					acc[vi][ch] += 1.0
+			for vi, w in enumerate(acc):
+				total = sum(w) or 1.0
+				attr.data[vi].color = (w[0] / total, w[1] / total, w[2] / total, 1.0)
+		_activate_paint(mesh)
+
+		# Keep the old materials in the file (they hold the textures the preview uses).
+		for slot in obj.material_slots:
+			if slot.material:
+				slot.material.use_fake_user = True
+		preview = _build_preview_material()
+		mesh.materials.clear()
+		mesh.materials.append(preview)
+		self.report({"INFO"}, ("Created and filled" if created else "Kept existing") + " TerrainPaint layer; terrain now uses the 'terrain' material")
+		return {"FINISHED"}
+
+
+class TITAMAS_OT_paint_layer(bpy.types.Operator):
+	bl_idname = "titamas.paint_layer"
+	bl_label = "Paint Layer"
+	bl_description = "Switch to Vertex Paint with the brush set to this ground layer"
+	bl_options = {"REGISTER"}
+
+	layer: IntProperty(default=0)
+
+	@classmethod
+	def poll(cls, context):
+		obj = context.active_object
+		return obj is not None and obj.type == "MESH" and PAINT_ATTR in obj.data.color_attributes
+
+	def execute(self, context):
+		obj = context.active_object
+		_activate_paint(obj.data)
+		if obj.mode != "VERTEX_PAINT":
+			bpy.ops.object.mode_set(mode="VERTEX_PAINT")
+		color = [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)][self.layer]
+		ts = context.tool_settings
+		try:
+			ts.unified_paint_settings.color = color
+		except AttributeError:
+			pass
+		brush = ts.vertex_paint.brush if ts.vertex_paint else None
+		if brush:
+			brush.color = color
+		self.report({"INFO"}, f"Painting {LAYER_NAMES[self.layer]}")
+		return {"FINISHED"}
 
 
 # --- Reading exported chunks (no Blender import needed) ------------------------
@@ -766,6 +943,13 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 		box.operator(TITAMAS_OT_match_edges.bl_idname, icon="SNAP_EDGE")
 
 		box = layout.box()
+		box.label(text="Paint ground", icon="BRUSH_DATA")
+		box.operator(TITAMAS_OT_setup_painting.bl_idname, icon="VPAINT_HLT")
+		row = box.row(align=True)
+		for i, name in enumerate(LAYER_NAMES):
+			row.operator(TITAMAS_OT_paint_layer.bl_idname, text=name.title()).layer = i
+
+		box = layout.box()
 		box.label(text="3. Export", icon="EXPORT")
 		box.prop(s, "export_dir", text="")
 		box.prop(s, "add_collision")
@@ -786,6 +970,8 @@ classes = (
 	TITAMAS_OT_export_chunks,
 	TITAMAS_OT_match_edges,
 	TITAMAS_OT_set_height_brush,
+	TITAMAS_OT_setup_painting,
+	TITAMAS_OT_paint_layer,
 	TITAMAS_PT_terrain,
 )
 

@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/materials/terrain/dirt.png" id="1_u2o3c"]
+
+[resource]
+resource_name = "dirt"
+albedo_texture = ExtResource("1_u2o3c")
+texture_filter = 2

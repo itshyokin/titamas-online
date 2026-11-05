@@ -1,0 +1,84 @@
+shader_type spatial;
+// Painted terrain: mixes up to four ground textures using the vertex colours painted in
+// Blender (red = layer R, green = layer G, blue = layer B, alpha = optional layer A).
+// Edges are broken up with noise so painted borders look natural, steep slopes can
+// turn to the B layer (rock) automatically, and the B layer is projected from three
+// sides so cliffs don't stretch.
+render_mode diffuse_lambert, specular_disabled;
+
+uniform sampler2D tex_r : source_color, filter_nearest_mipmap, repeat_enable; // grass
+uniform sampler2D tex_g : source_color, filter_nearest_mipmap, repeat_enable; // dirt
+uniform sampler2D tex_b : source_color, filter_nearest_mipmap, repeat_enable; // cliff / rock
+uniform sampler2D tex_a : source_color, filter_nearest_mipmap, repeat_enable; // spare
+uniform bool use_layer_a = false;
+
+// World metres per texture repeat.
+uniform float tile_size = 4.0;
+uniform float tile_size_b = 6.0;
+// How much noise breaks up painted borders (0 = smooth fades).
+uniform float breakup : hint_range(0.0, 1.0) = 0.55;
+// Higher = crisper borders between layers.
+uniform float sharpness : hint_range(1.0, 8.0) = 3.0;
+uniform float noise_scale = 0.35;
+// Rock on steep ground: slope is 0 for flat, 1 for vertical.
+uniform float auto_cliff : hint_range(0.0, 1.0) = 1.0;
+uniform float cliff_slope_start : hint_range(0.0, 1.0) = 0.35;
+uniform float cliff_slope_end : hint_range(0.0, 1.0) = 0.55;
+
+varying vec3 world_pos;
+varying vec3 world_normal;
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+		mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+float fbm(vec2 p) {
+	return vnoise(p) * 0.6 + vnoise(p * 2.3 + 7.1) * 0.3 + vnoise(p * 5.1 + 3.7) * 0.1;
+}
+
+vec3 triplanar(sampler2D tex, vec3 p, vec3 n, float scale) {
+	vec3 b = pow(abs(n), vec3(4.0));
+	b /= (b.x + b.y + b.z);
+	vec3 x = texture(tex, p.zy / scale).rgb;
+	vec3 y = texture(tex, p.xz / scale).rgb;
+	vec3 z = texture(tex, p.xy / scale).rgb;
+	return x * b.x + y * b.y + z * b.z;
+}
+
+void vertex() {
+	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+}
+
+void fragment() {
+	vec2 uv = world_pos.xz / tile_size;
+	vec3 col_r = texture(tex_r, uv).rgb;
+	vec3 col_g = texture(tex_g, uv).rgb;
+	vec3 col_b = triplanar(tex_b, world_pos, world_normal, tile_size_b);
+	vec3 col_a = use_layer_a ? texture(tex_a, uv).rgb : vec3(0.0);
+
+	vec4 w = clamp(COLOR, 0.0, 1.0);
+	if (!use_layer_a) {
+		w.a = 0.0;
+	}
+	float slope = 1.0 - clamp(world_normal.y, 0.0, 1.0);
+	w.b += smoothstep(cliff_slope_start, cliff_slope_end, slope) * auto_cliff * 2.0;
+
+	// Noise per layer, then sharpen: borders become irregular patches, not straight fades.
+	vec2 q = world_pos.xz * noise_scale;
+	vec4 nz = vec4(fbm(q), fbm(q + 17.3), fbm(q + 41.7), fbm(q + 5.1));
+	w *= mix(vec4(1.0), nz * 2.0, breakup);
+	w = pow(max(w, vec4(0.0001)), vec4(sharpness));
+	w /= max(w.r + w.g + w.b + w.a, 0.0001);
+
+	ALBEDO = col_r * w.r + col_g * w.g + col_b * w.b + col_a * w.a;
+	ROUGHNESS = 1.0;
+}
