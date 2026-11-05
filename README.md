@@ -44,17 +44,20 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 
 ## Terrain add-on (Blender 4.1)
 
-`tools/blender/titamas_terrain.py` makes and exports seamless chunks. Keep **one master terrain** and grow it.
+`tools/blender/titamas_terrain.py` makes and exports seamless chunks. Keep **one master terrain per region**; regions sit side by side on the same world grid.
 
 1. Blender → Edit → Preferences → Add-ons → **Install…** → pick the file → tick **Titamas Terrain Chunks**. (To update: remove the old version first, then install the new file.)
 2. In the 3D Viewport press **N** → **Titamas** tab.
 3. **Start:** set Chunk X/Y and how many chunks east/south, press **New Terrain**.
-4. **Grow it:** select the master terrain, set Chunk X/Y to where the new chunks go (e.g. X 2, Y 0 = east of chunk_1_0; Y 1 = south), press **Add Chunks to Terrain**. New chunks weld onto the existing edges, keeping their sculpted heights; sculpt across the seam to blend them in.
-5. Sculpting is locked to up/down so the grid stays straight. Save the .blend.
-6. With the terrain selected, press **Export Chunks**. Each chunk is saved as `chunks/chunk_I_J.glb` next to the .blend. Your master terrain isn't changed.
-7. Copy the .glb files into `assets/levels/overworld/`. The `ChunkStreamer` finds them by name, places them on the grid and loads/unloads them around the player.
+4. **Grow it:** select the master terrain, set Chunk X/Y to where the new chunks go, press **Add Chunks to Terrain**. New chunks weld onto the existing edges.
+5. **Next to another region:** point the Export Folder at the folder holding the neighbour's exported chunks and press **Match Edges to Exported Chunks**. Your border snaps to their heights and eases inward over the Blend Distance.
+6. **Shape:** sculpt normally (locked to up/down so the grid stays straight), or use the **Set Height Brush** (Object Mode): drag to pull terrain toward the Height, Ctrl+click to sample a height, mouse wheel = radius, Shift+wheel = strength, Esc/right-click when done.
+7. **Water:** add flat planes (any shape) to a collection named **Water**. They're exported with the chunks and become swimmable water in Godot.
+8. Save the .blend, select the terrain, press **Export Chunks**. Copy the .glb files into `assets/levels/overworld/`.
 
-**Materials:** give the master terrain a named material in Blender (Principled BSDF + an image texture into Base Color). The add-on generates world-space UVs (one texture repeat per 4 m by default), so textures line up across seams. Chunks with no material get a plain grass colour in Godot.
+**Materials:** name them in Blender (e.g. `grass`, `cliff`); Godot swaps in `assets/materials/terrain/<name>.tres`. Leave **Include Textures** off so chunk files stay small. UVs are world-space (one repeat per 4 m by default), so textures line up across seams.
+
+**World edge:** the sea level is −5 m. Past the last chunk is open ocean; swimming far out builds fatigue.
 
 ## Level markup
 
