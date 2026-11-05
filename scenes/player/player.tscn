@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/player/player_audio.gd" id="8_paudio"]
 [ext_resource type="Script" path="res://scripts/combat/targeting.gd" id="9_target"]
 [ext_resource type="Script" path="res://scripts/combat/player_combat.gd" id="10_pcombat"]
+[ext_resource type="Script" path="res://scripts/player/water_effects.gd" id="11_water"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ugbui"]
 radius = 0.35
@@ -41,6 +42,9 @@ script = ExtResource("5_je7p5")
 
 [node name="PlayerAudio" type="Node3D" parent="."]
 script = ExtResource("8_paudio")
+
+[node name="WaterEffects" type="Node" parent="."]
+script = ExtResource("11_water")
 
 [node name="Targeting" type="Node" parent="."]
 script = ExtResource("9_target")

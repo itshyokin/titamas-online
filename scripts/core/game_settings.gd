@@ -3,6 +3,8 @@ extends Node
 ## Saved to user://settings.cfg and applied at startup. The Settings menu edits them.
 
 signal bindings_changed
+## Grass or other graphics settings that need the world rebuilt changed.
+signal graphics_changed
 ## The player switched between keyboard/mouse and controller (for button hints).
 signal device_changed(gamepad: bool)
 
@@ -15,6 +17,9 @@ const DEFAULT_VOLUMES := {"master": 1.0, "music": 0.8, "effects": 1.0, "footstep
 ## Pixel textures: label -> texels per 4 m tile (0 = smooth).
 const PIXEL_OPTIONS := {"Off": 0.0, "Fine": 64.0, "Chunky": 32.0, "Retro": 16.0}
 const DEFAULT_PIXEL := "Chunky"
+## Grass: label -> share of each region's grass density.
+const GRASS_OPTIONS := {"Off": 0.0, "Low": 0.4, "Medium": 0.7, "High": 1.0}
+const DEFAULT_GRASS := "High"
 
 ## Actions shown in the controls menu, in order: [action, label].
 const REBINDABLE := [
@@ -29,6 +34,8 @@ const REBINDABLE := [
 
 var volumes := DEFAULT_VOLUMES.duplicate()
 var pixel := DEFAULT_PIXEL
+var grass := DEFAULT_GRASS
+var god_rays := true
 var camera_sensitivity := 1.0
 var invert_camera_y := false
 ## True while a menu is open: gameplay ignores input.
@@ -69,6 +76,21 @@ func set_volume(key: String, value: float, save := true) -> void:
 		AudioServer.set_bus_mute(bus, volumes[key] <= 0.001)
 	if save:
 		save_settings()
+
+
+func set_grass(option: String) -> void:
+	grass = option if GRASS_OPTIONS.has(option) else DEFAULT_GRASS
+	save_settings()
+	graphics_changed.emit()
+
+
+func grass_multiplier() -> float:
+	return GRASS_OPTIONS.get(grass, 1.0)
+
+
+func set_god_rays(on: bool) -> void:
+	god_rays = on
+	save_settings()
 
 
 func set_pixel(option: String, save := true) -> void:
@@ -183,6 +205,8 @@ func save_settings() -> void:
 	for key: String in volumes:
 		cfg.set_value("audio", key, volumes[key])
 	cfg.set_value("graphics", "pixel", pixel)
+	cfg.set_value("graphics", "grass", grass)
+	cfg.set_value("graphics", "god_rays", god_rays)
 	cfg.set_value("controls", "camera_sensitivity", camera_sensitivity)
 	cfg.set_value("controls", "invert_camera_y", invert_camera_y)
 	for entry in REBINDABLE:
@@ -202,6 +226,8 @@ func load_settings() -> void:
 	for key: String in DEFAULT_VOLUMES:
 		volumes[key] = float(cfg.get_value("audio", key, DEFAULT_VOLUMES[key]))
 	pixel = String(cfg.get_value("graphics", "pixel", DEFAULT_PIXEL))
+	grass = String(cfg.get_value("graphics", "grass", DEFAULT_GRASS))
+	god_rays = bool(cfg.get_value("graphics", "god_rays", true))
 	camera_sensitivity = float(cfg.get_value("controls", "camera_sensitivity", 1.0))
 	invert_camera_y = bool(cfg.get_value("controls", "invert_camera_y", false))
 	if cfg.has_section("bindings"):

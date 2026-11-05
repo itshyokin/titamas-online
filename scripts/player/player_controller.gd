@@ -156,6 +156,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	RenderingServer.global_shader_parameter_set("player_position", global_position)
 	_update_survival(delta)
 	_dodge_cooldown_left = maxf(_dodge_cooldown_left - delta, 0.0)
 	_grab_cooldown = maxf(_grab_cooldown - delta, 0.0)

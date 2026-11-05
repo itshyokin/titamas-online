@@ -31,6 +31,8 @@ extends Node
 @export var ambience_fade := 3.0
 
 var current: RegionAtmosphere
+## Grass clumps per square metre in the current region (read by the ChunkStreamer's grass).
+var grass_density := 3.0
 
 var _env: Environment
 var _sky: ShaderMaterial
@@ -40,6 +42,7 @@ var _check_timer := 0.0
 var _values := {}
 var _label: Label
 var _file_time := -1
+var _preview_key := ""
 var _file_check := 0.0
 var _label_tween: Tween
 var _beds: Array[AudioStreamPlayer] = []  # two players, crossfaded between regions
@@ -50,11 +53,13 @@ var _wind: AudioStreamPlayer
 const FIELDS := [
 	"fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
-	"shadow_strength", "saturation", "contrast", "brightness",
+	"shadow_strength", "saturation", "contrast", "brightness", "god_rays",
+	"grass_base", "grass_tip", "grass_density",
 ]
 
 
 func _ready() -> void:
+	add_to_group("atmosphere")
 	_load_regions()
 	var world_env := get_node_or_null(environment_path) as WorldEnvironment
 	if world_env:
@@ -122,7 +127,10 @@ func _editor_preview() -> void:
 		if _values.get(f) != v:
 			_values[f] = v
 			changed = true
-	if changed:
+	var cycle := get_tree().get_first_node_in_group("world_cycle") as WorldCycle
+	var key := "%.3f" % cycle.hour if cycle else ""
+	if changed or key != _preview_key:
+		_preview_key = key
 		_apply()
 
 
@@ -160,27 +168,50 @@ func _region_at_target() -> RegionAtmosphere:
 
 
 func _apply() -> void:
+	# Day/night: the time of day tints the region's look.
+	var cycle := get_tree().get_first_node_in_group("world_cycle") as WorldCycle if is_inside_tree() else null
+	var v: Dictionary = cycle.apply_time(_values) if cycle else _values
 	if _env:
-		_env.fog_light_color = _values.fog_color
-		_env.fog_density = _values.fog_density
-		_env.fog_sky_affect = _values.fog_sky_affect
-		_env.ambient_light_energy = _values.ambient_energy
+		_env.fog_light_color = v.fog_color
+		_env.fog_density = v.fog_density
+		_env.fog_sky_affect = v.fog_sky_affect
+		_env.ambient_light_energy = v.ambient_energy
 		_env.adjustment_enabled = true
-		_env.adjustment_saturation = _values.saturation
-		_env.adjustment_contrast = _values.contrast
-		_env.adjustment_brightness = _values.brightness
+		_env.adjustment_saturation = v.saturation
+		_env.adjustment_contrast = v.contrast
+		_env.adjustment_brightness = v.brightness
+		# God rays: light shafts through volumetric fog (Settings → Graphics can turn them off).
+		var settings := get_node_or_null("/root/GameSettings")
+		var rays_on: bool = settings == null or bool(settings.get("god_rays"))
+		var rays: float = v.get("god_rays", 0.0)
+		_env.volumetric_fog_enabled = rays_on and rays > 0.01
+		if _env.volumetric_fog_enabled:
+			_env.volumetric_fog_density = 0.012 * rays
+			_env.volumetric_fog_albedo = (v.fog_color as Color).lerp(Color.WHITE, 0.5)
+			_env.volumetric_fog_anisotropy = 0.7
+			_env.volumetric_fog_length = 80.0
+			_env.volumetric_fog_sky_affect = 0.0
 	if _sky:
-		_sky.set_shader_parameter("top_color", _values.sky_top)
-		_sky.set_shader_parameter("horizon_color", _values.sky_horizon)
-		_sky.set_shader_parameter("ground_color", _values.sky_ground)
-		_sky.set_shader_parameter("cloud_color", _values.cloud_color)
-		_sky.set_shader_parameter("cloud_shade", _values.cloud_shade)
-		_sky.set_shader_parameter("cloud_coverage", _values.cloud_coverage)
-		_sky.set_shader_parameter("sun_color", _values.sun_color)
+		_sky.set_shader_parameter("top_color", v.sky_top)
+		_sky.set_shader_parameter("horizon_color", v.sky_horizon)
+		_sky.set_shader_parameter("ground_color", v.sky_ground)
+		_sky.set_shader_parameter("cloud_color", v.cloud_color)
+		_sky.set_shader_parameter("cloud_shade", v.cloud_shade)
+		_sky.set_shader_parameter("cloud_coverage", v.cloud_coverage)
+		_sky.set_shader_parameter("sun_color", v.sun_color)
+		_sky.set_shader_parameter("use_cycle", cycle != null)
+		if cycle:
+			_sky.set_shader_parameter("sun_direction", cycle.sun_direction)
+			_sky.set_shader_parameter("moon_direction", cycle.moon_direction)
+			_sky.set_shader_parameter("night_amount", 1.0 - cycle.daylight)
 	if _sun:
-		_sun.light_color = _values.sun_color
-		_sun.light_energy = _values.sun_energy
-		_sun.shadow_opacity = _values.shadow_strength
+		_sun.light_color = v.sun_color
+		_sun.light_energy = v.sun_energy
+		_sun.shadow_opacity = v.shadow_strength
+	# Grass colours and density for GrassField.
+	RenderingServer.global_shader_parameter_set("grass_base", v.grass_base)
+	RenderingServer.global_shader_parameter_set("grass_tip", v.grass_tip)
+	grass_density = v.grass_density
 
 
 func _build_label() -> void:
@@ -258,4 +289,7 @@ func _update_wind(delta: float) -> void:
 		return
 	var height := clampf(_target.global_position.y / windy_height, 0.0, 1.0)
 	var goal := current.wind_volume_db + altitude_wind_db * height
+	var cycle := get_tree().get_first_node_in_group("world_cycle") as WorldCycle
+	if cycle:
+		goal += 9.0 * (cycle.wind - 1.0)
 	_wind.volume_db = lerpf(_wind.volume_db, goal, 1.0 - exp(-delta * 1.5))

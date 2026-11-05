@@ -13,6 +13,12 @@ uniform float deep_distance = 140.0;
 uniform float roughness_value : hint_range(0.0, 1.0) = 0.15;
 uniform float specular_value : hint_range(0.0, 1.0) = 0.35;
 uniform float ripple_strength = 0.12;
+// Shoreline: water gets darker and murkier where it's shallow, with a thin foam edge.
+uniform vec4 shore_color : source_color = vec4(0.05, 0.12, 0.12, 0.92);
+uniform float shore_width = 1.6;
+uniform vec4 foam_color : source_color = vec4(0.92, 0.97, 1.0, 0.9);
+uniform float foam_width = 0.35;
+uniform sampler2D depth_texture : hint_depth_texture, filter_nearest;
 
 varying vec3 world_pos;
 
@@ -65,6 +71,23 @@ void fragment() {
 
 	float dist = length(world_pos - CAMERA_POSITION_WORLD);
 	vec4 col = mix(shallow_color, deep_color, clamp(dist / deep_distance, 0.0, 1.0));
+	// How much water lies in front of whatever is behind it, along the view ray.
+	float depth = texture(depth_texture, SCREEN_UV).r;
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+	vec4 ndc = vec4(SCREEN_UV * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+#else
+	vec4 ndc = vec4(SCREEN_UV * 2.0 - 1.0, depth, 1.0);
+#endif
+	vec4 behind = INV_PROJECTION_MATRIX * ndc;
+	behind.xyz /= behind.w;
+	float thickness = max(-behind.z - (-VERTEX.z), 0.0);
+	float shore = 1.0 - smoothstep(0.0, shore_width, thickness);
+	col = mix(col, shore_color, shore * 0.85);
+	// Foam: a broken, shifting line right at the edge.
+	float edge = 1.0 - smoothstep(0.0, foam_width * (0.6 + 0.8 * r1), thickness);
+	float breakup = smoothstep(0.35, 0.65, noise(p * 2.3 + vec2(TIME * 0.4, -TIME * 0.3)));
+	float foam = edge * (0.5 + 0.5 * breakup);
+	col = mix(col, foam_color, foam * foam_color.a);
 	ALBEDO = col.rgb;
 	ALPHA = col.a;
 	ROUGHNESS = roughness_value;

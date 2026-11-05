@@ -28,7 +28,11 @@
 			"brightness": 1.0,
 			"ambient_loop": "res://assets/audio/ambience/breeze_loop.ogg",
 			"ambient_volume_db": -8.0,
-			"wind_volume_db": -20.0
+			"wind_volume_db": -20.0,
+			"god_rays": 0.35,
+			"grass_density": 6.0,
+			"grass_base": "#2a5c1f",
+			"grass_tip": "#8cc74d"
 		},
 		{
 			"id": "open_sea",
@@ -58,7 +62,11 @@
 			"brightness": 1.0,
 			"ambient_loop": "",
 			"ambient_volume_db": -8.0,
-			"wind_volume_db": -15.0
+			"wind_volume_db": -15.0,
+			"god_rays": 0.15,
+			"grass_density": 0.0,
+			"grass_base": "#2a5c1f",
+			"grass_tip": "#8cc74d"
 		}
 	]
 }

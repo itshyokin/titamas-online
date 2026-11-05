@@ -14,6 +14,7 @@ const FILES := {
 	"enemies": "res://data/enemies.json",
 	"player": "res://data/player.json",
 	"regions": "res://data/regions.json",
+	"world": "res://data/world.json",
 }
 const MAX_BODY := 4 * 1024 * 1024
 

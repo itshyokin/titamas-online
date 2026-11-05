@@ -169,3 +169,71 @@ static func lock_marker(height := 2.1, width := 1.3) -> MeshInstance3D:
 	mi.scale = Vector3(width, height, 1)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mi
+
+
+const RIPPLE_SHADER := preload("res://assets/materials/ripple.gdshader")
+static var _ripple_mesh: QuadMesh
+
+
+## An expanding ring on a water surface (wading, swimming, landing in water).
+static func ripple(parent: Node, at: Vector3, size := 1.0, seconds := 1.4) -> void:
+	if _ripple_mesh == null:
+		_ripple_mesh = QuadMesh.new()
+		_ripple_mesh.size = Vector2(2, 2)
+		_ripple_mesh.orientation = PlaneMesh.FACE_Y
+		var m := ShaderMaterial.new()
+		m.shader = RIPPLE_SHADER
+		_ripple_mesh.material = m
+	var mi := MeshInstance3D.new()
+	mi.mesh = _ripple_mesh
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(mi)
+	mi.global_position = at
+	mi.scale = Vector3.ONE * size * 0.3
+	mi.set_instance_shader_parameter("age", 0.0)
+	var t := mi.create_tween()
+	t.set_parallel(true)
+	t.tween_property(mi, "scale", Vector3.ONE * size * 1.6, seconds).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	t.tween_method(func(a: float) -> void: mi.set_instance_shader_parameter("age", a), 0.0, 1.0, seconds)
+	t.chain().tween_callback(mi.queue_free)
+
+
+## Water thrown up when something lands in water, plus rings.
+static func splash(parent: Node, at: Vector3, size := 1.0) -> void:
+	var holder := Node3D.new()
+	parent.add_child(holder)
+	holder.global_position = at
+	var color := Color(0.85, 0.94, 1.0, 0.9)
+	var p := CPUParticles3D.new()
+	p.amount = int(40 * size)
+	p.lifetime = 0.9
+	p.one_shot = true
+	p.explosiveness = 0.9
+	var q := QuadMesh.new()
+	q.size = Vector2(0.14, 0.14) * clampf(size, 0.6, 1.6)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.vertex_color_use_as_albedo = true
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	q.material = m
+	p.mesh = q
+	p.direction = Vector3.UP
+	p.spread = 35.0
+	p.initial_velocity_min = 2.0 * size
+	p.initial_velocity_max = 4.5 * size
+	p.gravity = Vector3(0, -9.8, 0)
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
+	p.emission_ring_axis = Vector3.UP
+	p.emission_ring_radius = 0.35 * size
+	p.emission_ring_inner_radius = 0.1
+	p.emission_ring_height = 0.05
+	var g := Gradient.new()
+	g.set_color(0, color)
+	g.set_color(1, Color(color, 0.0))
+	p.color_ramp = g
+	holder.add_child(p)
+	p.emitting = true
+	ripple(parent, at + Vector3.UP * 0.02, size * 1.4, 1.6)
+	ripple(parent, at + Vector3.UP * 0.02, size * 0.8, 1.1)
+	holder.get_tree().create_timer(1.2).timeout.connect(holder.queue_free)

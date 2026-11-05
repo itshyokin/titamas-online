@@ -5,6 +5,8 @@ shader_type spatial;
 render_mode cull_disabled, diffuse_lambert, specular_disabled;
 
 #include "res://assets/materials/pixel_sample.gdshaderinc"
+// Wind strength from WorldCycle (0 calm, 1 normal, 2 very windy).
+global uniform float wind_strength;
 
 uniform sampler2D albedo_texture : source_color, filter_nearest_mipmap, repeat_enable, hint_default_white;
 uniform vec4 albedo_color : source_color = vec4(1.0);
@@ -32,8 +34,9 @@ void vertex() {
 	// Gusts: a slow wave travelling along the wind direction.
 	float gust = 0.6 + 0.4 * sin(dot(origin.xz, dir) * gust_scale * 6.2831 - TIME * gust_speed * 6.2831);
 	float sway = sin(TIME * sway_speed + phase) * 0.6 + sin(TIME * sway_speed * 2.3 + phase * 1.7) * 0.4;
-	vec3 world_offset = vec3(dir.x, 0.0, dir.y) * (sway + 0.35) * sway_strength * gust * weight;
-	float flutter = sin(TIME * 7.0 + dot(VERTEX, vec3(3.1, 2.3, 4.7))) * flutter_strength * weight;
+	float w = max(wind_strength, 0.0);
+	vec3 world_offset = vec3(dir.x, 0.0, dir.y) * (sway + 0.35) * sway_strength * gust * weight * w;
+	float flutter = sin(TIME * 7.0 * (0.6 + 0.4 * w) + dot(VERTEX, vec3(3.1, 2.3, 4.7))) * flutter_strength * weight * (0.5 + 0.5 * w);
 	world_offset += vec3(flutter, flutter * 0.5, -flutter);
 	// Offset is in world space; bring it into the model's space (handles rotated/scaled props).
 	VERTEX += (inverse(MODEL_MATRIX) * vec4(world_offset, 0.0)).xyz;

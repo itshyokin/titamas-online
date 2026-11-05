@@ -205,6 +205,19 @@ func _graphics_tab() -> Control:
 			pixel.select(i)
 	pixel.item_selected.connect(func(i: int) -> void: GameSettings.set_pixel(options[i]))
 	page.add_child(_row("Pixel textures", pixel))
+	var grass := OptionButton.new()
+	var grass_options := GameSettings.GRASS_OPTIONS.keys()
+	for i in grass_options.size():
+		grass.add_item(grass_options[i])
+		if grass_options[i] == GameSettings.grass:
+			grass.select(i)
+	grass.item_selected.connect(func(i: int) -> void: GameSettings.set_grass(grass_options[i]))
+	page.add_child(_row("Grass", grass))
+	var rays := CheckBox.new()
+	rays.text = "God rays (light shafts through the air)"
+	rays.button_pressed = GameSettings.god_rays
+	rays.toggled.connect(func(on: bool) -> void: GameSettings.set_god_rays(on))
+	page.add_child(rays)
 	var note := Label.new()
 	note.text = "Off = smooth textures. Fine, Chunky and Retro show textures as bigger and bigger square pixels."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD

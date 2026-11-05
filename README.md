@@ -89,9 +89,17 @@ Sounds live in `assets/audio/` (sources and licences in `assets/audio/CREDITS.md
 - **Ambience:** each region (Database → Regions) has a **Sound** section: an **Ambient Loop** (birds, forest, town…; crossfades at region borders), its volume, and how windy it is. Wind gets stronger the higher you climb. Waves are loudest at the coast and fade inland.
 - Loops can be any .ogg/.wav/.mp3; they're set to loop automatically.
 
+## World look
+
+- **Day and night:** the sun crosses from east to west; dawn and dusk tint the sky and light, then the moon and stars come out. A clock sits by the settings gear. Day length, start hour, noon sun height and how bright nights are: Database → World. In the editor, select `WorldCycle` in the overworld scene and change **Preview Hour** to see any time of day.
+- **Wind** wanders between calm and gusty (Database → World): trees, grass, clouds and the wind sound all follow it.
+- **Grass** grows by itself wherever the terrain is painted grass (thicker where the paint is stronger), never on cliffs, steep slopes or under water. Each region sets how thick it is and its root/tip colours (Database → Regions → Grass). Players can lower it in Settings → Graphics. It moves with the wind and parts around the player.
+- **God rays:** light shafts through the air, strength per region (Database → Regions → Light and colour); Settings → Graphics can turn them off.
+- **Water:** darker near the shore with a foam edge; ripples around you when wading or swimming, and a splash when you land in it.
+
 ## Database editor
 
-Game data lives in `data/*.json`: **abilities**, **enemies**, the **player** (stats, movement, combat feel, loadout) and **regions** (sky, fog, light, colour, sound). Edit it RPG Maker style instead of in Godot's Inspector:
+Game data lives in `data/*.json`: **abilities**, **enemies**, the **player** (stats, movement, combat feel, loadout), the **world** (day length, start hour, wind) and **regions** (sky, fog, light, colour, god rays, grass, sound). Edit it RPG Maker style instead of in Godot's Inspector:
 
 1. In Godot, click **Database** in the toolbar at the top (or **Project → Tools → Open Database Editor**). Your browser opens the editor.
 2. Pick a tab on the left, an entry in the list, and change its fields. **New / Copy / Delete** under the list. Changing an ability's ID updates the player's loadout to match.

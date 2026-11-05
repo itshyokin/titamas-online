@@ -339,6 +339,22 @@ const TABS = {
 			]],
 		],
 	},
+	world: {
+		title: "World", file: "world", single: true,
+		groups: [
+			["Day and night", [
+				{ key: "day_length_minutes", label: "Real minutes per game day", type: "number", help: "24 = one game hour per real minute." },
+				{ key: "start_hour", label: "Hour the game starts at", type: "number", help: "0–24, e.g. 9 = 9 in the morning." },
+				{ key: "sun_height", label: "Sun height at noon (°)", type: "number" },
+				{ key: "night_brightness", label: "Night brightness (0–1)", type: "number", help: "How much ambient light is left at night." },
+			]],
+			["Wind", [
+				{ key: "wind.calm", label: "Calmest", type: "number", help: "0 = still, 1 = normal breeze." },
+				{ key: "wind.gusty", label: "Windiest", type: "number", help: "2 = very windy." },
+				{ key: "wind.gust_seconds", label: "Seconds per change", type: "number", help: "How slowly the wind rises and falls." },
+			]],
+		],
+	},
 	regions: {
 		title: "Regions", file: "regions", listKey: "regions", idKey: "id", nameKey: "region_name",
 		blank: () => ({
@@ -346,7 +362,8 @@ const TABS = {
 			fog_color: "#b8c7d9", fog_density: 0.004, fog_sky_affect: 0.5, sky_top: "#3d73c7", sky_horizon: "#b3cce6",
 			sky_ground: "#525c66", cloud_color: "#ffffff", cloud_shade: "#b3bdd1", cloud_coverage: 0.45,
 			sun_color: "#fff2d9", sun_energy: 1.1, ambient_energy: 0.6, shadow_strength: 0.6, saturation: 1.2,
-			contrast: 1.05, brightness: 1, ambient_loop: "", ambient_volume_db: -8, wind_volume_db: -20,
+			contrast: 1.05, brightness: 1, god_rays: 0.35, grass_density: 6, grass_base: "#2a5c1f", grass_tip: "#8cc74d",
+			ambient_loop: "", ambient_volume_db: -8, wind_volume_db: -20,
 		}),
 		groups: [
 			["General", [
@@ -376,6 +393,12 @@ const TABS = {
 				{ key: "saturation", label: "Saturation", type: "number", help: "1 = unchanged." },
 				{ key: "contrast", label: "Contrast", type: "number" },
 				{ key: "brightness", label: "Brightness", type: "number" },
+				{ key: "god_rays", label: "God rays (0–1)", type: "number", help: "Light shafts through the air." },
+			]],
+			["Grass", [
+				{ key: "grass_density", label: "Clumps per m²", type: "number", help: "Where the ground is painted grass. 0 = none." },
+				{ key: "grass_base", label: "Colour at the roots", type: "color" },
+				{ key: "grass_tip", label: "Colour at the tips", type: "color" },
 			]],
 			["Sound", [
 				{ key: "ambient_loop", label: "Ambient loop", type: "sound", wide: true },

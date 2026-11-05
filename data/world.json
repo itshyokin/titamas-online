@@ -1,0 +1,11 @@
+{
+	"day_length_minutes": 24.0,
+	"start_hour": 9.0,
+	"sun_height": 65.0,
+	"night_brightness": 0.3,
+	"wind": {
+		"calm": 0.4,
+		"gusty": 1.5,
+		"gust_seconds": 25.0
+	}
+}

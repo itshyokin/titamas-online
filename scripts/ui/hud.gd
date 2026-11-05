@@ -36,11 +36,22 @@ var _hint_labels := {}        # Label -> action name (button hints that follow r
 
 
 var _settings: SettingsMenu
+var _clock: Label
 
 
 func _ready() -> void:
 	_settings = SettingsMenu.new()
 	add_child(_settings)
+	# Time of day, top right beside the settings gear (only when the world has a day cycle).
+	_clock = Label.new()
+	_clock.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_clock.position = Vector2(-230, 26)
+	_clock.size = Vector2(160, 24)
+	_clock.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_clock.add_theme_font_size_override("font_size", 16)
+	_clock.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_clock.add_theme_constant_override("outline_size", 4)
+	add_child(_clock)
 	var stats := get_node_or_null(stats_path) as Stats
 	if stats == null:
 		push_warning("HUD: no Stats node at %s" % stats_path)
@@ -325,6 +336,10 @@ func _refresh_hints() -> void:
 
 
 func _process(_delta: float) -> void:
+	var cycle := get_tree().get_first_node_in_group("world_cycle") as WorldCycle
+	_clock.visible = cycle != null
+	if cycle:
+		_clock.text = cycle.clock_text()
 	if _combat == null:
 		return
 	for slot: Slot in _mode_slots + _spell_slots:

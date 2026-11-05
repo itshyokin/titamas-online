@@ -198,3 +198,19 @@ pixel_texels={
 "type": "float",
 "value": 64.0
 }
+wind_strength={
+"type": "float",
+"value": 1.0
+}
+player_position={
+"type": "vec3",
+"value": Vector3(0, -1000, 0)
+}
+grass_base={
+"type": "color",
+"value": Color(0.16, 0.36, 0.12, 1)
+}
+grass_tip={
+"type": "color",
+"value": Color(0.55, 0.78, 0.3, 1)
+}

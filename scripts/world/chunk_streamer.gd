@@ -40,6 +40,15 @@ const WATER_PLANE_DEPTH := 30.0
 const PAINT_SPACING := 2.0
 
 var _paint := {}  # Vector2i -> PackedVector2Array of (dirt, cliff) per terrain vertex
+var _heights := {}  # Vector2i -> PackedFloat32Array of terrain heights (same grid)
+var _water_rects := {}  # Vector2i -> Array of [Rect2 (world XZ), surface height]
+var _grass := {}  # Vector2i -> GrassField
+## Grass grows on chunks this many cells from the player's.
+@export var grass_radius := 1
+## Fallback grass density (clumps per m²) when no AtmosphereManager is found.
+@export var grass_density := 3.0
+## Grass tiles (16 m squares) grown per frame.
+@export var grass_tiles_per_frame := 2
 var _available := {}  # Vector2i -> path
 var _loaded := {}  # Vector2i -> Node3D
 var _pending := {}  # Vector2i -> path
@@ -53,6 +62,9 @@ func _ready() -> void:
 		_refresh_editor_preview()
 		return
 	_target = get_node_or_null(target_path) as Node3D
+	var settings := get_node_or_null("/root/GameSettings")
+	if settings:
+		settings.connect("graphics_changed", refresh_grass)
 	_scan_chunks()
 	if _target == null:
 		push_warning("ChunkStreamer: no target; loading every chunk")
@@ -93,6 +105,10 @@ func _physics_process(_delta: float) -> void:
 			_loaded[cell].queue_free()
 			_loaded.erase(cell)
 			_paint.erase(cell)
+			_heights.erase(cell)
+			_water_rects.erase(cell)
+			_grass.erase(cell)
+	_update_grass(center)
 
 
 func _refresh_editor_preview() -> void:
@@ -101,6 +117,9 @@ func _refresh_editor_preview() -> void:
 			_loaded[cell].queue_free()
 	_loaded.clear()
 	_paint.clear()
+	_heights.clear()
+	_water_rects.clear()
+	_grass.clear()
 	_available.clear()
 	_shared_materials.clear()
 	_props = PropLibrary.new(prop_dir)
@@ -143,41 +162,126 @@ func paint_at(point: Vector3) -> Vector2:
 	return grid[gz * n + gx]
 
 
+## Grows grass on the chunks near the player (one chunk per frame) and removes it further away.
+func _update_grass(center: Vector2i) -> void:
+	for cell: Vector2i in _grass.keys():
+		if absi(cell.x - center.x) > grass_radius + 1 or absi(cell.y - center.y) > grass_radius + 1:
+			if is_instance_valid(_grass[cell]):
+				_grass[cell].queue_free()
+			_grass.erase(cell)
+	for cell in _cells_around(center, grass_radius):
+		if _loaded.has(cell) and not _grass.has(cell) and _heights.has(cell):
+			var field := GrassField.create(cell, chunk_size, PAINT_SPACING, _heights[cell], _paint.get(cell, PackedVector2Array()),
+				_water_rects.get(cell, []), _sea_level(), _grass_density_at(cell))
+			_loaded[cell].add_child(field)
+			_grass[cell] = field
+	# Grow a few tiles per frame, nearest chunk first, so streaming never stutters.
+	var budget := grass_tiles_per_frame
+	var order := _cells_around(center, grass_radius)
+	order.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return (a - center).length_squared() < (b - center).length_squared())
+	for cell in order:
+		var field: GrassField = _grass.get(cell)
+		while budget > 0 and field and is_instance_valid(field) and field.build_next():
+			budget -= 1
+		if budget <= 0:
+			return
+
+
+## Rebuilds all grass (after the grass setting changes).
+func refresh_grass() -> void:
+	for cell: Vector2i in _grass:
+		if is_instance_valid(_grass[cell]):
+			_grass[cell].queue_free()
+	_grass.clear()
+
+
+func _sea_level() -> float:
+	var ocean := get_tree().get_first_node_in_group("ocean")
+	return ocean.surface_height() if ocean else -INF
+
+
+func _grass_density_at(cell: Vector2i) -> float:
+	var density := grass_density
+	var atmosphere := get_tree().get_first_node_in_group("atmosphere")
+	if atmosphere:
+		var region: RegionAtmosphere = atmosphere.region_at(Vector3(cell.x * chunk_size, 0, cell.y * chunk_size))
+		if region:
+			density = region.grass_density
+	var settings := get_node_or_null("/root/GameSettings")
+	if settings:
+		density *= float(settings.call("grass_multiplier"))
+	return density
+
+
 func _paint_grid_size() -> int:
 	return int(round(chunk_size / PAINT_SPACING)) + 1
 
 
-## Collects each terrain vertex's paint into a grid for paint_at().
-func _read_paint(chunk: Node3D) -> PackedVector2Array:
+## Collects each terrain vertex's paint (for paint_at() and grass) and height (for grass)
+## into grids. Painted surfaces (second UV map) are the terrain; without paint, every
+## mesh in the chunk counts as ground. Returns [paint (empty if unpainted), heights].
+func _read_terrain(chunk: Node3D) -> Array:
 	var n := _paint_grid_size()
-	var grid := PackedVector2Array()
+	var paint := PackedVector2Array()
+	paint.resize(n * n)
+	var heights := PackedFloat32Array()
+	heights.resize(n * n)
+	heights.fill(-INF)
 	var found := false
-	grid.resize(n * n)
 	var half := chunk_size * 0.5
-	for node in chunk.find_children("*", "MeshInstance3D", true, false):
-		var mi := node as MeshInstance3D
-		if String(mi.name).ends_with("-water") or mi.mesh == null:
-			continue
-		# Transform relative to the chunk (it isn't in the tree yet).
-		var xf := Transform3D.IDENTITY
-		var walk: Node = mi
-		while walk != chunk and walk is Node3D:
-			xf = (walk as Node3D).transform * xf
-			walk = walk.get_parent()
-		for s in mi.mesh.get_surface_count():
-			var arrays := mi.mesh.surface_get_arrays(s)
-			var uv2 = arrays[Mesh.ARRAY_TEX_UV2]
-			if uv2 == null or (uv2 as PackedVector2Array).is_empty():
+	for pass_index in 2:
+		for node in chunk.find_children("*", "MeshInstance3D", true, false):
+			var mi := node as MeshInstance3D
+			if String(mi.name).ends_with("-water") or mi.mesh == null or mi.get_parent().name == "Props":
 				continue
-			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-			for i in verts.size():
-				var p := xf * verts[i]
-				var gx := roundi((p.x + half) / PAINT_SPACING)
-				var gz := roundi((p.z + half) / PAINT_SPACING)
-				if gx >= 0 and gx < n and gz >= 0 and gz < n:
-					grid[gz * n + gx] = uv2[i]
-					found = true
-	return grid if found else PackedVector2Array()
+			if _is_prop(mi, chunk):
+				continue
+			# Transform relative to the chunk (it isn't in the tree yet).
+			var xf := Transform3D.IDENTITY
+			var walk: Node = mi
+			while walk != chunk and walk is Node3D:
+				xf = (walk as Node3D).transform * xf
+				walk = walk.get_parent()
+			for s in mi.mesh.get_surface_count():
+				var arrays := mi.mesh.surface_get_arrays(s)
+				var uv2 = arrays[Mesh.ARRAY_TEX_UV2]
+				var painted: bool = uv2 != null and not (uv2 as PackedVector2Array).is_empty()
+				if pass_index == 0 and not painted:
+					continue
+				var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+				for i in verts.size():
+					var p := xf * verts[i]
+					var gx := roundi((p.x + half) / PAINT_SPACING)
+					var gz := roundi((p.z + half) / PAINT_SPACING)
+					if gx >= 0 and gx < n and gz >= 0 and gz < n:
+						var k := gz * n + gx
+						if painted:
+							paint[k] = uv2[i]
+						heights[k] = maxf(heights[k], p.y)
+						found = true
+		if found:
+			break
+	if not found:
+		return [PackedVector2Array(), PackedFloat32Array()]
+	# Holes (no vertex landed there): borrow a neighbour's height.
+	for k in heights.size():
+		if heights[k] == -INF:
+			heights[k] = heights[k - 1] if k > 0 and heights[k - 1] != -INF else 0.0
+	var any_paint := false
+	for v in paint:
+		if v != Vector2.ZERO:
+			any_paint = true
+			break
+	return [paint if any_paint else PackedVector2Array(), heights]
+
+
+func _is_prop(node: Node, chunk: Node) -> bool:
+	var n := node.get_parent()
+	while n and n != chunk:
+		if n.name == "Props":
+			return true
+		n = n.get_parent()
+	return false
 
 
 ## Horizontal distance (m) from a point to open sea (the nearest spot with no chunk).
@@ -215,7 +319,7 @@ func _add_chunk(cell: Vector2i, scene: PackedScene) -> void:
 	for mesh in chunk.find_children("*", "MeshInstance3D", true, false):
 		var mi := mesh as MeshInstance3D
 		if String(mi.name).ends_with("-water"):
-			_make_water(mi)
+			_make_water(mi, cell, chunk)
 			continue
 		for s in mi.mesh.get_surface_count():
 			var mat := mi.mesh.surface_get_material(s)
@@ -230,7 +334,9 @@ func _add_chunk(cell: Vector2i, scene: PackedScene) -> void:
 				mi.set_surface_override_material(s, shared)
 	_place_props(cell, chunk)
 	if not Engine.is_editor_hint():
-		_paint[cell] = _read_paint(chunk)
+		var terrain := _read_terrain(chunk)
+		_paint[cell] = terrain[0]
+		_heights[cell] = terrain[1]
 	add_child(chunk)
 	_loaded[cell] = chunk
 
@@ -259,8 +365,18 @@ func _place_props(cell: Vector2i, chunk: Node3D) -> void:
 
 ## A Blender water plane (object named "<name>-water"): give it the water look and a
 ## swimmable volume beneath its surface.
-func _make_water(mi: MeshInstance3D) -> void:
+func _make_water(mi: MeshInstance3D, cell: Vector2i, chunk: Node3D) -> void:
 	mi.material_override = WATER_MATERIAL
+	# Remember where it is (world XZ rectangle and surface height) so grass stays out.
+	var xf := Transform3D.IDENTITY
+	var walk: Node = mi
+	while walk != chunk and walk is Node3D:
+		xf = (walk as Node3D).transform * xf
+		walk = walk.get_parent()
+	var world_box := (chunk.transform * xf) * mi.get_aabb()
+	if not _water_rects.has(cell):
+		_water_rects[cell] = []
+	_water_rects[cell].append([Rect2(world_box.position.x, world_box.position.z, world_box.size.x, world_box.size.z), world_box.end.y])
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var box := mi.get_aabb()
 	var volume := WaterVolume.new()

@@ -29,6 +29,15 @@ extends Resource
 ## How dark shadows are: 1 = full, lower = softer (stylized, lighter shadows).
 @export_range(0.0, 1.0) var shadow_strength := 0.6
 
+## Light shafts through the air (god rays): 0 = none, 1 = strong.
+@export_range(0.0, 1.0) var god_rays := 0.3
+
+@export_group("Grass")
+## Grass clumps per square metre where the ground is painted grass (0 = none).
+@export var grass_density := 6.0
+@export var grass_base := Color(0.16, 0.36, 0.12)
+@export var grass_tip := Color(0.55, 0.78, 0.3)
+
 @export_group("Colour")
 ## 1 = unchanged. Above 1 = more saturated, punchier colours.
 @export_range(0.0, 2.0) var saturation := 1.2

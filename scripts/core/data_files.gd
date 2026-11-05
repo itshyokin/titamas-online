@@ -10,6 +10,7 @@ const ABILITIES := "res://data/abilities.json"
 const ENEMIES := "res://data/enemies.json"
 const PLAYER := "res://data/player.json"
 const REGIONS := "res://data/regions.json"
+const WORLD := "res://data/world.json"
 
 ## Ability fields that need converting (everything else is a plain number/string/bool).
 const ABILITY_COLORS := ["color", "projectile_color"]
@@ -23,12 +24,12 @@ const ABILITY_FIELDS := [
 	"tick_interval", "projectile_speed", "projectile_color", "projectile_style", "animation",
 	"animation_speed", "hit_time", "recovery_time", "move_scale", "sounds", "hit_sound",
 ]
-const REGION_COLORS := ["fog_color", "sky_top", "sky_horizon", "sky_ground", "cloud_color", "cloud_shade", "sun_color"]
+const REGION_COLORS := ["fog_color", "sky_top", "sky_horizon", "sky_ground", "cloud_color", "cloud_shade", "sun_color", "grass_base", "grass_tip"]
 const REGION_FIELDS := [
 	"region_name", "fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
-	"shadow_strength", "saturation", "contrast", "brightness", "ambient_loop", "ambient_volume_db",
-	"wind_volume_db",
+	"shadow_strength", "saturation", "contrast", "brightness", "god_rays", "grass_density", "grass_base",
+	"grass_tip", "ambient_loop", "ambient_volume_db", "wind_volume_db",
 ]
 
 

@@ -9,6 +9,7 @@
 
 [ext_resource type="PackedScene" path="res://scenes/enemies/bandit.tscn" id="90_bandit"]
 [ext_resource type="Script" path="res://scripts/enemy/training_dummy.gd" id="91_dummy"]
+[ext_resource type="Script" path="res://scripts/world/world_cycle.gd" id="92_cycle"]
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
 shader_parameter/top_color = Color(0.10409584, 0.37107718, 0.2810466, 1)
@@ -53,6 +54,10 @@ light_color = Color(1, 0.95, 0.85, 1)
 light_energy = 1.1
 shadow_enabled = true
 directional_shadow_max_distance = 150.0
+
+[node name="WorldCycle" type="Node" parent="."]
+script = ExtResource("92_cycle")
+sun_path = NodePath("../Sun")
 
 [node name="ChunkStreamer" type="Node3D" parent="." unique_id=1616788967]
 script = ExtResource("2_be2qh")
