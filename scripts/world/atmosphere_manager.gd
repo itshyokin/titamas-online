@@ -1,3 +1,4 @@
+@tool
 class_name AtmosphereManager
 extends Node
 ## Blends fog, sky colours and sunlight to match the region the player is in, and
@@ -12,6 +13,9 @@ extends Node
 @export var chunk_size := 64.0
 ## Roughly how long a full change of atmosphere takes.
 @export var blend_seconds := 4.0
+## In the editor, show this region's look so it can be tuned live: 0, 1, ... = entries in
+## Regions, -1 = the default (open sea). Edit the region's .tres and the view updates.
+@export var editor_preview_region := 0
 
 var current: RegionAtmosphere
 
@@ -39,6 +43,8 @@ func _ready() -> void:
 			_sky = _env.sky.sky_material as ShaderMaterial
 	_sun = get_node_or_null(sun_path) as DirectionalLight3D
 	_target = get_node_or_null(target_path) as Node3D
+	if Engine.is_editor_hint():
+		return
 	_build_label()
 	current = _region_at_target()
 	if current:
@@ -48,6 +54,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		_editor_preview()
+		return
 	if _target == null:
 		return
 	_check_timer += delta
@@ -65,6 +74,24 @@ func _process(delta: float) -> void:
 		var now: Variant = _values.get(f, goal)
 		_values[f] = (now as Color).lerp(goal, k) if goal is Color else lerpf(now, goal, k)
 	_apply()
+
+
+func _editor_preview() -> void:
+	if _env == null:
+		return
+	var region: RegionAtmosphere = default_atmosphere
+	if editor_preview_region >= 0 and editor_preview_region < regions.size() and regions[editor_preview_region]:
+		region = regions[editor_preview_region]
+	if region == null:
+		return
+	var changed := false
+	for f in FIELDS:
+		var v: Variant = region.get(f)
+		if _values.get(f) != v:
+			_values[f] = v
+			changed = true
+	if changed:
+		_apply()
 
 
 ## The region at a world position (first match wins), or the default.

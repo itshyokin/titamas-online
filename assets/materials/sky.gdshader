@@ -15,7 +15,11 @@ uniform float cloud_scale = 0.6;
 uniform float cloud_speed = 0.01;
 
 float hash(vec2 p) {
-	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+	// Sin-free hash: stays stable at large coordinates (sin-based hashes lose
+	// precision on the GPU and produce hard-edged blocks).
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
 }
 
 float noise(vec2 p) {
@@ -56,7 +60,8 @@ void sky() {
 
 	// Clouds on a flat layer above, fading out towards the horizon.
 	if (dir.y > 0.0 && !AT_CUBEMAP_PASS) {
-		vec2 uv = dir.xz / (dir.y + 0.15) * cloud_scale + vec2(TIME * cloud_speed, TIME * cloud_speed * 0.4);
+		vec2 drift = mod(vec2(TIME * cloud_speed, TIME * cloud_speed * 0.4), 1000.0);
+		vec2 uv = dir.xz / (dir.y + 0.15) * cloud_scale + drift;
 		float n = fbm(uv * 2.0);
 		float c = smoothstep(1.0 - cloud_coverage, 1.0 - cloud_coverage + 0.25, n);
 		float shade = fbm(uv * 2.0 + vec2(0.08, 0.08));

@@ -2,21 +2,23 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://8mcy8msw6nit"
-path.s3tc="res://.godot/imported/grass.jpg-c638111c65a98a4e6efa87fc1781362a.s3tc.ctex"
+uid="uid://b3h77w8eqxvbb"
+path="res://.godot/imported/pine_tree_Image_2.png-0774067acdb99d507c079a1fc55d862b.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
+}
+generator_parameters={
+"md5": "2acdf4ecec961d0d5d8083f4f10b5d60"
 }
 
 [deps]
 
-source_file="res://assets/materials/terrain/grass.jpg"
-dest_files=["res://.godot/imported/grass.jpg-c638111c65a98a4e6efa87fc1781362a.s3tc.ctex"]
+source_file="res://assets/props/pine_tree_Image_2.png"
+dest_files=["res://.godot/imported/pine_tree_Image_2.png-0774067acdb99d507c079a1fc55d862b.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -38,4 +40,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

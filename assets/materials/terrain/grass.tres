@@ -1,8 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3]
-
-[ext_resource type="Texture2D" path="res://assets/materials/terrain/grass.jpg" id="1_77uib"]
-
-[resource]
-resource_name = "grass"
-albedo_texture = ExtResource("1_77uib")
-texture_filter = 2
