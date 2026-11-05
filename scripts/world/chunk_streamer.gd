@@ -7,7 +7,7 @@ extends Node3D
 @export_dir var chunk_dir := "res://assets/levels/overworld"
 @export var chunk_size := 64.0
 ## Chunks within this many cells of the player's cell are loaded.
-@export var load_radius := 1
+@export var load_radius := 2
 ## Extra cells kept loaded before unloading, so walking along a border doesn't thrash.
 @export var unload_margin := 1
 @export var target_path: NodePath
@@ -15,6 +15,12 @@ extends Node3D
 @export var snap_target_to_ground := true
 ## Used for chunks exported without a material.
 @export var default_material: Material
+## Shared materials, matched by name: a Blender material called "grass" on a chunk is
+## replaced by <material_dir>/grass.tres. Keeps one copy of each texture for the whole
+## world, and lets materials be tuned in Godot.
+@export_dir var material_dir := "res://assets/materials/terrain"
+
+var _shared_materials := {}  # name -> Material (or null if none)
 
 var _available := {}  # Vector2i -> path
 var _loaded := {}  # Vector2i -> Node3D
@@ -86,17 +92,28 @@ func _add_chunk(cell: Vector2i, scene: PackedScene) -> void:
 	var chunk := scene.instantiate() as Node3D
 	chunk.name = "chunk_%d_%d" % [cell.x, cell.y]
 	chunk.position = Vector3(cell.x * chunk_size, 0, cell.y * chunk_size)
-	if default_material:
-		for mesh in chunk.find_children("*", "MeshInstance3D", true, false):
-			var mi := mesh as MeshInstance3D
-			for s in mi.mesh.get_surface_count():
-				# Material-less glTF meshes get an unnamed default material on import
-				# (fully metallic, renders white), so treat that as "no material" too.
-				var mat := mi.mesh.surface_get_material(s)
-				if mat == null or mat.resource_name.is_empty():
+	for mesh in chunk.find_children("*", "MeshInstance3D", true, false):
+		var mi := mesh as MeshInstance3D
+		for s in mi.mesh.get_surface_count():
+			var mat := mi.mesh.surface_get_material(s)
+			# Material-less glTF meshes get an unnamed default material on import
+			# (fully metallic, renders white), so treat that as "no material" too.
+			if mat == null or mat.resource_name.is_empty():
+				if default_material:
 					mi.set_surface_override_material(s, default_material)
+				continue
+			var shared := _shared_material(mat.resource_name)
+			if shared:
+				mi.set_surface_override_material(s, shared)
 	add_child(chunk)
 	_loaded[cell] = chunk
+
+
+func _shared_material(mat_name: String) -> Material:
+	if not _shared_materials.has(mat_name):
+		var path := material_dir.path_join(mat_name + ".tres")
+		_shared_materials[mat_name] = load(path) if ResourceLoader.exists(path) else null
+	return _shared_materials[mat_name]
 
 
 func _cell_of(pos: Vector3) -> Vector2i:
