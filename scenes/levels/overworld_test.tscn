@@ -9,6 +9,8 @@
 [ext_resource type="Resource" path="res://assets/regions/starting_region.tres" id="7_v7wxo"]
 [ext_resource type="Resource" path="res://assets/regions/open_sea.tres" id="8_giltl"]
 
+[ext_resource type="PackedScene" path="res://scenes/enemies/bandit.tscn" id="90_bandit"]
+[ext_resource type="Script" path="res://scripts/enemy/training_dummy.gd" id="91_dummy"]
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
 shader_parameter/top_color = Color(0.10409584, 0.37107718, 0.2810466, 1)
@@ -74,3 +76,15 @@ default_atmosphere = ExtResource("8_giltl")
 environment_path = NodePath("../WorldEnvironment")
 sun_path = NodePath("../Sun")
 target_path = NodePath("../Player")
+
+[node name="Enemies" type="Node3D" parent="."]
+
+[node name="TrainingDummy" type="StaticBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, 5)
+script = ExtResource("91_dummy")
+
+[node name="Bandit" parent="Enemies" instance=ExtResource("90_bandit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 2)
+
+[node name="Bandit2" parent="Enemies" instance=ExtResource("90_bandit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 10)

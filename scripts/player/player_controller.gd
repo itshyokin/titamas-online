@@ -14,7 +14,10 @@ signal fatigue_changed(current: float, maximum: float)
 ## Respawned after dying or falling out of the world, with a reason ("drowned", "fell").
 signal respawned(reason: String)
 
-enum State { NORMAL, DODGE, HANG, LEDGE_CLIMB, WALL_CLIMB, LADDER, SWIM }
+## A combat action (attack, cast, block) was cut short by a dodge, water or death.
+signal action_interrupted
+
+enum State { NORMAL, DODGE, HANG, LEDGE_CLIMB, WALL_CLIMB, LADDER, SWIM, ACTION, DEAD }
 
 const WORLD_MASK := 1
 const WATER_MASK := 8  # layer 4
@@ -89,6 +92,8 @@ const WATER_MASK := 8  # layer 4
 @export var fatigue_damage := 0.12
 ## Falling below this height (m) respawns the player at the last safe ground.
 @export var kill_height := -80.0
+## Seconds lying dead before respawning.
+@export var death_time := 3.0
 
 @onready var stats: Stats = $Stats
 @onready var camera_rig: ThirdPersonCamera = $CameraRig
@@ -132,6 +137,11 @@ var _ladder_distance := 0.35
 var _surface_normal := Vector3.ZERO  # wall/ladder being climbed
 var _water = null  # WaterVolume or Ocean (both have surface_height()); untyped on purpose
 
+## While in ACTION: share of run speed the player can still move at, and extra
+## velocity the action adds (lunges). Set by PlayerCombat.
+var action_move_scale := 0.0
+var action_velocity := Vector3.ZERO
+
 var fatigue := 0.0
 var _last_safe := Vector3.ZERO
 var _safe_timer := 0.0
@@ -139,7 +149,7 @@ var _safe_timer := 0.0
 
 func _ready() -> void:
 	_last_safe = global_position
-	stats.died.connect(func() -> void: _respawn("drowned" if fatigue >= fatigue_max else "died"))
+	stats.died.connect(_on_died)
 
 
 func _physics_process(delta: float) -> void:
@@ -161,6 +171,14 @@ func _physics_process(delta: float) -> void:
 			_climb_movement(delta)
 		State.SWIM:
 			_swim_movement(delta)
+			move_and_slide()
+		State.ACTION:
+			_action_movement(delta)
+			move_and_slide()
+		State.DEAD:
+			velocity.x = move_toward(velocity.x, 0.0, 10.0 * delta)
+			velocity.z = move_toward(velocity.z, 0.0, 10.0 * delta)
+			velocity.y -= gravity * delta
 			move_and_slide()
 
 
@@ -229,6 +247,88 @@ func _update_sprint(moving: bool, delta: float) -> void:
 			_sprint_exhausted = true
 	else:
 		is_sprinting = false
+
+
+# --- Combat actions -----------------------------------------------------------
+
+## Starts a combat action (PlayerCombat drives it). Only from normal movement on the
+## ground, or chaining from another action.
+func start_action(move_scale := 0.0) -> bool:
+	if state == State.ACTION:
+		action_move_scale = move_scale
+		return true
+	if state != State.NORMAL or not is_on_floor():
+		return false
+	state = State.ACTION
+	action_move_scale = move_scale
+	action_velocity = Vector3.ZERO
+	is_sprinting = false
+	return true
+
+
+func end_action() -> void:
+	action_velocity = Vector3.ZERO
+	if state == State.ACTION:
+		state = State.NORMAL
+
+
+## Turns the character to face a point (smoothly unless `instant`).
+func face_toward(point: Vector3, delta := 0.0) -> void:
+	var dir := point - global_position
+	dir.y = 0.0
+	if dir.length() < 0.01:
+		return
+	var yaw := _yaw_of(dir.normalized())
+	model.rotation.y = yaw if delta <= 0.0 else lerp_angle(model.rotation.y, yaw, turn_speed * delta)
+
+
+func is_alive() -> bool:
+	return state != State.DEAD
+
+
+## Called by Combat.hit: dodging makes the player untouchable, blocking softens hits.
+func modify_incoming_damage(amount: float, source: Node) -> float:
+	if state == State.DEAD:
+		return 0.0
+	if is_invulnerable():
+		FloatingText.spawn(self, "Dodged", Color(0.8, 0.9, 1.0), 0.8)
+		return 0.0
+	var combat := get_node_or_null("PlayerCombat")
+	if combat:
+		return combat.modify_incoming_damage(amount, source)
+	return amount
+
+
+func _action_movement(delta: float) -> void:
+	var direction := _input_direction()
+	if is_on_floor() and Input.is_action_just_pressed("dodge") and _try_dodge(direction):
+		action_interrupted.emit()
+		return
+	if _try_start_swim():
+		action_interrupted.emit()
+		return
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+	var target := direction * run_speed * action_move_scale + action_velocity
+	velocity.x = lerpf(velocity.x, target.x, acceleration * delta)
+	velocity.z = lerpf(velocity.z, target.z, acceleration * delta)
+
+
+func _on_died() -> void:
+	if fatigue >= fatigue_max:
+		_respawn("drowned")
+		return
+	if state in [State.HANG, State.LEDGE_CLIMB, State.WALL_CLIMB, State.LADDER, State.SWIM]:
+		_respawn("died")
+		return
+	if state == State.ACTION:
+		action_interrupted.emit()
+	state = State.DEAD
+	is_sprinting = false
+	action_animation.emit("death", 0.0, 0.15, 1.0)
+	await get_tree().create_timer(death_time).timeout
+	if state == State.DEAD:
+		_respawn("died")
 
 
 # --- Dodge -------------------------------------------------------------------

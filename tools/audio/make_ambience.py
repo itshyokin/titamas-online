@@ -135,3 +135,19 @@ slosh = spectral_noise(n * 2, band(300, 3500, 1.0))[:n]
 env = np.clip(t / 0.08, 0, 1) * np.exp(-np.clip(t - 0.08, 0, None) / 0.13)
 am = 1 + 0.5 * np.sin(2 * np.pi * 23 * t)
 save("swim_stroke", slosh * env * am, peak_db=-8, loop=False)
+
+# Heal: soft rising chime (bell partials with shimmer).
+n = int(SR * 1.4); t = np.arange(n) / SR
+x = np.zeros(n)
+for k, (f0, start) in enumerate([(523.25, 0.0), (659.25, 0.08), (783.99, 0.16), (1046.5, 0.24)]):
+    tt = np.clip(t - start, 0, None)
+    env = (t >= start) * np.clip(tt / 0.01, 0, 1) * np.exp(-tt / 0.45)
+    for h, a in [(1, 1.0), (2.76, 0.25), (5.4, 0.08)]:
+        x += a * env * np.sin(2 * np.pi * f0 * h * tt) * (1 + 0.15 * np.sin(2 * np.pi * 6 * tt))
+save("heal_chime", x, peak_db=-8, loop=False)
+
+# Body hit: short low thump with a slap on top.
+n = int(SR * 0.35); t = np.arange(n) / SR
+thump = np.sin(2 * np.pi * (110 - 140 * t) * t) * np.exp(-t / 0.06)
+slap = spectral_noise(n * 2, band(600, 4000, 1.0))[:n] * np.exp(-t / 0.025)
+save("hit_body", thump * 1.0 + slap * 0.5, peak_db=-3, loop=False)

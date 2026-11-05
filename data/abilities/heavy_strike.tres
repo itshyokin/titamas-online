@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="Ability" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/ability.gd" id="1_jtx55"]
+[ext_resource type="AudioStream" path="res://assets/audio/combat/swing_heavy.ogg" id="2_mcj3h"]
+
+[resource]
+script = ExtResource("1_jtx55")
+id = "heavy_strike"
+display_name = "Heavy Strike"
+description = "A slow two-handed chop. Costs stamina and staggers enemies mid-attack."
+color = Color(0.85, 0.55, 0.3, 1)
+power = 30.0
+stamina_cost = 25.0
+reach = 2.7
+arc = 140.0
+staggers = true
+animation = "attack_heavy"
+hit_time = 0.68
+recovery_time = 1.0
+move_scale = 0.0
+sounds = Array[AudioStream]([ExtResource("2_mcj3h")])

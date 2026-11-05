@@ -18,6 +18,9 @@ extends Node
 @onready var player: PlayerController = get_parent()
 @onready var character: CharacterModel = get_node("../Model/Character")
 
+## Standing animation; "idle_armed" while a weapon is drawn (set by PlayerCombat).
+var idle_animation := "idle"
+
 var _air_time := 0.0
 var _was_on_floor := true
 var _landing_lock := 0.0
@@ -61,7 +64,7 @@ func _physics_process(delta: float) -> void:
 
 func _ground_animation(h_speed: float) -> void:
 	if h_speed < idle_max:
-		character.play("idle", 0.25)
+		character.play(idle_animation, 0.25)
 	elif h_speed < walk_max:
 		character.play("walking", 0.2, clampf(h_speed / walk_anim_speed, 0.6, 1.6))
 	else:
@@ -78,6 +81,9 @@ func _on_jumped() -> void:
 func _on_action_animation(anim: String, start_time: float, blend: float, speed: float) -> void:
 	_jump_air = 0.0
 	character.play_from(anim, start_time, blend, speed)
+	# A one-shot played during normal movement (a flinch): let it finish unless the player moves off.
+	if player.state == PlayerController.State.NORMAL and anim == "hit_react":
+		_landing_lock = (character.get_animation_length(anim) - start_time) / maxf(speed, 0.01)
 
 
 func _on_landed(h_speed: float) -> void:

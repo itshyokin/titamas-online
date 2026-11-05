@@ -1,0 +1,33 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy/enemy.gd" id="1_tli2f"]
+[ext_resource type="PackedScene" path="res://assets/models/characters/base_bodies.glb" id="2_6qtup"]
+[ext_resource type="Script" path="res://scripts/player/character_model.gd" id="3_plr4w"]
+[ext_resource type="Script" path="res://scripts/player/stats.gd" id="4_4l8nu"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_c1g78"]
+radius = 0.35
+height = 1.85
+
+[node name="Bandit" type="CharacterBody3D" unique_id=808439722]
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("1_tli2f")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1811708015]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.925, 0)
+shape = SubResource("CapsuleShape3D_c1g78")
+
+[node name="Model" type="Node3D" parent="." unique_id=325104336]
+
+[node name="Character" parent="Model" unique_id=714591041 instance=ExtResource("2_6qtup")]
+script = ExtResource("3_plr4w")
+skin_color = Color(0.62, 0.55, 0.5, 1)
+
+[node name="Stats" type="Node" parent="." unique_id=640200164]
+script = ExtResource("4_4l8nu")
+display_name = "Bandit"
+level = 2
+team = 1
+max_health = 90.0
+max_mana = 0.0

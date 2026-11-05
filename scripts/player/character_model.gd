@@ -25,6 +25,9 @@ const LIBRARIES := {
 		skin_color = value
 		_apply()
 
+## Where a held item's grip sits between the wrist (0) and the finger bases (1).
+@export_range(0.0, 1.0) var grip_depth := 0.6
+
 ## Animation played when nothing else is asked for (also previews in the editor).
 @export var default_animation := "idle"
 
@@ -154,6 +157,74 @@ func bone_contacts(anim: String, bones: PackedStringArray, fraction := 0.2) -> P
 		_animator.seek(prev_pos, true)
 	_measure_cache[key] = result
 	return result
+
+
+## Puts a held item (grip at its origin, blade/shaft along +Y) in the right or left hand.
+## The grip is worked out from the finger bones, so it fits both bodies.
+## Returns the attachment node (free it to remove the item).
+func attach_to_hand(item: Node3D, right := true) -> BoneAttachment3D:
+	var skel := get_skeleton()
+	if skel == null:
+		return null
+	var side := "Right" if right else "Left"
+	var hand := skel.find_bone("mixamorig_%sHand" % side)
+	var index := skel.find_bone("mixamorig_%sHandIndex1" % side)
+	# The bodies have three-chain hands (thumb, index, ring): the ring stands in for the pinky side.
+	var pinky := skel.find_bone("mixamorig_%sHandRing1" % side)
+	if hand < 0 or index < 0 or pinky < 0:
+		push_warning("CharacterModel: hand bones not found")
+		return null
+	var attach := BoneAttachment3D.new()
+	attach.name = "%sHandItem" % side
+	attach.bone_name = skel.get_bone_name(hand)
+	skel.add_child(attach)
+	# Hand-local frame from the rest pose: the blade leaves the fist on the thumb side
+	# (pinky -> index), the fingers wrap round the grip.
+	var hand_rest := skel.get_bone_global_rest(hand)
+	var to_hand := hand_rest.affine_inverse()
+	var p_index := to_hand * skel.get_bone_global_rest(index).origin
+	var p_pinky := to_hand * skel.get_bone_global_rest(pinky).origin
+	var p_middle := (p_index + p_pinky) * 0.5
+	var blade := (p_index - p_pinky).normalized()
+	var fingers := p_middle.normalized()
+	var side_axis := fingers.cross(blade).normalized()
+	fingers = blade.cross(side_axis).normalized()
+	var grip := p_middle * grip_depth
+	# The skeleton may be scaled (import root scale); keep the item at its real size.
+	var s := skel.global_transform.basis.get_scale().x * hand_rest.basis.get_scale().x
+	var item_basis := Basis(side_axis, blade, fingers).scaled(Vector3.ONE / maxf(s, 0.0001))
+	item.transform = Transform3D(item_basis, grip)
+	attach.add_child(item)
+	return attach
+
+
+## Attaches an item to a bone so it sits at `placement` (in this model's own space: feet
+## at the origin, facing -Z) when the body is in its rest pose, then follows the bone.
+## Used for things worn on the body, like a sheathed sword on the back.
+func attach_to_bone(item: Node3D, bone_name: String, placement: Transform3D) -> BoneAttachment3D:
+	var skel := get_skeleton()
+	var bone := skel.find_bone(bone_name) if skel else -1
+	if bone < 0:
+		push_warning("CharacterModel: no bone %s" % bone_name)
+		return null
+	var attach := BoneAttachment3D.new()
+	attach.name = bone_name.trim_prefix("mixamorig_") + "Item"
+	attach.bone_name = bone_name
+	skel.add_child(attach)
+	var to_model := global_transform.affine_inverse() * skel.global_transform
+	var bone_in_model := to_model * skel.get_bone_global_rest(bone)
+	item.transform = bone_in_model.affine_inverse() * placement
+	attach.add_child(item)
+	return attach
+
+
+## Where a bone sits in the rest pose, in this model's space.
+func bone_rest_position(bone_name: String) -> Vector3:
+	var skel := get_skeleton()
+	var bone := skel.find_bone(bone_name) if skel else -1
+	if bone < 0:
+		return Vector3.ZERO
+	return (global_transform.affine_inverse() * skel.global_transform * skel.get_bone_global_rest(bone)).origin
 
 
 func get_animation_length(anim: String) -> float:

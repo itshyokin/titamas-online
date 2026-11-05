@@ -41,6 +41,115 @@ const ARM_SPREAD := {"masc": 18.0, "femme": 14.0}
 ## Clips that keep the original arm angles (hands must land on walls, ledges and rungs).
 const NO_ARM_SPREAD_PREFIXES := ["climbing_", "hanging_"]
 
+## Stand-in combat clips, posed from the idle clip by rotating bones. Any of these is
+## replaced automatically by a Mixamo FBX with the same name in SOURCE_DIR.
+## Each clip: length, loop, and keys [time, [ops]]. Directions and axes are in the
+## character's space: x = right, y = up, z = forward. Ops:
+##   ["aim", bone, dir]          point the bone (towards its first child) along dir
+##   ["turn", bone, axis, deg]   rotate the bone and everything below it
+##                               (axis y: + turns left; axis x: + leans back; axis z: + leans right)
+##   ["hips", offset]            move the hips (metres)
+## A key with no ops is the idle pose. A key "same" repeats the previous key's ops.
+const ARM_R := "mixamorig_RightArm"
+const FORE_R := "mixamorig_RightForeArm"
+const ARM_L := "mixamorig_LeftArm"
+const FORE_L := "mixamorig_LeftForeArm"
+const SPINE := "mixamorig_Spine1"
+const PLACEHOLDERS := {
+	# Ready stance with a weapon drawn: forearm forward so the blade points up and ahead.
+	"idle_armed": {"length": 2.0, "loop": true, "keys": [
+		[0.0, [["turn", SPINE, Vector3.UP, -8.0], ["aim", ARM_R, Vector3(0.3, -0.85, 0.3)], ["aim", FORE_R, Vector3(0.05, -0.1, 1.0)],
+			["aim", ARM_L, Vector3(-0.35, -0.85, 0.2)]]],
+		[1.0, [["turn", SPINE, Vector3.UP, -8.0], ["turn", SPINE, Vector3.RIGHT, 2.0], ["aim", ARM_R, Vector3(0.3, -0.83, 0.32)],
+			["aim", FORE_R, Vector3(0.05, -0.05, 1.0)], ["aim", ARM_L, Vector3(-0.35, -0.83, 0.22)]]],
+		[2.0, [["turn", SPINE, Vector3.UP, -8.0], ["aim", ARM_R, Vector3(0.3, -0.85, 0.3)], ["aim", FORE_R, Vector3(0.05, -0.1, 1.0)],
+			["aim", ARM_L, Vector3(-0.35, -0.85, 0.2)]]],
+	]},
+	# Forehand diagonal slash, high right to low left. Hit at ~0.32 s.
+	"attack_light_1": {"length": 0.8, "keys": [
+		[0.0, []],
+		[0.18, [["turn", SPINE, Vector3.UP, -30.0], ["aim", ARM_R, Vector3(0.7, 0.7, -0.1)], ["aim", FORE_R, Vector3(0.2, 0.9, -0.4)],
+			["aim", ARM_L, Vector3(-0.3, -0.8, 0.4)]]],
+		[0.32, [["turn", SPINE, Vector3.UP, 25.0], ["turn", SPINE, Vector3.RIGHT, -10.0], ["aim", ARM_R, Vector3(-0.3, -0.1, 1.0)],
+			["aim", FORE_R, Vector3(-0.6, -0.3, 0.75)], ["aim", ARM_L, Vector3(-0.6, -0.6, -0.3)]]],
+		[0.48, [["turn", SPINE, Vector3.UP, 30.0], ["turn", SPINE, Vector3.RIGHT, -8.0], ["aim", ARM_R, Vector3(-0.6, -0.6, 0.5)],
+			["aim", FORE_R, Vector3(-0.6, -0.8, 0.2)], ["aim", ARM_L, Vector3(-0.6, -0.6, -0.3)]]],
+		[0.8, []],
+	]},
+	# Backhand sweep, left to right. Hit at ~0.3 s.
+	"attack_light_2": {"length": 0.75, "keys": [
+		[0.0, []],
+		[0.15, [["turn", SPINE, Vector3.UP, 35.0], ["aim", ARM_R, Vector3(-0.8, 0.1, 0.5)], ["aim", FORE_R, Vector3(-0.6, 0.3, -0.5)]]],
+		[0.3, [["turn", SPINE, Vector3.UP, -20.0], ["aim", ARM_R, Vector3(0.5, 0.1, 0.85)], ["aim", FORE_R, Vector3(0.9, 0.1, 0.4)],
+			["aim", ARM_L, Vector3(-0.5, -0.7, -0.2)]]],
+		[0.45, [["turn", SPINE, Vector3.UP, -35.0], ["aim", ARM_R, Vector3(0.9, -0.1, 0.3)], ["aim", FORE_R, Vector3(0.9, -0.3, -0.2)],
+			["aim", ARM_L, Vector3(-0.5, -0.7, -0.2)]]],
+		[0.75, []],
+	]},
+	# Two-handed overhead chop. Hit at ~0.7 s.
+	"attack_heavy": {"length": 1.3, "keys": [
+		[0.0, []],
+		[0.45, [["hips", Vector3(0, -0.04, 0)], ["turn", SPINE, Vector3.RIGHT, 15.0],
+			["aim", ARM_R, Vector3(0.15, 0.95, -0.2)], ["aim", FORE_R, Vector3(-0.1, 0.5, -0.85)],
+			["aim", ARM_L, Vector3(-0.15, 0.95, -0.2)], ["aim", FORE_L, Vector3(0.1, 0.5, -0.85)]]],
+		[0.68, [["hips", Vector3(0, -0.14, 0.08)], ["turn", SPINE, Vector3.RIGHT, -28.0],
+			["aim", ARM_R, Vector3(0.05, -0.3, 0.95)], ["aim", FORE_R, Vector3(-0.05, -0.65, 0.75)],
+			["aim", ARM_L, Vector3(-0.05, -0.3, 0.95)], ["aim", FORE_L, Vector3(0.05, -0.65, 0.75)]]],
+		[0.9, "same"],
+		[1.3, []],
+	]},
+	# Guard: weapon held across the body. Holds its last pose while blocking.
+	"block": {"length": 0.25, "keys": [
+		[0.0, []],
+		[0.18, [["turn", SPINE, Vector3.UP, -10.0], ["aim", ARM_R, Vector3(0.45, -0.3, 0.85)], ["aim", FORE_R, Vector3(-0.5, 0.55, 0.65)],
+			["aim", ARM_L, Vector3(-0.4, -0.5, 0.6)], ["aim", FORE_L, Vector3(0.3, 0.3, 0.9)]]],
+		[0.25, "same"],
+	]},
+	# Gathering a spell (loops while casting).
+	"cast_channel": {"length": 1.2, "loop": true, "keys": [
+		[0.0, [["aim", ARM_R, Vector3(0.35, 0.2, 0.9)], ["aim", FORE_R, Vector3(0.0, 0.6, 0.8)],
+			["aim", ARM_L, Vector3(-0.35, 0.0, 0.9)], ["aim", FORE_L, Vector3(0.1, 0.35, 0.95)]]],
+		[0.6, [["aim", ARM_R, Vector3(0.35, 0.3, 0.9)], ["aim", FORE_R, Vector3(0.0, 0.7, 0.7)],
+			["aim", ARM_L, Vector3(-0.35, 0.05, 0.9)], ["aim", FORE_L, Vector3(0.1, 0.45, 0.9)]]],
+		[1.2, [["aim", ARM_R, Vector3(0.35, 0.2, 0.9)], ["aim", FORE_R, Vector3(0.0, 0.6, 0.8)],
+			["aim", ARM_L, Vector3(-0.35, 0.0, 0.9)], ["aim", FORE_L, Vector3(0.1, 0.35, 0.95)]]],
+	]},
+	# Throwing the spell forward. Release at ~0.12 s.
+	"cast_release": {"length": 0.6, "keys": [
+		[0.0, [["aim", ARM_R, Vector3(0.35, 0.2, 0.9)], ["aim", FORE_R, Vector3(0.0, 0.6, 0.8)]]],
+		[0.12, [["turn", SPINE, Vector3.UP, 12.0], ["aim", ARM_R, Vector3(0.1, 0.15, 1.0)], ["aim", FORE_R, Vector3(0.0, 0.1, 1.0)],
+			["aim", ARM_L, Vector3(-0.4, -0.7, -0.2)]]],
+		[0.3, "same"],
+		[0.6, []],
+	]},
+	# Healing: both hands raised, palms up. Effect at ~0.4 s.
+	"cast_heal": {"length": 1.0, "keys": [
+		[0.0, []],
+		[0.35, [["turn", SPINE, Vector3.RIGHT, 8.0], ["aim", ARM_R, Vector3(0.4, 0.4, 0.8)], ["aim", FORE_R, Vector3(0.1, 0.85, 0.5)],
+			["aim", ARM_L, Vector3(-0.4, 0.4, 0.8)], ["aim", FORE_L, Vector3(-0.1, 0.85, 0.5)]]],
+		[0.7, "same"],
+		[1.0, []],
+	]},
+	"hit_react": {"length": 0.45, "keys": [
+		[0.0, []],
+		[0.08, [["turn", SPINE, Vector3.RIGHT, 18.0], ["turn", SPINE, Vector3.UP, 10.0],
+			["aim", ARM_R, Vector3(0.5, -0.7, 0.3)], ["aim", ARM_L, Vector3(-0.5, -0.7, 0.3)]]],
+		[0.45, []],
+	]},
+	# Falls backwards and stays down.
+	"death": {"length": 1.4, "keys": [
+		[0.0, []],
+		[0.3, [["hips", Vector3(0, -0.12, -0.1)], ["turn", "mixamorig_Hips", Vector3.RIGHT, 12.0], ["turn", SPINE, Vector3.RIGHT, 15.0],
+			["aim", ARM_R, Vector3(0.6, 0.3, 0.4)], ["aim", ARM_L, Vector3(-0.6, 0.3, 0.4)]]],
+		[0.85, [["hips", Vector3(0, -0.86, -0.55)], ["turn", "mixamorig_Hips", Vector3.RIGHT, 84.0],
+			["aim", ARM_R, Vector3(0.8, 0.0, -0.6)], ["aim", ARM_L, Vector3(-0.8, 0.0, -0.6)]]],
+		[1.0, [["hips", Vector3(0, -0.82, -0.58)], ["turn", "mixamorig_Hips", Vector3.RIGHT, 82.0],
+			["aim", ARM_R, Vector3(0.85, 0.05, -0.5)], ["aim", ARM_L, Vector3(-0.85, 0.05, -0.5)]]],
+		[1.4, [["hips", Vector3(0, -0.86, -0.6)], ["turn", "mixamorig_Hips", Vector3.RIGHT, 85.0],
+			["aim", ARM_R, Vector3(0.85, 0.0, -0.5)], ["aim", ARM_L, Vector3(-0.85, 0.0, -0.5)]]],
+	]},
+}
+
 
 func _init() -> void:
 	var body_scene: Node = (load(BODY_SCENE) as PackedScene).instantiate()
@@ -54,6 +163,7 @@ func _init() -> void:
 			var spread := 0.0 if NO_ARM_SPREAD_PREFIXES.any(func(p: String) -> bool: return anim_name.begins_with(p)) else _spread(body)
 			var anim := _retarget(src.skeleton, src.animation, target, anim_name, spread)
 			lib.add_animation(anim_name, anim)
+		_add_placeholders(lib, target)
 		for anim_name in HEIGHT_MATCH:
 			if lib.has_animation(anim_name) and lib.has_animation(HEIGHT_MATCH[anim_name]):
 				_match_height(lib.get_animation(anim_name), lib.get_animation(HEIGHT_MATCH[anim_name]), target)
@@ -278,3 +388,84 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 	var travel := last_offset - first_offset
 	print("  %-20s %5.2fs  hips travel x=%.2f y=%.2f z=%.2f m" % [anim_name, src_anim.length, travel.x, travel.y, travel.z])
 	return out
+
+
+
+## Adds each PLACEHOLDERS clip the library doesn't already have from an FBX.
+func _add_placeholders(lib: AnimationLibrary, dst: Skeleton3D) -> void:
+	if not lib.has_animation("idle"):
+		push_warning("no idle clip; skipping placeholder combat clips")
+		return
+	var idle := lib.get_animation("idle")
+	var skel_xf := _scene_xform(dst)
+	var skel_rot := skel_xf.basis.orthonormalized().get_rotation_quaternion()
+	var rest := _rest_globals(dst)
+	var fwd := _facing(dst, skel_xf, rest)
+	var right := fwd.cross(Vector3.UP).normalized()
+	var to_world := func(v: Vector3) -> Vector3: return (right * v.x + Vector3.UP * v.y + fwd * v.z)
+
+	# Idle pose at its first frame: local rotations and the hip position.
+	var base_local := {}
+	var tracks := []  # bone names with rotation tracks
+	for i in dst.get_bone_count():
+		base_local[i] = dst.get_bone_rest(i).basis.orthonormalized().get_rotation_quaternion()
+	for t in idle.get_track_count():
+		var bone := String(idle.track_get_path(t).get_concatenated_subnames())
+		var i := dst.find_bone(bone)
+		if i < 0:
+			continue
+		if idle.track_get_type(t) == Animation.TYPE_ROTATION_3D:
+			base_local[i] = idle.rotation_track_interpolate(t, 0.0)
+			tracks.append(bone)
+	var hip_track := idle.find_track(NodePath("Skeleton3D:" + ROOT_BONE), Animation.TYPE_POSITION_3D)
+	var base_hip: Vector3 = idle.position_track_interpolate(hip_track, 0.0) if hip_track >= 0 else rest[dst.find_bone(ROOT_BONE)].origin
+
+	for anim_name: String in PLACEHOLDERS:
+		if lib.has_animation(anim_name):
+			continue
+		var spec: Dictionary = PLACEHOLDERS[anim_name]
+		var anim := Animation.new()
+		anim.length = spec.length
+		anim.loop_mode = Animation.LOOP_LINEAR if spec.get("loop", false) else Animation.LOOP_NONE
+		var out_rot := {}
+		for bone: String in tracks:
+			var t := anim.add_track(Animation.TYPE_ROTATION_3D)
+			anim.track_set_path(t, NodePath("Skeleton3D:" + bone))
+			out_rot[bone] = t
+		var out_pos := anim.add_track(Animation.TYPE_POSITION_3D)
+		anim.track_set_path(out_pos, NodePath("Skeleton3D:" + ROOT_BONE))
+		var prev_ops: Array = []
+		for key: Array in spec.keys:
+			var ops: Array = prev_ops if key[1] is String else key[1]
+			prev_ops = ops
+			# World rotations of the idle pose, parents first.
+			var world := {}
+			for i in dst.get_bone_count():
+				var p := dst.get_bone_parent(i)
+				world[i] = (skel_rot if p < 0 else world[p]) * base_local[i]
+			var hip_offset := Vector3.ZERO
+			for op: Array in ops:
+				match op[0]:
+					"hips":
+						hip_offset += to_world.call(op[1])
+					"turn":
+						var q := Quaternion(to_world.call(op[2]).normalized(), deg_to_rad(op[3]))
+						for i in _subtree(dst, dst.find_bone(op[1])):
+							world[i] = q * world[i]
+					"aim":
+						var i := dst.find_bone(op[1])
+						var child := dst.get_bone_children(i)[0]
+						var now: Vector3 = ((world[i] as Quaternion) * dst.get_bone_rest(child).origin).normalized()
+						var want: Vector3 = (to_world.call(op[2]) as Vector3).normalized()
+						var q := Quaternion(now, want)
+						for j in _subtree(dst, i):
+							world[j] = q * world[j]
+			for bone: String in tracks:
+				var i := dst.find_bone(bone)
+				var p := dst.get_bone_parent(i)
+				var parent_w: Quaternion = skel_rot if p < 0 else world[p]
+				anim.rotation_track_insert_key(out_rot[bone], key[0], (parent_w.inverse() * world[i]).normalized())
+			var hip_w := skel_xf * base_hip + hip_offset
+			anim.position_track_insert_key(out_pos, key[0], skel_xf.affine_inverse() * hip_w)
+		lib.add_animation(anim_name, anim)
+		print("  %-20s %5.2fs  placeholder" % [anim_name, anim.length])

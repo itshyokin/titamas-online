@@ -3,6 +3,8 @@
 [ext_resource type="Script" path="res://scripts/world/water_volume.gd" id="1_yautc"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_fr1um"]
 
+[ext_resource type="PackedScene" path="res://scenes/enemies/bandit.tscn" id="90_bandit"]
+[ext_resource type="Script" path="res://scripts/enemy/training_dummy.gd" id="91_dummy"]
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_v45ci"]
 
 [sub_resource type="Sky" id="Sky_48ne7"]
@@ -221,3 +223,15 @@ size = Vector3(10, 1.6, 10)
 
 [node name="Player" parent="." unique_id=806400208 instance=ExtResource("2_fr1um")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 4)
+
+[node name="Enemies" type="Node3D" parent="."]
+
+[node name="TrainingDummy" type="StaticBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 1)
+script = ExtResource("91_dummy")
+
+[node name="Bandit" parent="Enemies" instance=ExtResource("90_bandit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0, 8)
+
+[node name="Bandit2" parent="Enemies" instance=ExtResource("90_bandit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0, 15)

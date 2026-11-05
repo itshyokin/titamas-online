@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Ability" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/ability.gd" id="1_8n28u"]
+[ext_resource type="AudioStream" path="res://assets/audio/combat/swing_3.ogg" id="2_nikot"]
+[ext_resource type="AudioStream" path="res://assets/audio/combat/swing_2.ogg" id="3_ch8m4"]
+
+[resource]
+script = ExtResource("1_8n28u")
+id = "slash_2"
+display_name = "Backslash"
+description = "A backhand sweep that follows Slash."
+color = Color(0.75, 0.75, 0.8, 1)
+power = 14.0
+arc = 140.0
+animation = "attack_light_2"
+animation_speed = 1.15
+recovery_time = 0.48
+move_scale = 0.25
+sounds = Array[AudioStream]([ExtResource("2_nikot"), ExtResource("3_ch8m4")])

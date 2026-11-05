@@ -8,7 +8,9 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 2. Open Godot 4.6, click **Import**, pick this folder's `project.godot`.
 3. Press **F5** (Play). The overworld test loads your terrain chunks. The gray-box test level is `scenes/levels/test_level.tscn` (open it and press **F6**).
 
-**Controls (milestone 1):** WASD move (runs by default) · hold Ctrl to walk · Shift sprint · Space jump · Alt dodge
+**Controls:** WASD move (runs by default) · hold Ctrl to walk · Shift sprint · Space jump · Alt dodge
+
+**Combat:** left mouse attack (press again in time for the follow-up swing) · E heavy attack (stamina; staggers) · hold Q block (from the front; each blocked hit costs stamina) · 1 Firebolt (1.5 s cast, moving interrupts) · 2 Mend (heal over time on yourself) · Tab next target · Esc clear target · click an enemy to target it. Attacks pick the nearest enemy in front if nothing is targeted and lunge to close a short gap. Dodge through an enemy's swing to take no damage. The test level and the overworld each have a training dummy and two bandits.
 
 **Traversal:** jump at a ledge to grab it (A/D shimmy, W or Space pull up, S or Ctrl drop) · jump at a climbable wall, or walk into a ladder, then W/S to climb (Space jumps off, Ctrl lets go) · swim in deep water, Space at an edge climbs out. The gray-box level (`scenes/levels/test_level.tscn`) has a test spot for each. · hold right mouse to look · mouse wheel zoom.
 
@@ -73,6 +75,13 @@ Sounds live in `assets/audio/` (sources and licences in `assets/audio/CREDITS.md
 - **Ambience:** each region file in `assets/regions/` has a **Sound** section: an **Ambient Loop** (birds, forest, town…; crossfades at region borders), its volume, and how windy it is. Wind gets stronger the higher you climb. Waves are loudest at the coast and fade inland.
 - Loops can be any .ogg/.wav/.mp3; they're set to loop automatically.
 
+## Combat
+
+- **Abilities are data:** each attack or spell is a `.tres` file in `data/abilities/` (open it in the Inspector: damage, costs, cooldown, cast time, reach, animation and its hit time, sounds). `Player → PlayerCombat` lists which ones the player has. New spells of an existing kind (melee, bolt, heal over time) need no code.
+- **Enemies:** `scenes/enemies/bandit.tscn`. Drop it into a level; its `Stats` child sets name, level and health, the root sets aggro range, leash, attack damage and timing, and respawn time. Enemies wait for the ground to stream in, then stand on it.
+- **Training dummy:** a `StaticBody3D` with `scripts/enemy/training_dummy.gd`; it never dies and resets a few seconds after the last hit.
+- **Animations:** the attack, block, cast, flinch and death clips are stand-ins posed by the retarget tool. Put a Mixamo FBX with the same name in `assets/animations/mixamo/` (`attack_light_1`, `attack_light_2`, `attack_heavy`, `block`, `cast_channel`, `cast_release`, `cast_heal`, `hit_react`, `death`, `idle_armed`) and rebuild; it replaces the stand-in. If a clip's timing changes, adjust the ability's **Hit Time** to match.
+
 ## Level markup
 
 - **Climbable wall:** put the node in the `climbable` group (Node panel → Groups). Players jump onto it.
@@ -89,8 +98,8 @@ Sounds live in `assets/audio/` (sources and licences in `assets/audio/CREDITS.md
 
 ## Milestones
 
-1. Movement and camera ← **current**
-2. Combat
+1. Movement and camera
+2. Combat ← **current**
 3. Equipment
 4. Co-op
 5. Content tools

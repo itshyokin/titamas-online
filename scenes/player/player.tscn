@@ -8,6 +8,8 @@
 [ext_resource type="Script" path="res://scripts/player/third_person_camera.gd" id="6_fm80t"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="7_gx1jg"]
 [ext_resource type="Script" path="res://scripts/player/player_audio.gd" id="8_paudio"]
+[ext_resource type="Script" path="res://scripts/combat/targeting.gd" id="9_target"]
+[ext_resource type="Script" path="res://scripts/combat/player_combat.gd" id="10_pcombat"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ugbui"]
 radius = 0.35
@@ -16,7 +18,7 @@ height = 1.85
 [sub_resource type="SphereShape3D" id="SphereShape3D_fcs02"]
 radius = 0.25
 
-[node name="Player" type="CharacterBody3D" unique_id=806400208]
+[node name="Player" type="CharacterBody3D" unique_id=806400208 groups=["combatants"]]
 collision_layer = 2
 collision_mask = 5
 script = ExtResource("1_0owmy")
@@ -32,12 +34,19 @@ script = ExtResource("3_5gtgg")
 
 [node name="Stats" type="Node" parent="." unique_id=2016983514]
 script = ExtResource("4_h17s1")
+display_name = "Adventurer"
 
 [node name="PlayerAnimator" type="Node" parent="." unique_id=79642995]
 script = ExtResource("5_je7p5")
 
 [node name="PlayerAudio" type="Node3D" parent="."]
 script = ExtResource("8_paudio")
+
+[node name="Targeting" type="Node" parent="."]
+script = ExtResource("9_target")
+
+[node name="PlayerCombat" type="Node" parent="."]
+script = ExtResource("10_pcombat")
 
 [node name="CameraRig" type="Node3D" parent="." unique_id=415300915]
 script = ExtResource("6_fm80t")
