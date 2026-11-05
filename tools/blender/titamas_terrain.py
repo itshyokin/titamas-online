@@ -1,7 +1,7 @@
 bl_info = {
 	"name": "Titamas Terrain Chunks",
 	"author": "Titamas Online",
-	"version": (1, 3, 1),
+	"version": (1, 4, 0),
 	"blender": (4, 1, 0),
 	"location": "3D Viewport > Sidebar (N) > Titamas",
 	"description": "Create a sculptable master terrain on the 64 m chunk grid and export it as seamless chunk .glb files",
@@ -30,6 +30,11 @@ bl_info = {
 # terrain's border to the neighbour's exported edge heights (and blends inward).
 #
 # Set Height brush: Object Mode tool that pulls terrain toward a chosen height.
+#
+# Props: objects in the "Props" collection (any sub-collections) are written per chunk to
+# chunk_I_J.props.json (prop name + transform). The prop name is the shared mesh name for
+# linked duplicates (Alt+D / Ctrl+L), otherwise the object name without ".001". Each prop
+# model is exported once by "Export Prop Library" as <name>.glb, textures included.
 #
 # Terrain painting: a colour attribute "TerrainPaint" (red = grass, green = dirt, blue =
 # cliff, alpha = optional 4th layer) painted in Vertex Paint mode. Godot's terrain shader
@@ -92,6 +97,17 @@ class TitamasTerrainSettings(bpy.types.PropertyGroup):
 		name="Water Collection",
 		default="Water",
 		description="Flat mesh planes in this collection are exported with the chunks as water",
+	)
+	props_collection: StringProperty(
+		name="Props Collection",
+		default="Props",
+		description="Objects in this collection (and its sub-collections) are placed as props",
+	)
+	props_dir: StringProperty(
+		name="Prop Library Folder",
+		default="//props/",
+		subtype="DIR_PATH",
+		description="Where Export Prop Library writes one .glb per prop",
 	)
 	blend_distance: FloatProperty(
 		name="Blend Distance (m)",
@@ -302,6 +318,14 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 					bmesh.ops.bisect_plane(wbm, geom=geom, dist=EPS, plane_co=(0, k * size - half, 0), plane_no=(0, 1, 0))
 				water_src.append((wobj.name, wbm, list(wobj.data.materials)))
 
+		# Props, grouped by the chunk their origin sits in.
+		props_by_cell = {}
+		for pobj in _prop_objects(s):
+			loc = pobj.matrix_world.translation
+			i, k = round(loc.x / size), round(loc.y / size)
+			props_by_cell.setdefault((i, -k), []).append(_prop_entry(pobj, i, k, size))
+		prop_count = 0
+
 		prev_selected = list(context.selected_objects)
 		exported, partial = [], []
 		water_pieces = 0
@@ -367,6 +391,14 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 					o.select_set(True)
 				context.view_layer.objects.active = obj
 				_export_glb(os.path.join(out_dir, name + ".glb"), s.include_textures)
+				props_path = os.path.join(out_dir, name + ".props.json")
+				placed = props_by_cell.get((i, j), [])
+				if placed:
+					with open(props_path, "w") as fh:
+						json.dump({"props": placed}, fh, indent=0)
+					prop_count += len(placed)
+				elif os.path.exists(props_path):
+					os.remove(props_path)  # props were removed from this chunk
 				for o in temp:
 					m = o.data
 					bpy.data.objects.remove(o)
@@ -385,7 +417,9 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 
 		msg = f"Exported {len(exported)} chunks to {out_dir}"
 		if water_pieces:
-			msg += f" ({water_pieces} water pieces)"
+			msg += f", {water_pieces} water pieces"
+		if prop_count:
+			msg += f", {prop_count} props"
 		if partial:
 			msg += f" | Partial (terrain doesn't fill the cell): {', '.join(partial)}"
 			self.report({"WARNING"}, msg)
@@ -411,6 +445,35 @@ def _paint_to_uv(bm) -> None:
 			if total < 1e-6:
 				r, g, b, total = 1.0, 0.0, 0.0, 1.0
 			loop[uv].uv = (g / total, 1.0 - b / total)
+
+
+# Blender (Z up) -> Godot (Y up): x -> x, z -> y, y -> -z
+_TO_GODOT = Matrix(((1, 0, 0), (0, 0, 1), (0, -1, 0)))
+
+
+def prop_name(obj) -> str:
+	"""Prop identifier: the shared mesh name for linked duplicates, otherwise the object's
+	name without Blender's .001 suffix. Lowercase, filesystem-safe."""
+	base = obj.data.name if obj.data.users > 1 else re.sub(r"\.\d+$", "", obj.name)
+	return re.sub(r"[^a-z0-9_]+", "_", base.lower()).strip("_") or "prop"
+
+
+def _prop_objects(s) -> list:
+	coll = bpy.data.collections.get(s.props_collection)
+	if coll is None:
+		return []
+	return [o for o in coll.all_objects if o.type == "MESH"]
+
+
+def _prop_entry(obj, i: int, k: int, size: float) -> dict:
+	"""Placement in Godot chunk space: position relative to the chunk centre, and the
+	3x3 basis as three column vectors (rotation and scale)."""
+	m = obj.matrix_world
+	loc = m.translation
+	pos = (loc.x - i * size, loc.z, -(loc.y - k * size))
+	basis = _TO_GODOT @ m.to_3x3() @ _TO_GODOT.transposed()
+	cols = [[round(basis[r][c], 5) for r in range(3)] for c in range(3)]
+	return {"name": prop_name(obj), "pos": [round(v, 4) for v in pos], "basis": cols}
 
 
 def _activate_paint(mesh) -> None:
@@ -932,6 +995,52 @@ class TITAMAS_OT_set_height_brush(bpy.types.Operator):
 		gpu.state.line_width_set(1.0)
 
 
+class TITAMAS_OT_export_props(bpy.types.Operator):
+	bl_idname = "titamas.export_props"
+	bl_label = "Export Prop Library"
+	bl_description = "Export each distinct prop in the Props collection once, as <name>.glb with its textures"
+
+	def execute(self, context):
+		s = context.scene.titamas_terrain
+		if s.props_dir.startswith("//") and not bpy.data.filepath:
+			self.report({"ERROR"}, "Save the .blend first (the folder is relative to it)")
+			return {"CANCELLED"}
+		out_dir = bpy.path.abspath(s.props_dir)
+		os.makedirs(out_dir, exist_ok=True)
+		if context.active_object and context.active_object.mode != "OBJECT":
+			bpy.ops.object.mode_set(mode="OBJECT")
+
+		# One representative object per prop name.
+		reps = {}
+		for obj in _prop_objects(s):
+			reps.setdefault(prop_name(obj), obj)
+		if not reps:
+			self.report({"WARNING"}, f"No mesh objects in the '{s.props_collection}' collection")
+			return {"CANCELLED"}
+
+		prev_selected = list(context.selected_objects)
+		prev_active = context.view_layer.objects.active
+		for name, src in reps.items():
+			# A temporary object with the same mesh at the origin, unrotated, unscaled.
+			tmp = bpy.data.objects.new(name, src.data)
+			context.scene.collection.objects.link(tmp)
+			for o in context.selected_objects:
+				o.select_set(False)
+			tmp.select_set(True)
+			context.view_layer.objects.active = tmp
+			_export_glb(os.path.join(out_dir, name + ".glb"), include_textures=True)
+			bpy.data.objects.remove(tmp)
+
+		for o in context.selected_objects:
+			o.select_set(False)
+		for o in prev_selected:
+			if o.name in bpy.data.objects:
+				o.select_set(True)
+		context.view_layer.objects.active = prev_active
+		self.report({"INFO"}, f"Exported {len(reps)} props to {out_dir}: {', '.join(sorted(reps))}")
+		return {"FINISHED"}
+
+
 class TITAMAS_PT_terrain(bpy.types.Panel):
 	bl_label = "Terrain Chunks"
 	bl_idname = "TITAMAS_PT_terrain"
@@ -977,7 +1086,10 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 		box.prop(s, "add_collision")
 		box.prop(s, "include_textures")
 		box.prop_search(s, "water_collection", bpy.data, "collections")
+		box.prop_search(s, "props_collection", bpy.data, "collections")
 		box.operator(TITAMAS_OT_export_chunks.bl_idname, icon="EXPORT")
+		box.prop(s, "props_dir", text="")
+		box.operator(TITAMAS_OT_export_props.bl_idname, icon="OUTLINER_COLLECTION")
 
 		col = layout.column()
 		col.prop(s, "uv_tile")
@@ -994,6 +1106,7 @@ classes = (
 	TITAMAS_OT_set_height_brush,
 	TITAMAS_OT_setup_painting,
 	TITAMAS_OT_paint_layer,
+	TITAMAS_OT_export_props,
 	TITAMAS_PT_terrain,
 )
 
