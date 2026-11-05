@@ -1,39 +1,74 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/world/chunk_streamer.gd" id="1_if05v"]
-[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_b0syn"]
+[ext_resource type="Shader" path="res://assets/materials/sky.gdshader" id="1_7jqck"]
+[ext_resource type="Script" path="res://scripts/world/chunk_streamer.gd" id="2_be2qh"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="3_4nsao"]
+[ext_resource type="Script" path="res://scripts/world/ocean.gd" id="4_r6e8q"]
+[ext_resource type="Script" path="res://scripts/world/atmosphere_manager.gd" id="5_ujnkd"]
+[ext_resource type="Script" path="res://scripts/world/region_atmosphere.gd" id="6_qb1br"]
+[ext_resource type="Resource" path="res://assets/regions/starting_region.tres" id="7_v7wxo"]
+[ext_resource type="Resource" path="res://assets/regions/open_sea.tres" id="8_giltl"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fy82d"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
+shader = ExtResource("1_7jqck")
+shader_parameter/top_color = null
+shader_parameter/horizon_color = null
+shader_parameter/ground_color = null
+shader_parameter/sun_color = null
+shader_parameter/sun_size = null
+shader_parameter/sun_glow = null
+shader_parameter/cloud_color = null
+shader_parameter/cloud_shade = null
+shader_parameter/cloud_coverage = null
+shader_parameter/cloud_scale = null
+shader_parameter/cloud_speed = null
 
-[sub_resource type="Sky" id="Sky_sue7h"]
-sky_material = SubResource("ProceduralSkyMaterial_fy82d")
+[sub_resource type="Sky" id="Sky_qvq52"]
+sky_material = SubResource("ShaderMaterial_suk2g")
 
-[sub_resource type="Environment" id="Environment_w2htm"]
+[sub_resource type="Environment" id="Environment_bsa0p"]
 background_mode = 2
-sky = SubResource("Sky_sue7h")
+sky = SubResource("Sky_qvq52")
 ambient_light_source = 3
-ambient_light_energy = 0.55
+ambient_light_energy = 0.6
+reflected_light_source = 2
 tonemap_mode = 2
 fog_enabled = true
-fog_density = 0.0025
+fog_sun_scatter = 0.15
+fog_density = 0.004
+fog_sky_affect = 0.5
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5jum4"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ycjve"]
 albedo_color = Color(0.36, 0.5, 0.28, 1)
 
-[node name="OverworldTest" type="Node3D" unique_id=819707508]
+[node name="OverworldTest" type="Node3D" unique_id=58358637]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=538132641]
-environment = SubResource("Environment_w2htm")
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1703188105]
+environment = SubResource("Environment_bsa0p")
 
-[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1405544104]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1578033159]
 transform = Transform3D(0.81915206, 0.43938506, -0.36868784, 0, 0.64278764, 0.76604444, 0.57357645, -0.62750685, 0.5265408, 0, 0, 0)
 light_energy = 1.1
 shadow_enabled = true
+directional_shadow_max_distance = 150.0
 
-[node name="ChunkStreamer" type="Node3D" parent="." unique_id=561324320]
-script = ExtResource("1_if05v")
+[node name="ChunkStreamer" type="Node3D" parent="." unique_id=1616788967]
+script = ExtResource("2_be2qh")
 target_path = NodePath("../Player")
-default_material = SubResource("StandardMaterial3D_5jum4")
+default_material = SubResource("StandardMaterial3D_ycjve")
 
-[node name="Player" parent="." unique_id=86567346 instance=ExtResource("2_b0syn")]
+[node name="Player" parent="." unique_id=806400208 instance=ExtResource("3_4nsao")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="Ocean" type="Node3D" parent="." unique_id=1156260732]
+script = ExtResource("4_r6e8q")
+target_path = NodePath("../Player")
+streamer_path = NodePath("../ChunkStreamer")
+
+[node name="AtmosphereManager" type="Node" parent="." unique_id=2117838094]
+script = ExtResource("5_ujnkd")
+regions = Array[ExtResource("6_qb1br")]([ExtResource("7_v7wxo")])
+default_atmosphere = ExtResource("8_giltl")
+environment_path = NodePath("../WorldEnvironment")
+sun_path = NodePath("../Sun")
+target_path = NodePath("../Player")

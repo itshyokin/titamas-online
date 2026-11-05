@@ -20,10 +20,16 @@ bg_color = Color(0, 0, 0, 0.55)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gss2c"]
 bg_color = Color(0.85, 0.7, 0.15, 1)
 
-[node name="HUD" type="CanvasLayer" unique_id=1437047024]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_h022r"]
+bg_color = Color(0, 0, 0, 0.55)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4jqwt"]
+bg_color = Color(0.85, 0.75, 0.3, 1)
+
+[node name="HUD" type="CanvasLayer" unique_id=2087426735]
 script = ExtResource("1_0mwgc")
 
-[node name="Bars" type="VBoxContainer" parent="." unique_id=1050388478]
+[node name="Bars" type="VBoxContainer" parent="." unique_id=1757150409]
 custom_minimum_size = Vector2(260, 0)
 offset_left = 24.0
 offset_top = 24.0
@@ -31,7 +37,7 @@ offset_right = 24.0
 offset_bottom = 24.0
 theme_override_constants/separation = 6
 
-[node name="HealthBar" type="ProgressBar" parent="Bars" unique_id=952668961]
+[node name="HealthBar" type="ProgressBar" parent="Bars" unique_id=1409641279]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(260, 18)
 layout_mode = 2
@@ -40,7 +46,7 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_bo48s")
 value = 100.0
 show_percentage = false
 
-[node name="ManaBar" type="ProgressBar" parent="Bars" unique_id=1515005412]
+[node name="ManaBar" type="ProgressBar" parent="Bars" unique_id=1048386308]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(260, 18)
 layout_mode = 2
@@ -49,7 +55,7 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_136eg")
 value = 100.0
 show_percentage = false
 
-[node name="StaminaBar" type="ProgressBar" parent="Bars" unique_id=324162568]
+[node name="StaminaBar" type="ProgressBar" parent="Bars" unique_id=83110235]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(260, 18)
 layout_mode = 2
@@ -58,7 +64,44 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_gss2c")
 value = 100.0
 show_percentage = false
 
-[node name="Controls" type="Label" parent="." unique_id=661670138]
+[node name="FatigueBar" type="ProgressBar" parent="." unique_id=210309960]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(320, 16)
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -160.0
+offset_top = 24.0
+offset_right = 160.0
+offset_bottom = 40.0
+theme_override_styles/background = SubResource("StyleBoxFlat_h022r")
+theme_override_styles/fill = SubResource("StyleBoxFlat_4jqwt")
+show_percentage = false
+
+[node name="FatigueLabel" type="Label" parent="FatigueBar" unique_id=2054650020]
+layout_mode = 0
+offset_top = -20.0
+offset_bottom = -20.0
+theme_override_font_sizes/font_size = 13
+text = "Fatigue"
+
+[node name="Message" type="Label" parent="." unique_id=1633874936]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -120.0
+offset_right = 300.0
+offset_bottom = -80.0
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+
+[node name="Controls" type="Label" parent="." unique_id=1159415783]
 offset_left = 24.0
 offset_top = 690.0
 offset_right = 24.0

@@ -10,9 +10,15 @@ const WATER_LAYER := 8  # layer 4
 	set(value):
 		size = value
 		_rebuild()
-@export var color := Color(0.2, 0.45, 0.6, 0.55):
+## Draw a flat surface at the top of the box. Off when the water's look comes from
+## elsewhere (e.g. a Blender water plane in a chunk).
+@export var show_surface := true:
 	set(value):
-		color = value
+		show_surface = value
+		_rebuild()
+@export var water_material: Material = preload("res://assets/materials/water.tres"):
+	set(value):
+		water_material = value
 		_rebuild()
 
 var _shape: CollisionShape3D
@@ -37,20 +43,23 @@ func _rebuild() -> void:
 	if _shape == null:
 		_shape = CollisionShape3D.new()
 		add_child(_shape)
-	if _mesh == null:
-		_mesh = MeshInstance3D.new()
-		add_child(_mesh)
 	var box := BoxShape3D.new()
 	box.size = size
 	_shape.shape = box
+	if not show_surface:
+		if _mesh:
+			_mesh.queue_free()
+			_mesh = null
+		return
+	if _mesh == null:
+		_mesh = MeshInstance3D.new()
+		add_child(_mesh)
 	# Visible surface: a flat plane at the top of the volume.
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(size.x, size.z)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.roughness = 0.2
-	plane.material = mat
+	plane.subdivide_width = int(size.x / 2.0)
+	plane.subdivide_depth = int(size.z / 2.0)
+	plane.material = water_material
 	_mesh.mesh = plane
+	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_mesh.position = Vector3(0, size.y * 0.5, 0)

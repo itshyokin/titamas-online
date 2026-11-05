@@ -10,6 +10,9 @@ signal jumped
 signal dodged(anim: String, start_time: float)
 ## Asks the animator to play a specific animation (special moves).
 signal action_animation(anim: String, start_time: float, blend: float, speed: float)
+signal fatigue_changed(current: float, maximum: float)
+## Respawned after dying or falling out of the world, with a reason ("drowned", "fell").
+signal respawned(reason: String)
 
 enum State { NORMAL, DODGE, HANG, LEDGE_CLIMB, WALL_CLIMB, LADDER, SWIM }
 
@@ -77,6 +80,16 @@ const WATER_MASK := 8  # layer 4
 @export var tread_depth := 1.45
 @export var stroke_depth := 0.85
 
+@export_group("Survival")
+## Seconds of swimming far from land before fatigue sets in.
+@export var fatigue_max := 25.0
+## Fatigue drains this many times faster than it builds once back near land.
+@export var fatigue_recovery := 3.0
+## Share of max health lost per second while fully fatigued.
+@export var fatigue_damage := 0.12
+## Falling below this height (m) respawns the player at the last safe ground.
+@export var kill_height := -80.0
+
 @onready var stats: Stats = $Stats
 @onready var camera_rig: ThirdPersonCamera = $CameraRig
 @onready var model: Node3D = $Model
@@ -117,10 +130,20 @@ var _climb_lift := 0.0  # model raised this much at the start of the climb-up, e
 var _ladder_distance := 0.35
 
 var _surface_normal := Vector3.ZERO  # wall/ladder being climbed
-var _water: WaterVolume
+var _water = null  # WaterVolume or Ocean (both have surface_height()); untyped on purpose
+
+var fatigue := 0.0
+var _last_safe := Vector3.ZERO
+var _safe_timer := 0.0
+
+
+func _ready() -> void:
+	_last_safe = global_position
+	stats.died.connect(func() -> void: _respawn("drowned" if fatigue >= fatigue_max else "died"))
 
 
 func _physics_process(delta: float) -> void:
+	_update_survival(delta)
 	_dodge_cooldown_left = maxf(_dodge_cooldown_left - delta, 0.0)
 	_grab_cooldown = maxf(_grab_cooldown - delta, 0.0)
 	match state:
@@ -547,7 +570,8 @@ func _let_go() -> void:
 
 # --- Swimming ----------------------------------------------------------------
 
-func _water_at(point: Vector3) -> WaterVolume:
+## Water containing a point: a WaterVolume, or the ocean below sea level. Null if dry.
+func _water_at(point: Vector3) -> Node3D:
 	var query := PhysicsPointQueryParameters3D.new()
 	query.position = point
 	query.collide_with_areas = true
@@ -556,19 +580,22 @@ func _water_at(point: Vector3) -> WaterVolume:
 	for hit in get_world_3d().direct_space_state.intersect_point(query, 4):
 		if hit.collider is WaterVolume:
 			return hit.collider
+	var ocean := get_tree().get_first_node_in_group("ocean") as Ocean
+	if ocean and point.y < ocean.surface_height():
+		return ocean
 	return null
 
 
 ## Depth of water at the character's spot (surface to floor), capped at 10 m.
-func _water_depth(water: WaterVolume) -> float:
-	var surface := water.surface_height()
+func _water_depth(water) -> float:
+	var surface: float = water.surface_height()
 	var top := Vector3(global_position.x, surface, global_position.z)
 	var floor_hit := _ray(get_world_3d().direct_space_state, top, top - Vector3.UP * 10.0)
 	return surface - floor_hit.position.y if not floor_hit.is_empty() else 10.0
 
 
 func _try_start_swim() -> bool:
-	var water := _water_at(global_position + Vector3.UP * 1.0)
+	var water = _water_at(global_position + Vector3.UP * 1.0)
 	if water == null:
 		return false
 	if water.surface_height() - global_position.y < swim_depth or _water_depth(water) < swim_depth:
@@ -594,7 +621,7 @@ func _swim_movement(delta: float) -> void:
 	# Float at the surface: higher when treading, lower when stroking forward.
 	var h_speed := Vector2(velocity.x, velocity.z).length()
 	var stroke := clampf(h_speed / swim_speed, 0.0, 1.0)
-	var target_y := _water.surface_height() - lerpf(tread_depth, stroke_depth, stroke)
+	var target_y: float = _water.surface_height() - lerpf(tread_depth, stroke_depth, stroke)
 	velocity.y = (target_y - global_position.y) * 4.0
 
 	if stroke > 0.3:
@@ -616,6 +643,51 @@ func _swim_movement(delta: float) -> void:
 	var still_in := _water_at(Vector3(global_position.x, _water.surface_height() - 0.2, global_position.z)) != null
 	if not still_in or _water_depth(_water) < swim_depth - 0.1:
 		state = State.NORMAL
+
+
+# --- Survival: fatigue, kill floor, respawn -----------------------------------
+
+func _update_survival(delta: float) -> void:
+	# Fall out of the world: back to safe ground.
+	if global_position.y < kill_height:
+		_respawn("fell")
+		return
+
+	# Remember where the player last stood on dry ground.
+	_safe_timer += delta
+	if state == State.NORMAL and is_on_floor() and _safe_timer > 0.5:
+		_safe_timer = 0.0
+		if _water_at(global_position + Vector3.UP * 0.5) == null:
+			_last_safe = global_position
+
+	# Fatigue: swimming far out at sea.
+	var far := false
+	if state == State.SWIM and _water is Ocean:
+		var ocean := _water as Ocean
+		far = ocean.distance_from_land(global_position) > ocean.fatigue_distance
+	var before := fatigue
+	if far:
+		fatigue = minf(fatigue + delta, fatigue_max)
+	else:
+		fatigue = maxf(fatigue - delta * fatigue_recovery, 0.0)
+	if fatigue != before:
+		fatigue_changed.emit(fatigue, fatigue_max)
+	if fatigue >= fatigue_max:
+		stats.take_damage(stats.max_health * fatigue_damage * delta)
+
+
+func _respawn(reason: String) -> void:
+	global_position = _last_safe + Vector3.UP * 0.3
+	velocity = Vector3.ZERO
+	state = State.NORMAL
+	model.position = Vector3.ZERO
+	_hop_anim = ""
+	_water = null
+	fatigue = 0.0
+	fatigue_changed.emit(fatigue, fatigue_max)
+	stats.restore()
+	action_animation.emit("idle", 0.0, 0.0, 1.0)
+	respawned.emit(reason)
 
 
 # --- Helpers -----------------------------------------------------------------

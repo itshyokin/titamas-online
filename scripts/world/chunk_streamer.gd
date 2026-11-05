@@ -21,6 +21,9 @@ extends Node3D
 @export_dir var material_dir := "res://assets/materials/terrain"
 
 var _shared_materials := {}  # name -> Material (or null if none)
+const WATER_MATERIAL := preload("res://assets/materials/water.tres")
+## How deep the swimmable box under a Blender water plane reaches.
+const WATER_PLANE_DEPTH := 30.0
 
 var _available := {}  # Vector2i -> path
 var _loaded := {}  # Vector2i -> Node3D
@@ -75,6 +78,20 @@ func get_loaded_cells() -> Array:
 	return _loaded.keys()
 
 
+## Horizontal distance (m) from a point to the nearest chunk that exists (land).
+## 0 inside a chunk. Used for ocean fatigue.
+func distance_to_land(point: Vector3) -> float:
+	var best := INF
+	var half := chunk_size * 0.5
+	for cell: Vector2i in _available:
+		var dx := maxf(absf(point.x - cell.x * chunk_size) - half, 0.0)
+		var dz := maxf(absf(point.z - cell.y * chunk_size) - half, 0.0)
+		best = minf(best, Vector2(dx, dz).length())
+		if best == 0.0:
+			break
+	return best
+
+
 func _scan_chunks() -> void:
 	var regex := RegEx.create_from_string("^chunk_(-?\\d+)_(-?\\d+)\\.glb$")
 	for file in ResourceLoader.list_directory(chunk_dir):
@@ -94,6 +111,9 @@ func _add_chunk(cell: Vector2i, scene: PackedScene) -> void:
 	chunk.position = Vector3(cell.x * chunk_size, 0, cell.y * chunk_size)
 	for mesh in chunk.find_children("*", "MeshInstance3D", true, false):
 		var mi := mesh as MeshInstance3D
+		if String(mi.name).ends_with("-water"):
+			_make_water(mi)
+			continue
 		for s in mi.mesh.get_surface_count():
 			var mat := mi.mesh.surface_get_material(s)
 			# Material-less glTF meshes get an unnamed default material on import
@@ -107,6 +127,20 @@ func _add_chunk(cell: Vector2i, scene: PackedScene) -> void:
 				mi.set_surface_override_material(s, shared)
 	add_child(chunk)
 	_loaded[cell] = chunk
+
+
+## A Blender water plane (object named "<name>-water"): give it the water look and a
+## swimmable volume beneath its surface.
+func _make_water(mi: MeshInstance3D) -> void:
+	mi.material_override = WATER_MATERIAL
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var box := mi.get_aabb()
+	var volume := WaterVolume.new()
+	volume.show_surface = false
+	volume.size = Vector3(box.size.x, WATER_PLANE_DEPTH, box.size.z)
+	var top := box.position.y + box.size.y
+	volume.position = Vector3(box.get_center().x, top - WATER_PLANE_DEPTH * 0.5, box.get_center().z)
+	mi.add_child(volume)
 
 
 func _shared_material(mat_name: String) -> Material:

@@ -5,6 +5,7 @@ extends Node
 signal health_changed(current: float, maximum: float)
 signal mana_changed(current: float, maximum: float)
 signal stamina_changed(current: float, maximum: float)
+signal died
 
 @export var max_health := 100.0
 @export var max_mana := 100.0
@@ -38,6 +39,28 @@ func _process(delta: float) -> void:
 	if mana < max_mana:
 		mana = minf(mana + mana_regen * delta, max_mana)
 		mana_changed.emit(mana, max_mana)
+
+
+func take_damage(amount: float) -> void:
+	if health <= 0.0:
+		return
+	health = maxf(health - amount, 0.0)
+	health_changed.emit(health, max_health)
+	if health <= 0.0:
+		died.emit()
+
+
+func heal(amount: float) -> void:
+	health = minf(health + amount, max_health)
+	health_changed.emit(health, max_health)
+
+
+## Back to full health, mana and stamina (respawning).
+func restore() -> void:
+	health = max_health
+	mana = max_mana
+	stamina = max_stamina
+	emit_all()
 
 
 ## Spends stamina. Returns false (and spends nothing) if there isn't enough.

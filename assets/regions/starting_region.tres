@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RegionAtmosphere" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/region_atmosphere.gd" id="1_g1io8"]
+
+[resource]
+script = ExtResource("1_g1io8")
+region_name = "Unnamed Region"
+chunks = Rect2i(-1, 0, 4, 4)
+fog_color = Color(0.74, 0.8, 0.78, 1)
+sky_top = Color(0.26, 0.48, 0.8, 1)
+sky_horizon = Color(0.74, 0.83, 0.88, 1)
+sun_color = Color(1, 0.94, 0.82, 1)
+sun_energy = 1.15

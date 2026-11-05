@@ -15,3 +15,5 @@
 - `PlayerAnimator` picks animations from movement; `CharacterModel.play()/play_from()` crossfade. Animations only run in-game (not in the editor) so bone poses never get saved into scenes.
 - Player states (PlayerController.State): NORMAL, DODGE, HANG, LEDGE_CLIMB, WALL_CLIMB, LADDER, SWIM. Groups `climbable`/`ladder` mark surfaces; `WaterVolume` (physics layer 4) marks water. One-shot moves emit `action_animation`; continuous states call `character.play()` directly.
 - Converter extras: `ROOT_MOTION` (travel baked to metadata), `YAW_FIX` (clips facing backwards), `HEIGHT_MATCH`, `ARM_SPREAD`.
+- World: `Ocean` (group "ocean", sea level −5 m) follows the player; `_water_at()` treats anything below sea level as water. Fatigue builds when swimming >48 m from the nearest chunk; kill floor at −80 m; both respawn at the last dry ground. `AtmosphereManager` blends `RegionAtmosphere` resources (assets/regions/, chunk rectangles) and shows the zone name.
+- Chunk materials are swapped by name for `assets/materials/terrain/<name>.tres`; chunk meshes named `*-water` become water (shader + swimmable `WaterVolume`).
