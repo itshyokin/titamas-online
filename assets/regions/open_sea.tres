@@ -14,3 +14,4 @@ cloud_coverage = 0.55
 sun_color = Color(0.92, 0.95, 1, 1)
 sun_energy = 1.0
 ambient_energy = 0.65
+wind_volume_db = -15.0

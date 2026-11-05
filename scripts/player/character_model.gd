@@ -100,6 +100,62 @@ func measure(anim: String, time: float) -> Dictionary:
 	return result
 
 
+## Times (seconds into `anim`) when each of `bones` comes down: its height drops below
+## `fraction` of its range (0 = lowest point, 1 = highest). With the feet this gives the
+## footfalls of a walk/run cycle; with the hands, the strokes of a swim. Cached.
+func bone_contacts(anim: String, bones: PackedStringArray, fraction := 0.2) -> PackedFloat32Array:
+	var key := "contacts:%s:%s:%.2f" % [anim, ",".join(bones), fraction]
+	if _measure_cache.has(key):
+		return _measure_cache[key]
+	var result := PackedFloat32Array()
+	if _animator == null or not _animator.has_animation(anim):
+		return result
+	var length := _animator.get_animation(anim).length
+	var steps := maxi(int(length * 60.0), 8)
+	var prev := _animator.current_animation
+	var prev_pos := animation_position()
+	var prev_speed := _animator.speed_scale
+	_animator.speed_scale = 1.0
+	_animator.play(anim, 0.0)
+	var skel := get_skeleton()
+	var heights := []  # per bone: PackedFloat32Array of heights over the clip
+	for b in bones:
+		heights.append(PackedFloat32Array())
+	for i in steps:
+		_animator.seek(length * i / steps, true)
+		for j in bones.size():
+			heights[j].append(skel.get_bone_global_pose(skel.find_bone(bones[j])).origin.y)
+	for j in bones.size():
+		var h: PackedFloat32Array = heights[j]
+		var lo := INF
+		var hi := -INF
+		for v in h:
+			lo = minf(lo, v)
+			hi = maxf(hi, v)
+		var line := lo + (hi - lo) * fraction
+		for i in steps:
+			# The clip loops, so compare with the previous sample wrapping round.
+			if h[i] <= line and h[(i - 1 + steps) % steps] > line:
+				result.append(length * i / steps)
+	result.sort()
+	# A wobbling bone can cross the line twice in a row; keep the first of close pairs
+	# (including across the loop point).
+	var min_gap := maxf(0.15, length * 0.06)
+	var kept := PackedFloat32Array()
+	for t in result:
+		if kept.is_empty() or t - kept[kept.size() - 1] >= min_gap:
+			kept.append(t)
+	if kept.size() > 1 and kept[0] + length - kept[kept.size() - 1] < min_gap:
+		kept.remove_at(kept.size() - 1)
+	result = kept
+	_animator.speed_scale = prev_speed
+	if not prev.is_empty():
+		_animator.play(prev, 0.0)
+		_animator.seek(prev_pos, true)
+	_measure_cache[key] = result
+	return result
+
+
 func get_animation_length(anim: String) -> float:
 	if _animator == null or not _animator.has_animation(anim):
 		return 0.0

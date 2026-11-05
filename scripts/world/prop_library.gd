@@ -12,6 +12,12 @@ extends RefCounted
 const FOLIAGE_WORDS := ["tree", "bush", "shrub", "grass", "fern", "flower", "plant", "leaf", "leaves", "reed", "vine"]
 const NO_COLLISION_WORDS := ["grass", "fern", "flower", "reed", "vine", "small", "pebble"]
 const TRUNK_WORDS := ["trunk", "bark", "wood", "stem", "log"]
+## Footstep sound for walking on a prop, by the first word found in its name.
+const SURFACE_WORDS := {
+	"wood": ["tree", "log", "stump", "plank", "crate", "barrel", "bridge", "wood", "dock", "fence"],
+	"metal": ["metal", "iron", "steel", "anvil", "grate"],
+	"grass": ["bush", "shrub", "grass", "fern", "flower", "plant", "leaf", "leaves", "reed", "moss"],
+}
 const WIND_SHADER := preload("res://assets/materials/foliage_wind.gdshader")
 
 var prop_dir := "res://assets/props"
@@ -44,8 +50,19 @@ func instantiate(prop_name: String) -> Node3D:
 		col.shape = info.shape
 		col.transform = info.shape_xform
 		body.add_child(col)
+		body.set_meta("surface", surface_of(prop_name))
 		node.add_child(body)
 	return node
+
+
+## Footstep surface for a prop name: "wood", "metal", "grass" or (rocks and the rest) "stone".
+static func surface_of(prop_name: String) -> String:
+	var lower := prop_name.to_lower()
+	for surface: String in SURFACE_WORDS:
+		for w: String in SURFACE_WORDS[surface]:
+			if lower.contains(w):
+				return surface
+	return "stone"
 
 
 func _info(prop_name: String):

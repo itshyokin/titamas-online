@@ -36,7 +36,10 @@ var _props: PropLibrary
 const WATER_MATERIAL := preload("res://assets/materials/water.tres")
 ## How deep the swimmable box under a Blender water plane reaches.
 const WATER_PLANE_DEPTH := 30.0
+## Terrain vertex spacing (m), matching the Blender add-on.
+const PAINT_SPACING := 2.0
 
+var _paint := {}  # Vector2i -> PackedVector2Array of (dirt, cliff) per terrain vertex
 var _available := {}  # Vector2i -> path
 var _loaded := {}  # Vector2i -> Node3D
 var _pending := {}  # Vector2i -> path
@@ -44,6 +47,7 @@ var _target: Node3D
 
 
 func _ready() -> void:
+	add_to_group("chunk_streamer")
 	_props = PropLibrary.new(prop_dir)
 	if Engine.is_editor_hint():
 		_refresh_editor_preview()
@@ -88,6 +92,7 @@ func _physics_process(_delta: float) -> void:
 		if absi(cell.x - center.x) > keep or absi(cell.y - center.y) > keep:
 			_loaded[cell].queue_free()
 			_loaded.erase(cell)
+			_paint.erase(cell)
 
 
 func _refresh_editor_preview() -> void:
@@ -95,6 +100,7 @@ func _refresh_editor_preview() -> void:
 		if is_instance_valid(_loaded[cell]):
 			_loaded[cell].queue_free()
 	_loaded.clear()
+	_paint.clear()
 	_available.clear()
 	_shared_materials.clear()
 	_props = PropLibrary.new(prop_dir)
@@ -120,6 +126,72 @@ func distance_to_land(point: Vector3) -> float:
 		best = minf(best, Vector2(dx, dz).length())
 		if best == 0.0:
 			break
+	return best
+
+
+## Ground paint under a point as (dirt, cliff), each 0..1; grass is what's left.
+## Read from the terrain's paint layer (second UV map), nearest vertex. (0, 0) if unknown.
+func paint_at(point: Vector3) -> Vector2:
+	var cell := _cell_of(point)
+	var grid: PackedVector2Array = _paint.get(cell, PackedVector2Array())
+	if grid.is_empty():
+		return Vector2.ZERO
+	var n := _paint_grid_size()
+	var half := chunk_size * 0.5
+	var gx := clampi(roundi((point.x - cell.x * chunk_size + half) / PAINT_SPACING), 0, n - 1)
+	var gz := clampi(roundi((point.z - cell.y * chunk_size + half) / PAINT_SPACING), 0, n - 1)
+	return grid[gz * n + gx]
+
+
+func _paint_grid_size() -> int:
+	return int(round(chunk_size / PAINT_SPACING)) + 1
+
+
+## Collects each terrain vertex's paint into a grid for paint_at().
+func _read_paint(chunk: Node3D) -> PackedVector2Array:
+	var n := _paint_grid_size()
+	var grid := PackedVector2Array()
+	var found := false
+	grid.resize(n * n)
+	var half := chunk_size * 0.5
+	for node in chunk.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		if String(mi.name).ends_with("-water") or mi.mesh == null:
+			continue
+		# Transform relative to the chunk (it isn't in the tree yet).
+		var xf := Transform3D.IDENTITY
+		var walk: Node = mi
+		while walk != chunk and walk is Node3D:
+			xf = (walk as Node3D).transform * xf
+			walk = walk.get_parent()
+		for s in mi.mesh.get_surface_count():
+			var arrays := mi.mesh.surface_get_arrays(s)
+			var uv2 = arrays[Mesh.ARRAY_TEX_UV2]
+			if uv2 == null or (uv2 as PackedVector2Array).is_empty():
+				continue
+			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			for i in verts.size():
+				var p := xf * verts[i]
+				var gx := roundi((p.x + half) / PAINT_SPACING)
+				var gz := roundi((p.z + half) / PAINT_SPACING)
+				if gx >= 0 and gx < n and gz >= 0 and gz < n:
+					grid[gz * n + gx] = uv2[i]
+					found = true
+	return grid if found else PackedVector2Array()
+
+
+## Horizontal distance (m) from a point to open sea (the nearest spot with no chunk).
+## 0 when already over the sea. Looks a few chunks around; INF if the sea is further.
+func distance_to_sea(point: Vector3) -> float:
+	var center := _cell_of(point)
+	var best := INF
+	var half := chunk_size * 0.5
+	for cell in _cells_around(center, 3):
+		if _available.has(cell):
+			continue
+		var dx := maxf(absf(point.x - cell.x * chunk_size) - half, 0.0)
+		var dz := maxf(absf(point.z - cell.y * chunk_size) - half, 0.0)
+		best = minf(best, Vector2(dx, dz).length())
 	return best
 
 
@@ -157,6 +229,8 @@ func _add_chunk(cell: Vector2i, scene: PackedScene) -> void:
 			if shared:
 				mi.set_surface_override_material(s, shared)
 	_place_props(cell, chunk)
+	if not Engine.is_editor_hint():
+		_paint[cell] = _read_paint(chunk)
 	add_child(chunk)
 	_loaded[cell] = chunk
 

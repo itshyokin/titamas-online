@@ -15,9 +15,21 @@ extends Node3D
 ## How far from the nearest land chunk (m) before fatigue starts building.
 @export var fatigue_distance := 48.0
 
+@export_group("Sound")
+## Waves on the shore, loudest at the coast and fading inland and with height.
+@export var surf_loop: AudioStream = preload("res://assets/audio/ambience/surf_loop.ogg")
+@export_range(-40.0, 6.0) var surf_volume_db := -4.0
+## Surf fades out this far (m) from the open sea...
+@export var surf_range := 110.0
+## ...and this high (m) above sea level.
+@export var surf_height := 70.0
+
 var _plane: MeshInstance3D
 var _target: Node3D
 var _streamer: ChunkStreamer
+var _surf: AudioStreamPlayer
+var _surf_timer := 0.0
+var _surf_goal := -80.0
 
 
 func _ready() -> void:
@@ -35,14 +47,36 @@ func _ready() -> void:
 	_plane.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_plane)
 	_plane.global_position = Vector3(0, sea_level, 0)
+	if not Engine.is_editor_hint() and surf_loop:
+		_surf = AudioStreamPlayer.new()
+		_surf.bus = &"Ambience"
+		_surf.stream = AmbientLoops.looped(surf_loop)
+		_surf.volume_db = -80.0
+		add_child(_surf)
+		_surf.play(randf() * maxf(surf_loop.get_length() - 1.0, 0.0))
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _target and not Engine.is_editor_hint():
 		# Snap so the wave vertices don't shimmer as the plane moves.
 		var step := plane_size / 160.0
 		var p := _target.global_position
 		_plane.global_position = Vector3(snappedf(p.x, step), sea_level, snappedf(p.z, step))
+		_update_surf(p, delta)
+
+
+func _update_surf(p: Vector3, delta: float) -> void:
+	if _surf == null:
+		return
+	_surf_timer -= delta
+	if _surf_timer <= 0.0:
+		_surf_timer = 0.3
+		var away := _streamer.distance_to_sea(p) if _streamer else 0.0
+		var near := clampf(1.0 - away / surf_range, 0.0, 1.0)
+		near *= clampf(1.0 - (p.y - sea_level) / surf_height, 0.0, 1.0)
+		# Equal-power style fade: stays full near the coast, drops off further in.
+		_surf_goal = surf_volume_db + linear_to_db(maxf(near * near, 0.0001)) if near > 0.0 else -80.0
+	_surf.volume_db = lerpf(_surf.volume_db, _surf_goal, 1.0 - exp(-delta * 2.0))
 
 
 ## Water surface height (same interface as WaterVolume).

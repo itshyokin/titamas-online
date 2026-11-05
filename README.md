@@ -65,6 +65,14 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 
 **World edge:** the sea level is −5 m. Past the last chunk is open ocean; swimming far out builds fatigue.
 
+## Sound
+
+Sounds live in `assets/audio/` (sources and licences in `assets/audio/CREDITS.md`). Buses: **SFX**, **Ambience**, **Music** (Audio tab at the bottom of the editor).
+
+- **Footsteps** follow the animation's feet and match the ground: painted grass/dirt, rock on cliffs and steep slopes, water when wading. Props pick a sound from their name (rocks = stone; tree/log/plank/crate/bridge = wood; metal/iron = metal). Anything else can be tagged: select a node with collision, Inspector → **Add Metadata** → name `surface`, type String, value `wood`, `stone`, `grass`, `dirt`, `snow`, `metal` or `water`.
+- **Ambience:** each region file in `assets/regions/` has a **Sound** section: an **Ambient Loop** (birds, forest, town…; crossfades at region borders), its volume, and how windy it is. Wind gets stronger the higher you climb. Waves are loudest at the coast and fade inland.
+- Loops can be any .ogg/.wav/.mp3; they're set to loop automatically.
+
 ## Level markup
 
 - **Climbable wall:** put the node in the `climbable` group (Node panel → Groups). Players jump onto it.

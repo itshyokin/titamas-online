@@ -26,3 +26,11 @@ extends Resource
 @export var sun_color := Color(1.0, 0.95, 0.85)
 @export var sun_energy := 1.1
 @export var ambient_energy := 0.6
+
+@export_group("Sound")
+## Looping background sound for the region (birds, forest, town bustle...). Crossfades
+## when crossing into another region.
+@export var ambient_loop: AudioStream
+@export_range(-40.0, 6.0) var ambient_volume_db := -8.0
+## How windy it is here at ground level (dB); higher ground gets windier on top of this.
+@export_range(-60.0, 6.0) var wind_volume_db := -20.0

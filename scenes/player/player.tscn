@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/player/player_animator.gd" id="5_je7p5"]
 [ext_resource type="Script" path="res://scripts/player/third_person_camera.gd" id="6_fm80t"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="7_gx1jg"]
+[ext_resource type="Script" path="res://scripts/player/player_audio.gd" id="8_paudio"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ugbui"]
 radius = 0.35
@@ -34,6 +35,9 @@ script = ExtResource("4_h17s1")
 
 [node name="PlayerAnimator" type="Node" parent="." unique_id=79642995]
 script = ExtResource("5_je7p5")
+
+[node name="PlayerAudio" type="Node3D" parent="."]
+script = ExtResource("8_paudio")
 
 [node name="CameraRig" type="Node3D" parent="." unique_id=415300915]
 script = ExtResource("6_fm80t")
