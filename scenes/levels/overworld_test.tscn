@@ -1,27 +1,27 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cpmljpom1nrnp"]
 
-[ext_resource type="Shader" path="res://assets/materials/sky.gdshader" id="1_7jqck"]
-[ext_resource type="Script" path="res://scripts/world/chunk_streamer.gd" id="2_be2qh"]
+[ext_resource type="Shader" uid="uid://c2xujsvjfy72d" path="res://assets/materials/sky.gdshader" id="1_7jqck"]
+[ext_resource type="Script" uid="uid://bxiq3ic7c65gs" path="res://scripts/world/chunk_streamer.gd" id="2_be2qh"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="3_4nsao"]
-[ext_resource type="Script" path="res://scripts/world/ocean.gd" id="4_r6e8q"]
-[ext_resource type="Script" path="res://scripts/world/atmosphere_manager.gd" id="5_ujnkd"]
-[ext_resource type="Script" path="res://scripts/world/region_atmosphere.gd" id="6_qb1br"]
+[ext_resource type="Script" uid="uid://bx1f4iwa1npf5" path="res://scripts/world/ocean.gd" id="4_r6e8q"]
+[ext_resource type="Script" uid="uid://5ixqu5qrpwvo" path="res://scripts/world/atmosphere_manager.gd" id="5_ujnkd"]
+[ext_resource type="Script" uid="uid://co1thgfda284y" path="res://scripts/world/region_atmosphere.gd" id="6_qb1br"]
 [ext_resource type="Resource" path="res://assets/regions/starting_region.tres" id="7_v7wxo"]
 [ext_resource type="Resource" path="res://assets/regions/open_sea.tres" id="8_giltl"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
-shader_parameter/top_color = null
-shader_parameter/horizon_color = null
-shader_parameter/ground_color = null
-shader_parameter/sun_color = null
-shader_parameter/sun_size = null
-shader_parameter/sun_glow = null
-shader_parameter/cloud_color = null
-shader_parameter/cloud_shade = null
-shader_parameter/cloud_coverage = null
-shader_parameter/cloud_scale = null
-shader_parameter/cloud_speed = null
+shader_parameter/top_color = Color(0.10409584, 0.37107718, 0.2810466, 1)
+shader_parameter/horizon_color = Color(0.74, 0.83, 0.88, 1)
+shader_parameter/ground_color = Color(0.32, 0.36, 0.4, 1)
+shader_parameter/sun_color = Color(1, 0.95, 0.85, 1)
+shader_parameter/sun_size = 0.9995
+shader_parameter/sun_glow = 6.0
+shader_parameter/cloud_color = Color(1, 1, 1, 1)
+shader_parameter/cloud_shade = Color(0.7, 0.74, 0.82, 1)
+shader_parameter/cloud_coverage = 0.519
+shader_parameter/cloud_scale = 0.6
+shader_parameter/cloud_speed = 0.01
 
 [sub_resource type="Sky" id="Sky_qvq52"]
 sky_material = SubResource("ShaderMaterial_suk2g")
@@ -34,9 +34,10 @@ ambient_light_energy = 0.6
 reflected_light_source = 2
 tonemap_mode = 2
 fog_enabled = true
+fog_light_color = Color(0.6305378, 0.82061297, 0.77238154, 1)
 fog_sun_scatter = 0.15
-fog_density = 0.004
-fog_sky_affect = 0.5
+fog_density = 0.009
+fog_sky_affect = 0.366
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ycjve"]
 albedo_color = Color(0.36, 0.5, 0.28, 1)
@@ -48,6 +49,7 @@ environment = SubResource("Environment_bsa0p")
 
 [node name="Sun" type="DirectionalLight3D" parent="." unique_id=1578033159]
 transform = Transform3D(0.81915206, 0.43938506, -0.36868784, 0, 0.64278764, 0.76604444, 0.57357645, -0.62750685, 0.5265408, 0, 0, 0)
+light_color = Color(1, 0.95, 0.85, 1)
 light_energy = 1.1
 shadow_enabled = true
 directional_shadow_max_distance = 150.0
