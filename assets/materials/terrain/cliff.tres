@@ -1,8 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3]
-
-[ext_resource type="Texture2D" path="res://assets/materials/terrain/cliff_stone.jpg" id="1_gyl2u"]
-
-[resource]
-resource_name = "cliff"
-albedo_texture = ExtResource("1_gyl2u")
-texture_filter = 2

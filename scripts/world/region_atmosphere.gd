@@ -1,3 +1,4 @@
+@tool
 class_name RegionAtmosphere
 extends Resource
 ## Look of one region: fog, sky and light. AtmosphereManager blends between these as

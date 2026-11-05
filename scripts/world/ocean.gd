@@ -1,3 +1,4 @@
+@tool
 class_name Ocean
 extends Node3D
 ## The endless sea around the world. A large water plane follows the player so it
@@ -37,7 +38,7 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _target:
+	if _target and not Engine.is_editor_hint():
 		# Snap so the wave vertices don't shimmer as the plane moves.
 		var step := plane_size / 160.0
 		var p := _target.global_position

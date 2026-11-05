@@ -1,14 +1,17 @@
+@tool
 class_name PropLibrary
 extends RefCounted
 ## Loads prop models (<prop_dir>/<name>.glb, exported by the Blender add-on's
 ## "Export Prop Library") and makes ready-to-place instances:
 ## - Foliage (name contains tree/bush/grass/...) gets the wind shader.
-## - Trees get a trunk cylinder for collision, rocks and other solid props a convex hull,
-##   small plants none.
+## - Trees get a trunk cylinder for collision (sized from the part whose material is
+##   called trunk/bark/wood, or the bottom of the model), rocks and other solid props
+##   their exact shape, small plants none.
 ## Everything is worked out once per prop and shared by every instance.
 
 const FOLIAGE_WORDS := ["tree", "bush", "shrub", "grass", "fern", "flower", "plant", "leaf", "leaves", "reed", "vine"]
 const NO_COLLISION_WORDS := ["grass", "fern", "flower", "reed", "vine", "small", "pebble"]
+const TRUNK_WORDS := ["trunk", "bark", "wood", "stem", "log"]
 const WIND_SHADER := preload("res://assets/materials/foliage_wind.gdshader")
 
 var prop_dir := "res://assets/props"
@@ -83,18 +86,47 @@ func _info(prop_name: String):
 
 	if solid and not meshes.is_empty():
 		if lower.contains("tree"):
+			var trunk_box := _trunk_bounds(meshes, probe, bounds)
 			var trunk := CylinderShape3D.new()
-			trunk.radius = clampf(minf(bounds.size.x, bounds.size.z) * 0.08, 0.2, 0.8)
-			trunk.height = maxf(bounds.size.y * 0.6, 1.0)
+			trunk.radius = clampf((trunk_box.size.x + trunk_box.size.z) * 0.25, 0.15, 2.0)
+			trunk.height = maxf(trunk_box.size.y, 0.5)
 			info.shape = trunk
-			var c := bounds.get_center()
-			info.shape_xform = Transform3D(Basis.IDENTITY, Vector3(c.x, bounds.position.y + trunk.height * 0.5, c.z))
+			var c := trunk_box.get_center()
+			info.shape_xform = Transform3D(Basis.IDENTITY, Vector3(c.x, trunk_box.position.y + trunk.height * 0.5, c.z))
 		else:
-			info.shape = meshes[0].mesh.create_convex_shape(true, true)
+			# Exact shape (static bodies can use concave meshes).
+			info.shape = meshes[0].mesh.create_trimesh_shape()
 			info.shape_xform = _local_xform(meshes[0], probe)
 	probe.free()
 	_cache[prop_name] = info
 	return info
+
+
+## Bounds of the trunk in prop space: vertices of surfaces whose material name says
+## trunk/bark/wood. Without one, the lower half of the model's middle tenth.
+func _trunk_bounds(meshes: Array[MeshInstance3D], root: Node3D, whole: AABB) -> AABB:
+	var box := AABB()
+	var found := false
+	for m in meshes:
+		var xf := _local_xform(m, root)
+		for s in m.mesh.get_surface_count():
+			var mat := m.mesh.surface_get_material(s)
+			var mat_name := (mat.resource_name if mat else "").to_lower()
+			if not TRUNK_WORDS.any(func(w: String) -> bool: return mat_name.contains(w)):
+				continue
+			var verts: PackedVector3Array = m.mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]
+			for v in verts:
+				var p := xf * v
+				if not found:
+					box = AABB(p, Vector3.ZERO)
+					found = true
+				else:
+					box = box.expand(p)
+	if found:
+		return box
+	var c := whole.get_center()
+	var w := maxf(minf(whole.size.x, whole.size.z) * 0.1, 0.3)
+	return AABB(Vector3(c.x - w * 0.5, whole.position.y, c.z - w * 0.5), Vector3(w, whole.size.y * 0.5, w))
 
 
 func _local_xform(node: Node3D, root: Node3D) -> Transform3D:

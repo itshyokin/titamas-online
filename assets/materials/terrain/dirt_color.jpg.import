@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://5roikl7jfugo"
-path.s3tc="res://.godot/imported/cliff_stone.jpg-bedb8e3b326ec30f94e5c9fb3bf6582f.s3tc.ctex"
+uid="uid://bh5628j74pcr3"
+path.s3tc="res://.godot/imported/dirt_color.jpg-4729cbc52f5f85e682aa659537db0318.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/materials/terrain/cliff_stone.jpg"
-dest_files=["res://.godot/imported/cliff_stone.jpg-bedb8e3b326ec30f94e5c9fb3bf6582f.s3tc.ctex"]
+source_file="res://assets/materials/terrain/dirt_color.jpg"
+dest_files=["res://.godot/imported/dirt_color.jpg-4729cbc52f5f85e682aa659537db0318.s3tc.ctex"]
 
 [params]
 
@@ -38,4 +38,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

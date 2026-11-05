@@ -1,7 +1,7 @@
 bl_info = {
 	"name": "Titamas Terrain Chunks",
 	"author": "Titamas Online",
-	"version": (1, 4, 0),
+	"version": (1, 4, 1),
 	"blender": (4, 1, 0),
 	"location": "3D Viewport > Sidebar (N) > Titamas",
 	"description": "Create a sculptable master terrain on the 64 m chunk grid and export it as seamless chunk .glb files",
@@ -35,6 +35,9 @@ bl_info = {
 # chunk_I_J.props.json (prop name + transform). The prop name is the shared mesh name for
 # linked duplicates (Alt+D / Ctrl+L), otherwise the object name without ".001". Each prop
 # model is exported once by "Export Prop Library" as <name>.glb, textures included.
+# Props are exported standing the way they stand in the scene: the rotation and scale of
+# one reference copy (the alphabetically first object, remembered on the mesh as
+# "titamas_rest") are baked into the model, and placements are stored relative to it.
 #
 # Terrain painting: a colour attribute "TerrainPaint" (red = grass, green = dirt, blue =
 # cliff, alpha = optional 4th layer) painted in Vertex Paint mode. Godot's terrain shader
@@ -320,10 +323,12 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 
 		# Props, grouped by the chunk their origin sits in.
 		props_by_cell = {}
-		for pobj in _prop_objects(s):
+		prop_objs = _prop_objects(s)
+		rests = _prop_rests(prop_objs)
+		for pobj in prop_objs:
 			loc = pobj.matrix_world.translation
 			i, k = round(loc.x / size), round(loc.y / size)
-			props_by_cell.setdefault((i, -k), []).append(_prop_entry(pobj, i, k, size))
+			props_by_cell.setdefault((i, -k), []).append(_prop_entry(pobj, i, k, size, rests[prop_name(pobj)]))
 		prop_count = 0
 
 		prev_selected = list(context.selected_objects)
@@ -465,13 +470,34 @@ def _prop_objects(s) -> list:
 	return [o for o in coll.all_objects if o.type == "MESH"]
 
 
-def _prop_entry(obj, i: int, k: int, size: float) -> dict:
+def _prop_rests(objs: list) -> dict:
+	"""{prop name: 3x3 rest matrix}: the rotation/scale baked into each exported prop model.
+	Taken from a "titamas_rest" value stored on the mesh by Export Prop Library, or else
+	from the alphabetically first object of that prop."""
+	by_name = {}
+	for o in sorted(objs, key=lambda o: o.name):
+		by_name.setdefault(prop_name(o), []).append(o)
+	rests = {}
+	for name, group in by_name.items():
+		stored = next((o.data.get("titamas_rest") for o in group if o.data.get("titamas_rest") is not None), None)
+		if stored is not None and len(stored) == 9:
+			rests[name] = Matrix((stored[0:3], stored[3:6], stored[6:9]))
+		else:
+			rests[name] = group[0].matrix_world.to_3x3()
+	return rests
+
+
+def _prop_entry(obj, i: int, k: int, size: float, rest) -> dict:
 	"""Placement in Godot chunk space: position relative to the chunk centre, and the
-	3x3 basis as three column vectors (rotation and scale)."""
+	3x3 basis (relative to the prop's rest rotation/scale) as three column vectors."""
 	m = obj.matrix_world
 	loc = m.translation
 	pos = (loc.x - i * size, loc.z, -(loc.y - k * size))
-	basis = _TO_GODOT @ m.to_3x3() @ _TO_GODOT.transposed()
+	try:
+		relative = m.to_3x3() @ rest.inverted()
+	except ValueError:
+		relative = m.to_3x3()
+	basis = _TO_GODOT @ relative @ _TO_GODOT.transposed()
 	cols = [[round(basis[r][c], 5) for r in range(3)] for c in range(3)]
 	return {"name": prop_name(obj), "pos": [round(v, 4) for v in pos], "basis": cols}
 
@@ -1010,9 +1036,11 @@ class TITAMAS_OT_export_props(bpy.types.Operator):
 		if context.active_object and context.active_object.mode != "OBJECT":
 			bpy.ops.object.mode_set(mode="OBJECT")
 
-		# One representative object per prop name.
+		# One representative object per prop name, and its rest rotation/scale.
+		objs = _prop_objects(s)
+		rests = _prop_rests(objs)
 		reps = {}
-		for obj in _prop_objects(s):
+		for obj in sorted(objs, key=lambda o: o.name):
 			reps.setdefault(prop_name(obj), obj)
 		if not reps:
 			self.report({"WARNING"}, f"No mesh objects in the '{s.props_collection}' collection")
@@ -1021,8 +1049,15 @@ class TITAMAS_OT_export_props(bpy.types.Operator):
 		prev_selected = list(context.selected_objects)
 		prev_active = context.view_layer.objects.active
 		for name, src in reps.items():
-			# A temporary object with the same mesh at the origin, unrotated, unscaled.
-			tmp = bpy.data.objects.new(name, src.data)
+			rest = rests[name]
+			# Remember the rest on the mesh so later chunk exports use the same reference.
+			src.data["titamas_rest"] = [rest[r][c] for r in range(3) for c in range(3)]
+			# A temporary copy of the mesh with the rest rotation/scale baked in, at the origin.
+			baked = src.data.copy()
+			baked.transform(rest.to_4x4())
+			if rest.determinant() < 0 and hasattr(baked, "flip_normals"):
+				baked.flip_normals()  # mirrored (negative scale) reference
+			tmp = bpy.data.objects.new(name, baked)
 			context.scene.collection.objects.link(tmp)
 			for o in context.selected_objects:
 				o.select_set(False)
@@ -1030,6 +1065,7 @@ class TITAMAS_OT_export_props(bpy.types.Operator):
 			context.view_layer.objects.active = tmp
 			_export_glb(os.path.join(out_dir, name + ".glb"), include_textures=True)
 			bpy.data.objects.remove(tmp)
+			bpy.data.meshes.remove(baked)
 
 		for o in context.selected_objects:
 			o.select_set(False)

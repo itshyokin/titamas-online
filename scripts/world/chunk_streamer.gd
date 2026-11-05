@@ -1,3 +1,4 @@
+@tool
 class_name ChunkStreamer
 extends Node3D
 ## Loads terrain chunks around the player and unloads distant ones.
@@ -21,6 +22,14 @@ extends Node3D
 @export_dir var material_dir := "res://assets/materials/terrain"
 ## Prop models (<name>.glb). Placements come from chunk_I_J.props.json next to each chunk.
 @export_dir var prop_dir := "res://assets/props"
+## Show every chunk (with props and water) in the editor, so the world can be seen while
+## tuning lights, fog and sky. Nothing from the preview is saved into the scene.
+## Toggle off and on to reload after copying in new exports.
+@export var editor_preview := true:
+	set(value):
+		editor_preview = value
+		if Engine.is_editor_hint() and is_inside_tree():
+			_refresh_editor_preview()
 
 var _shared_materials := {}  # name -> Material (or null if none)
 var _props: PropLibrary
@@ -36,6 +45,9 @@ var _target: Node3D
 
 func _ready() -> void:
 	_props = PropLibrary.new(prop_dir)
+	if Engine.is_editor_hint():
+		_refresh_editor_preview()
+		return
 	_target = get_node_or_null(target_path) as Node3D
 	_scan_chunks()
 	if _target == null:
@@ -52,7 +64,7 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	if _target == null:
+	if Engine.is_editor_hint() or _target == null:
 		return
 	var center := _cell_of(_target.global_position)
 
@@ -76,6 +88,21 @@ func _physics_process(_delta: float) -> void:
 		if absi(cell.x - center.x) > keep or absi(cell.y - center.y) > keep:
 			_loaded[cell].queue_free()
 			_loaded.erase(cell)
+
+
+func _refresh_editor_preview() -> void:
+	for cell in _loaded:
+		if is_instance_valid(_loaded[cell]):
+			_loaded[cell].queue_free()
+	_loaded.clear()
+	_available.clear()
+	_shared_materials.clear()
+	_props = PropLibrary.new(prop_dir)
+	if not editor_preview:
+		return
+	_scan_chunks()
+	for cell in _available:
+		_add_chunk(cell, load(_available[cell]))
 
 
 func get_loaded_cells() -> Array:
