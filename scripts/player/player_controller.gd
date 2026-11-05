@@ -30,14 +30,14 @@ const WATER_MASK := 8  # layer 4
 @export var air_control := 0.3
 @export var turn_speed := 12.0
 @export var jump_velocity := 5.0
-@export var jump_stamina_cost := 10.0
+@export var jump_stamina_cost := 0.0
 ## Stamina drained per second while sprinting.
 @export var sprint_stamina_cost := 25.0
 ## Stamina needed before sprint can start again after running dry.
 @export var sprint_restart_threshold := 20.0
 
 @export_group("Dodge")
-@export var dodge_stamina_cost := 20.0
+@export var dodge_stamina_cost := 0.0
 @export var dodge_cooldown := 0.25
 @export var roll_distance := 4.0
 ## Seconds the forward roll lasts before control returns.
@@ -106,9 +106,12 @@ var is_sprinting := false
 ## True when the character should keep facing a target (combat lock-on). Dodges
 ## then become left/right/back hops relative to the facing instead of turning to roll.
 var lock_facing := false
+## Locked-on target (set by Targeting): the character keeps facing it while moving.
+var lock_target: Node3D = null
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 var _sprint_exhausted := false
+var _sprint_toggle := false
 
 var _dodge_anim := ""
 var _dodge_time := 0.0
@@ -187,7 +190,20 @@ func is_invulnerable() -> bool:
 	return state == State.DODGE and _dodge_time >= iframe_start and _dodge_time <= iframe_end
 
 
+## Just pressed, unless a menu is open.
+func _pressed(action: String) -> bool:
+	return Input.is_action_just_pressed(action) and not GameSettings.menu_open
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Controller sprint is a toggle (the thumb is needed on the camera stick).
+	if event.is_action_pressed("sprint") and GameSettings.is_gamepad_event(event) and not GameSettings.menu_open:
+		_sprint_toggle = not _sprint_toggle
+
+
 func _input_direction() -> Vector3:
+	if GameSettings.menu_open:
+		return Vector3.ZERO
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := camera_rig.get_flat_basis() * Vector3(input.x, 0, input.y)
 	return direction.normalized() if direction.length() > 0.01 else Vector3.ZERO
@@ -203,7 +219,7 @@ func _normal_movement(delta: float) -> void:
 	var direction := _input_direction()
 	_update_sprint(direction != Vector3.ZERO, delta)
 
-	if is_on_floor() and Input.is_action_just_pressed("dodge") and _try_dodge(direction):
+	if is_on_floor() and _pressed("dodge") and _try_dodge(direction):
 		return
 	if _try_start_swim():
 		return
@@ -219,7 +235,7 @@ func _normal_movement(delta: float) -> void:
 				return
 			if _try_attach_surface(false):
 				return
-	elif Input.is_action_just_pressed("jump") and stats.use_stamina(jump_stamina_cost):
+	elif _pressed("jump") and stats.use_stamina(jump_stamina_cost):
 		velocity.y = jump_velocity
 		jumped.emit()
 
@@ -233,18 +249,25 @@ func _normal_movement(delta: float) -> void:
 	velocity.x = lerpf(velocity.x, target.x, accel * delta)
 	velocity.z = lerpf(velocity.z, target.z, accel * delta)
 
-	if direction != Vector3.ZERO and not lock_facing:
+	if lock_facing and lock_target and is_instance_valid(lock_target):
+		face_toward(lock_target.global_position, delta)
+	elif direction != Vector3.ZERO:
 		model.rotation.y = lerp_angle(model.rotation.y, _yaw_of(direction), turn_speed * delta)
 
 
 func _update_sprint(moving: bool, delta: float) -> void:
 	if _sprint_exhausted and stats.stamina >= sprint_restart_threshold:
 		_sprint_exhausted = false
-	var wants := Input.is_action_pressed("sprint") and moving and not _sprint_exhausted
+	if not moving or _sprint_exhausted or Input.is_action_pressed("walk"):
+		_sprint_toggle = false
+	# Keyboard: hold to sprint. Controller: tap to toggle.
+	var held := Input.is_action_pressed("sprint") and not GameSettings.gamepad and not GameSettings.menu_open
+	var wants := (held or _sprint_toggle) and moving and not _sprint_exhausted
 	if wants and is_on_floor() or wants and is_sprinting:
 		is_sprinting = stats.drain_stamina(sprint_stamina_cost * delta)
 		if not is_sprinting:
 			_sprint_exhausted = true
+			_sprint_toggle = false
 	else:
 		is_sprinting = false
 
@@ -301,7 +324,7 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 
 func _action_movement(delta: float) -> void:
 	var direction := _input_direction()
-	if is_on_floor() and Input.is_action_just_pressed("dodge") and _try_dodge(direction):
+	if is_on_floor() and _pressed("dodge") and _try_dodge(direction):
 		action_interrupted.emit()
 		return
 	if _try_start_swim():
@@ -449,10 +472,10 @@ func _hang_movement(delta: float) -> void:
 	if not _hop_anim.is_empty():
 		_hop_movement(delta)
 		return
-	if Input.is_action_just_pressed("jump") or (Input.is_action_pressed("move_forward") and _hang_time > 0.35):
+	if _pressed("jump") or (Input.is_action_pressed("move_forward") and _hang_time > 0.35):
 		if _try_climb_up():
 			return
-	if Input.is_action_pressed("move_back") or Input.is_action_just_pressed("walk"):
+	if Input.is_action_pressed("move_back") or _pressed("walk"):
 		_drop_from_ledge()
 		return
 	var side := Input.get_axis("move_left", "move_right")
@@ -587,10 +610,10 @@ func _climb_movement(delta: float) -> void:
 	var feet := ladder_feet if ladder else wall_climb_feet
 	var space := get_world_3d().direct_space_state
 
-	if Input.is_action_just_pressed("jump"):
+	if _pressed("jump"):
 		_jump_off_surface()
 		return
-	if Input.is_action_just_pressed("walk"):
+	if _pressed("walk"):
 		_let_go()
 		return
 
@@ -730,7 +753,7 @@ func _swim_movement(delta: float) -> void:
 		character.play("treading_water", 0.4)
 
 	# Climb out at an edge.
-	if Input.is_action_just_pressed("jump"):
+	if _pressed("jump"):
 		var feet := Vector3(global_position.x, _water.surface_height() - tread_depth, global_position.z)
 		var ledge := _probe_ledge(feet, _forward())
 		if not ledge.is_empty():

@@ -1,39 +1,61 @@
 class_name PlayerCombat
 extends Node
-## The player's fighting: light combo (left mouse), heavy attack (E), block (hold Q),
-## and spells on the number keys. Lives under Player, next to Targeting.
-## Abilities are data (Ability resources); this node runs their timing.
+## The player's fighting, Fable style: one attack button whose meaning depends on the
+## mode (melee, ranged, magic), tapped for a quick attack or held to charge.
+##   Melee: tap = quick swing (rapid taps chain the combo), hold = heavy blow.
+##   Ranged: tap = quick shot, hold = draw (harder the longer), release fires.
+##   Magic: tap = cast the selected spell, hold = charge it to higher levels.
+## Block is held on its own button. Lives under Player, next to Targeting.
+## Abilities are data (Ability resources in data/abilities/); this node runs their timing.
 
-signal cast_started(ability: Ability, duration: float)
-## `ok` is false when the cast was interrupted.
-signal cast_finished(ability: Ability, ok: bool)
+enum Mode { MELEE, RANGED, MAGIC }
+
+signal mode_changed(mode: Mode)
+signal spell_changed(index: int)
+## Charging started (`ability`), and how full it is each frame (0..1, `level` for spells).
+signal charge_started(ability: Ability)
+signal charge_progress(fraction: float, level: int)
+signal charge_ended
 signal combat_changed(in_combat: bool)
-## Short feedback for the HUD ("Not enough mana", "Out of range").
+## Short feedback for the HUD ("Not enough mana", "No target").
 signal notice(text: String)
 
-## Light attacks, in combo order: pressing attack again in time plays the next one.
+@export_group("Abilities")
+## Quick melee swings, in combo order: tapping again in time plays the next one.
 @export var light_combo: Array[Ability] = [
 	preload("res://data/abilities/slash_1.tres"),
 	preload("res://data/abilities/slash_2.tres"),
 ]
+## Held melee attack.
 @export var heavy_attack: Ability = preload("res://data/abilities/heavy_strike.tres")
-## Spells on keys 1, 2, ...
+## Bow shot (tap = quick shot at reduced power, hold = draw).
+@export var ranged_attack: Ability = preload("res://data/abilities/arrow_shot.tres")
+## Equipped spells (up to four), chosen with spell previous/next.
 @export var spells: Array[Ability] = [
 	preload("res://data/abilities/firebolt.tres"),
 	preload("res://data/abilities/mend.tres"),
 ]
 
+@export_group("Feel")
+## Holding attack longer than this (s) starts charging instead of a quick attack.
+@export var tap_time := 0.22
+## A quick shot does this share of a full draw's power.
+@export_range(0.0, 1.0) var quick_shot_power := 0.6
+## Lunge towards a target this far away (m) when swinging.
+@export var lunge_range := 6.5
+## Where the heavy blow's clip pauses while charging (its wind-up).
+@export var heavy_windup_time := 0.45
+
 @export_group("Block")
 ## Share of damage a block stops (hits from the front only).
 @export_range(0.0, 1.0) var block_reduction := 0.75
-@export var block_stamina_per_hit := 15.0
+## Stamina each blocked hit costs (0 = blocking is free; stamina is for sprinting).
+@export var block_stamina_per_hit := 0.0
 @export var block_arc := 150.0
 
 @export_group("Combat state")
 ## Seconds after the last attack or hit before the weapon is put away.
 @export var combat_linger := 6.0
-## Lunge towards a target this far away (m) when attacking.
-@export var lunge_range := 6.5
 
 @onready var player: PlayerController = get_parent()
 @onready var targeting: Targeting = get_node("../Targeting")
@@ -41,65 +63,121 @@ signal notice(text: String)
 @onready var character: CharacterModel = get_node("../Model/Character")
 @onready var animator: PlayerAnimator = get_node("../PlayerAnimator")
 
+const DRAW_SOUND := preload("res://assets/audio/combat/bow_draw.ogg")
+const SHOT_SOUND := preload("res://assets/audio/combat/arrow_fire.ogg")
+
+var mode := Mode.MELEE
+var spell_index := 0
 var in_combat := false
 
-var _current: Ability = null   # attack or spell release playing now
+# Button state.
+var _attack_down := false
+var _press_time := 0.0
+
+# Charging.
+var _charging: Ability = null
+var _charge := 0.0
+var _charge_glow: Node3D = null
+
+# The action playing now (a swing, a shot, a cast).
+var _current: Ability = null
 var _time := 0.0
 var _hit_done := false
 var _swing_played := false
 var _queued: Ability = null
 var _target: Node3D = null
 var _lunge := Vector3.ZERO
-
-var _casting: Ability = null
-var _cast_left := 0.0
-var _cast_target: Node3D = null
-var _hand_glow: Node3D = null
+var _power := 0.0
+var _level := 1
 
 var _blocking := false
 var _cooldowns := {}  # Ability -> seconds left
 var _combat_timer := 0.0
-var _hand_weapon: Node3D
-var _back_weapon: Node3D
-var _attack_pressed := false
+
+# Held items.
+var _sword_hand: Node3D
+var _sword_back: Node3D
+var _bow_hand: Node3D
+var _bow_back: Node3D
 
 
 func _ready() -> void:
-	player.action_interrupted.connect(_on_interrupted)
+	player.action_interrupted.connect(_cancel_all)
 	player.respawned.connect(func(_reason: String) -> void: _cancel_all(); _set_combat(false))
 	stats.damaged.connect(func(_a: float, _s: Node, _c: bool) -> void: _enter_combat())
 	Combat.show_numbers(player)
-	_equip_weapon.call_deferred()
+	_equip_weapons.call_deferred()
 
 
-func _equip_weapon() -> void:
-	_hand_weapon = WeaponModels.sword()
-	character.attach_to_hand(_hand_weapon)
-	# Sheathed across the back: hilt over the right shoulder, blade down to the left hip.
-	_back_weapon = WeaponModels.sword()
+func _equip_weapons() -> void:
+	_sword_hand = WeaponModels.sword()
+	character.attach_to_hand(_sword_hand)
+	_bow_hand = WeaponModels.bow()
+	character.attach_to_hand(_bow_hand, false)
+	# Worn on the back: sword hilt over the right shoulder, bow across the other way.
 	var spine := character.bone_rest_position("mixamorig_Spine2")
-	var blade := Vector3(-0.5, -0.86, 0).normalized()
 	var flat := Vector3(0, 0, 1)
-	var basis := Basis(blade.cross(flat).normalized(), blade, flat)
-	character.attach_to_bone(_back_weapon, "mixamorig_Spine2", Transform3D(basis, spine + Vector3(0.16, 0.22, 0.17)))
-	_show_weapon()
+	_sword_back = WeaponModels.sword()
+	var blade := Vector3(-0.5, -0.86, 0).normalized()
+	character.attach_to_bone(_sword_back, "mixamorig_Spine2",
+		Transform3D(Basis(blade.cross(flat).normalized(), blade, flat), spine + Vector3(0.16, 0.22, 0.17)))
+	_bow_back = WeaponModels.bow()
+	var limb := Vector3(0.55, 0.83, 0).normalized()
+	character.attach_to_bone(_bow_back, "mixamorig_Spine2",
+		Transform3D(Basis(limb.cross(-flat).normalized(), limb, -flat), spine + Vector3(0.0, -0.05, 0.2)))
+	_show_weapons()
 
 
-func _show_weapon() -> void:
-	if _hand_weapon:
-		_hand_weapon.visible = in_combat
-		_back_weapon.visible = not in_combat
-	animator.idle_animation = "idle_armed" if in_combat else "idle"
+func _show_weapons() -> void:
+	if _sword_hand == null:
+		return
+	var drawn := in_combat
+	_sword_hand.visible = drawn and mode == Mode.MELEE
+	_sword_back.visible = not _sword_hand.visible
+	_bow_hand.visible = drawn and mode == Mode.RANGED
+	_bow_back.visible = not _bow_hand.visible
+	animator.idle_animation = "idle_armed" if drawn and mode == Mode.MELEE else "idle"
 
 
 # --- Input -------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
+	if GameSettings.menu_open:
+		return
 	if event.is_action_pressed("attack"):
 		# Clicking an enemy selects it; the click is also an attack.
 		if event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
 			targeting.click_select(event.position)
-		_attack_pressed = true
+		if not _attack_down:
+			_attack_down = true
+			_press_time = 0.0
+	elif event.is_action_pressed("cycle_mode"):
+		set_mode((mode + 1) % 3 if not spells.is_empty() else (mode + 1) % 2)
+	elif event.is_action_pressed("spell_next"):
+		select_spell(spell_index + 1)
+	elif event.is_action_pressed("spell_prev"):
+		select_spell(spell_index - 1)
+
+
+func set_mode(new_mode: Mode) -> void:
+	if new_mode == mode:
+		return
+	_cancel_charge()
+	mode = new_mode
+	_show_weapons()
+	mode_changed.emit(mode)
+
+
+func select_spell(index: int) -> void:
+	if spells.is_empty():
+		return
+	spell_index = posmod(index, spells.size())
+	spell_changed.emit(spell_index)
+	set_mode(Mode.MAGIC)
+
+
+func selected_spell() -> Ability:
+	return spells[spell_index] if spell_index < spells.size() else null
 
 
 func _physics_process(delta: float) -> void:
@@ -109,44 +187,40 @@ func _physics_process(delta: float) -> void:
 			_cooldowns.erase(ab)
 	if in_combat:
 		_combat_timer -= delta
-		if _combat_timer <= 0.0 and _current == null and _casting == null and not _blocking:
+		if _combat_timer <= 0.0 and _current == null and _charging == null and not _blocking:
 			_set_combat(false)
 
-	var attack := _attack_pressed
-	_attack_pressed = false
+	var released := _attack_down and not Input.is_action_pressed("attack")
+	if _attack_down:
+		_press_time += delta
 	if player.state != PlayerController.State.NORMAL and player.state != PlayerController.State.ACTION:
+		if released:
+			_attack_down = false
 		return
 
-	if _casting:
-		_update_cast(delta)
-	elif _current:
+	if _current:
 		_update_action(delta)
 	elif _blocking:
 		_update_block(delta)
 
-	# New input.
-	var busy := _casting != null or (_current != null and _time < _current.recovery_time)
-	if attack:
-		var next: Ability = light_combo[0]
-		if _current and light_combo.has(_current) and _hit_done:
-			next = light_combo[(light_combo.find(_current) + 1) % light_combo.size()]
-		if busy or _blocking:
-			if _current and not _casting:
-				_queued = next  # chain into the next swing when this one allows
-		else:
-			_start(next)
-	elif Input.is_action_just_pressed("heavy_attack"):
-		if busy:
-			_queued = heavy_attack
-		else:
-			_start(heavy_attack)
-	elif Input.is_action_pressed("block") and not busy and not _blocking:
+	var busy := _current != null and _time < _current.recovery_time
+
+	# Attack button: tap or hold.
+	if _charging:
+		_update_charge(delta)
+		if released:
+			_attack_down = false
+			_release_charge()
+	elif _attack_down:
+		if released:
+			_attack_down = false
+			_tap()
+		elif _press_time >= tap_time and not busy and not _blocking:
+			_begin_charge()
+
+	# Block.
+	if not GameSettings.menu_open and Input.is_action_pressed("block") and not busy and not _blocking and _charging == null:
 		_start_block()
-	else:
-		for i in spells.size():
-			if Input.is_action_just_pressed("ability_%d" % (i + 1)) and not busy:
-				_start(spells[i])
-				break
 
 
 # --- Abilities ---------------------------------------------------------------
@@ -159,77 +233,92 @@ func can_afford(ab: Ability) -> bool:
 	return stats.mana >= ab.mana_cost and stats.stamina >= ab.stamina_cost
 
 
-## The keys and abilities on the action bar, in order.
-func action_bar() -> Array:
-	var out := [["LMB", light_combo[0]], ["E", heavy_attack]]
-	for i in spells.size():
-		out.append([str(i + 1), spells[i]])
-	return out
-
-
 func is_blocking() -> bool:
 	return _blocking
 
 
-func _start(ab: Ability) -> bool:
-	if ab == null:
+## The ability the attack button uses in the current mode (tap version).
+func mode_ability(which: Mode = mode) -> Ability:
+	match which:
+		Mode.MELEE:
+			return light_combo[0] if not light_combo.is_empty() else null
+		Mode.RANGED:
+			return ranged_attack
+		_:
+			return selected_spell()
+
+
+func _tap() -> void:
+	match mode:
+		Mode.MELEE:
+			var next: Ability = light_combo[0]
+			if _current and light_combo.has(_current) and _hit_done:
+				next = light_combo[(light_combo.find(_current) + 1) % light_combo.size()]
+			if _current and _time < _current.recovery_time:
+				_queued = next  # chain into the next swing when this one allows
+			elif _current == null or _time >= _current.recovery_time:
+				_current = null
+				_start(next, next.power)
+		Mode.RANGED:
+			if _current == null or _time >= _current.recovery_time:
+				_current = null
+				_start(ranged_attack, ranged_attack.power * quick_shot_power, 1, 0.0)
+		Mode.MAGIC:
+			var spell := selected_spell()
+			if spell and (_current == null or _time >= _current.recovery_time):
+				_current = null
+				_start(spell, spell.power, 1)
+
+
+## Checks costs, picks a target and plays the ability. Returns false if it can't go.
+func _start(ab: Ability, power: float, level := 1, anim_start := 0.0) -> bool:
+	if ab == null or cooldown_left(ab) > 0.0:
 		return false
-	if cooldown_left(ab) > 0.0:
-		return false
-	if stats.mana < ab.mana_cost:
+	if stats.mana < ab.mana_cost * level:
 		notice.emit("Not enough mana")
 		return false
 	if stats.stamina < ab.stamina_cost:
 		notice.emit("Too tired")
 		return false
-
-	var target: Node3D = null
-	match ab.delivery:
-		Ability.Delivery.MELEE:
-			target = targeting.pick_for_attack(lunge_range + ab.reach)
-		Ability.Delivery.PROJECTILE:
-			target = targeting.pick_for_attack(ab.reach)
-			if target == null:
-				notice.emit("Out of range" if targeting.has_target() else "No target")
-				return false
-		Ability.Delivery.HEAL_OVER_TIME:
-			target = player  # allies come with co-op
-
+	var target := _pick_target(ab)
+	if ab.delivery == Ability.Delivery.PROJECTILE and ab.projectile_style == Ability.ProjectileStyle.BOLT and target == null:
+		notice.emit("No target")
+		return false
 	if _blocking:
 		_end_block()
-	if not player.start_action(0.0 if ab.cast_time > 0.0 else ab.move_scale):
+	if not player.start_action(ab.move_scale):
 		return false
 	if ab.mana_cost > 0.0:
-		stats.use_mana(ab.mana_cost)
+		stats.use_mana(ab.mana_cost * level)
 	if ab.stamina_cost > 0.0:
 		stats.use_stamina(ab.stamina_cost)
 	_enter_combat()
 	_target = target
 	if target and target != player:
 		player.face_toward(target.global_position)
-
-	if ab.cast_time > 0.0:
-		_casting = ab
-		_cast_left = ab.cast_time
-		_cast_target = target
-		player.action_animation.emit("cast_channel", 0.0, 0.2, 1.0)
-		_hand_glow = Effects.hand_glow(ab.projectile_color)
-		character.attach_to_hand(_hand_glow)
-		if ab.sounds.size() > 0:
-			Combat.play_sound(player, ab.sounds[0], -6.0, 0.8)
-		cast_started.emit(ab, ab.cast_time)
-		return true
-	_begin_release(ab)
+	_begin_release(ab, power, level, anim_start)
 	return true
 
 
+func _pick_target(ab: Ability) -> Node3D:
+	match ab.delivery:
+		Ability.Delivery.MELEE:
+			return targeting.pick_for_attack(lunge_range + ab.reach)
+		Ability.Delivery.PROJECTILE:
+			return targeting.pick_for_attack(ab.reach)
+		_:
+			return player  # heals: allies come with co-op
+
+
 ## Plays the ability's clip; the effect lands at its hit_time.
-func _begin_release(ab: Ability) -> void:
+func _begin_release(ab: Ability, power: float, level: int, anim_start := 0.0) -> void:
 	_current = ab
-	_time = 0.0
-	_hit_done = false
+	_time = anim_start
+	_hit_done = anim_start >= ab.hit_time
 	_swing_played = false
 	_queued = null
+	_power = power
+	_level = level
 	if ab.cooldown > 0.0:
 		_cooldowns[ab] = ab.cooldown
 	_lunge = Vector3.ZERO
@@ -237,16 +326,19 @@ func _begin_release(ab: Ability) -> void:
 		var to := _target.global_position - player.global_position
 		to.y = 0.0
 		var gap := to.length() - (ab.reach - 0.6)
+		var until_hit := maxf((ab.hit_time - anim_start) / ab.animation_speed, 0.05)
 		if gap > 0.0 and to.length() < lunge_range + ab.reach:
-			_lunge = to.normalized() * minf(gap / maxf(ab.hit_time / ab.animation_speed, 0.05), 10.0)
+			_lunge = to.normalized() * minf(gap / until_hit, 10.0)
 	player.action_move_scale = ab.move_scale
-	player.action_animation.emit(ab.animation, 0.0, 0.08, ab.animation_speed)
+	player.action_animation.emit(ab.animation, anim_start, 0.08, ab.animation_speed)
 
 
 func _update_action(delta: float) -> void:
 	_time += delta * _current.animation_speed
 	if _target and is_instance_valid(_target) and _target != player and not _hit_done:
 		player.face_toward(_target.global_position, delta)
+	elif targeting.is_locked():
+		player.face_toward(targeting.target.global_position, delta)
 	player.action_velocity = _lunge if not _hit_done else Vector3.ZERO
 
 	if not _swing_played and _time >= _current.hit_time - 0.12:
@@ -262,11 +354,11 @@ func _update_action(delta: float) -> void:
 			var next := _queued
 			_queued = null
 			_current = null
-			if not _start(next):
+			if not _start(next, next.power):
 				_finish_action()
 			return
 		# Moving after the recovery point ends the action early.
-		if Input.get_vector("move_left", "move_right", "move_forward", "move_back").length() > 0.1:
+		if _move_input().length() > 0.1:
 			_finish_action()
 			return
 	var length := character.get_animation_length(_current.animation)
@@ -278,7 +370,6 @@ func _land(ab: Ability) -> void:
 	match ab.delivery:
 		Ability.Delivery.MELEE:
 			var fwd := -player.model.global_basis.z
-			var hits := 0
 			for n in Combat.enemies_near(player, player.global_position, ab.reach + 0.6):
 				var to := n.global_position - player.global_position
 				if absf(to.y) > 2.0:
@@ -286,24 +377,31 @@ func _land(ab: Ability) -> void:
 				to.y = 0.0
 				if to.length() > 0.5 and rad_to_deg(fwd.angle_to(to.normalized())) > ab.arc * 0.5:
 					continue
-				Combat.hit(player, n, ab.power, ab.staggers)
-				hits += 1
-			if hits > 0:
-				_enter_combat()
+				Combat.hit(player, n, _power, ab.staggers)
 		Ability.Delivery.PROJECTILE:
-			if _target and Combat.is_alive(_target):
-				var hand := _hand_position()
-				Projectile.launch(hand, player, _target, ab)
-				if ab.sounds.size() > 0:
-					Combat.play_sound(player, ab.sounds[0], -3.0)
+			var from := _hand_position(ab.projectile_style == Ability.ProjectileStyle.BOLT)
+			var target: Node3D = _target if _target and Combat.is_alive(_target) else null
+			var aim := _free_aim_direction(from)
+			Projectile.launch(from, player, target, ab, _power, aim)
+			if ab.projectile_style == Ability.ProjectileStyle.ARROW:
+				Combat.play_sound(player, SHOT_SOUND, -4.0)
+			elif ab.sounds.size() > 0:
+				Combat.play_sound(player, ab.sounds[0], -3.0)
 		Ability.Delivery.HEAL_OVER_TIME:
 			var who: Node3D = _target if _target else player
 			var s := Combat.stats_of(who)
 			if s:
-				s.add_heal_over_time(ab.power, ab.ticks, ab.tick_interval, ab)
+				s.add_heal_over_time(_power, ab.ticks, ab.tick_interval, ab)
 				Effects.heal_glow(who, ab.ticks * ab.tick_interval)
 				if ab.sounds.size() > 0:
 					Combat.play_sound(who, ab.sounds[0], -4.0)
+
+
+## Without a target, shots go where the character faces (level, slightly up for range).
+func _free_aim_direction(_from: Vector3) -> Vector3:
+	var fwd := -player.model.global_basis.z
+	fwd.y = 0.0
+	return (fwd.normalized() + Vector3.UP * 0.02).normalized()
 
 
 func _finish_action() -> void:
@@ -312,69 +410,124 @@ func _finish_action() -> void:
 	player.end_action()
 
 
-func _hand_position() -> Vector3:
+func _hand_position(right := true) -> Vector3:
 	var skel := character.get_skeleton()
-	var bone := skel.find_bone("mixamorig_RightHand")
+	var bone := skel.find_bone("mixamorig_RightHand" if right else "mixamorig_LeftHand")
 	if bone < 0:
 		return player.global_position + Vector3.UP * 1.4
 	return skel.global_transform * skel.get_bone_global_pose(bone).origin
 
 
-# --- Casting -----------------------------------------------------------------
+func _move_input() -> Vector2:
+	return Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 
-func _update_cast(delta: float) -> void:
-	var moving := Input.get_vector("move_left", "move_right", "move_forward", "move_back").length() > 0.1
-	if moving or Input.is_action_just_pressed("jump"):
-		_interrupt_cast("Interrupted")
+
+# --- Charging ----------------------------------------------------------------
+
+func _begin_charge() -> void:
+	var ab: Ability
+	match mode:
+		Mode.MELEE:
+			ab = heavy_attack
+		Mode.RANGED:
+			ab = ranged_attack
+		_:
+			ab = selected_spell()
+	if ab == null or cooldown_left(ab) > 0.0:
 		return
-	if _cast_target and is_instance_valid(_cast_target) and _cast_target != player:
-		player.face_toward(_cast_target.global_position, delta)
-	_cast_left -= delta
-	if _cast_left > 0.0:
+	if stats.mana < ab.mana_cost:
+		notice.emit("Not enough mana")
+		_attack_down = false
 		return
-	var ab := _casting
-	_end_cast_visuals()
-	if ab.delivery == Ability.Delivery.PROJECTILE:
-		if not Combat.is_alive(_cast_target):
-			cast_finished.emit(ab, false)
-			_casting = null
-			_finish_action()
-			return
-		if _cast_target.global_position.distance_to(player.global_position) > ab.reach + 2.0:
-			notice.emit("Out of range")
-			cast_finished.emit(ab, false)
-			_casting = null
-			_finish_action()
-			return
-	_casting = null
-	_target = _cast_target
-	cast_finished.emit(ab, true)
-	_begin_release(ab)
-
-
-func _interrupt_cast(message: String) -> void:
-	if _casting == null:
+	if not player.start_action(0.3 if mode != Mode.MELEE else 0.15):
 		return
-	var ab := _casting
-	_casting = null
-	_end_cast_visuals()
-	notice.emit(message)
-	cast_finished.emit(ab, false)
-	_finish_action()
+	_charging = ab
+	_charge = 0.0
+	_enter_combat()
+	match mode:
+		Mode.MELEE:
+			player.action_animation.emit(heavy_attack.animation, 0.0, 0.1, 1.0)
+		Mode.RANGED:
+			player.action_animation.emit("bow_aim", 0.0, 0.12, 1.0)
+			Combat.play_sound(player, DRAW_SOUND, -6.0)
+		Mode.MAGIC:
+			player.action_animation.emit("cast_channel", 0.0, 0.2, 1.0)
+			_charge_glow = Effects.hand_glow(ab.projectile_color)
+			character.attach_to_hand(_charge_glow)
+	charge_started.emit(ab)
 
 
-func _end_cast_visuals() -> void:
-	if _hand_glow and is_instance_valid(_hand_glow):
-		_hand_glow.get_parent().queue_free()  # the BoneAttachment holding it
-	_hand_glow = null
+func _update_charge(delta: float) -> void:
+	_charge += delta
+	var ab := _charging
+	if targeting.has_target():
+		player.face_toward(targeting.target.global_position, delta)
+	if mode == Mode.MELEE and character.current_animation() == ab.animation and character.animation_position() >= heavy_windup_time:
+		character.set_speed(0.0)  # hold the wind-up
+	charge_progress.emit(_charge_fraction(), _charge_level())
+
+
+func _charge_fraction() -> float:
+	if _charging == null:
+		return 0.0
+	if mode == Mode.MAGIC:
+		var levels := maxi(_charging.max_charge_level, 1)
+		return clampf(_charge / (_charging.charge_time * levels), 0.0, 1.0)
+	return clampf(_charge / maxf(_charging.charge_time, 0.01), 0.0, 1.0)
+
+
+func _charge_level() -> int:
+	if _charging == null or mode != Mode.MAGIC:
+		return 1
+	var level := 1 + int(_charge / maxf(_charging.charge_time, 0.01))
+	level = mini(level, maxi(_charging.max_charge_level, 1))
+	# Only as many levels as there's mana for.
+	while level > 1 and stats.mana < _charging.mana_cost * level:
+		level -= 1
+	return level
+
+
+func _release_charge() -> void:
+	var ab := _charging
+	var k := _charge_fraction()
+	var level := _charge_level()
+	_end_charge_visuals()
+	_charging = null
+	charge_ended.emit()
+	match mode:
+		Mode.MELEE:
+			player.end_action()
+			_start(ab, ab.power * (1.0 + ab.charge_power * k), 1, heavy_windup_time)
+		Mode.RANGED:
+			player.end_action()
+			var power := ab.power * lerpf(quick_shot_power, 1.0 + ab.charge_power, k)
+			_start(ab, power, 1, 0.0)
+		Mode.MAGIC:
+			player.end_action()
+			var levels := maxi(ab.max_charge_level, 1)
+			var level_k := float(level - 1) / maxf(levels - 1, 1)
+			_start(ab, ab.power * (1.0 + ab.charge_power * level_k), level, 0.0)
+
+
+func _cancel_charge() -> void:
+	if _charging == null:
+		return
+	_charging = null
+	_end_charge_visuals()
+	charge_ended.emit()
+	player.end_action()
+
+
+func _end_charge_visuals() -> void:
+	character.set_speed(1.0)
+	if _charge_glow and is_instance_valid(_charge_glow):
+		_charge_glow.get_parent().queue_free()  # the BoneAttachment holding it
+	_charge_glow = null
 
 
 # --- Blocking ----------------------------------------------------------------
 
 func _start_block() -> void:
-	if stats.stamina < block_stamina_per_hit * 0.5:
-		notice.emit("Too tired")
-		return
 	if not player.start_action(0.0):
 		return
 	_blocking = true
@@ -383,7 +536,7 @@ func _start_block() -> void:
 
 
 func _update_block(delta: float) -> void:
-	if not Input.is_action_pressed("block"):
+	if not Input.is_action_pressed("block") or GameSettings.menu_open:
 		_end_block()
 		return
 	_enter_combat()
@@ -404,7 +557,7 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 		to.y = 0.0
 		var fwd := -player.model.global_basis.z
 		if to.length() < 0.01 or rad_to_deg(fwd.angle_to(to.normalized())) <= block_arc * 0.5:
-			if stats.use_stamina(block_stamina_per_hit):
+			if block_stamina_per_hit <= 0.0 or stats.use_stamina(block_stamina_per_hit):
 				FloatingText.spawn(player, "Blocked", Color(0.8, 0.85, 0.9), 0.8)
 				return amount * (1.0 - block_reduction)
 			notice.emit("Guard broken")
@@ -428,21 +581,17 @@ func _enter_combat() -> void:
 
 func _set_combat(value: bool) -> void:
 	in_combat = value
-	_show_weapon()
+	_show_weapons()
 	combat_changed.emit(value)
 
 
-func _on_interrupted() -> void:
-	_cancel_all()
-
-
 func _cancel_all() -> void:
-	if _casting:
-		var ab := _casting
-		_casting = null
-		_end_cast_visuals()
-		cast_finished.emit(ab, false)
+	if _charging:
+		_charging = null
+		_end_charge_visuals()
+		charge_ended.emit()
 	_current = null
 	_queued = null
 	_blocking = false
+	_attack_down = false
 	player.action_velocity = Vector3.ZERO

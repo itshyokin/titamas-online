@@ -7,6 +7,8 @@ shader_type spatial;
 // sides so cliffs don't stretch.
 render_mode diffuse_lambert, specular_disabled;
 
+#include "res://assets/materials/pixel_sample.gdshaderinc"
+
 uniform sampler2D tex_r : source_color, filter_nearest_mipmap, repeat_enable; // grass
 uniform sampler2D tex_g : source_color, filter_nearest_mipmap, repeat_enable; // dirt
 uniform sampler2D tex_b : source_color, filter_nearest_mipmap, repeat_enable; // cliff / rock
@@ -50,9 +52,9 @@ float fbm(vec2 p) {
 vec3 triplanar(sampler2D tex, vec3 p, vec3 n, float scale) {
 	vec3 b = pow(abs(n), vec3(4.0));
 	b /= (b.x + b.y + b.z);
-	vec3 x = texture(tex, p.zy / scale).rgb;
-	vec3 y = texture(tex, p.xz / scale).rgb;
-	vec3 z = texture(tex, p.xy / scale).rgb;
+	vec3 x = px_sample(tex, p.zy / scale).rgb;
+	vec3 y = px_sample(tex, p.xz / scale).rgb;
+	vec3 z = px_sample(tex, p.xy / scale).rgb;
 	return x * b.x + y * b.y + z * b.z;
 }
 
@@ -63,8 +65,8 @@ void vertex() {
 
 void fragment() {
 	vec2 uv = world_pos.xz / tile_size;
-	vec3 col_r = texture(tex_r, uv).rgb;
-	vec3 col_g = texture(tex_g, uv).rgb;
+	vec3 col_r = px_sample(tex_r, uv).rgb;
+	vec3 col_g = px_sample(tex_g, uv).rgb;
 	vec3 col_b = triplanar(tex_b, world_pos, world_normal, tile_size_b);
 
 	vec2 paint = clamp(UV2, 0.0, 1.0);

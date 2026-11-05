@@ -55,6 +55,12 @@ func play(anim: String, blend := 0.2, speed := 1.0) -> void:
 		_animator.play(anim, blend)
 
 
+## Changes the playback speed of the current animation (0 holds the pose).
+func set_speed(speed: float) -> void:
+	if _animator:
+		_animator.speed_scale = speed
+
+
 ## Plays an animation from a given time (restarts it even if already playing).
 func play_from(anim: String, time: float, blend := 0.15, speed := 1.0) -> void:
 	if _animator == null or not _animator.has_animation(anim):

@@ -105,6 +105,22 @@ const PLACEHOLDERS := {
 			["aim", ARM_L, Vector3(-0.4, -0.5, 0.6)], ["aim", FORE_L, Vector3(0.3, 0.3, 0.9)]]],
 		[0.25, "same"],
 	]},
+	# Bow drawn and aimed forward (holds while the attack button is held).
+	"bow_aim": {"length": 0.3, "keys": [
+		[0.0, []],
+		[0.25, [["turn", SPINE, Vector3.UP, 40.0], ["aim", ARM_L, Vector3(0.05, 0.12, 1.0)], ["aim", FORE_L, Vector3(0.0, 0.12, 1.0)],
+			["aim", ARM_R, Vector3(0.55, 0.2, -0.35)], ["aim", FORE_R, Vector3(-0.75, 0.15, 0.6)]]],
+		[0.3, "same"],
+	]},
+	# Letting the arrow go: the drawing hand flicks back. Arrow leaves at the start.
+	"bow_release": {"length": 0.55, "keys": [
+		[0.0, [["turn", SPINE, Vector3.UP, 40.0], ["aim", ARM_L, Vector3(0.05, 0.12, 1.0)], ["aim", FORE_L, Vector3(0.0, 0.12, 1.0)],
+			["aim", ARM_R, Vector3(0.55, 0.2, -0.35)], ["aim", FORE_R, Vector3(-0.75, 0.15, 0.6)]]],
+		[0.07, [["turn", SPINE, Vector3.UP, 42.0], ["aim", ARM_L, Vector3(0.05, 0.14, 1.0)], ["aim", FORE_L, Vector3(0.0, 0.14, 1.0)],
+			["aim", ARM_R, Vector3(0.65, 0.3, -0.6)], ["aim", FORE_R, Vector3(0.4, 0.25, -0.85)]]],
+		[0.25, "same"],
+		[0.55, []],
+	]},
 	# Gathering a spell (loops while casting).
 	"cast_channel": {"length": 1.2, "loop": true, "keys": [
 		[0.0, [["aim", ARM_R, Vector3(0.35, 0.2, 0.9)], ["aim", FORE_R, Vector3(0.0, 0.6, 0.8)],

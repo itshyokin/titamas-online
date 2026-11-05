@@ -131,6 +131,8 @@ func restore() -> void:
 
 ## Spends stamina. Returns false (and spends nothing) if there isn't enough.
 func use_stamina(amount: float) -> bool:
+	if amount <= 0.0:
+		return true
 	if stamina < amount:
 		return false
 	stamina -= amount

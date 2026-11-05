@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="Ability" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/ability.gd" id="1_61doi"]
+
+[resource]
+script = ExtResource("1_61doi")
+id = "arrow_shot"
+display_name = "Bow"
+description = "Tap for a quick shot; hold to draw, release to fire. A full draw hits much harder. Aims at your target."
+delivery = 1
+color = Color(0.55, 0.75, 0.4, 1)
+power = 15.0
+reach = 40.0
+charge_power = 0.9
+projectile_speed = 38.0
+projectile_color = Color(0.9, 0.85, 0.7, 1)
+projectile_style = 1
+animation = "bow_release"
+hit_time = 0.03
+recovery_time = 0.3
+move_scale = 0.3

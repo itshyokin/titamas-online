@@ -8,7 +8,7 @@
 script = ExtResource("1_j58cr")
 id = "slash_1"
 display_name = "Slash"
-description = "A quick forehand cut. Press again to follow up."
+description = "A quick forehand cut. Tap again in time for the follow-up."
 color = Color(0.75, 0.75, 0.8, 1)
 power = 12.0
 animation = "attack_light_1"

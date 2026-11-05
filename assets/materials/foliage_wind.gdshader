@@ -4,10 +4,14 @@ shader_type spatial;
 // roll across the world. Leaves can be alpha-cutout textures.
 render_mode cull_disabled, diffuse_lambert, specular_disabled;
 
+#include "res://assets/materials/pixel_sample.gdshaderinc"
+
 uniform sampler2D albedo_texture : source_color, filter_nearest_mipmap, repeat_enable, hint_default_white;
 uniform vec4 albedo_color : source_color = vec4(1.0);
 uniform bool use_alpha_cutout = true;
 uniform float alpha_cutout : hint_range(0.0, 1.0) = 0.5;
+// Size of one texture repeat in 4 m tiles (for the pixel textures setting).
+uniform float pixel_scale = 1.0;
 
 // Height (m, in the prop's own space) at which sway reaches full strength.
 uniform float sway_height = 6.0;
@@ -36,7 +40,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 tex = texture(albedo_texture, UV) * albedo_color;
+	vec4 tex = px_sample_scaled(albedo_texture, UV, pixel_scale) * albedo_color;
 	ALBEDO = tex.rgb;
 	if (use_alpha_cutout) {
 		ALPHA = tex.a;

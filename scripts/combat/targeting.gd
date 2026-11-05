@@ -1,20 +1,28 @@
 class_name Targeting
 extends Node
-## The player's current target. Tab cycles through enemies in view (nearest to the
-## centre of the screen first), Esc clears, clicking an enemy selects it. Attacks
-## pick the nearest enemy in front when nothing is selected. A ring marks the target.
+## The player's current target. Next/previous target cycle through enemies in view
+## (nearest to the centre of the screen first), clear target drops it, clicking an enemy
+## selects it. Attacks pick the nearest enemy in front when nothing is selected.
+## Lock-on (Fable style): the camera keeps the target in view and the character faces
+## it while moving, so moving sideways circles it. A ring marks the target; brackets
+## round its body show the lock.
 
 signal target_changed(target: Node3D)
+signal lock_changed(locked: bool)
 
 @export var tab_range := 40.0
 ## The target is dropped when further away than this.
 @export var lose_range := 55.0
 @export var enemy_mask := 4  # physics layer 3
+## Lock-on breaks beyond this distance.
+@export var lock_range := 30.0
 
 @onready var player: PlayerController = get_parent()
 
 var target: Node3D = null
+var locked := false
 var _ring: MeshInstance3D
+var _marker: MeshInstance3D
 var _cycle: Array[Node3D] = []
 
 
@@ -23,6 +31,10 @@ func _ready() -> void:
 	_ring.visible = false
 	_ring.top_level = true
 	add_child(_ring)
+	_marker = Effects.lock_marker()
+	_marker.visible = false
+	_marker.top_level = true
+	add_child(_marker)
 
 
 func set_target(node: Node3D) -> void:
@@ -35,6 +47,10 @@ func set_target(node: Node3D) -> void:
 	_mark(target, false)
 	target = node
 	_mark(target, true)
+	if target == null:
+		set_locked(false)
+	else:
+		player.lock_target = target if locked else null
 	if target:
 		var s := Combat.stats_of(target)
 		if s and not s.died.is_connected(_on_target_died):
@@ -49,12 +65,40 @@ func _mark(node: Node3D, on: bool) -> void:
 			plate.targeted = on
 
 
+func is_locked() -> bool:
+	return locked and has_target()
+
+
+func set_locked(value: bool) -> void:
+	if value and not has_target():
+		value = false
+	if value == locked:
+		return
+	locked = value
+	player.lock_facing = locked
+	player.lock_target = target if locked else null
+	lock_changed.emit(locked)
+
+
+## Lock-on button: locks onto the target (picking the nearest enemy in front if there's
+## none), or releases the lock.
+func toggle_lock() -> void:
+	if locked:
+		set_locked(false)
+		return
+	if not has_target():
+		pick_for_attack(lock_range)
+		if not has_target():
+			cycle()
+	set_locked(has_target())
+
+
 func has_target() -> bool:
 	return target != null and is_instance_valid(target) and Combat.is_alive(target)
 
 
-## Picks the next enemy in view. Repeated presses walk through them in order.
-func cycle() -> void:
+## Picks the next (or previous) enemy in view. Repeated presses walk through them in order.
+func cycle(step := 1) -> void:
 	var cam := get_viewport().get_camera_3d()
 	var candidates := Combat.enemies_near(player, player.global_position, tab_range)
 	if candidates.is_empty():
@@ -74,7 +118,7 @@ func cycle() -> void:
 	if not has_target() or not _cycle.has(target):
 		set_target(_cycle[0])
 	else:
-		set_target(_cycle[(_cycle.find(target) + 1) % _cycle.size()])
+		set_target(_cycle[posmod(_cycle.find(target) + step, _cycle.size())])
 
 
 ## The enemy an attack should go for: the target if close enough, else the nearest
@@ -121,11 +165,20 @@ func click_select(screen_pos: Vector2) -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if GameSettings.menu_open:
+		return
 	if event.is_action_pressed("target_next"):
-		cycle()
+		cycle(1)
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("target_clear"):
+	elif event.is_action_pressed("target_prev"):
+		cycle(-1)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("lock_on"):
+		toggle_lock()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("target_clear") and (target != null or locked):
 		set_target(null)
+		get_viewport().set_input_as_handled()
 
 
 func _process(_delta: float) -> void:
@@ -133,9 +186,14 @@ func _process(_delta: float) -> void:
 		set_target(null)
 	if target and target.global_position.distance_to(player.global_position) > lose_range:
 		set_target(null)
+	if locked and (not has_target() or target.global_position.distance_to(player.global_position) > lock_range):
+		set_locked(false)
 	_ring.visible = has_target()
 	if _ring.visible:
 		_ring.global_position = target.global_position + Vector3.UP * 0.05
+	_marker.visible = is_locked()
+	if _marker.visible:
+		_marker.global_position = target.global_position + Vector3.UP * 1.0
 
 
 func _on_target_died() -> void:

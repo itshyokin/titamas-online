@@ -1,6 +1,8 @@
 class_name ThirdPersonCamera
 extends Node3D
-## Orbiting third-person camera. Hold right mouse to look around, wheel to zoom.
+## Orbiting third-person camera. Hold right mouse (or the right stick) to look around,
+## wheel to zoom. While locked onto a target it swings round behind the player to keep
+## the target in view (Fable style).
 ## Sits on the player as a "CameraRig" with a SpringArm3D > Camera3D under it,
 ## and stays level (its yaw is independent of the character's facing).
 
@@ -11,6 +13,10 @@ extends Node3D
 @export var max_distance := 10.0
 @export var zoom_step := 0.75
 @export var zoom_smoothing := 10.0
+## Right stick turn speed, degrees per second at full tilt.
+@export var stick_speed := 150.0
+## How quickly the camera swings round to frame a locked target.
+@export var lock_follow := 5.0
 
 @onready var spring_arm: SpringArm3D = $SpringArm3D
 
@@ -26,6 +32,8 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if GameSettings.menu_open:
+		return
 	if event.is_action_pressed("camera_look"):
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event.is_action_released("camera_look"):
@@ -35,13 +43,33 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("zoom_out"):
 		_target_distance = minf(_target_distance + zoom_step, max_distance)
 	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_yaw -= event.relative.x * mouse_sensitivity
-		_pitch = clampf(_pitch - event.relative.y * mouse_sensitivity, min_pitch, max_pitch)
+		var sens := mouse_sensitivity * GameSettings.camera_sensitivity
+		var invert := -1.0 if GameSettings.invert_camera_y else 1.0
+		_yaw -= event.relative.x * sens
+		_pitch = clampf(_pitch - event.relative.y * sens * invert, min_pitch, max_pitch)
 
 
 func _process(delta: float) -> void:
 	var owner_body := get_parent() as Node3D
 	global_position = owner_body.global_position + Vector3(0, 1.6, 0)
+	var lock: Node3D = owner_body.get("lock_target")
+	if lock and is_instance_valid(lock):
+		# Look from behind the player towards the target, a little from above.
+		var to := lock.global_position - owner_body.global_position
+		to.y = 0.0
+		if to.length() > 0.5:
+			var want_yaw := rad_to_deg(atan2(-to.x, -to.z))
+			_yaw = rad_to_deg(lerp_angle(deg_to_rad(_yaw), deg_to_rad(want_yaw), 1.0 - exp(-lock_follow * delta)))
+			var rise := lock.global_position.y - owner_body.global_position.y
+			var want_pitch := clampf(-14.0 + rad_to_deg(atan2(rise, maxf(to.length(), 1.0))) * 0.5, min_pitch, max_pitch)
+			_pitch = lerpf(_pitch, want_pitch, 1.0 - exp(-2.0 * delta))
+	elif not GameSettings.menu_open:
+		var stick := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down")
+		if stick.length() > 0.0:
+			var speed := stick_speed * GameSettings.camera_sensitivity * delta
+			var invert := -1.0 if GameSettings.invert_camera_y else 1.0
+			_yaw -= stick.x * speed
+			_pitch = clampf(_pitch - stick.y * speed * 0.7 * invert, min_pitch, max_pitch)
 	rotation_degrees = Vector3(_pitch, _yaw, 0)
 	spring_arm.spring_length = lerpf(spring_arm.spring_length, _target_distance, zoom_smoothing * delta)
 

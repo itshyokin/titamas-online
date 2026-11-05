@@ -26,6 +26,14 @@ extends Resource
 @export var sun_color := Color(1.0, 0.95, 0.85)
 @export var sun_energy := 1.1
 @export var ambient_energy := 0.6
+## How dark shadows are: 1 = full, lower = softer (stylized, lighter shadows).
+@export_range(0.0, 1.0) var shadow_strength := 0.6
+
+@export_group("Colour")
+## 1 = unchanged. Above 1 = more saturated, punchier colours.
+@export_range(0.0, 2.0) var saturation := 1.2
+@export_range(0.5, 1.5) var contrast := 1.05
+@export_range(0.5, 1.5) var brightness := 1.0
 
 @export_group("Sound")
 ## Looping background sound for the region (birds, forest, town bustle...). Crossfades

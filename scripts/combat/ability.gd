@@ -24,14 +24,21 @@ enum Delivery {
 @export var stamina_cost := 0.0
 ## Seconds before it can be used again.
 @export var cooldown := 0.0
-## Seconds of casting before it goes off (0 = instant). Moving cancels a cast.
-@export var cast_time := 0.0
 ## Reach (MELEE) or maximum distance to the target (others), in metres.
 @export var reach := 2.4
 ## Width of a melee swing, in degrees.
 @export var arc := 120.0
 ## Heavy hits interrupt an enemy's attack.
 @export var staggers := false
+
+@export_group("Charging")
+## Holding the attack button charges it. Melee/bows: seconds to full charge.
+## Spells: seconds per charge level.
+@export var charge_time := 1.0
+## Extra power at full charge: 1.0 = double damage when fully charged.
+@export var charge_power := 1.0
+## Spells: highest charge level (skill tree ranks will raise this). Mana cost is per level.
+@export var max_charge_level := 1
 
 @export_group("Heal over time")
 @export var ticks := 4
@@ -40,6 +47,8 @@ enum Delivery {
 @export_group("Projectile")
 @export var projectile_speed := 18.0
 @export var projectile_color := Color(1.0, 0.5, 0.15)
+enum ProjectileStyle { BOLT, ARROW }
+@export var projectile_style := ProjectileStyle.BOLT
 
 @export_group("Animation")
 ## Clip played when it goes off (casts play "cast_channel" while casting first).

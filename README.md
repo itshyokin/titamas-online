@@ -8,9 +8,23 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 2. Open Godot 4.6, click **Import**, pick this folder's `project.godot`.
 3. Press **F5** (Play). The overworld test loads your terrain chunks. The gray-box test level is `scenes/levels/test_level.tscn` (open it and press **F6**).
 
-**Controls:** WASD move (runs by default) · hold Ctrl to walk · Shift sprint · Space jump · Alt dodge
+**Controls** (all rebindable: gear icon top right, or Esc / Start → Settings):
 
-**Combat:** left mouse attack (press again in time for the follow-up swing) · E heavy attack (stamina; staggers) · hold Q block (from the front; each blocked hit costs stamina) · 1 Firebolt (1.5 s cast, moving interrupts) · 2 Mend (heal over time on yourself) · Tab next target · Esc clear target · click an enemy to target it. Attacks pick the nearest enemy in front if nothing is targeted and lunge to close a short gap. Dodge through an enemy's swing to take no damage. The test level and the overworld each have a training dummy and two bandits.
+| Action | Controller | Keyboard and mouse |
+| --- | --- | --- |
+| Attack: tap = quick, hold = charge, release to let go | RT | Left mouse |
+| Switch melee / ranged / magic | Y | R |
+| Block (hold) | LT | F |
+| Jump | A | Space |
+| Dodge (with a direction; none = back-hop) | B | Alt |
+| Sprint (controller: tap to toggle) | X | Shift (hold) |
+| Previous / next spell (switches to magic) | D-pad left / right | Q / E |
+| Quick items (slots only for now) | D-pad up / down | Z / C |
+| Previous / next target | LB / RB | Tab |
+| Lock on (toggle) | R3 | Middle mouse |
+| Camera | Right stick | Hold right mouse, wheel zoom |
+
+Melee: rapid taps chain the combo, hold for a heavy blow. Ranged: tap for a quick shot, hold to draw (harder the longer). Magic: tap to cast the selected spell, hold to charge it up to level 3. Locked on, the camera keeps the target in view and moving sideways circles it. Stamina is only used by sprinting. The test level and the overworld each have a training dummy and two bandits.
 
 **Traversal:** jump at a ledge to grab it (A/D shimmy, W or Space pull up, S or Ctrl drop) · jump at a climbable wall, or walk into a ladder, then W/S to climb (Space jumps off, Ctrl lets go) · swim in deep water, Space at an edge climbs out. The gray-box level (`scenes/levels/test_level.tscn`) has a test spot for each. · hold right mouse to look · mouse wheel zoom.
 
@@ -59,7 +73,7 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 
 **Ground painting:** select the terrain and press **Setup Terrain Painting** (once). It adds a `TerrainPaint` layer (red = grass, green = dirt, blue = cliff; exported to Godot through a second UV map), fills it from the grass/dirt/cliff materials you'd assigned, and switches the terrain to one `terrain` material. Then click **Grass / Dirt / Cliff** to paint that layer in Vertex Paint mode (Material Preview shading to see it). In Godot, `assets/materials/terrain/terrain.tres` mixes the textures with noisy edges and puts rock on steep slopes automatically (tune `auto_cliff`, `breakup`, `sharpness` there; swap textures by replacing `grass.jpg`, `dirt.png`, `cliff_stone.jpg`).
 
-**Props (trees, rocks, …):** keep them in a collection named **Props** (sub-collections are fine). Place copies with Alt+D, or link existing copies with Ctrl+L → Link Object Data; the shared **mesh name** is the prop's name (e.g. `pine_tree`). **Export Chunks** also writes `chunk_I_J.props.json` (where each prop sits) — copy those with the .glb files. **Export Prop Library** writes each prop once as `<name>.glb` with its textures — copy those into `assets/props/`. Props are exported standing the way they stand in your scene (the rotation/scale of the alphabetically first copy is baked in and remembered), so re-run **Export Prop Library** and **Export Chunks** together after changing that. Props whose names contain tree/bush/grass/fern/flower/plant sway in the wind; trees get a trunk cylinder sized from the part whose material is called trunk/bark/wood, rocks and other solid props their exact shape, grass/flowers none.
+**Props (trees, rocks, …):** names decide behaviour: `ladder` in the name makes it a ladder; `climb`, `ivy`, `vine` or `trellis` a climbable wall; any prop with a flat top you can jump up to is a grabbable ledge automatically.  keep them in a collection named **Props** (sub-collections are fine). Place copies with Alt+D, or link existing copies with Ctrl+L → Link Object Data; the shared **mesh name** is the prop's name (e.g. `pine_tree`). **Export Chunks** also writes `chunk_I_J.props.json` (where each prop sits) — copy those with the .glb files. **Export Prop Library** writes each prop once as `<name>.glb` with its textures — copy those into `assets/props/`. Props are exported standing the way they stand in your scene (the rotation/scale of the alphabetically first copy is baked in and remembered), so re-run **Export Prop Library** and **Export Chunks** together after changing that. Props whose names contain tree/bush/grass/fern/flower/plant sway in the wind; trees get a trunk cylinder sized from the part whose material is called trunk/bark/wood, rocks and other solid props their exact shape, grass/flowers none.
 
 **Editor preview:** the overworld scene shows every chunk, prop, the ocean and the region's sky/fog in the Godot editor. To tune a region's look, open its file in `assets/regions/` (e.g. `starting_region.tres`) and edit it; the view updates live. `AtmosphereManager → Editor Preview Region` picks which region is shown (-1 = open sea). After copying in new exports, toggle `ChunkStreamer → Editor Preview` off and on to reload.
 
@@ -69,18 +83,18 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 
 ## Sound
 
-Sounds live in `assets/audio/` (sources and licences in `assets/audio/CREDITS.md`). Buses: **SFX**, **Ambience**, **Music** (Audio tab at the bottom of the editor).
+Sounds live in `assets/audio/` (sources and licences in `assets/audio/CREDITS.md`). Buses: **SFX** (with **Footsteps** under it), **Ambience**, **Music**. Players set volumes in Settings → Sound.
 
-- **Footsteps** follow the animation's feet and match the ground: painted grass/dirt, rock on cliffs and steep slopes, water when wading. Props pick a sound from their name (rocks = stone; tree/log/plank/crate/bridge = wood; metal/iron = metal). Anything else can be tagged: select a node with collision, Inspector → **Add Metadata** → name `surface`, type String, value `wood`, `stone`, `grass`, `dirt`, `snow`, `metal` or `water`.
+- **Footsteps** (six variants per surface, `assets/audio/footsteps/<surface>_<n>.ogg`; add more files with the next number to get more variety) follow the animation's feet and match the ground: painted grass/dirt, rock on cliffs and steep slopes, water when wading. Props pick a sound from their name (rocks = stone; tree/log/plank/crate/bridge = wood; metal/iron = metal). Anything else can be tagged: select a node with collision, Inspector → **Add Metadata** → name `surface`, type String, value `wood`, `stone`, `grass`, `dirt`, `snow`, `metal` or `water`.
 - **Ambience:** each region file in `assets/regions/` has a **Sound** section: an **Ambient Loop** (birds, forest, town…; crossfades at region borders), its volume, and how windy it is. Wind gets stronger the higher you climb. Waves are loudest at the coast and fade inland.
 - Loops can be any .ogg/.wav/.mp3; they're set to loop automatically.
 
 ## Combat
 
-- **Abilities are data:** each attack or spell is a `.tres` file in `data/abilities/` (open it in the Inspector: damage, costs, cooldown, cast time, reach, animation and its hit time, sounds). `Player → PlayerCombat` lists which ones the player has. New spells of an existing kind (melee, bolt, heal over time) need no code.
+- **Abilities are data:** each attack or spell is a `.tres` file in `data/abilities/` (damage, costs, cooldown, charge time and power, reach, animation and its hit time, sounds). `Player → PlayerCombat` lists the melee combo, heavy attack, bow and up to four spells. New spells of an existing kind (melee, bolt/arrow, heal over time) need no code. (A browser-based database editor is planned so these won't need the Inspector.)
 - **Enemies:** `scenes/enemies/bandit.tscn`. Drop it into a level; its `Stats` child sets name, level and health, the root sets aggro range, leash, attack damage and timing, and respawn time. Enemies wait for the ground to stream in, then stand on it.
 - **Training dummy:** a `StaticBody3D` with `scripts/enemy/training_dummy.gd`; it never dies and resets a few seconds after the last hit.
-- **Animations:** the attack, block, cast, flinch and death clips are stand-ins posed by the retarget tool. Put a Mixamo FBX with the same name in `assets/animations/mixamo/` (`attack_light_1`, `attack_light_2`, `attack_heavy`, `block`, `cast_channel`, `cast_release`, `cast_heal`, `hit_react`, `death`, `idle_armed`) and rebuild; it replaces the stand-in. If a clip's timing changes, adjust the ability's **Hit Time** to match.
+- **Animations:** the attack, block, cast, flinch and death clips are stand-ins posed by the retarget tool. Put a Mixamo FBX with the same name in `assets/animations/mixamo/` (`attack_light_1`, `attack_light_2`, `attack_heavy`, `block`, `bow_aim`, `bow_release`, `cast_channel`, `cast_release`, `cast_heal`, `hit_react`, `death`, `idle_armed`) and rebuild; it replaces the stand-in. If a clip's timing changes, adjust the ability's **Hit Time** to match.
 
 ## Level markup
 

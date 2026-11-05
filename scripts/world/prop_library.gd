@@ -12,9 +12,12 @@ extends RefCounted
 const FOLIAGE_WORDS := ["tree", "bush", "shrub", "grass", "fern", "flower", "plant", "leaf", "leaves", "reed", "vine"]
 const NO_COLLISION_WORDS := ["grass", "fern", "flower", "reed", "vine", "small", "pebble"]
 const TRUNK_WORDS := ["trunk", "bark", "wood", "stem", "log"]
+## Props named with these become ladders (walk into them) or climbable walls (jump onto them).
+const LADDER_WORDS := ["ladder"]
+const CLIMBABLE_WORDS := ["climb", "ivy", "vine", "trellis"]
 ## Footstep sound for walking on a prop, by the first word found in its name.
 const SURFACE_WORDS := {
-	"wood": ["tree", "log", "stump", "plank", "crate", "barrel", "bridge", "wood", "dock", "fence"],
+	"wood": ["ladder", "tree", "log", "stump", "plank", "crate", "barrel", "bridge", "wood", "dock", "fence"],
 	"metal": ["metal", "iron", "steel", "anvil", "grate"],
 	"grass": ["bush", "shrub", "grass", "fern", "flower", "plant", "leaf", "leaves", "reed", "moss"],
 }
@@ -51,6 +54,8 @@ func instantiate(prop_name: String) -> Node3D:
 		col.transform = info.shape_xform
 		body.add_child(col)
 		body.set_meta("surface", surface_of(prop_name))
+		if not String(info.group).is_empty():
+			body.add_to_group(info.group)
 		node.add_child(body)
 	return node
 
@@ -79,7 +84,9 @@ func _info(prop_name: String):
 	var probe := scene.instantiate() as Node3D
 	var lower := prop_name.to_lower()
 	var foliage := FOLIAGE_WORDS.any(func(w: String) -> bool: return lower.contains(w))
-	var solid := not NO_COLLISION_WORDS.any(func(w: String) -> bool: return lower.contains(w))
+	var ladder := LADDER_WORDS.any(func(w: String) -> bool: return lower.contains(w))
+	var climbable := CLIMBABLE_WORDS.any(func(w: String) -> bool: return lower.contains(w))
+	var solid := ladder or climbable or not NO_COLLISION_WORDS.any(func(w: String) -> bool: return lower.contains(w))
 
 	# Bounds of the whole prop in its own space.
 	var bounds := AABB()
@@ -92,24 +99,46 @@ func _info(prop_name: String):
 		bounds = box if first else bounds.merge(box)
 		first = false
 
-	var info := {"scene": scene, "materials": {}, "shape": null, "shape_xform": Transform3D.IDENTITY}
+	var info := {"scene": scene, "materials": {}, "shape": null, "shape_xform": Transform3D.IDENTITY,
+		"group": "ladder" if ladder else ("climbable" if climbable else "")}
 
-	if foliage:
-		for m in meshes:
-			for s in m.mesh.get_surface_count():
-				var src := m.mesh.surface_get_material(s)
-				if src and not info.materials.has(src):
-					info.materials[src] = _wind_material(src, maxf(bounds.end.y, 0.5))
+	# Every prop gets the shared prop shader (pixel textures setting); foliage also sways.
+	for m in meshes:
+		for s in m.mesh.get_surface_count():
+			var src := m.mesh.surface_get_material(s)
+			if src and not info.materials.has(src):
+				var mat := _wind_material(src, maxf(bounds.end.y, 0.5))
+				# The texture usually spans the whole model: keep its texels terrain-sized.
+				mat.set_shader_parameter("pixel_scale", maxf(bounds.get_longest_axis_size() / 4.0, 0.25))
+				if not foliage:
+					mat.set_shader_parameter("sway_strength", 0.0)
+					mat.set_shader_parameter("flutter_strength", 0.0)
+				info.materials[src] = mat
 
 	if solid and not meshes.is_empty():
-		if lower.contains("tree"):
+		if lower.contains("tree") and not climbable:
+			# The trunk's longest side is its length. Usually that's up (Y), but props
+			# exported lying down and stood up by their placement have it along another
+			# axis, so the cylinder follows whichever is longest. Sizes stay in prop units:
+			# the placement's scale applies to the shape too.
 			var trunk_box := _trunk_bounds(meshes, probe, bounds)
+			var size := trunk_box.size
+			var axis := 1
+			if size.x > size[axis]:
+				axis = 0
+			if size.z > size[axis]:
+				axis = 2
+			var across := (size.x + size.y + size.z - size[axis]) * 0.5
 			var trunk := CylinderShape3D.new()
-			trunk.radius = clampf((trunk_box.size.x + trunk_box.size.z) * 0.25, 0.15, 2.0)
-			trunk.height = maxf(trunk_box.size.y, 0.5)
+			trunk.radius = maxf(across * 0.5 * 0.8, 0.01)
+			trunk.height = maxf(size[axis], 0.05)
 			info.shape = trunk
-			var c := trunk_box.get_center()
-			info.shape_xform = Transform3D(Basis.IDENTITY, Vector3(c.x, trunk_box.position.y + trunk.height * 0.5, c.z))
+			var up_basis := Basis.IDENTITY
+			if axis == 0:
+				up_basis = Basis(Vector3.BACK, -PI * 0.5)  # cylinder Y -> X
+			elif axis == 2:
+				up_basis = Basis(Vector3.RIGHT, PI * 0.5)  # cylinder Y -> Z
+			info.shape_xform = Transform3D(up_basis, trunk_box.get_center())
 		else:
 			# Exact shape (static bodies can use concave meshes).
 			info.shape = meshes[0].mesh.create_trimesh_shape()
@@ -157,7 +186,7 @@ func _local_xform(node: Node3D, root: Node3D) -> Transform3D:
 
 
 ## Wind material carrying over the original's colour, texture and transparency.
-func _wind_material(src: Material, height: float) -> Material:
+func _wind_material(src: Material, height: float) -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = WIND_SHADER
 	mat.resource_name = src.resource_name + "_wind"

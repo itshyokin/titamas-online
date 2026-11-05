@@ -10,6 +10,7 @@ extends CanvasLayer
 @onready var stamina_bar: ProgressBar = %StaminaBar
 @onready var fatigue_bar: ProgressBar = %FatigueBar
 @onready var message: Label = %Message
+@onready var controls_label: Label = $Controls
 
 const RESPAWN_MESSAGES := {
 	"drowned": "You were overcome by fatigue.",
@@ -26,15 +27,20 @@ var _target_frame: PanelContainer
 var _target_name: Label
 var _target_bar: ProgressBar
 var _target_stats: Stats
-var _cast_bar: ProgressBar
-var _cast_label: Label
-var _cast_time := 0.0
-var _cast_total := 0.0
-var _cast_id := 0
-var _slots: Array = []  # [ability, panel, cooldown overlay, cooldown label]
+var _charge_bar: ProgressBar
+var _charge_label: Label
+var _mode_slots: Array = []   # [Slot] for melee, ranged, magic
+var _spell_slots: Array = []  # [Slot] x4
+var _item_slots: Array = []   # [Slot] x2
+var _hint_labels := {}        # Label -> action name (button hints that follow rebinding)
+
+
+var _settings: SettingsMenu
 
 
 func _ready() -> void:
+	_settings = SettingsMenu.new()
+	add_child(_settings)
 	var stats := get_node_or_null(stats_path) as Stats
 	if stats == null:
 		push_warning("HUD: no Stats node at %s" % stats_path)
@@ -49,8 +55,17 @@ func _ready() -> void:
 		player.respawned.connect(func(reason: String) -> void: show_message(RESPAWN_MESSAGES.get(reason, "")))
 		_combat = player.get_node_or_null("PlayerCombat") as PlayerCombat
 		_targeting = player.get_node_or_null("Targeting") as Targeting
+		if _targeting:
+			_settings.targeting = _targeting
 		if _combat and _targeting:
 			_build_combat_hud()
+	# Control hints sit under the bars, out of the way of the bottom bar.
+	controls_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	controls_label.position = Vector2(24, 100)
+	controls_label.size = Vector2(380, 0)
+	controls_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	controls_label.add_theme_font_size_override("font_size", 13)
+	controls_label.modulate = Color(1, 1, 1, 0.75)
 
 
 func show_message(text: String, seconds := 3.0) -> void:
@@ -78,6 +93,23 @@ func _set_bar(current: float, maximum: float, bar: ProgressBar) -> void:
 
 
 # --- Combat HUD -----------------------------------------------------------------
+# Bottom bar, WoW look with Fable controls: the three attack modes (melee, ranged,
+# magic), four spell slots and two quick-item slots. Button hints follow the device in
+# use and any rebinding.
+
+const SPELL_SLOTS := 4
+const ITEM_SLOTS := 2
+
+
+class Slot:
+	var panel: Panel
+	var style: StyleBoxFlat
+	var title: Label
+	var cover: ColorRect
+	var timer: Label
+	var ability: Ability
+	var color := Color(0.55, 0.6, 0.7)
+
 
 func _bar_style(color: Color) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
@@ -100,11 +132,19 @@ func _label(text: String, size := 16) -> Label:
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	l.add_theme_constant_override("outline_size", 4)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return l
+
+
+func _hint(action: String, size := 11) -> Label:
+	var l := _label("", size)
+	l.add_theme_color_override("font_color", Color(1, 0.88, 0.55))
+	_hint_labels[l] = action
 	return l
 
 
 func _build_combat_hud() -> void:
-	# Target frame, top centre (below the fatigue bar).
+	# Target frame, top centre.
 	_target_frame = PanelContainer.new()
 	var panel := StyleBoxFlat.new()
 	panel.bg_color = Color(0, 0, 0, 0.45)
@@ -123,128 +163,202 @@ func _build_combat_hud() -> void:
 	_target_frame.add_child(box)
 	_target_frame.visible = false
 	add_child(_target_frame)
-	_targeting.target_changed.connect(_on_target_changed)
+	_targeting.target_changed.connect(func(_t: Node3D) -> void: _refresh_target())
+	_targeting.lock_changed.connect(func(_l: bool) -> void: _refresh_target())
 
-	# Action bar, bottom centre.
+	# Bottom bar.
 	var bar := HBoxContainer.new()
 	bar.add_theme_constant_override("separation", 6)
 	bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	var entries := _combat.action_bar()
-	entries.insert(2, ["Q", null])  # block
-	var slot_w := 74.0
-	bar.position = Vector2(-(slot_w + 6) * entries.size() * 0.5, -96)
-	for e in entries:
-		bar.add_child(_make_slot(e[0], e[1], slot_w))
+	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	bar.position = Vector2(0, -24)
+	var modes := [["Melee", Color(0.75, 0.75, 0.8), _combat.light_combo[0] if not _combat.light_combo.is_empty() else null],
+		["Ranged", Color(0.55, 0.75, 0.4), _combat.ranged_attack], ["Magic", Color(0.6, 0.45, 0.95), null]]
+	var mode_box := _group("cycle_mode")
+	for m in modes:
+		var slot := _make_slot(m[0], m[1], 78.0)
+		slot.ability = m[2]
+		mode_box.get_child(1).add_child(slot.panel)
+		_mode_slots.append(slot)
+	bar.add_child(mode_box)
+	bar.add_child(_spacer())
+	var spell_box := _group("spell_prev", "spell_next")
+	for i in SPELL_SLOTS:
+		var ab: Ability = _combat.spells[i] if i < _combat.spells.size() else null
+		var slot := _make_slot(ab.display_name if ab else "", ab.color if ab else Color(0.35, 0.35, 0.4), 64.0)
+		slot.ability = ab
+		spell_box.get_child(1).add_child(slot.panel)
+		_spell_slots.append(slot)
+	bar.add_child(spell_box)
+	bar.add_child(_spacer())
+	var item_box := _group("item_prev", "item_next")
+	for i in ITEM_SLOTS:
+		var slot := _make_slot("", Color(0.35, 0.35, 0.4), 56.0)
+		slot.panel.tooltip_text = "Quick item slot (potions and bandages come with the backpack)."
+		item_box.get_child(1).add_child(slot.panel)
+		_item_slots.append(slot)
+	bar.add_child(item_box)
 	add_child(bar)
+	# Centre the bar once its size is known.
+	bar.resized.connect(func() -> void: bar.position.x = -bar.size.x * 0.5)
 
-	# Cast bar, above the action bar.
-	_cast_bar = _progress(Color(0.95, 0.7, 0.2), Vector2(300, 16))
-	_cast_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_cast_bar.position = Vector2(-150, -140)
-	_cast_bar.visible = false
-	_cast_label = _label("", 14)
-	_cast_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_cast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_cast_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_cast_bar.add_child(_cast_label)
-	add_child(_cast_bar)
-	_combat.cast_started.connect(_on_cast_started)
-	_combat.cast_finished.connect(_on_cast_finished)
+	# Charge bar, above the bottom bar.
+	_charge_bar = _progress(Color(0.95, 0.7, 0.2), Vector2(300, 16))
+	_charge_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_charge_bar.position = Vector2(-150, -150)
+	_charge_bar.visible = false
+	_charge_label = _label("", 14)
+	_charge_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_charge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_charge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_charge_bar.add_child(_charge_label)
+	add_child(_charge_bar)
+
+	_combat.charge_started.connect(_on_charge_started)
+	_combat.charge_progress.connect(_on_charge_progress)
+	_combat.charge_ended.connect(func() -> void: _charge_bar.visible = false)
 	_combat.notice.connect(func(text: String) -> void: show_message(text, 1.0))
+	_combat.mode_changed.connect(func(_m: int) -> void: _refresh_slots())
+	_combat.spell_changed.connect(func(_i: int) -> void: _refresh_slots())
+	GameSettings.device_changed.connect(func(_g: bool) -> void: _refresh_hints())
+	GameSettings.bindings_changed.connect(_refresh_hints)
+	_refresh_slots()
+	_refresh_hints()
 
 
-func _make_slot(key: String, ab: Ability, w: float) -> Control:
-	var p := Panel.new()
-	p.custom_minimum_size = Vector2(w, 60)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = (ab.color if ab else Color(0.55, 0.6, 0.7)).darkened(0.55)
-	sb.border_color = ab.color if ab else Color(0.55, 0.6, 0.7)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(4)
-	p.add_theme_stylebox_override("panel", sb)
-	var name_label := _label(ab.display_name if ab else "Block", 13)
-	name_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	p.add_child(name_label)
-	var key_label := _label(key, 12)
-	key_label.position = Vector2(4, 1)
-	key_label.add_theme_color_override("font_color", Color(1, 0.9, 0.6))
-	p.add_child(key_label)
-	var cover := ColorRect.new()
-	cover.color = Color(0, 0, 0, 0.6)
-	cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cover.visible = false
-	p.add_child(cover)
-	var cd := _label("", 18)
-	cd.set_anchors_preset(Control.PRESET_FULL_RECT)
-	cd.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cd.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	p.add_child(cd)
-	if ab:
-		var tip := "%s\n%s" % [ab.display_name, ab.description]
-		if ab.mana_cost > 0.0:
-			tip += "\nMana: %d" % ab.mana_cost
-		if ab.stamina_cost > 0.0:
-			tip += "\nStamina: %d" % ab.stamina_cost
-		p.tooltip_text = tip
-	else:
-		p.tooltip_text = "Block (hold)\nStops most damage from the front. Each blocked hit costs stamina."
-	_slots.append([ab, p, cover, cd])
-	return p
+## A titled group of slots: hint label(s) on top, the slots underneath.
+func _group(action: String, action2 := "") -> VBoxContainer:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 2)
+	var top := HBoxContainer.new()
+	top.alignment = BoxContainer.ALIGNMENT_CENTER
+	top.add_child(_hint(action))
+	if not action2.is_empty():
+		top.add_child(_label("/", 11))
+		top.add_child(_hint(action2))
+	v.add_child(top)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	v.add_child(row)
+	return v
 
 
-func _process(delta: float) -> void:
+func _spacer() -> Control:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(14, 0)
+	return c
+
+
+func _make_slot(title: String, color: Color, w: float) -> Slot:
+	var slot := Slot.new()
+	slot.color = color
+	slot.panel = Panel.new()
+	slot.panel.custom_minimum_size = Vector2(w, 56)
+	slot.style = StyleBoxFlat.new()
+	slot.style.set_border_width_all(2)
+	slot.style.set_corner_radius_all(4)
+	slot.panel.add_theme_stylebox_override("panel", slot.style)
+	slot.title = _label(title, 13)
+	slot.title.set_anchors_preset(Control.PRESET_FULL_RECT)
+	slot.title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	slot.title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	slot.title.autowrap_mode = TextServer.AUTOWRAP_WORD
+	slot.panel.add_child(slot.title)
+	slot.cover = ColorRect.new()
+	slot.cover.color = Color(0, 0, 0, 0.6)
+	slot.cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot.cover.visible = false
+	slot.panel.add_child(slot.cover)
+	slot.timer = _label("", 18)
+	slot.timer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	slot.timer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	slot.timer.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	slot.panel.add_child(slot.timer)
+	return slot
+
+
+func _paint_slot(slot: Slot, active: bool) -> void:
+	slot.style.bg_color = slot.color.darkened(0.35 if active else 0.65)
+	slot.style.border_color = Color(1.0, 0.85, 0.4) if active else slot.color.darkened(0.2)
+	slot.style.set_border_width_all(3 if active else 2)
+	slot.panel.modulate = Color.WHITE if active else Color(0.8, 0.8, 0.8)
+
+
+func _refresh_slots() -> void:
+	for i in _mode_slots.size():
+		_paint_slot(_mode_slots[i], i == _combat.mode)
+	var spell_tip := "Tap attack in magic mode to cast; hold to charge."
+	_mode_slots[0].panel.tooltip_text = "Melee: tap attack to swing (tap again to combo), hold to charge a heavy blow."
+	_mode_slots[1].panel.tooltip_text = "Ranged: tap attack for a quick shot, hold to draw and release to fire."
+	_mode_slots[2].panel.tooltip_text = "Magic: " + spell_tip
+	var spell := _combat.selected_spell()
+	_mode_slots[2].title.text = spell.display_name if spell else "Magic"
+	_mode_slots[2].ability = spell
+	for i in _spell_slots.size():
+		var slot: Slot = _spell_slots[i]
+		_paint_slot(slot, i == _combat.spell_index and _combat.mode == PlayerCombat.Mode.MAGIC)
+		if slot.ability:
+			var ab := slot.ability
+			var tip := "%s\n%s" % [ab.display_name, ab.description]
+			if ab.mana_cost > 0.0:
+				tip += "\nMana: %d per level" % ab.mana_cost if ab.max_charge_level > 1 else "\nMana: %d" % ab.mana_cost
+			slot.panel.tooltip_text = tip
+	for slot: Slot in _item_slots:
+		_paint_slot(slot, false)
+
+
+func _refresh_hints() -> void:
+	for l: Label in _hint_labels:
+		l.text = GameSettings.binding_label(_hint_labels[l])
+	var g := GameSettings
+	controls_label.text = "%s attack (hold to charge) · %s block · %s melee/ranged/magic · %s dodge · %s jump · %s sprint · %s lock on · %s next target · gear/Esc: settings" % [
+		g.binding_label("attack"), g.binding_label("block"), g.binding_label("cycle_mode"), g.binding_label("dodge"),
+		g.binding_label("jump"), g.binding_label("sprint"), g.binding_label("lock_on"), g.binding_label("target_next")]
+
+
+func _process(_delta: float) -> void:
 	if _combat == null:
 		return
-	for slot in _slots:
-		var ab: Ability = slot[0]
-		var p: Panel = slot[1]
-		var cover: ColorRect = slot[2]
-		var cd: Label = slot[3]
+	for slot: Slot in _mode_slots + _spell_slots:
+		var ab := slot.ability
 		if ab == null:
-			p.modulate = Color(1.3, 1.3, 1.3) if _combat.is_blocking() else Color.WHITE
 			continue
 		var left := _combat.cooldown_left(ab)
-		cover.visible = left > 0.0
-		if cover.visible:
+		slot.cover.visible = left > 0.0
+		if slot.cover.visible:
 			var k := clampf(left / maxf(ab.cooldown, 0.01), 0.0, 1.0)
-			cover.position = Vector2(0, p.size.y * (1.0 - k))
-			cover.size = Vector2(p.size.x, p.size.y * k)
-		cd.text = ("%.1f" % left) if left > 0.0 else ""
-		p.modulate = Color.WHITE if _combat.can_afford(ab) else Color(0.55, 0.55, 0.8)
-	if _cast_bar.visible:
-		_cast_time += delta
-		_cast_bar.value = clampf(_cast_time / maxf(_cast_total, 0.01), 0.0, 1.0) * 100.0
+			slot.cover.position = Vector2(0, slot.panel.size.y * (1.0 - k))
+			slot.cover.size = Vector2(slot.panel.size.x, slot.panel.size.y * k)
+		slot.timer.text = ("%.1f" % left) if left > 0.0 else ""
+		if not _combat.can_afford(ab):
+			slot.panel.modulate = Color(0.55, 0.55, 0.85)
 	if _target_stats:
 		_target_bar.max_value = _target_stats.max_health
 		_target_bar.value = _target_stats.health
 
 
-func _on_target_changed(target: Node3D) -> void:
+func _refresh_target() -> void:
+	var target := _targeting.target if _targeting.has_target() else null
 	_target_stats = Combat.stats_of(target)
 	_target_frame.visible = _target_stats != null
 	if _target_stats:
-		_target_name.text = "%s   Level %d" % [_target_stats.display_name, _target_stats.level]
+		var lock := "  [locked]" if _targeting.is_locked() else ""
+		_target_name.text = "%s   Level %d%s" % [_target_stats.display_name, _target_stats.level, lock]
 		var hostile := _target_stats.team == Stats.Team.ENEMIES
 		_target_name.add_theme_color_override("font_color", Color(1.0, 0.55, 0.5) if hostile else Color(0.6, 0.9, 1.0))
 
 
-func _on_cast_started(ab: Ability, duration: float) -> void:
-	_cast_id += 1
-	_cast_time = 0.0
-	_cast_total = duration
-	_cast_label.text = ab.display_name
-	_cast_bar.add_theme_stylebox_override("fill", _bar_style(Color(0.95, 0.7, 0.2)))
-	_cast_bar.visible = true
+func _on_charge_started(ab: Ability) -> void:
+	_charge_label.text = ab.display_name
+	_charge_bar.value = 0.0
+	_charge_bar.visible = true
 
 
-func _on_cast_finished(_ab: Ability, ok: bool) -> void:
-	var id := _cast_id
-	if not ok:
-		_cast_bar.add_theme_stylebox_override("fill", _bar_style(Color(0.8, 0.2, 0.2)))
-		_cast_label.text = "Interrupted"
-		await get_tree().create_timer(0.5).timeout
-	if id == _cast_id:
-		_cast_bar.visible = false
+func _on_charge_progress(fraction: float, level: int) -> void:
+	_charge_bar.value = fraction * 100.0
+	var ab := _combat.selected_spell() if _combat.mode == PlayerCombat.Mode.MAGIC else null
+	if ab and ab.max_charge_level > 1:
+		_charge_label.text = "%s  —  level %d" % [ab.display_name, level]
+	elif fraction >= 1.0:
+		_charge_label.text = "Full power!"

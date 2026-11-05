@@ -8,15 +8,9 @@ extends Node3D
 ## Every sound this node plays (handy for debugging, and later for enemies hearing the player).
 signal sound_played(sound: String, volume_db: float)
 
-const FOOTSTEPS := {
-	"grass": preload("res://assets/audio/footsteps/grass.ogg"),
-	"dirt": preload("res://assets/audio/footsteps/dirt.ogg"),
-	"stone": preload("res://assets/audio/footsteps/stone.ogg"),
-	"wood": preload("res://assets/audio/footsteps/wood.ogg"),
-	"water": preload("res://assets/audio/footsteps/water.ogg"),
-	"snow": preload("res://assets/audio/footsteps/snow.ogg"),
-	"metal": preload("res://assets/audio/footsteps/metal.ogg"),
-}
+## Footstep sounds: assets/audio/footsteps/<surface>_<n>.ogg, any number per surface.
+const FOOTSTEP_DIR := "res://assets/audio/footsteps"
+const SURFACES := ["grass", "dirt", "stone", "wood", "water", "snow", "metal"]
 const WHOOSH := preload("res://assets/audio/sfx/whoosh.ogg")
 const SPLASH := preload("res://assets/audio/sfx/splash.ogg")
 const STROKE := preload("res://assets/audio/sfx/swim_stroke.ogg")
@@ -59,22 +53,50 @@ var _was_on_floor := true
 var _fall_speed := 0.0
 var _air_time := 0.0
 var _streamer: ChunkStreamer
+var _steps := {}  # surface -> Array of AudioStream
+var _last_step := {}  # surface -> index played last (never twice in a row)
 
 
 func _ready() -> void:
-	_feet = _make_player("Feet", Vector3(0, 0.05, 0))
-	_body = _make_player("Body", Vector3(0, 1.0, 0))
+	_load_footsteps()
+	_feet = _make_player("Feet", Vector3(0, 0.05, 0), &"Footsteps")
+	_body = _make_player("Body", Vector3(0, 1.0, 0), &"SFX")
 	player.jumped.connect(_on_jumped)
 	player.dodged.connect(_on_dodged)
 	player.action_animation.connect(_on_action_animation)
 	_measure_contacts.call_deferred()
 
 
-func _make_player(node_name: String, offset: Vector3) -> AudioStreamPlayer3D:
+func _load_footsteps() -> void:
+	for surface: String in SURFACES:
+		_steps[surface] = []
+	for file in ResourceLoader.list_directory(FOOTSTEP_DIR):
+		if not file.ends_with(".ogg") and not file.ends_with(".wav"):
+			continue
+		var surface := file.get_basename().get_slice("_", 0)
+		if _steps.has(surface):
+			_steps[surface].append(load(FOOTSTEP_DIR.path_join(file)))
+
+
+## A random footstep for a surface (not the same one twice in a row). Falls back to stone.
+func _step(surface: String) -> AudioStream:
+	var list: Array = _steps.get(surface, [])
+	if list.is_empty():
+		list = _steps.get("stone", [])
+		if list.is_empty():
+			return null
+	var i := randi() % list.size()
+	if list.size() > 1 and i == _last_step.get(surface, -1):
+		i = (i + 1 + randi() % (list.size() - 1)) % list.size()
+	_last_step[surface] = i
+	return list[i]
+
+
+func _make_player(node_name: String, offset: Vector3, bus: StringName) -> AudioStreamPlayer3D:
 	var p := AudioStreamPlayer3D.new()
 	p.name = node_name
 	p.position = offset
-	p.bus = &"SFX"
+	p.bus = bus
 	p.max_polyphony = 4
 	p.unit_size = 6.0
 	p.max_distance = 50.0
@@ -138,7 +160,7 @@ func _contact_event(event: String, state: int, on_floor: bool) -> void:
 				db = sprint_db
 			elif speed > player.walk_speed + 0.5:
 				db = run_db
-			_play(_feet, FOOTSTEPS[ground_surface()], db)
+			_play(_feet, _step(ground_surface()), db)
 		"stroke":
 			_play(_body, STROKE, swim_db)
 		"kick":
@@ -148,7 +170,7 @@ func _contact_event(event: String, state: int, on_floor: bool) -> void:
 		"grab":
 			if state == PlayerController.State.WALL_CLIMB or state == PlayerController.State.LADDER:
 				var surface := "wood" if state == PlayerController.State.LADDER else _climb_surface()
-				_play(_body, FOOTSTEPS[surface], climb_db, 1.15)
+				_play(_body, _step(surface), climb_db, 1.15)
 
 
 func _on_state_changed(from: int, to: int) -> void:
@@ -158,25 +180,25 @@ func _on_state_changed(from: int, to: int) -> void:
 		var hard := clampf(_fall_speed / 12.0, 0.0, 1.0)
 		_play(_body, SPLASH, lerpf(-10.0, 0.0, hard), lerpf(1.1, 0.9, hard))
 	elif from == S.SWIM:
-		_play(_feet, FOOTSTEPS.water, run_db)
+		_play(_feet, _step("water"), run_db)
 	elif from == S.DODGE and to == S.NORMAL:
-		_play(_feet, FOOTSTEPS[ground_surface()], run_db, 0.9)
+		_play(_feet, _step(ground_surface()), run_db, 0.9)
 	elif from == S.LEDGE_CLIMB and to == S.NORMAL:
-		_play(_feet, FOOTSTEPS[ground_surface()], run_db)
+		_play(_feet, _step(ground_surface()), run_db)
 	elif (to == S.WALL_CLIMB or to == S.LADDER) and from == S.NORMAL:
 		var surface := "wood" if to == S.LADDER else _climb_surface()
-		_play(_body, FOOTSTEPS[surface], climb_db + 3.0, 1.1)
+		_play(_body, _step(surface), climb_db + 3.0, 1.1)
 	if to != S.NORMAL:
 		_fall_speed = 0.0
 
 
 func _on_jumped() -> void:
-	_play(_feet, FOOTSTEPS[ground_surface()], run_db - 2.0, 1.05)
+	_play(_feet, _step(ground_surface()), run_db - 2.0, 1.05)
 
 
 func _on_dodged(_anim: String, _start: float) -> void:
 	_play(_body, WHOOSH, whoosh_db)
-	_play(_feet, FOOTSTEPS[ground_surface()], walk_db, 1.1)
+	_play(_feet, _step(ground_surface()), walk_db, 1.1)
 
 
 func _on_action_animation(anim: String, _start: float, _blend: float, _speed: float) -> void:
@@ -184,9 +206,9 @@ func _on_action_animation(anim: String, _start: float, _blend: float, _speed: fl
 		"hanging_idle":
 			# Grabbing a ledge: a hand slap on the edge (not when settling after a shimmy).
 			if _last_state != PlayerController.State.HANG:
-				_play(_body, FOOTSTEPS[_climb_surface()], climb_db + 2.0, 1.3)
+				_play(_body, _step(_climb_surface()), climb_db + 2.0, 1.3)
 		"hanging_hop_left", "hanging_hop_right":
-			_play(_body, FOOTSTEPS[_climb_surface()], climb_db, 1.25)
+			_play(_body, _step(_climb_surface()), climb_db, 1.25)
 		"hanging_climb_up":
 			_play(_body, WHOOSH, whoosh_db - 6.0, 0.8)
 
@@ -195,13 +217,15 @@ func _land(speed: float) -> void:
 	var surface := ground_surface()
 	var hard := clampf((speed - 3.0) / 9.0, 0.0, 1.0)
 	var db := lerpf(walk_db, 0.0, hard)
-	_play(_feet, FOOTSTEPS[surface], db, lerpf(1.0, 0.85, hard))
+	_play(_feet, _step(surface), db, lerpf(1.0, 0.85, hard))
 	# Second foot a moment later.
 	get_tree().create_timer(0.06).timeout.connect(
-		func() -> void: _play(_feet, FOOTSTEPS[surface], db - 3.0, lerpf(1.05, 0.9, hard)))
+		func() -> void: _play(_feet, _step(surface), db - 3.0, lerpf(1.05, 0.9, hard)))
 
 
 func _play(p: AudioStreamPlayer3D, stream: AudioStream, db: float, pitch := 1.0) -> void:
+	if stream == null:
+		return
 	p.stream = stream
 	p.volume_db = db + randf_range(-volume_spread, volume_spread)
 	p.pitch_scale = pitch * (1.0 + randf_range(-pitch_spread, pitch_spread))

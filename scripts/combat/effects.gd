@@ -154,3 +154,18 @@ static func target_ring(color := Color(1.0, 0.25, 0.2)) -> MeshInstance3D:
 	mi.scale = Vector3(1, 0.15, 1)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mi
+
+
+## Brackets around a locked-on target's body (always faces the camera).
+static func lock_marker(height := 2.1, width := 1.3) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = "LockMarker"
+	var q := QuadMesh.new()
+	q.size = Vector2(1, 1)
+	var m := ShaderMaterial.new()
+	m.shader = preload("res://assets/materials/lock_marker.gdshader")
+	q.material = m
+	mi.mesh = q
+	mi.scale = Vector3(width, height, 1)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi

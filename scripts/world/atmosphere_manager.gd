@@ -44,6 +44,7 @@ var _wind: AudioStreamPlayer
 const FIELDS := [
 	"fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
+	"shadow_strength", "saturation", "contrast", "brightness",
 ]
 
 
@@ -129,6 +130,10 @@ func _apply() -> void:
 		_env.fog_density = _values.fog_density
 		_env.fog_sky_affect = _values.fog_sky_affect
 		_env.ambient_light_energy = _values.ambient_energy
+		_env.adjustment_enabled = true
+		_env.adjustment_saturation = _values.saturation
+		_env.adjustment_contrast = _values.contrast
+		_env.adjustment_brightness = _values.brightness
 	if _sky:
 		_sky.set_shader_parameter("top_color", _values.sky_top)
 		_sky.set_shader_parameter("horizon_color", _values.sky_horizon)
@@ -140,6 +145,7 @@ func _apply() -> void:
 	if _sun:
 		_sun.light_color = _values.sun_color
 		_sun.light_energy = _values.sun_energy
+		_sun.shadow_opacity = _values.shadow_strength
 
 
 func _build_label() -> void:
