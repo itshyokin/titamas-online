@@ -4,8 +4,12 @@ extends Node
 ## Blends fog, sky colours and sunlight to match the region the player is in, and
 ## shows the region's name when entering it (WoW-style zone text).
 
+## Regions come from this file (edited with the Database editor: Godot toolbar →
+## Database → Regions). Changes show up within a second, in the editor and in game.
+@export_file("*.json") var regions_file := DataFiles.REGIONS
+## Filled from regions_file (only used directly if there's no file).
 @export var regions: Array[RegionAtmosphere] = []
-## Used outside every region (open sea, unassigned land).
+## Used outside every region (open sea, unassigned land): the region marked "default".
 @export var default_atmosphere: RegionAtmosphere
 @export var environment_path: NodePath
 @export var sun_path: NodePath
@@ -35,6 +39,8 @@ var _target: Node3D
 var _check_timer := 0.0
 var _values := {}
 var _label: Label
+var _file_time := -1
+var _file_check := 0.0
 var _label_tween: Tween
 var _beds: Array[AudioStreamPlayer] = []  # two players, crossfaded between regions
 var _bed_index := 0
@@ -49,6 +55,7 @@ const FIELDS := [
 
 
 func _ready() -> void:
+	_load_regions()
 	var world_env := get_node_or_null(environment_path) as WorldEnvironment
 	if world_env:
 		_env = world_env.environment
@@ -69,6 +76,14 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_file_check += delta
+	if _file_check > 1.0:
+		_file_check = 0.0
+		if DataFiles.modified_time(regions_file) != _file_time:
+			_load_regions()
+			if current and not Engine.is_editor_hint():
+				current = region_at(_target.global_position) if _target else default_atmosphere
+				_change_ambience(current, 1.0)
 	if Engine.is_editor_hint():
 		_editor_preview()
 		return
@@ -109,6 +124,26 @@ func _editor_preview() -> void:
 			changed = true
 	if changed:
 		_apply()
+
+
+## Reads regions_file. Keeps the current arrays if there's no file.
+func _load_regions() -> void:
+	_file_time = DataFiles.modified_time(regions_file)
+	var data = DataFiles.read(regions_file)
+	if not data is Dictionary:
+		return
+	var list: Array[RegionAtmosphere] = []
+	var fallback: RegionAtmosphere = null
+	for d: Dictionary in data.get("regions", []):
+		var r := DataFiles.region_from_dict(d)
+		if d.get("default", false):
+			fallback = r
+		else:
+			list.append(r)
+	regions = list
+	if fallback:
+		default_atmosphere = fallback
+	_values.clear()  # editor preview re-applies
 
 
 ## The region at a world position (first match wins), or the default.

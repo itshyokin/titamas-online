@@ -6,7 +6,7 @@ extends Node
 ##   Ranged: tap = quick shot, hold = draw (harder the longer), release fires.
 ##   Magic: tap = cast the selected spell, hold = charge it to higher levels.
 ## Block is held on its own button. Lives under Player, next to Targeting.
-## Abilities are data (Ability resources in data/abilities/); this node runs their timing.
+## Abilities are data (data/abilities.json, via the Database autoload); this node runs their timing.
 
 enum Mode { MELEE, RANGED, MAGIC }
 
@@ -17,24 +17,21 @@ signal charge_started(ability: Ability)
 signal charge_progress(fraction: float, level: int)
 signal charge_ended
 signal combat_changed(in_combat: bool)
+## The equipped abilities changed (data reloaded).
+signal loadout_changed
 ## Short feedback for the HUD ("Not enough mana", "No target").
 signal notice(text: String)
 
 @export_group("Abilities")
+# Filled from data/player.json (loadout) and data/abilities.json by the Database.
 ## Quick melee swings, in combo order: tapping again in time plays the next one.
-@export var light_combo: Array[Ability] = [
-	preload("res://data/abilities/slash_1.tres"),
-	preload("res://data/abilities/slash_2.tres"),
-]
+@export var light_combo: Array[Ability] = []
 ## Held melee attack.
-@export var heavy_attack: Ability = preload("res://data/abilities/heavy_strike.tres")
+@export var heavy_attack: Ability
 ## Bow shot (tap = quick shot at reduced power, hold = draw).
-@export var ranged_attack: Ability = preload("res://data/abilities/arrow_shot.tres")
+@export var ranged_attack: Ability
 ## Equipped spells (up to four), chosen with spell previous/next.
-@export var spells: Array[Ability] = [
-	preload("res://data/abilities/firebolt.tres"),
-	preload("res://data/abilities/mend.tres"),
-]
+@export var spells: Array[Ability] = []
 
 @export_group("Feel")
 ## Holding attack longer than this (s) starts charging instead of a quick attack.
@@ -102,6 +99,13 @@ var _bow_back: Node3D
 
 
 func _ready() -> void:
+	Database.apply_player(player, stats, self)
+	Database.changed.connect(func(which: String) -> void:
+		if which == "player":
+			Database.apply_player(player, stats, self)
+			spell_index = clampi(spell_index, 0, maxi(spells.size() - 1, 0))
+		if which == "player" or which == "abilities":
+			loadout_changed.emit())
 	player.action_interrupted.connect(_cancel_all)
 	player.respawned.connect(func(_reason: String) -> void: _cancel_all(); _set_combat(false))
 	stats.damaged.connect(func(_a: float, _s: Node, _c: bool) -> void: _enter_combat())
@@ -251,6 +255,8 @@ func mode_ability(which: Mode = mode) -> Ability:
 func _tap() -> void:
 	match mode:
 		Mode.MELEE:
+			if light_combo.is_empty():
+				return
 			var next: Ability = light_combo[0]
 			if _current and light_combo.has(_current) and _hit_done:
 				next = light_combo[(light_combo.find(_current) + 1) % light_combo.size()]

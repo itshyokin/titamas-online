@@ -18,11 +18,16 @@ config/features=PackedStringArray("4.6", "Forward Plus")
 [autoload]
 
 GameSettings="*res://scripts/core/game_settings.gd"
+Database="*res://scripts/core/database.gd"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/titamas_database/plugin.cfg")
 
 [input]
 

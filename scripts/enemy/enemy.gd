@@ -7,6 +7,10 @@ extends CharacterBody3D
 
 enum AI { IDLE, CHASE, ATTACK, STAGGER, RETURN, DEAD }
 
+## Which entry in data/enemies.json this is (name, level, health, speeds, attack...).
+## Edit those with the Database editor; the values below are only fallbacks.
+@export var enemy_id := "bandit"
+
 @export_group("Behaviour")
 ## Players closer than this are noticed.
 @export var aggro_radius := 12.0
@@ -55,6 +59,10 @@ var _swing_sound: AudioStream = preload("res://assets/audio/combat/swing_1.ogg")
 
 func _ready() -> void:
 	add_to_group(Combat.GROUP)
+	Database.apply_enemy(self, enemy_id, true)
+	Database.changed.connect(func(which: String) -> void:
+		if which == "enemies":
+			Database.apply_enemy(self, enemy_id))
 	_home = global_position
 	_wander_to = _home
 	_wait = randf_range(0.5, 3.0)
@@ -66,7 +74,8 @@ func _ready() -> void:
 
 
 func _equip() -> void:
-	character.attach_to_hand(WeaponModels.sword())
+	if String(Database.enemy(enemy_id).get("weapon", "sword")) == "sword":
+		character.attach_to_hand(WeaponModels.sword())
 
 
 func aim_point() -> Vector3:

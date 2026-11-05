@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Titamas Database</title>
+<style>
+	:root {
+		--bg: #2b2a33;
+		--window: #e9e6df;
+		--panel: #f6f4ef;
+		--line: #b9b3a6;
+		--ink: #26231e;
+		--soft: #6d665a;
+		--title: #3c4f7a;
+		--title-ink: #f4f0e6;
+		--accent: #c9862b;
+		--select: #3c6db0;
+		--select-ink: #ffffff;
+		--dirty: #c0392b;
+		--ok: #2e7d4f;
+	}
+	* { box-sizing: border-box; }
+	html, body { height: 100%; margin: 0; }
+	body {
+		background: var(--bg);
+		color: var(--ink);
+		font: 14px/1.4 "Segoe UI", "Noto Sans", system-ui, sans-serif;
+		display: flex;
+		flex-direction: column;
+	}
+	header {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 8px 14px;
+		background: linear-gradient(#4a5f8f, #34466e);
+		color: var(--title-ink);
+		border-bottom: 2px solid #1e2a45;
+	}
+	header h1 { font-size: 17px; margin: 0; letter-spacing: 0.04em; font-weight: 600; }
+	header .status { margin-left: auto; font-size: 13px; opacity: 0.9; }
+	header .status.dirty { color: #ffd6a0; }
+	button {
+		font: inherit;
+		color: var(--ink);
+		background: linear-gradient(#fbfaf7, #dcd7cc);
+		border: 1px solid #8f887a;
+		border-radius: 3px;
+		padding: 4px 12px;
+		cursor: pointer;
+	}
+	button:hover { background: linear-gradient(#ffffff, #e6e1d6); }
+	button:disabled { opacity: 0.5; cursor: default; }
+	button.primary { background: linear-gradient(#e7a64a, #c9862b); border-color: #8d5b17; color: #2a1b05; font-weight: 600; }
+	.window {
+		flex: 1;
+		display: grid;
+		grid-template-columns: 150px 260px 1fr;
+		gap: 0;
+		margin: 10px;
+		background: var(--window);
+		border: 2px solid #1e2a45;
+		border-radius: 4px;
+		min-height: 0;
+		overflow: hidden;
+	}
+	nav {
+		background: #d9d4c8;
+		border-right: 1px solid var(--line);
+		padding: 8px 6px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	nav button {
+		text-align: left;
+		background: none;
+		border: 1px solid transparent;
+		padding: 7px 10px;
+	}
+	nav button.on { background: var(--select); color: var(--select-ink); border-color: #23497e; }
+	nav button .dot { color: var(--dirty); font-weight: bold; }
+	nav button.on .dot { color: #ffd6a0; }
+	.list {
+		display: flex;
+		flex-direction: column;
+		border-right: 1px solid var(--line);
+		min-height: 0;
+	}
+	.box-title {
+		background: linear-gradient(#56709f, #3c4f7a);
+		color: var(--title-ink);
+		padding: 5px 10px;
+		font-size: 13px;
+		font-weight: 600;
+		letter-spacing: 0.03em;
+	}
+	.items {
+		flex: 1;
+		overflow-y: auto;
+		background: var(--panel);
+		margin: 6px;
+		border: 1px solid var(--line);
+		font-family: "Consolas", "Cascadia Mono", monospace;
+		font-size: 13px;
+	}
+	.items div {
+		padding: 3px 8px;
+		cursor: pointer;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.items div:hover { background: #e4ddcd; }
+	.items div.on { background: var(--select); color: var(--select-ink); }
+	.list .tools { display: flex; gap: 6px; padding: 0 6px 8px; }
+	.list .tools button { flex: 1; padding: 4px 4px; }
+	.detail { overflow-y: auto; min-height: 0; }
+	.detail .inner { padding: 10px 14px 30px; max-width: 900px; }
+	fieldset {
+		border: 1px solid var(--line);
+		border-radius: 3px;
+		background: var(--panel);
+		margin: 0 0 12px;
+		padding: 8px 12px 12px;
+	}
+	legend {
+		background: var(--title);
+		color: var(--title-ink);
+		padding: 2px 10px;
+		border-radius: 2px;
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+	}
+	.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px 14px; }
+	.field { display: flex; flex-direction: column; gap: 3px; }
+	.field.wide { grid-column: 1 / -1; }
+	.field label { font-size: 12px; color: var(--soft); font-weight: 600; }
+	.field .help { font-size: 11.5px; color: var(--soft); }
+	input[type=text], input[type=number], select, textarea {
+		font: inherit;
+		color: var(--ink);
+		background: #fff;
+		border: 1px solid #a69f90;
+		border-radius: 2px;
+		padding: 4px 6px;
+		width: 100%;
+	}
+	textarea { min-height: 54px; resize: vertical; }
+	input[type=color] { width: 54px; height: 28px; padding: 0 2px; border: 1px solid #a69f90; background: #fff; }
+	.color-row { display: flex; gap: 8px; align-items: center; }
+	.color-row input[type=text] { width: 100px; font-family: monospace; }
+	.check { flex-direction: row; align-items: center; gap: 8px; padding-top: 18px; }
+	.list-field .row { display: flex; gap: 6px; margin-bottom: 4px; }
+	.list-field .row select { flex: 1; }
+	.list-field .row button { padding: 2px 8px; }
+	.rect { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+	.rect span { font-size: 11px; color: var(--soft); }
+	.empty { padding: 30px; color: var(--soft); }
+	.toast {
+		position: fixed;
+		bottom: 18px;
+		left: 50%;
+		transform: translateX(-50%);
+		background: #222;
+		color: #fff;
+		padding: 8px 16px;
+		border-radius: 4px;
+		opacity: 0;
+		transition: opacity 0.2s;
+		pointer-events: none;
+	}
+	.toast.show { opacity: 0.95; }
+	.toast.bad { background: var(--dirty); }
+	.warn { color: var(--dirty); font-size: 12px; }
+	@media (max-width: 760px) {
+		.window { grid-template-columns: 1fr; grid-template-rows: auto 200px 1fr; }
+		nav { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); }
+	}
+</style>
+</head>
+<body>
+<header>
+	<h1>TITAMAS DATABASE</h1>
+	<span id="status" class="status">Loading…</span>
+	<button id="revert" title="Throw away unsaved changes">Revert</button>
+	<button id="save" class="primary" title="Save all changes (Ctrl+S)">Save</button>
+</header>
+<div class="window">
+	<nav id="nav"></nav>
+	<section class="list">
+		<div class="box-title" id="list-title">List</div>
+		<div class="items" id="items"></div>
+		<div class="tools">
+			<button id="add">New</button>
+			<button id="copy">Copy</button>
+			<button id="del">Delete</button>
+		</div>
+	</section>
+	<section class="detail"><div class="inner" id="detail"></div></section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------
+// Schemas: what each tab edits. Field types: text, textarea, number, int, bool,
+// color, select, anim, sound, sounds, ability, abilities, rect.
+// `show(entry)` hides fields that don't apply.
+// ---------------------------------------------------------------------------
+const isMelee = e => e.delivery === "melee";
+const isProjectile = e => e.delivery === "projectile";
+const isHeal = e => e.delivery === "heal_over_time";
+
+const TABS = {
+	abilities: {
+		title: "Abilities", file: "abilities", listKey: "abilities", idKey: "id", nameKey: "display_name",
+		blank: () => ({
+			id: "new_ability", display_name: "New Ability", description: "", delivery: "melee", color: "#bfbfcc",
+			power: 10, mana_cost: 0, stamina_cost: 0, cooldown: 0, reach: 2.4, arc: 120, staggers: false,
+			charge_time: 1, charge_power: 1, max_charge_level: 1, ticks: 4, tick_interval: 2,
+			projectile_speed: 18, projectile_color: "#ff8026", projectile_style: "bolt",
+			animation: "attack_light_1", animation_speed: 1, hit_time: 0.3, recovery_time: 0.5, move_scale: 0.2,
+			sounds: [], hit_sound: "",
+		}),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Used to refer to it (player loadout). Lowercase, no spaces." },
+				{ key: "display_name", label: "Name", type: "text" },
+				{ key: "delivery", label: "Type", type: "select", options: [["melee", "Melee swing"], ["projectile", "Projectile (bolt / arrow)"], ["heal_over_time", "Heal over time"]] },
+				{ key: "color", label: "Button colour", type: "color" },
+				{ key: "description", label: "Description", type: "textarea", wide: true },
+			]],
+			["Numbers", [
+				{ key: "power", label: "Power", type: "number", help: "Damage per hit, or healing per tick, at level 1." },
+				{ key: "mana_cost", label: "Mana cost", type: "number", help: "Per charge level for spells." },
+				{ key: "cooldown", label: "Cooldown (s)", type: "number" },
+				{ key: "reach", label: "Reach / range (m)", type: "number" },
+				{ key: "arc", label: "Swing width (°)", type: "number", show: isMelee },
+				{ key: "staggers", label: "Staggers enemies", type: "bool" },
+			]],
+			["Charging (hold the attack button)", [
+				{ key: "charge_time", label: "Charge time (s)", type: "number", help: "Melee / bow: to full charge. Spells: per level." },
+				{ key: "charge_power", label: "Extra power at full charge", type: "number", help: "1 = double damage fully charged." },
+				{ key: "max_charge_level", label: "Highest spell level", type: "int", help: "Spells only. Skill trees will raise this." },
+			]],
+			["Heal over time", [
+				{ key: "ticks", label: "Number of heals", type: "int" },
+				{ key: "tick_interval", label: "Seconds between heals", type: "number" },
+			], isHeal],
+			["Projectile", [
+				{ key: "projectile_style", label: "Looks like", type: "select", options: [["bolt", "Glowing bolt"], ["arrow", "Arrow"]] },
+				{ key: "projectile_speed", label: "Speed (m/s)", type: "number" },
+				{ key: "projectile_color", label: "Colour", type: "color" },
+			], isProjectile],
+			["Animation", [
+				{ key: "animation", label: "Animation", type: "anim" },
+				{ key: "animation_speed", label: "Speed", type: "number" },
+				{ key: "hit_time", label: "Hit / release time (s)", type: "number", help: "When the hit lands, in the clip's own seconds." },
+				{ key: "recovery_time", label: "Recovery time (s)", type: "number", help: "When the next action can start." },
+				{ key: "move_scale", label: "Movement while using", type: "number", help: "0 = rooted, 1 = full run speed." },
+			]],
+			["Sound", [
+				{ key: "sounds", label: "Sounds (one is picked at random)", type: "sounds", wide: true },
+			]],
+		],
+	},
+	enemies: {
+		title: "Enemies", file: "enemies", listKey: "enemies", idKey: "id", nameKey: "name",
+		blank: () => ({
+			id: "new_enemy", name: "New Enemy", level: 1, max_health: 60, skin_color: "#9e8c80", weapon: "sword",
+			aggro_radius: 12, leash_distance: 35, wander_radius: 5, walk_speed: 1.4, run_speed: 4,
+			attack_power: 8, attack_range: 2, attack_cooldown: 1.6, attack_animation: "attack_light_1",
+			attack_animation_speed: 0.75, attack_hit_time: 0.32, attack_arc: 110, corpse_time: 6, respawn_time: 25,
+		}),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Set an enemy's Enemy Id in a level to this." },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "level", label: "Level", type: "int" },
+				{ key: "max_health", label: "Health", type: "number" },
+				{ key: "skin_color", label: "Skin colour", type: "color" },
+				{ key: "weapon", label: "Weapon", type: "select", options: [["sword", "Sword"], ["none", "None"]] },
+			]],
+			["Behaviour", [
+				{ key: "aggro_radius", label: "Notices players within (m)", type: "number" },
+				{ key: "leash_distance", label: "Gives up beyond (m from home)", type: "number" },
+				{ key: "wander_radius", label: "Wanders within (m)", type: "number" },
+				{ key: "walk_speed", label: "Walk speed (m/s)", type: "number" },
+				{ key: "run_speed", label: "Run speed (m/s)", type: "number" },
+			]],
+			["Attack", [
+				{ key: "attack_power", label: "Damage", type: "number" },
+				{ key: "attack_range", label: "Range (m)", type: "number" },
+				{ key: "attack_cooldown", label: "Time between attacks (s)", type: "number" },
+				{ key: "attack_arc", label: "Swing width (°)", type: "number" },
+				{ key: "attack_animation", label: "Animation", type: "anim" },
+				{ key: "attack_animation_speed", label: "Animation speed", type: "number", help: "Lower = slower, easier to dodge." },
+				{ key: "attack_hit_time", label: "Hit time (s)", type: "number" },
+			]],
+			["Death", [
+				{ key: "corpse_time", label: "Body stays (s)", type: "number" },
+				{ key: "respawn_time", label: "Respawns after (s)", type: "number" },
+			]],
+		],
+	},
+	player: {
+		title: "Player", file: "player", single: true,
+		groups: [
+			["Stats", [
+				{ key: "stats.max_health", label: "Health", type: "number" },
+				{ key: "stats.max_mana", label: "Mana", type: "number" },
+				{ key: "stats.max_stamina", label: "Stamina", type: "number" },
+				{ key: "stats.mana_regen", label: "Mana per second", type: "number" },
+				{ key: "stats.stamina_regen", label: "Stamina per second", type: "number" },
+				{ key: "stats.stamina_regen_delay", label: "Stamina regen delay (s)", type: "number" },
+			]],
+			["Movement", [
+				{ key: "movement.walk_speed", label: "Walk speed (m/s)", type: "number" },
+				{ key: "movement.run_speed", label: "Run speed (m/s)", type: "number" },
+				{ key: "movement.sprint_speed", label: "Sprint speed (m/s)", type: "number" },
+				{ key: "movement.sprint_stamina_cost", label: "Sprint stamina per second", type: "number" },
+				{ key: "movement.jump_velocity", label: "Jump strength", type: "number" },
+			]],
+			["Combat feel", [
+				{ key: "combat.tap_time", label: "Tap vs hold (s)", type: "number", help: "Holding attack longer than this starts charging." },
+				{ key: "combat.quick_shot_power", label: "Quick shot power", type: "number", help: "Share of a full draw (0–1)." },
+				{ key: "combat.block_reduction", label: "Block stops", type: "number", help: "Share of damage blocked (0–1)." },
+				{ key: "combat.lunge_range", label: "Lunge distance (m)", type: "number" },
+			]],
+			["Loadout", [
+				{ key: "loadout.light_combo", label: "Melee combo (in order)", type: "abilities", wide: true },
+				{ key: "loadout.heavy_attack", label: "Heavy attack (hold)", type: "ability" },
+				{ key: "loadout.ranged_attack", label: "Ranged attack", type: "ability" },
+				{ key: "loadout.spells", label: "Spells (up to 4)", type: "abilities", max: 4, wide: true },
+			]],
+		],
+	},
+	regions: {
+		title: "Regions", file: "regions", listKey: "regions", idKey: "id", nameKey: "region_name",
+		blank: () => ({
+			id: "new_region", default: false, chunks: [0, 0, 1, 1], region_name: "New Region",
+			fog_color: "#b8c7d9", fog_density: 0.004, fog_sky_affect: 0.5, sky_top: "#3d73c7", sky_horizon: "#b3cce6",
+			sky_ground: "#525c66", cloud_color: "#ffffff", cloud_shade: "#b3bdd1", cloud_coverage: 0.45,
+			sun_color: "#fff2d9", sun_energy: 1.1, ambient_energy: 0.6, shadow_strength: 0.6, saturation: 1.2,
+			contrast: 1.05, brightness: 1, ambient_loop: "", ambient_volume_db: -8, wind_volume_db: -20,
+		}),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text" },
+				{ key: "region_name", label: "Name (shown when entering)", type: "text" },
+				{ key: "chunks", label: "Chunks covered", type: "rect", wide: true, help: "First chunk (I, J) and how many chunks across and down." },
+				{ key: "default", label: "Default (open sea / anywhere else)", type: "bool" },
+			]],
+			["Fog", [
+				{ key: "fog_color", label: "Fog colour", type: "color" },
+				{ key: "fog_density", label: "Density", type: "number", step: 0.001 },
+				{ key: "fog_sky_affect", label: "Fog on the sky (0–1)", type: "number" },
+			]],
+			["Sky", [
+				{ key: "sky_top", label: "Top", type: "color" },
+				{ key: "sky_horizon", label: "Horizon", type: "color" },
+				{ key: "sky_ground", label: "Below horizon", type: "color" },
+				{ key: "cloud_color", label: "Clouds", type: "color" },
+				{ key: "cloud_shade", label: "Cloud shadows", type: "color" },
+				{ key: "cloud_coverage", label: "Cloud cover (0–1)", type: "number" },
+			]],
+			["Light and colour", [
+				{ key: "sun_color", label: "Sunlight", type: "color" },
+				{ key: "sun_energy", label: "Sun strength", type: "number" },
+				{ key: "ambient_energy", label: "Ambient light", type: "number" },
+				{ key: "shadow_strength", label: "Shadow darkness (0–1)", type: "number" },
+				{ key: "saturation", label: "Saturation", type: "number", help: "1 = unchanged." },
+				{ key: "contrast", label: "Contrast", type: "number" },
+				{ key: "brightness", label: "Brightness", type: "number" },
+			]],
+			["Sound", [
+				{ key: "ambient_loop", label: "Ambient loop", type: "sound", wide: true },
+				{ key: "ambient_volume_db", label: "Ambient volume (dB)", type: "number" },
+				{ key: "wind_volume_db", label: "Wind (dB)", type: "number" },
+			]],
+		],
+	},
+};
+
+// ---------------------------------------------------------------------------
+let data = {};       // file -> JSON
+let saved = {};      // file -> JSON string as last saved
+let assets = { animations: [], sounds: [] };
+let tab = "abilities";
+let selected = { abilities: 0, enemies: 0, regions: 0 };
+
+const $ = id => document.getElementById(id);
+const clone = v => JSON.parse(JSON.stringify(v));
+const dirty = file => JSON.stringify(data[file]) !== saved[file];
+
+function toast(text, bad = false) {
+	const t = $("toast");
+	t.textContent = text;
+	t.className = "toast show" + (bad ? " bad" : "");
+	clearTimeout(toast.timer);
+	toast.timer = setTimeout(() => t.className = "toast", 2200);
+}
+
+function getPath(obj, path) {
+	return path.split(".").reduce((o, k) => (o == null ? undefined : o[k]), obj);
+}
+function setPath(obj, path, value) {
+	const keys = path.split(".");
+	let o = obj;
+	for (const k of keys.slice(0, -1)) { if (o[k] == null || typeof o[k] !== "object") o[k] = {}; o = o[k]; }
+	o[keys[keys.length - 1]] = value;
+}
+
+async function load() {
+	try {
+		const [d, a] = await Promise.all([fetch("/api/data").then(r => r.json()), fetch("/api/assets").then(r => r.json())]);
+		assets = a;
+		for (const key of Object.keys(TABS)) {
+			const t = TABS[key];
+			data[t.file] = d[t.file] || (t.single ? {} : { [t.listKey]: [] });
+			saved[t.file] = JSON.stringify(data[t.file]);
+		}
+		render();
+	} catch (e) {
+		$("status").textContent = "Can't reach Godot. Open this page from Godot's Database button.";
+	}
+}
+
+async function save() {
+	const files = Object.values(TABS).map(t => t.file).filter(dirty);
+	if (!files.length) { toast("Nothing to save"); return; }
+	const problems = validate();
+	if (problems.length) { toast(problems[0], true); return; }
+	for (const file of files) {
+		const r = await fetch("/api/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file, data: data[file] }) })
+			.then(r => r.json()).catch(() => ({ ok: false, error: "Godot isn't answering" }));
+		if (!r.ok) { toast("Couldn't save " + file + ": " + (r.error || "error"), true); return; }
+		saved[file] = JSON.stringify(data[file]);
+	}
+	toast("Saved " + files.join(", ") + ". A running game updates within a second.");
+	render();
+}
+
+function validate() {
+	const out = [];
+	for (const key of ["abilities", "enemies", "regions"]) {
+		const t = TABS[key];
+		const seen = new Set();
+		for (const e of data[t.file][t.listKey]) {
+			const id = e[t.idKey];
+			if (!id) out.push(t.title + ": every entry needs an ID.");
+			else if (seen.has(id)) out.push(t.title + ": the ID \"" + id + "\" is used twice.");
+			seen.add(id);
+		}
+	}
+	return out;
+}
+
+// When an ability's ID changes, keep the player's loadout pointing at it.
+function renameAbility(from, to) {
+	const l = (data.player || {}).loadout;
+	if (!l) return;
+	const fix = v => (v === from ? to : v);
+	if (Array.isArray(l.light_combo)) l.light_combo = l.light_combo.map(fix);
+	if (Array.isArray(l.spells)) l.spells = l.spells.map(fix);
+	l.heavy_attack = fix(l.heavy_attack);
+	l.ranged_attack = fix(l.ranged_attack);
+}
+
+// ---------------------------------------------------------------------------
+function render() {
+	const anyDirty = Object.values(TABS).some(t => dirty(t.file));
+	$("status").textContent = anyDirty ? "Unsaved changes" : "All saved";
+	$("status").className = "status" + (anyDirty ? " dirty" : "");
+	$("save").disabled = !anyDirty;
+	$("revert").disabled = !anyDirty;
+
+	const nav = $("nav");
+	nav.innerHTML = "";
+	for (const key of Object.keys(TABS)) {
+		const b = document.createElement("button");
+		b.className = key === tab ? "on" : "";
+		b.innerHTML = TABS[key].title + (dirty(TABS[key].file) ? ' <span class="dot">•</span>' : "");
+		b.onclick = () => { tab = key; render(); };
+		nav.appendChild(b);
+	}
+
+	const t = TABS[tab];
+	const listSection = document.querySelector(".list");
+	listSection.style.display = t.single ? "none" : "";
+	document.querySelector(".window").style.gridTemplateColumns = t.single ? "150px 1fr" : "";
+	if (!t.single) renderList(t);
+	renderDetail(t);
+}
+
+function renderList(t) {
+	$("list-title").textContent = t.title;
+	const list = data[t.file][t.listKey];
+	const items = $("items");
+	items.innerHTML = "";
+	selected[tab] = Math.min(selected[tab], list.length - 1);
+	list.forEach((e, i) => {
+		const div = document.createElement("div");
+		div.textContent = String(i + 1).padStart(4, "0") + ": " + (e[t.nameKey] || e[t.idKey] || "");
+		div.className = i === selected[tab] ? "on" : "";
+		div.onclick = () => { selected[tab] = i; render(); };
+		items.appendChild(div);
+	});
+	$("del").disabled = list.length === 0;
+	$("copy").disabled = list.length === 0;
+}
+
+function uniqueId(list, idKey, base) {
+	let id = base, n = 2;
+	while (list.some(e => e[idKey] === id)) id = base + "_" + n++;
+	return id;
+}
+
+$("add").onclick = () => {
+	const t = TABS[tab];
+	const list = data[t.file][t.listKey];
+	const e = t.blank();
+	e[t.idKey] = uniqueId(list, t.idKey, e[t.idKey]);
+	list.push(e);
+	selected[tab] = list.length - 1;
+	render();
+};
+$("copy").onclick = () => {
+	const t = TABS[tab];
+	const list = data[t.file][t.listKey];
+	const src = list[selected[tab]];
+	if (!src) return;
+	const e = clone(src);
+	e[t.idKey] = uniqueId(list, t.idKey, src[t.idKey] + "_copy");
+	if (t.nameKey) e[t.nameKey] = (src[t.nameKey] || "") + " (copy)";
+	if ("default" in e) e.default = false;
+	list.splice(selected[tab] + 1, 0, e);
+	selected[tab] += 1;
+	render();
+};
+$("del").onclick = () => {
+	const t = TABS[tab];
+	const list = data[t.file][t.listKey];
+	const e = list[selected[tab]];
+	if (!e || !confirm("Delete " + (e[t.nameKey] || e[t.idKey]) + "?")) return;
+	list.splice(selected[tab], 1);
+	render();
+};
+$("save").onclick = save;
+$("revert").onclick = () => {
+	if (!confirm("Throw away all unsaved changes?")) return;
+	for (const t of Object.values(TABS)) data[t.file] = JSON.parse(saved[t.file]);
+	render();
+};
+document.addEventListener("keydown", e => {
+	if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
+});
+window.addEventListener("beforeunload", e => {
+	if (Object.values(TABS).some(t => dirty(t.file))) { e.preventDefault(); e.returnValue = ""; }
+});
+
+function renderDetail(t) {
+	const box = $("detail");
+	box.innerHTML = "";
+	let entry;
+	if (t.single) entry = data[t.file];
+	else {
+		entry = data[t.file][t.listKey][selected[tab]];
+		if (!entry) { box.innerHTML = '<div class="empty">Nothing here yet. Press New.</div>'; return; }
+	}
+	for (const [title, fields, show] of t.groups) {
+		if (show && !show(entry)) continue;
+		const fs = document.createElement("fieldset");
+		fs.innerHTML = "<legend>" + title + "</legend>";
+		const grid = document.createElement("div");
+		grid.className = "grid";
+		for (const f of fields) {
+			if (f.show && !f.show(entry)) continue;
+			grid.appendChild(fieldControl(t, entry, f));
+		}
+		fs.appendChild(grid);
+		box.appendChild(fs);
+	}
+}
+
+function changed(rerender = false) {
+	if (rerender) render();
+	else {
+		const anyDirty = Object.values(TABS).some(t => dirty(t.file));
+		$("status").textContent = anyDirty ? "Unsaved changes" : "All saved";
+		$("status").className = "status" + (anyDirty ? " dirty" : "");
+		$("save").disabled = !anyDirty;
+		$("revert").disabled = !anyDirty;
+		// Refresh the list label and nav dots without rebuilding the form.
+		const t = TABS[tab];
+		document.querySelectorAll("#nav button").forEach((b, i) => {
+			const tt = TABS[Object.keys(TABS)[i]];
+			b.innerHTML = tt.title + (dirty(tt.file) ? ' <span class="dot">•</span>' : "");
+		});
+		if (!t.single) {
+			const e = data[t.file][t.listKey][selected[tab]];
+			const div = $("items").children[selected[tab]];
+			if (div && e) div.textContent = String(selected[tab] + 1).padStart(4, "0") + ": " + (e[t.nameKey] || e[t.idKey] || "");
+		}
+	}
+}
+
+function el(tag, attrs = {}) {
+	const e = document.createElement(tag);
+	Object.assign(e, attrs);
+	return e;
+}
+
+function selectOf(options, value, allowEmpty) {
+	const s = el("select");
+	if (allowEmpty) s.appendChild(el("option", { value: "", textContent: "(none)" }));
+	let found = false;
+	for (const o of options) {
+		const [v, label] = Array.isArray(o) ? o : [o, o];
+		const opt = el("option", { value: v, textContent: label });
+		if (v === value) { opt.selected = true; found = true; }
+		s.appendChild(opt);
+	}
+	if (!found && value) {
+		const opt = el("option", { value, textContent: value + " (missing)" });
+		opt.selected = true;
+		s.appendChild(opt);
+	}
+	return s;
+}
+
+const soundLabel = p => p.replace("res://assets/audio/", "");
+const abilityOptions = () => data.abilities.abilities.map(a => [a.id, a.display_name + "  (" + a.id + ")"]);
+
+function fieldControl(t, entry, f) {
+	const wrap = el("div", { className: "field" + (f.wide ? " wide" : "") });
+	const value = getPath(entry, f.key);
+	const set = (v, rerender) => { setPath(entry, f.key, v); changed(rerender); };
+	const label = el("label", { textContent: f.label });
+
+	switch (f.type) {
+		case "bool": {
+			wrap.className += " check";
+			const c = el("input", { type: "checkbox", checked: !!value });
+			c.onchange = () => set(c.checked);
+			wrap.append(c, label);
+			return wrap;
+		}
+		case "text": {
+			const i = el("input", { type: "text", value: value ?? "" });
+			i.oninput = () => {
+				let v = i.value;
+				if (f.key === t.idKey) {
+					v = v.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+					if (tab === "abilities" && value !== v) renameAbility(getPath(entry, f.key), v);
+				}
+				set(v);
+			};
+			wrap.append(label, i);
+			break;
+		}
+		case "textarea": {
+			const i = el("textarea", { value: value ?? "" });
+			i.oninput = () => set(i.value);
+			wrap.append(label, i);
+			break;
+		}
+		case "number":
+		case "int": {
+			const i = el("input", { type: "number", value: value ?? 0, step: f.step || (f.type === "int" ? 1 : "any") });
+			i.oninput = () => {
+				const n = f.type === "int" ? parseInt(i.value, 10) : parseFloat(i.value);
+				if (!Number.isNaN(n)) set(n);
+			};
+			wrap.append(label, i);
+			break;
+		}
+		case "color": {
+			const row = el("div", { className: "color-row" });
+			const hex = (value || "#ffffff").slice(0, 7);
+			const pick = el("input", { type: "color", value: hex });
+			const txt = el("input", { type: "text", value: value || "#ffffff" });
+			pick.oninput = () => { txt.value = pick.value; set(pick.value); };
+			txt.oninput = () => { if (/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(txt.value)) { pick.value = txt.value.slice(0, 7); set(txt.value.toLowerCase()); } };
+			row.append(pick, txt);
+			wrap.append(label, row);
+			break;
+		}
+		case "select": {
+			const s = selectOf(f.options, value, false);
+			s.onchange = () => set(s.value, true);
+			wrap.append(label, s);
+			break;
+		}
+		case "anim": {
+			const s = selectOf(assets.animations, value, false);
+			s.onchange = () => set(s.value);
+			wrap.append(label, s);
+			break;
+		}
+		case "sound": {
+			const s = selectOf(assets.sounds.map(p => [p, soundLabel(p)]), value, true);
+			s.onchange = () => set(s.value);
+			wrap.append(label, s);
+			break;
+		}
+		case "ability": {
+			const s = selectOf(abilityOptions(), value, true);
+			s.onchange = () => set(s.value);
+			wrap.append(label, s);
+			break;
+		}
+		case "sounds":
+		case "abilities": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const list = Array.isArray(value) ? value.slice() : [];
+			const opts = f.type === "sounds" ? assets.sounds.map(p => [p, soundLabel(p)]) : abilityOptions();
+			list.forEach((v, i) => {
+				const row = el("div", { className: "row" });
+				const s = selectOf(opts, v, false);
+				s.onchange = () => { list[i] = s.value; set(list.slice()); };
+				const up = el("button", { textContent: "▲", title: "Move up", disabled: i === 0 });
+				up.onclick = () => { [list[i - 1], list[i]] = [list[i], list[i - 1]]; set(list.slice(), true); };
+				const rm = el("button", { textContent: "✕", title: "Remove" });
+				rm.onclick = () => { list.splice(i, 1); set(list.slice(), true); };
+				row.append(s, up, rm);
+				wrap.appendChild(row);
+			});
+			if (!f.max || list.length < f.max) {
+				const add = el("button", { textContent: "+ Add" });
+				add.onclick = () => { if (opts.length) { list.push(opts[0][0]); set(list.slice(), true); } };
+				wrap.appendChild(add);
+			}
+			break;
+		}
+		case "rect": {
+			const r = Array.isArray(value) && value.length === 4 ? value.slice() : [0, 0, 1, 1];
+			const grid = el("div", { className: "rect" });
+			["First I", "First J", "Across", "Down"].forEach((name, i) => {
+				const cell = el("div");
+				const n = el("input", { type: "number", value: r[i], step: 1 });
+				n.oninput = () => { const v = parseInt(n.value, 10); if (!Number.isNaN(v)) { r[i] = v; set(r.slice()); } };
+				cell.append(el("span", { textContent: name }), n);
+				grid.appendChild(cell);
+			});
+			wrap.append(label, grid);
+			break;
+		}
+	}
+	if (f.help) wrap.appendChild(el("div", { className: "help", textContent: f.help }));
+	return wrap;
+}
+
+load();
+</script>
+</body>
+</html>

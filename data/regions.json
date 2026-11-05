@@ -1,0 +1,64 @@
+{
+	"regions": [
+		{
+			"id": "starting_region",
+			"default": false,
+			"chunks": [
+				-1,
+				0,
+				4,
+				4
+			],
+			"region_name": "Unnamed Region",
+			"fog_color": "#a1d1c5",
+			"fog_density": 0.009,
+			"fog_sky_affect": 0.366,
+			"sky_top": "#1b5f48",
+			"sky_horizon": "#bdd4e0",
+			"sky_ground": "#525c66",
+			"cloud_color": "#ffffff",
+			"cloud_shade": "#b3bdd1",
+			"cloud_coverage": 0.519,
+			"sun_color": "#fff2d9",
+			"sun_energy": 1.1,
+			"ambient_energy": 0.6,
+			"shadow_strength": 0.6,
+			"saturation": 1.2,
+			"contrast": 1.05,
+			"brightness": 1.0,
+			"ambient_loop": "res://assets/audio/ambience/breeze_loop.ogg",
+			"ambient_volume_db": -8.0,
+			"wind_volume_db": -20.0
+		},
+		{
+			"id": "open_sea",
+			"default": true,
+			"chunks": [
+				0,
+				0,
+				1,
+				1
+			],
+			"region_name": "The Open Sea",
+			"fog_color": "#99b3cc",
+			"fog_density": 0.007,
+			"fog_sky_affect": 0.7,
+			"sky_top": "#3361a8",
+			"sky_horizon": "#9eb8d1",
+			"sky_ground": "#525c66",
+			"cloud_color": "#ffffff",
+			"cloud_shade": "#b3bdd1",
+			"cloud_coverage": 0.55,
+			"sun_color": "#ebf2ff",
+			"sun_energy": 1.0,
+			"ambient_energy": 0.65,
+			"shadow_strength": 0.6,
+			"saturation": 1.2,
+			"contrast": 1.05,
+			"brightness": 1.0,
+			"ambient_loop": "",
+			"ambient_volume_db": -8.0,
+			"wind_volume_db": -15.0
+		}
+	]
+}

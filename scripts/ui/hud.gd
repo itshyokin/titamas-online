@@ -221,6 +221,7 @@ func _build_combat_hud() -> void:
 	_combat.notice.connect(func(text: String) -> void: show_message(text, 1.0))
 	_combat.mode_changed.connect(func(_m: int) -> void: _refresh_slots())
 	_combat.spell_changed.connect(func(_i: int) -> void: _refresh_slots())
+	_combat.loadout_changed.connect(_refresh_slots)
 	GameSettings.device_changed.connect(func(_g: bool) -> void: _refresh_hints())
 	GameSettings.bindings_changed.connect(_refresh_hints)
 	_refresh_slots()
@@ -295,8 +296,14 @@ func _refresh_slots() -> void:
 	var spell := _combat.selected_spell()
 	_mode_slots[2].title.text = spell.display_name if spell else "Magic"
 	_mode_slots[2].ability = spell
+	_mode_slots[0].ability = _combat.mode_ability(PlayerCombat.Mode.MELEE)
+	_mode_slots[1].ability = _combat.ranged_attack
 	for i in _spell_slots.size():
 		var slot: Slot = _spell_slots[i]
+		slot.ability = _combat.spells[i] if i < _combat.spells.size() else null
+		slot.color = slot.ability.color if slot.ability else Color(0.35, 0.35, 0.4)
+		slot.title.text = slot.ability.display_name if slot.ability else ""
+		slot.panel.tooltip_text = ""
 		_paint_slot(slot, i == _combat.spell_index and _combat.mode == PlayerCombat.Mode.MAGIC)
 		if slot.ability:
 			var ab := slot.ability

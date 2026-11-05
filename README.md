@@ -75,7 +75,7 @@ Melee: rapid taps chain the combo, hold for a heavy blow. Ranged: tap for a quic
 
 **Props (trees, rocks, …):** names decide behaviour: `ladder` in the name makes it a ladder; `climb`, `ivy`, `vine` or `trellis` a climbable wall; any prop with a flat top you can jump up to is a grabbable ledge automatically.  keep them in a collection named **Props** (sub-collections are fine). Place copies with Alt+D, or link existing copies with Ctrl+L → Link Object Data; the shared **mesh name** is the prop's name (e.g. `pine_tree`). **Export Chunks** also writes `chunk_I_J.props.json` (where each prop sits) — copy those with the .glb files. **Export Prop Library** writes each prop once as `<name>.glb` with its textures — copy those into `assets/props/`. Props are exported standing the way they stand in your scene (the rotation/scale of the alphabetically first copy is baked in and remembered), so re-run **Export Prop Library** and **Export Chunks** together after changing that. Props whose names contain tree/bush/grass/fern/flower/plant sway in the wind; trees get a trunk cylinder sized from the part whose material is called trunk/bark/wood, rocks and other solid props their exact shape, grass/flowers none.
 
-**Editor preview:** the overworld scene shows every chunk, prop, the ocean and the region's sky/fog in the Godot editor. To tune a region's look, open its file in `assets/regions/` (e.g. `starting_region.tres`) and edit it; the view updates live. `AtmosphereManager → Editor Preview Region` picks which region is shown (-1 = open sea). After copying in new exports, toggle `ChunkStreamer → Editor Preview` off and on to reload.
+**Editor preview:** the overworld scene shows every chunk, prop, the ocean and the region's sky/fog in the Godot editor. To tune a region's look, edit it in the **Database** editor (Regions tab) and save; the view updates within a second. `AtmosphereManager → Editor Preview Region` picks which region is shown (-1 = open sea). After copying in new exports, toggle `ChunkStreamer → Editor Preview` off and on to reload.
 
 **Materials:** name them in Blender (e.g. `grass`, `cliff`); Godot swaps in `assets/materials/terrain/<name>.tres`. Leave **Include Textures** off so chunk files stay small. UVs are world-space (one repeat per 4 m by default), so textures line up across seams.
 
@@ -86,13 +86,23 @@ Melee: rapid taps chain the combo, hold for a heavy blow. Ranged: tap for a quic
 Sounds live in `assets/audio/` (sources and licences in `assets/audio/CREDITS.md`). Buses: **SFX** (with **Footsteps** under it), **Ambience**, **Music**. Players set volumes in Settings → Sound.
 
 - **Footsteps** (six variants per surface, `assets/audio/footsteps/<surface>_<n>.ogg`; add more files with the next number to get more variety) follow the animation's feet and match the ground: painted grass/dirt, rock on cliffs and steep slopes, water when wading. Props pick a sound from their name (rocks = stone; tree/log/plank/crate/bridge = wood; metal/iron = metal). Anything else can be tagged: select a node with collision, Inspector → **Add Metadata** → name `surface`, type String, value `wood`, `stone`, `grass`, `dirt`, `snow`, `metal` or `water`.
-- **Ambience:** each region file in `assets/regions/` has a **Sound** section: an **Ambient Loop** (birds, forest, town…; crossfades at region borders), its volume, and how windy it is. Wind gets stronger the higher you climb. Waves are loudest at the coast and fade inland.
+- **Ambience:** each region (Database → Regions) has a **Sound** section: an **Ambient Loop** (birds, forest, town…; crossfades at region borders), its volume, and how windy it is. Wind gets stronger the higher you climb. Waves are loudest at the coast and fade inland.
 - Loops can be any .ogg/.wav/.mp3; they're set to loop automatically.
+
+## Database editor
+
+Game data lives in `data/*.json`: **abilities**, **enemies**, the **player** (stats, movement, combat feel, loadout) and **regions** (sky, fog, light, colour, sound). Edit it RPG Maker style instead of in Godot's Inspector:
+
+1. In Godot, click **Database** in the toolbar at the top (or **Project → Tools → Open Database Editor**). Your browser opens the editor.
+2. Pick a tab on the left, an entry in the list, and change its fields. **New / Copy / Delete** under the list. Changing an ability's ID updates the player's loadout to match.
+3. **Save** (or Ctrl+S) writes the files. If the game is running from Godot, it picks up the change within a second; the editor's region preview updates too.
+
+The page only works while Godot is open (Godot serves it, on your own computer only). If the button is missing: **Project → Project Settings → Plugins → Titamas Database → Enable**.
 
 ## Combat
 
-- **Abilities are data:** each attack or spell is a `.tres` file in `data/abilities/` (damage, costs, cooldown, charge time and power, reach, animation and its hit time, sounds). `Player → PlayerCombat` lists the melee combo, heavy attack, bow and up to four spells. New spells of an existing kind (melee, bolt/arrow, heal over time) need no code. (A browser-based database editor is planned so these won't need the Inspector.)
-- **Enemies:** `scenes/enemies/bandit.tscn`. Drop it into a level; its `Stats` child sets name, level and health, the root sets aggro range, leash, attack damage and timing, and respawn time. Enemies wait for the ground to stream in, then stand on it.
+- **Abilities are data:** each attack or spell is an entry in the Database (damage, costs, cooldown, charge time and power, reach, animation and its hit time, sounds). The Player tab's loadout picks the melee combo, heavy attack, bow and up to four spells. New spells of an existing kind (melee, bolt/arrow, heal over time) need no code.
+- **Enemies:** `scenes/enemies/bandit.tscn`. Drop it into a level and set its **Enemy Id** to an entry from the Database's Enemies tab (name, level, health, skin colour, aggro range, leash, attack damage and timing, respawn time). Enemies wait for the ground to stream in, then stand on it.
 - **Training dummy:** a `StaticBody3D` with `scripts/enemy/training_dummy.gd`; it never dies and resets a few seconds after the last hit.
 - **Animations:** the attack, block, cast, flinch and death clips are stand-ins posed by the retarget tool. Put a Mixamo FBX with the same name in `assets/animations/mixamo/` (`attack_light_1`, `attack_light_2`, `attack_heavy`, `block`, `bow_aim`, `bow_release`, `cast_channel`, `cast_release`, `cast_heal`, `hit_react`, `death`, `idle_armed`) and rebuild; it replaces the stand-in. If a clip's timing changes, adjust the ability's **Hit Time** to match.
 

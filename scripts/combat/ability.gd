@@ -1,8 +1,9 @@
 @tool
 class_name Ability
 extends Resource
-## One attack or spell, as data. New abilities are new .tres files in data/abilities/,
-## not new code: pick how it's delivered and fill in the numbers.
+## One attack or spell, as data. Abilities live in data/abilities.json (edit them with the
+## Database editor: Godot toolbar → Database); the Database autoload builds these from it.
+## New abilities are new entries, not new code: pick how it's delivered and fill in the numbers.
 
 enum Delivery {
 	MELEE,           ## Swing hitting everything in an arc in front.
