@@ -1,7 +1,7 @@
 bl_info = {
 	"name": "Titamas Terrain Chunks",
 	"author": "Titamas Online",
-	"version": (1, 3, 0),
+	"version": (1, 3, 1),
 	"blender": (4, 1, 0),
 	"location": "3D Viewport > Sidebar (N) > Titamas",
 	"description": "Create a sculptable master terrain on the 64 m chunk grid and export it as seamless chunk .glb files",
@@ -33,7 +33,9 @@ bl_info = {
 #
 # Terrain painting: a colour attribute "TerrainPaint" (red = grass, green = dirt, blue =
 # cliff, alpha = optional 4th layer) painted in Vertex Paint mode. Godot's terrain shader
-# mixes the textures by it. Chunks use a single material called "terrain".
+# mixes the textures by it. Chunks use a single material called "terrain". On export the
+# paint is written into a second UV map ("TerrainPaintUV": U = dirt, V = cliff, grass =
+# the rest), because UV maps survive every glTF exporter version; vertex colours don't.
 
 import json
 import math
@@ -318,6 +320,7 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 					cell.free()
 					continue
 				_world_uvs(cell, s.uv_tile)  # before moving, so UVs stay world-aligned
+				_paint_to_uv(cell)
 				bmesh.ops.translate(cell, verts=cell.verts, vec=(-cx, -cy, 0.0))
 
 				w = max(v.co.x for v in cell.verts) - min(v.co.x for v in cell.verts)
@@ -389,6 +392,25 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 		else:
 			self.report({"INFO"}, msg)
 		return {"FINISHED"}
+
+
+def _paint_to_uv(bm) -> None:
+	"""Copy the TerrainPaint weights into a second UV map: U = dirt, V = cliff (stored as
+	1 - cliff because glTF flips V, so Godot reads UV2 = (dirt, cliff); missing data reads
+	as all grass). Weights are normalised so grass = 1 - dirt - cliff."""
+	vert_layer = bm.verts.layers.float_color.get(PAINT_ATTR) or bm.verts.layers.color.get(PAINT_ATTR)
+	loop_layer = bm.loops.layers.float_color.get(PAINT_ATTR) or bm.loops.layers.color.get(PAINT_ATTR)
+	if vert_layer is None and loop_layer is None:
+		return
+	uv = bm.loops.layers.uv.get("TerrainPaintUV") or bm.loops.layers.uv.new("TerrainPaintUV")
+	for face in bm.faces:
+		for loop in face.loops:
+			c = loop[loop_layer] if loop_layer is not None else loop.vert[vert_layer]
+			r, g, b = max(c[0], 0.0), max(c[1], 0.0), max(c[2], 0.0)
+			total = r + g + b
+			if total < 1e-6:
+				r, g, b, total = 1.0, 0.0, 0.0, 1.0
+			loop[uv].uv = (g / total, 1.0 - b / total)
 
 
 def _activate_paint(mesh) -> None:

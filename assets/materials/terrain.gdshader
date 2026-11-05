@@ -1,6 +1,7 @@
 shader_type spatial;
-// Painted terrain: mixes up to four ground textures using the vertex colours painted in
-// Blender (red = layer R, green = layer G, blue = layer B, alpha = optional layer A).
+// Painted terrain: mixes ground textures using the paint from Blender's TerrainPaint layer,
+// which the add-on exports in the second UV map: UV2.x = layer G (dirt), UV2.y = layer B
+// (cliff), layer R (grass) = the rest. Chunks without paint read as all grass.
 // Edges are broken up with noise so painted borders look natural, steep slopes can
 // turn to the B layer (rock) automatically, and the B layer is projected from three
 // sides so cliffs don't stretch.
@@ -9,8 +10,6 @@ render_mode diffuse_lambert, specular_disabled;
 uniform sampler2D tex_r : source_color, filter_nearest_mipmap, repeat_enable; // grass
 uniform sampler2D tex_g : source_color, filter_nearest_mipmap, repeat_enable; // dirt
 uniform sampler2D tex_b : source_color, filter_nearest_mipmap, repeat_enable; // cliff / rock
-uniform sampler2D tex_a : source_color, filter_nearest_mipmap, repeat_enable; // spare
-uniform bool use_layer_a = false;
 
 // World metres per texture repeat.
 uniform float tile_size = 4.0;
@@ -63,12 +62,9 @@ void fragment() {
 	vec3 col_r = texture(tex_r, uv).rgb;
 	vec3 col_g = texture(tex_g, uv).rgb;
 	vec3 col_b = triplanar(tex_b, world_pos, world_normal, tile_size_b);
-	vec3 col_a = use_layer_a ? texture(tex_a, uv).rgb : vec3(0.0);
 
-	vec4 w = clamp(COLOR, 0.0, 1.0);
-	if (!use_layer_a) {
-		w.a = 0.0;
-	}
+	vec2 paint = clamp(UV2, 0.0, 1.0);
+	vec4 w = vec4(max(1.0 - paint.x - paint.y, 0.0), paint.x, paint.y, 0.0);
 	float slope = 1.0 - clamp(world_normal.y, 0.0, 1.0);
 	w.b += smoothstep(cliff_slope_start, cliff_slope_end, slope) * auto_cliff * 2.0;
 
@@ -77,8 +73,8 @@ void fragment() {
 	vec4 nz = vec4(fbm(q), fbm(q + 17.3), fbm(q + 41.7), fbm(q + 5.1));
 	w *= mix(vec4(1.0), nz * 2.0, breakup);
 	w = pow(max(w, vec4(0.0001)), vec4(sharpness));
-	w /= max(w.r + w.g + w.b + w.a, 0.0001);
+	w /= max(w.r + w.g + w.b, 0.0001);
 
-	ALBEDO = col_r * w.r + col_g * w.g + col_b * w.b + col_a * w.a;
+	ALBEDO = col_r * w.r + col_g * w.g + col_b * w.b;
 	ROUGHNESS = 1.0;
 }
