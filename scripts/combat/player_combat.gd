@@ -59,6 +59,7 @@ signal notice(text: String)
 @onready var stats: Stats = get_node("../Stats")
 @onready var character: CharacterModel = get_node("../Model/Character")
 @onready var animator: PlayerAnimator = get_node("../PlayerAnimator")
+@onready var inventory: Inventory = get_node_or_null("../Inventory")
 
 const DRAW_SOUND := preload("res://assets/audio/combat/bow_draw.ogg")
 const SHOT_SOUND := preload("res://assets/audio/combat/arrow_fire.ogg")
@@ -111,36 +112,64 @@ func _ready() -> void:
 	stats.damaged.connect(func(_a: float, _s: Node, _c: bool) -> void: _enter_combat())
 	Combat.show_numbers(player)
 	_equip_weapons.call_deferred()
+	if inventory:
+		inventory.equipment_changed.connect(_equip_weapons)
+	character.body_changed.connect(_equip_weapons)
 
 
+## Builds the weapon models from what's equipped (main hand, ranged, off hand), each
+## twice: in the hand (shown while fighting in that mode) and worn on the back.
 func _equip_weapons() -> void:
-	_sword_hand = WeaponModels.sword()
-	character.attach_to_hand(_sword_hand)
-	_bow_hand = WeaponModels.bow()
-	character.attach_to_hand(_bow_hand, false)
-	# Worn on the back: sword hilt over the right shoulder, bow across the other way.
+	for node in [_sword_hand, _sword_back, _bow_hand, _bow_back]:
+		if node and is_instance_valid(node):
+			node.queue_free()
+	_sword_hand = null
+	_sword_back = null
+	_bow_hand = null
+	_bow_back = null
 	var spine := character.bone_rest_position("mixamorig_Spine2")
 	var flat := Vector3(0, 0, 1)
-	_sword_back = WeaponModels.sword()
-	var blade := Vector3(-0.5, -0.86, 0).normalized()
-	character.attach_to_bone(_sword_back, "mixamorig_Spine2",
-		Transform3D(Basis(blade.cross(flat).normalized(), blade, flat), spine + Vector3(0.16, 0.22, 0.17)))
-	_bow_back = WeaponModels.bow()
-	var limb := Vector3(0.55, 0.83, 0).normalized()
-	character.attach_to_bone(_bow_back, "mixamorig_Spine2",
-		Transform3D(Basis(limb.cross(-flat).normalized(), limb, -flat), spine + Vector3(0.0, -0.05, 0.2)))
+	var main := inventory.equipped_item("main_hand") if inventory else {}
+	if not main.is_empty():
+		var fits: Array = main.get("fit", {}).get(character.body_key(), [])
+		_sword_hand = character.attach_fitted(fits[0] if not fits.is_empty() else {"bone": "mixamorig_RightHand", "grip": true}, String(main.get("model", "")))
+		var back := WeaponModels.build(String(main.get("model", "")))
+		if back:
+			# Worn on the back: hilt over the right shoulder.
+			var blade := Vector3(-0.5, -0.86, 0).normalized()
+			_sword_back = character.attach_to_bone(back, "mixamorig_Spine2",
+				Transform3D(Basis(blade.cross(flat).normalized(), blade, flat), spine + Vector3(0.16, 0.22, 0.17)))
+	var ranged := inventory.equipped_item("ranged") if inventory else {}
+	if not ranged.is_empty():
+		var fits: Array = ranged.get("fit", {}).get(character.body_key(), [])
+		_bow_hand = character.attach_fitted(fits[0] if not fits.is_empty() else {"bone": "mixamorig_LeftHand", "grip": true}, String(ranged.get("model", "")))
+		var back := WeaponModels.build(String(ranged.get("model", "")))
+		if back:
+			var limb := Vector3(0.55, 0.83, 0).normalized()
+			_bow_back = character.attach_to_bone(back, "mixamorig_Spine2",
+				Transform3D(Basis(limb.cross(-flat).normalized(), limb, -flat), spine + Vector3(0.0, -0.05, 0.2)))
 	_show_weapons()
 
 
+func has_ranged_weapon() -> bool:
+	return inventory == null or inventory.equipped.has("ranged")
+
+
 func _show_weapons() -> void:
-	if _sword_hand == null:
-		return
 	var drawn := in_combat
-	_sword_hand.visible = drawn and mode == Mode.MELEE
-	_sword_back.visible = not _sword_hand.visible
-	_bow_hand.visible = drawn and mode == Mode.RANGED
-	_bow_back.visible = not _bow_hand.visible
-	animator.idle_animation = "idle_armed" if drawn and mode == Mode.MELEE else "idle"
+	var sword_out := drawn and mode == Mode.MELEE
+	var bow_out := drawn and mode == Mode.RANGED
+	if _sword_hand:
+		_sword_hand.visible = sword_out
+	if _sword_back:
+		_sword_back.visible = not sword_out
+	if _bow_hand:
+		_bow_hand.visible = bow_out
+	if _bow_back:
+		_bow_back.visible = not bow_out
+	# The shield shares the left arm with the bow.
+	character.set_worn_visible("off_hand", not bow_out)
+	animator.idle_animation = "idle_armed" if sword_out and _sword_hand else "idle"
 
 
 # --- Input -------------------------------------------------------------------
@@ -266,6 +295,9 @@ func _tap() -> void:
 				_current = null
 				_start(next, next.power)
 		Mode.RANGED:
+			if not has_ranged_weapon():
+				notice.emit("No ranged weapon equipped")
+				return
 			if _current == null or _time >= _current.recovery_time:
 				_current = null
 				_start(ranged_attack, ranged_attack.power * quick_shot_power, 1, 0.0)
@@ -302,8 +334,20 @@ func _start(ab: Ability, power: float, level := 1, anim_start := 0.0) -> bool:
 	_target = target
 	if target and target != player:
 		player.face_toward(target.global_position)
-	_begin_release(ab, power, level, anim_start)
+	_begin_release(ab, power + _gear_power(ab), level, anim_start)
 	return true
+
+
+## Extra power from equipment: weapon attack for swings and shots, spell power for spells
+## (a quarter of it per heal tick).
+func _gear_power(ab: Ability) -> float:
+	match ab.delivery:
+		Ability.Delivery.MELEE:
+			return stats.attack
+		Ability.Delivery.PROJECTILE:
+			return stats.attack if ab.projectile_style == Ability.ProjectileStyle.ARROW else stats.spell_power
+		_:
+			return stats.spell_power * 0.25
 
 
 func _pick_target(ab: Ability) -> Node3D:
@@ -431,6 +475,10 @@ func _move_input() -> Vector2:
 # --- Charging ----------------------------------------------------------------
 
 func _begin_charge() -> void:
+	if mode == Mode.RANGED and not has_ranged_weapon():
+		notice.emit("No ranged weapon equipped")
+		_attack_down = false
+		return
 	var ab: Ability
 	match mode:
 		Mode.MELEE:
@@ -565,7 +613,7 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 		if to.length() < 0.01 or rad_to_deg(fwd.angle_to(to.normalized())) <= block_arc * 0.5:
 			if block_stamina_per_hit <= 0.0 or stats.use_stamina(block_stamina_per_hit):
 				FloatingText.spawn(player, "Blocked", Color(0.8, 0.85, 0.9), 0.8)
-				return amount * (1.0 - block_reduction)
+				return amount * (1.0 - clampf(block_reduction + stats.block, 0.0, 0.95))
 			notice.emit("Guard broken")
 			_end_block()
 			player.action_animation.emit("hit_react", 0.0, 0.05, 1.0)

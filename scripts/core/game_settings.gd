@@ -27,8 +27,8 @@ const REBINDABLE := [
 	["camera_left", "Camera left"], ["camera_right", "Camera right"], ["camera_up", "Camera up"], ["camera_down", "Camera down"],
 	["jump", "Jump / talk"], ["sprint", "Sprint"], ["walk", "Walk"], ["dodge", "Dodge"],
 	["attack", "Attack (hold to charge)"], ["block", "Block"], ["cycle_mode", "Melee / ranged / magic"],
-	["spell_prev", "Previous spell"], ["spell_next", "Next spell"], ["item_prev", "Quick item up"], ["item_next", "Quick item down"],
-	["target_prev", "Previous target"], ["target_next", "Next target"], ["lock_on", "Lock on"], ["target_clear", "Clear target"],
+	["spell_prev", "Previous spell"], ["spell_next", "Next spell"], ["item_prev", "Use quick item 1"], ["item_next", "Use quick item 2"],
+	["inventory", "Character / backpack"], ["target_prev", "Previous target"], ["target_next", "Next target"], ["lock_on", "Lock on"], ["target_clear", "Clear target"],
 	["camera_look", "Hold to look (mouse)"], ["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["menu", "Settings menu"],
 ]
 

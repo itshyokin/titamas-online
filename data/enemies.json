@@ -20,7 +20,41 @@
 			"attack_hit_time": 0.32,
 			"attack_arc": 110.0,
 			"corpse_time": 6.0,
-			"respawn_time": 25.0
+			"respawn_time": 25.0,
+			"gold_min": 2,
+			"gold_max": 8,
+			"loot": [
+				{
+					"item": "bandit_insignia",
+					"chance": 0.6,
+					"min": 1,
+					"max": 2
+				},
+				{
+					"item": "linen_cloth",
+					"chance": 0.4,
+					"min": 1,
+					"max": 3
+				},
+				{
+					"item": "minor_healing_potion",
+					"chance": 0.25,
+					"min": 1,
+					"max": 1
+				},
+				{
+					"item": "iron_longsword",
+					"chance": 0.05,
+					"min": 1,
+					"max": 1
+				},
+				{
+					"item": "iron_helm",
+					"chance": 0.04,
+					"min": 1,
+					"max": 1
+				}
+			]
 		}
 	]
 }

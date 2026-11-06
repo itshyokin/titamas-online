@@ -37,6 +37,11 @@ var _hint_labels := {}        # Label -> action name (button hints that follow r
 
 var _settings: SettingsMenu
 var _clock: Label
+var _inventory: Inventory
+var _character_window: CharacterWindow
+var _gold: Label
+var _pickups: VBoxContainer
+var _item_icons: Array = []  # ItemIcon per quick slot on the bar
 
 
 func _ready() -> void:
@@ -70,6 +75,9 @@ func _ready() -> void:
 			_settings.targeting = _targeting
 		if _combat and _targeting:
 			_build_combat_hud()
+		_inventory = player.get_node_or_null("Inventory") as Inventory
+		if _inventory:
+			_build_inventory_hud(stats)
 	# Control hints sit under the bars, out of the way of the bottom bar.
 	controls_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	controls_label.position = Vector2(24, 100)
@@ -110,6 +118,68 @@ func _set_bar(current: float, maximum: float, bar: ProgressBar) -> void:
 
 const SPELL_SLOTS := 4
 const ITEM_SLOTS := 2
+
+
+# --- Inventory HUD ----------------------------------------------------------------
+
+func _build_inventory_hud(stats: Stats) -> void:
+	_character_window = CharacterWindow.new(_inventory, stats)
+	add_child(_character_window)
+	# Gold, under the clock.
+	_gold = _label("", 16)
+	_gold.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_gold.position = Vector2(-230, 50)
+	_gold.size = Vector2(160, 24)
+	_gold.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_gold.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+	add_child(_gold)
+	# Pickup log, right side.
+	_pickups = VBoxContainer.new()
+	_pickups.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	_pickups.position = Vector2(-300, 40)
+	_pickups.custom_minimum_size = Vector2(280, 0)
+	_pickups.alignment = BoxContainer.ALIGNMENT_END
+	add_child(_pickups)
+	_inventory.gold_changed.connect(func(g: int) -> void: _gold.text = "%d gold" % g)
+	_inventory.changed.connect(_refresh_quick_items)
+	_inventory.item_added.connect(func(id: String, count: int) -> void:
+		var d := Database.item(id)
+		_log_pickup("+ %s%s" % [d.get("name", id), (" x%d" % count) if count > 1 else ""], ItemIcon.rarity_color(d)))
+	_gold.text = "%d gold" % _inventory.gold
+	# Item icons in the bar's quick slots.
+	for slot: Slot in _item_slots:
+		var icon := ItemIcon.new()
+		icon.set_anchors_preset(Control.PRESET_FULL_RECT)
+		icon.offset_left = 6
+		icon.offset_top = 6
+		icon.offset_right = -6
+		icon.offset_bottom = -6
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.panel.add_child(icon)
+		_item_icons.append(icon)
+	_refresh_quick_items()
+
+
+func _refresh_quick_items() -> void:
+	for i in mini(_item_slots.size(), Inventory.QUICK_SLOTS):
+		var id: String = _inventory.quick[i]
+		var d := Database.item(id)
+		var count := _inventory.count_of(id)
+		(_item_icons[i] as ItemIcon).show_item(d, count)
+		(_item_icons[i] as ItemIcon).modulate = Color(1, 1, 1, 0.4) if count == 0 else Color.WHITE
+		var slot: Slot = _item_slots[i]
+		slot.panel.tooltip_text = ("%s (%d)\n%s" % [d.get("name", ""), count, d.get("description", "")]) if not d.is_empty() else "Empty quick slot: set one in the character window (%s)." % GameSettings.binding_label("inventory")
+
+
+func _log_pickup(text: String, color: Color) -> void:
+	var l := _label(text, 15)
+	l.add_theme_color_override("font_color", color)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_pickups.add_child(l)
+	var t := l.create_tween()
+	t.tween_interval(2.5)
+	t.tween_property(l, "modulate:a", 0.0, 0.8)
+	t.tween_callback(l.queue_free)
 
 
 class Slot:
@@ -204,9 +274,11 @@ func _build_combat_hud() -> void:
 	bar.add_child(spell_box)
 	bar.add_child(_spacer())
 	var item_box := _group("item_prev", "item_next")
+	item_box.get_child(0).add_child(_label("  ·  ", 11))
+	item_box.get_child(0).add_child(_hint("inventory"))
 	for i in ITEM_SLOTS:
 		var slot := _make_slot("", Color(0.35, 0.35, 0.4), 56.0)
-		slot.panel.tooltip_text = "Quick item slot (potions and bandages come with the backpack)."
+		slot.panel.tooltip_text = ""
 		item_box.get_child(1).add_child(slot.panel)
 		_item_slots.append(slot)
 	bar.add_child(item_box)

@@ -19,7 +19,8 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 | Dodge (with a direction; none = back-hop) | B | Alt |
 | Sprint (controller: tap to toggle) | X | Shift (hold) |
 | Previous / next spell (switches to magic) | D-pad left / right | Q / E |
-| Quick items (slots only for now) | D-pad up / down | Z / C |
+| Use quick item 1 / 2 | D-pad up / down | Z / C |
+| Character and backpack | Back | I or B |
 | Previous / next target | LB / RB | Tab |
 | Lock on (toggle) | R3 | Middle mouse |
 | Camera | Right stick | Hold right mouse, wheel zoom |
@@ -99,7 +100,7 @@ Sounds live in `assets/audio/` (sources and licences in `assets/audio/CREDITS.md
 
 ## Database editor
 
-Game data lives in `data/*.json`: **abilities**, **enemies**, the **player** (stats, movement, combat feel, loadout), the **world** (day length, start hour, wind) and **regions** (sky, fog, light, colour, god rays, grass, sound). Edit it RPG Maker style instead of in Godot's Inspector:
+Game data lives in `data/*.json`: **abilities**, **enemies** (including gold and loot drops), **items**, the **player** (stats, movement, combat feel, loadout, starting kit), the **world** (day length, start hour, wind) and **regions** (sky, fog, light, colour, god rays, grass, sound). Edit it RPG Maker style instead of in Godot's Inspector:
 
 1. In Godot, click **Database** in the toolbar at the top (or **Project → Tools → Open Database Editor**). Your browser opens the editor.
 2. Pick a tab on the left, an entry in the list, and change its fields. **New / Copy / Delete** under the list. Changing an ability's ID updates the player's loadout to match.
@@ -113,6 +114,16 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 - **Enemies:** `scenes/enemies/bandit.tscn`. Drop it into a level and set its **Enemy Id** to an entry from the Database's Enemies tab (name, level, health, skin colour, aggro range, leash, attack damage and timing, respawn time). Enemies wait for the ground to stream in, then stand on it.
 - **Training dummy:** a `StaticBody3D` with `scripts/enemy/training_dummy.gd`; it never dies and resets a few seconds after the last hit.
 - **Animations:** the attack, block, cast, flinch and death clips are stand-ins posed by the retarget tool. Put a Mixamo FBX with the same name in `assets/animations/mixamo/` (`attack_light_1`, `attack_light_2`, `attack_heavy`, `block`, `bow_aim`, `bow_release`, `cast_channel`, `cast_release`, `cast_heal`, `hit_react`, `death`, `idle_armed`) and rebuild; it replaces the stand-in. If a clip's timing changes, adjust the ability's **Hit Time** to match.
+
+## Equipment and backpack
+
+- **Character window** (I, B or Back on a controller): equipment slots on the left, stats and gold in the middle, a 24-slot backpack on the right. Click an item to see it. Right-click or double-click equips or uses it; drag between slots to move or equip; drag out of the window to throw it away (it asks first). On a controller: A equips/uses, Y picks up and places, X sets the item as a quick item.
+- **Quick items:** two slots, used with D-pad up/down (Z/C). Set them from the window.
+- **Gear shows on the body**, on both masc and femme. Armour adds armour (less damage taken), health and mana; weapons add attack or spell power; a shield adds block. The bow only works with a bow equipped in the Ranged slot.
+- **Loot:** bandits drop a sack with gold and items. Walk over it to pick it up; anything that doesn't fit stays in the sack for a few minutes.
+- **Items** are in the Database's **Items** tab: name, kind, slot, rarity, stats, what using it does, and its look. The Player tab has the **Starting kit**. Your character is saved to `user://character.json`; **Settings → Graphics → Reset character** starts over with the kit.
+- **Fit Armor** (toolbar button) opens the armour-fitting editor with both bodies side by side. Pick an item and a body, then move, turn and scale each piece on its bone (arrow keys and Page Up/Down nudge, Shift for bigger steps, right-drag orbits the camera). **Save** writes `data/items.json`. "Copy to other body" gives you a starting point for the other body.
+- **Your own models:** the current armour is placeholder, made from the body meshes. Rigid pieces (helms, pauldrons, weapons, shields): export a `.glb` and set the item's **Model**, then fit it. Skinned pieces (shirts, trousers, boots): skin them to the same Mixamo armature in Blender and set **Fitted (masc)/(femme)** to the scene; tick the body parts it covers under **Hides**. `tools/godot/make_placeholder_armor.gd` rebuilds the placeholders.
 
 ## Level markup
 
@@ -131,8 +142,8 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 ## Milestones
 
 1. Movement and camera
-2. Combat ← **current**
-3. Equipment
+2. Combat
+3. Equipment ← **done, being tested**
 4. Co-op
 5. Content tools
 6. World

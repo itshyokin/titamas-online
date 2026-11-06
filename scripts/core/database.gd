@@ -8,7 +8,7 @@ extends Node
 ## A data file was reloaded: "abilities", "enemies" or "player".
 signal changed(which: String)
 
-const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER}
+const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS}
 
 const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
@@ -22,6 +22,7 @@ const PLAYER_COMBAT := ["tap_time", "quick_shot_power", "block_reduction", "lung
 var abilities := {}  # id -> Ability (the same objects for the whole session)
 var enemies := {}  # id -> Dictionary
 var player := {}
+var items := {}  # id -> Dictionary (data/items.json entries)
 
 var _times := {}
 var _watch := 0.0
@@ -67,6 +68,10 @@ func _load(which: String) -> void:
 				enemies[String(d.get("id", ""))] = d
 		"player":
 			player = data
+		"items":
+			items.clear()
+			for d: Dictionary in data.get("items", []):
+				items[String(d.get("id", ""))] = d
 
 
 func ability(id: String) -> Ability:
@@ -84,6 +89,20 @@ func abilities_for(ids: Array) -> Array[Ability]:
 		if ab:
 			out.append(ab)
 	return out
+
+
+## An item's data ({} if there's no such item).
+func item(id: String) -> Dictionary:
+	return items.get(id, {})
+
+
+## How many of an item fit in one backpack slot.
+func stack_size(id: String) -> int:
+	var d := item(id)
+	var explicit := int(d.get("stack_max", 0))
+	if explicit > 0:
+		return explicit
+	return 1 if String(d.get("slot", "")) != "" else 64
 
 
 func enemy(id: String) -> Dictionary:
@@ -120,10 +139,9 @@ func apply_player(controller: Node, stats: Stats, combat: Node) -> void:
 	for field: String in PLAYER_STATS:
 		if s.has(field):
 			stats.set(field, float(s[field]))
-	stats.health = minf(stats.health, stats.max_health)
-	stats.mana = minf(stats.mana, stats.max_mana)
 	stats.stamina = minf(stats.stamina, stats.max_stamina)
-	stats.emit_all()
+	stats.set_base(stats.max_health if not s.has("max_health") else float(s.max_health),
+		stats.max_mana if not s.has("max_mana") else float(s.max_mana))
 	var m: Dictionary = player.get("movement", {})
 	for field: String in PLAYER_MOVEMENT:
 		if m.has(field):

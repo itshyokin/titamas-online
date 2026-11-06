@@ -15,6 +15,7 @@ const FILES := {
 	"player": "res://data/player.json",
 	"regions": "res://data/regions.json",
 	"world": "res://data/world.json",
+	"items": "res://data/items.json",
 }
 const MAX_BODY := 4 * 1024 * 1024
 
@@ -22,6 +23,8 @@ var _server: TCPServer
 var _port := 0
 var _clients: Array = []  # [StreamPeerTCP, PackedByteArray buffer, float age]
 var _button: Button
+var _fit_button: Button
+const FITTER := "res://scenes/tools/armor_fitter.tscn"
 
 
 func _enter_tree() -> void:
@@ -31,6 +34,12 @@ func _enter_tree() -> void:
 	_button.flat = true
 	_button.pressed.connect(open_editor)
 	add_control_to_container(CONTAINER_TOOLBAR, _button)
+	_fit_button = Button.new()
+	_fit_button.text = "Fit Armor"
+	_fit_button.tooltip_text = "Open the armour-fitting editor (masc and femme side by side)."
+	_fit_button.flat = true
+	_fit_button.pressed.connect(func() -> void: EditorInterface.play_custom_scene(FITTER))
+	add_control_to_container(CONTAINER_TOOLBAR, _fit_button)
 	add_tool_menu_item("Open Database Editor", open_editor)
 	_start_server()
 
@@ -38,6 +47,8 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	remove_control_from_container(CONTAINER_TOOLBAR, _button)
 	_button.queue_free()
+	remove_control_from_container(CONTAINER_TOOLBAR, _fit_button)
+	_fit_button.queue_free()
 	remove_tool_menu_item("Open Database Editor")
 	for c in _clients:
 		(c[0] as StreamPeerTCP).disconnect_from_host()

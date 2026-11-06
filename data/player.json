@@ -31,5 +31,52 @@
 			"firebolt",
 			"mend"
 		]
+	},
+	"starting_kit": {
+		"gold": 10,
+		"equipment": {
+			"main_hand": "rusty_sword",
+			"ranged": "hunting_bow",
+			"legs": "travelers_trousers",
+			"feet": "worn_boots"
+		},
+		"backpack": [
+			[
+				"leather_jerkin",
+				1
+			],
+			[
+				"leather_gloves",
+				1
+			],
+			[
+				"iron_helm",
+				1
+			],
+			[
+				"iron_pauldrons",
+				1
+			],
+			[
+				"wooden_shield",
+				1
+			],
+			[
+				"minor_healing_potion",
+				5
+			],
+			[
+				"bandage",
+				5
+			],
+			[
+				"mana_draught",
+				2
+			]
+		],
+		"quick": [
+			"minor_healing_potion",
+			"bandage"
+		]
 	}
 }

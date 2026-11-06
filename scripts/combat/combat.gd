@@ -74,6 +74,8 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false) 
 	var crit := randf() < CRIT_CHANCE
 	if crit:
 		amount *= CRIT_MULTIPLIER
+	# Armour: each point takes a little off (100 armour halves damage).
+	amount *= 100.0 / (100.0 + maxf(ts.armor, 0.0))
 	var before := amount
 	if target.has_method("modify_incoming_damage"):
 		amount = target.modify_incoming_damage(amount, source)

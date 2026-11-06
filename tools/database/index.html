@@ -156,6 +156,9 @@
 	.list-field .row { display: flex; gap: 6px; margin-bottom: 4px; }
 	.list-field .row select { flex: 1; }
 	.list-field .row button { padding: 2px 8px; }
+	.parts { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+	.parts .part { font-weight: normal; color: var(--ink); font-size: 13px; }
+	.list-field .row span { align-self: center; font-size: 12px; color: var(--soft); }
 	.rect { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 	.rect span { font-size: 11px; color: var(--soft); }
 	.empty { padding: 30px; color: var(--soft); }
@@ -268,6 +271,50 @@ const TABS = {
 			]],
 		],
 	},
+	items: {
+		title: "Items", file: "items", listKey: "items", idKey: "id", nameKey: "name",
+		blank: () => ({
+			id: "new_item", name: "New Item", description: "", kind: "material", slot: "", rarity: "common",
+			icon: "bag", icon_color: "#c0b090", value: 1, stack_max: 0, attack: 0, spell_power: 0, armor: 0, block: 0,
+			bonus_health: 0, bonus_mana: 0, use_heal: 0, use_hot_per_tick: 0, use_hot_ticks: 0, use_mana: 0,
+			model: "", fitted_masc: "", fitted_femme: "", hides: [], fit: { masc: [], femme: [] },
+		}),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Used by loot tables and the starting kit." },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "kind", label: "Kind", type: "select", options: [["weapon", "Weapon"], ["armor", "Armour"], ["consumable", "Consumable (usable)"], ["material", "Material"], ["junk", "Junk (sell)"], ["quest", "Quest item"]] },
+				{ key: "slot", label: "Equips to", type: "select", options: [["", "(not equippable)"], ["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["main_hand", "Main hand"], ["off_hand", "Off hand"], ["ranged", "Ranged"]] },
+				{ key: "rarity", label: "Rarity", type: "select", options: [["common", "Common (white)"], ["uncommon", "Uncommon (green)"], ["rare", "Rare (blue)"], ["epic", "Epic (purple)"], ["legendary", "Legendary (orange)"]] },
+				{ key: "value", label: "Worth (gold)", type: "int" },
+				{ key: "stack_max", label: "Stacks to", type: "int", help: "0 = automatic (gear 1, everything else 64)." },
+				{ key: "icon", label: "Icon", type: "select", options: ["sword", "bow", "shield", "helm", "shoulders", "chest", "legs", "boots", "gloves", "potion", "bandage", "coin", "cloth", "bag"] },
+				{ key: "icon_color", label: "Icon colour", type: "color" },
+				{ key: "description", label: "Description", type: "textarea", wide: true },
+			]],
+			["Stats when equipped", [
+				{ key: "armor", label: "Armour", type: "number", help: "100 armour halves damage taken." },
+				{ key: "attack", label: "Attack", type: "number", help: "Added to every swing and arrow." },
+				{ key: "spell_power", label: "Spell power", type: "number", help: "Added to spells (a quarter per heal tick)." },
+				{ key: "block", label: "Extra block (0–1)", type: "number", help: "0.1 = blocks 10% more." },
+				{ key: "bonus_health", label: "Extra health", type: "number" },
+				{ key: "bonus_mana", label: "Extra mana", type: "number" },
+			], e => e.slot !== ""],
+			["When used", [
+				{ key: "use_heal", label: "Heals at once", type: "number" },
+				{ key: "use_hot_per_tick", label: "Heals per tick", type: "number" },
+				{ key: "use_hot_ticks", label: "Ticks (2 s apart)", type: "int" },
+				{ key: "use_mana", label: "Restores mana", type: "number" },
+			], e => e.kind === "consumable"],
+			["Looks", [
+				{ key: "model", label: "Rigid model", type: "text", help: "builtin:sword / bow / shield / helm, or a res:// .glb. Placed with Fit Armor in Godot." },
+				{ key: "fitted_masc", label: "Fitted model (masc)", type: "text", help: "Skinned to the body rig in Blender (res://….glb or .scn)." },
+				{ key: "fitted_femme", label: "Fitted model (femme)", type: "text" },
+				{ key: "hides", label: "Hides these body parts", type: "parts", wide: true },
+				{ key: "fit", label: "Fit", type: "fitnote", wide: true },
+			], e => e.slot !== ""],
+		],
+	},
 	enemies: {
 		title: "Enemies", file: "enemies", listKey: "enemies", idKey: "id", nameKey: "name",
 		blank: () => ({
@@ -275,6 +322,7 @@ const TABS = {
 			aggro_radius: 12, leash_distance: 35, wander_radius: 5, walk_speed: 1.4, run_speed: 4,
 			attack_power: 8, attack_range: 2, attack_cooldown: 1.6, attack_animation: "attack_light_1",
 			attack_animation_speed: 0.75, attack_hit_time: 0.32, attack_arc: 110, corpse_time: 6, respawn_time: 25,
+			gold_min: 1, gold_max: 5, loot: [],
 		}),
 		groups: [
 			["General", [
@@ -304,6 +352,11 @@ const TABS = {
 			["Death", [
 				{ key: "corpse_time", label: "Body stays (s)", type: "number" },
 				{ key: "respawn_time", label: "Respawns after (s)", type: "number" },
+			]],
+			["Loot", [
+				{ key: "gold_min", label: "Gold (at least)", type: "int" },
+				{ key: "gold_max", label: "Gold (at most)", type: "int" },
+				{ key: "loot", label: "Drops", type: "loot", wide: true, help: "Chance 0–1 (0.25 = one in four kills)." },
 			]],
 		],
 	},
@@ -336,6 +389,12 @@ const TABS = {
 				{ key: "loadout.heavy_attack", label: "Heavy attack (hold)", type: "ability" },
 				{ key: "loadout.ranged_attack", label: "Ranged attack", type: "ability" },
 				{ key: "loadout.spells", label: "Spells (up to 4)", type: "abilities", max: 4, wide: true },
+			]],
+			["Starting kit (new characters)", [
+				{ key: "starting_kit.gold", label: "Gold", type: "int" },
+				{ key: "starting_kit.equipment", label: "Equipped", type: "kitgear", wide: true },
+				{ key: "starting_kit.backpack", label: "In the backpack", type: "kitbag", wide: true },
+				{ key: "starting_kit.quick", label: "Quick items", type: "itemlist", max: 2, wide: true },
 			]],
 		],
 	},
@@ -470,7 +529,7 @@ async function save() {
 
 function validate() {
 	const out = [];
-	for (const key of ["abilities", "enemies", "regions"]) {
+	for (const key of ["abilities", "items", "enemies", "regions"]) {
 		const t = TABS[key];
 		const seen = new Set();
 		for (const e of data[t.file][t.listKey]) {
@@ -492,6 +551,20 @@ function renameAbility(from, to) {
 	if (Array.isArray(l.spells)) l.spells = l.spells.map(fix);
 	l.heavy_attack = fix(l.heavy_attack);
 	l.ranged_attack = fix(l.ranged_attack);
+}
+
+// When an item's ID changes, keep loot tables and the starting kit pointing at it.
+function renameItem(from, to) {
+	const fix = v => (v === from ? to : v);
+	for (const e of ((data.enemies || {}).enemies || [])) {
+		for (const r of (e.loot || [])) r.item = fix(r.item);
+	}
+	const kit = (data.player || {}).starting_kit;
+	if (kit) {
+		for (const slot of Object.keys(kit.equipment || {})) kit.equipment[slot] = fix(kit.equipment[slot]);
+		for (const r of (kit.backpack || [])) r[0] = fix(r[0]);
+		if (Array.isArray(kit.quick)) kit.quick = kit.quick.map(fix);
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -657,6 +730,7 @@ function selectOf(options, value, allowEmpty) {
 }
 
 const soundLabel = p => p.replace("res://assets/audio/", "");
+const itemOptions = () => ((data.items && data.items.items) || []).map(it => [it.id, it.name + "  (" + it.id + ")"]);
 const abilityOptions = () => data.abilities.abilities.map(a => [a.id, a.display_name + "  (" + a.id + ")"]);
 
 function fieldControl(t, entry, f) {
@@ -680,6 +754,7 @@ function fieldControl(t, entry, f) {
 				if (f.key === t.idKey) {
 					v = v.toLowerCase().replace(/[^a-z0-9_]/g, "_");
 					if (tab === "abilities" && value !== v) renameAbility(getPath(entry, f.key), v);
+					if (tab === "items" && value !== v) renameItem(getPath(entry, f.key), v);
 				}
 				set(v);
 			};
@@ -757,6 +832,106 @@ function fieldControl(t, entry, f) {
 			if (!f.max || list.length < f.max) {
 				const add = el("button", { textContent: "+ Add" });
 				add.onclick = () => { if (opts.length) { list.push(opts[0][0]); set(list.slice(), true); } };
+				wrap.appendChild(add);
+			}
+			break;
+		}
+		case "parts": {
+			const all = ["head", "torso", "left_arm", "right_arm", "left_hand", "right_hand", "left_leg", "right_leg", "left_foot", "right_foot"];
+			const on = new Set(Array.isArray(value) ? value : []);
+			const box = el("div", { className: "parts" });
+			for (const name of all) {
+				const lab = el("label", { className: "part" });
+				const c = el("input", { type: "checkbox", checked: on.has(name) });
+				c.onchange = () => { c.checked ? on.add(name) : on.delete(name); set(all.filter(n => on.has(n))); };
+				lab.append(c, document.createTextNode(" " + name.replace("_", " ")));
+				box.appendChild(lab);
+			}
+			wrap.append(label, box);
+			break;
+		}
+		case "fitnote": {
+			const fit = value || {};
+			const n = b => (Array.isArray(fit[b]) ? fit[b].length : 0);
+			wrap.append(label, el("div", { className: "help", textContent: "Masc: " + n("masc") + " part(s), femme: " + n("femme") + " part(s). Adjust with Fit Armor in Godot's toolbar." }));
+			break;
+		}
+		case "loot": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const s = selectOf(itemOptions(), r.item, false);
+				s.onchange = () => { list[i].item = s.value; set(list.map(x => Object.assign({}, x))); };
+				const num = (k, w, step) => {
+					const n = el("input", { type: "number", value: r[k] ?? 0, step, title: k });
+					n.style.width = w;
+					n.oninput = () => { const v = parseFloat(n.value); if (!Number.isNaN(v)) { list[i][k] = v; set(list.map(x => Object.assign({}, x))); } };
+					return n;
+				};
+				const rm = el("button", { textContent: "✕", title: "Remove" });
+				rm.onclick = () => { list.splice(i, 1); set(list.map(x => Object.assign({}, x)), true); };
+				row.append(s, el("span", { textContent: "chance" }), num("chance", "70px", 0.01), el("span", { textContent: "×" }), num("min", "54px", 1), el("span", { textContent: "–" }), num("max", "54px", 1), rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Add drop" });
+			add.onclick = () => { const o = itemOptions(); if (o.length) { list.push({ item: o[0][0], chance: 0.25, min: 1, max: 1 }); set(list, true); } };
+			wrap.appendChild(add);
+			break;
+		}
+		case "kitgear": {
+			const eq = Object.assign({}, value || {});
+			const slots = [["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["main_hand", "Main hand"], ["off_hand", "Off hand"], ["ranged", "Ranged"]];
+			const grid = el("div", { className: "grid" });
+			for (const [slot, name] of slots) {
+				const cell = el("div", { className: "field" });
+				const opts = data.items.items.filter(it => it.slot === slot).map(it => [it.id, it.name]);
+				const s = selectOf(opts, eq[slot] || "", true);
+				s.onchange = () => { if (s.value) eq[slot] = s.value; else delete eq[slot]; set(Object.assign({}, eq)); };
+				cell.append(el("label", { textContent: name }), s);
+				grid.appendChild(cell);
+			}
+			wrap.append(label, grid);
+			break;
+		}
+		case "kitbag": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const list = Array.isArray(value) ? value.map(r => r.slice()) : [];
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const s = selectOf(itemOptions(), r[0], false);
+				s.onchange = () => { list[i][0] = s.value; set(list.map(x => x.slice())); };
+				const n = el("input", { type: "number", value: r[1], step: 1 });
+				n.style.width = "70px";
+				n.oninput = () => { const v = parseInt(n.value, 10); if (!Number.isNaN(v)) { list[i][1] = v; set(list.map(x => x.slice())); } };
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); set(list.map(x => x.slice()), true); };
+				row.append(s, el("span", { textContent: "×" }), n, rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Add" });
+			add.onclick = () => { const o = itemOptions(); if (o.length) { list.push([o[0][0], 1]); set(list, true); } };
+			wrap.appendChild(add);
+			break;
+		}
+		case "itemlist": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const list = Array.isArray(value) ? value.slice() : [];
+			list.forEach((v, i) => {
+				const row = el("div", { className: "row" });
+				const s = selectOf(itemOptions(), v, true);
+				s.onchange = () => { list[i] = s.value; set(list.slice()); };
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); set(list.slice(), true); };
+				row.append(s, rm);
+				wrap.appendChild(row);
+			});
+			if (!f.max || list.length < f.max) {
+				const add = el("button", { textContent: "+ Add" });
+				add.onclick = () => { list.push(""); set(list, true); };
 				wrap.appendChild(add);
 			}
 			break;

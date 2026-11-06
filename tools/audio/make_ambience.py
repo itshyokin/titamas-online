@@ -151,3 +151,24 @@ n = int(SR * 0.35); t = np.arange(n) / SR
 thump = np.sin(2 * np.pi * (110 - 140 * t) * t) * np.exp(-t / 0.06)
 slap = spectral_noise(n * 2, band(600, 4000, 1.0))[:n] * np.exp(-t / 0.025)
 save("hit_body", thump * 1.0 + slap * 0.5, peak_db=-3, loop=False)
+
+# Item pickup: two quick bright notes.
+n = int(SR * 0.35); t = np.arange(n) / SR
+x = np.zeros(n)
+for f0, start in [(880.0, 0.0), (1318.5, 0.07)]:
+    tt = np.clip(t - start, 0, None)
+    env = (t >= start) * np.clip(tt / 0.004, 0, 1) * np.exp(-tt / 0.09)
+    x += env * (np.sin(2 * np.pi * f0 * tt) + 0.3 * np.sin(2 * np.pi * f0 * 2.01 * tt))
+save("pickup", x, peak_db=-9, loop=False)
+
+# Coins: a few metallic clinks.
+n = int(SR * 0.5); t = np.arange(n) / SR
+x = np.zeros(n)
+r3 = np.random.default_rng(11)
+for k in range(5):
+    start = k * 0.06 + r3.uniform(0, 0.03)
+    tt = np.clip(t - start, 0, None)
+    env = (t >= start) * np.exp(-tt / 0.05)
+    for f0 in [r3.uniform(2400, 3200), r3.uniform(4100, 5200), r3.uniform(6100, 7000)]:
+        x += env * np.sin(2 * np.pi * f0 * tt) * r3.uniform(0.3, 0.7)
+save("coins", x, peak_db=-10, loop=False)

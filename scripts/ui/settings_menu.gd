@@ -218,11 +218,21 @@ func _graphics_tab() -> Control:
 	rays.button_pressed = GameSettings.god_rays
 	rays.toggled.connect(func(on: bool) -> void: GameSettings.set_god_rays(on))
 	page.add_child(rays)
+	var reset := Button.new()
+	reset.text = "Reset character (empty backpack, starting kit again)"
+	reset.pressed.connect(func() -> void:
+		var inv := get_tree().get_first_node_in_group("player_inventory")
+		if inv:
+			inv.call("reset_character"))
 	var note := Label.new()
 	note.text = "Off = smooth textures. Fine, Chunky and Retro show textures as bigger and bigger square pixels."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD
 	note.modulate = Color(1, 1, 1, 0.7)
 	page.add_child(note)
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 16)
+	page.add_child(spacer)
+	page.add_child(reset)
 	return page
 
 

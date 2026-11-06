@@ -34,6 +34,16 @@ var health := 0.0
 var mana := 0.0
 var stamina := 0.0
 
+## From equipment (set_bonuses): flat damage added to weapon attacks and to spells,
+## armour (each point takes a little off every hit), and extra share of damage blocked.
+var attack := 0.0
+var spell_power := 0.0
+var armor := 0.0
+var block := 0.0
+var _base_health := -1.0
+var _base_mana := -1.0
+var _bonus := {}
+
 var _stamina_idle_time := 0.0
 var _hots: Array[Dictionary] = []  # {per_tick, ticks_left, interval, timer, source}
 
@@ -147,6 +157,35 @@ func drain_stamina(amount: float) -> bool:
 	stamina = maxf(stamina - amount, 0.0)
 	stamina_changed.emit(stamina, max_stamina)
 	return stamina > 0.0
+
+
+## Base maximums before equipment (the Database sets these from the player's data).
+func set_base(base_health: float, base_mana: float) -> void:
+	_base_health = base_health
+	_base_mana = base_mana
+	set_bonuses(_bonus)
+
+
+## Equipment totals: {attack, spell_power, armor, block, bonus_health, bonus_mana}.
+func set_bonuses(bonus: Dictionary) -> void:
+	if _base_health < 0.0:
+		_base_health = max_health
+		_base_mana = max_mana
+	_bonus = bonus
+	attack = float(bonus.get("attack", 0.0))
+	spell_power = float(bonus.get("spell_power", 0.0))
+	armor = float(bonus.get("armor", 0.0))
+	block = float(bonus.get("block", 0.0))
+	max_health = _base_health + float(bonus.get("bonus_health", 0.0))
+	max_mana = _base_mana + float(bonus.get("bonus_mana", 0.0))
+	health = minf(health, max_health)
+	mana = minf(mana, max_mana)
+	emit_all()
+
+
+func restore_mana(amount: float) -> void:
+	mana = minf(mana + amount, max_mana)
+	mana_changed.emit(mana, max_mana)
 
 
 func emit_all() -> void:

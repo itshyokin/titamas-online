@@ -260,6 +260,7 @@ func _on_target_died() -> void:
 
 func _on_died() -> void:
 	ai = AI.DEAD
+	LootBag.drop_for(Database.enemy(enemy_id), Combat.world_root(self), global_position + model.global_basis.z * 0.6)
 	target = null
 	collision_layer = 0
 	velocity = Vector3.ZERO

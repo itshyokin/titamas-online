@@ -55,6 +55,15 @@ func play(anim: String, blend := 0.2, speed := 1.0) -> void:
 		_animator.play(anim, blend)
 
 
+## Stops animating and puts the skeleton in its rest pose (the armour fitter uses this).
+func show_rest_pose() -> void:
+	if _animator:
+		_animator.stop()
+	var skel := get_skeleton()
+	if skel:
+		skel.reset_bone_poses()
+
+
 ## Changes the playback speed of the current animation (0 holds the pose).
 func set_speed(speed: float) -> void:
 	if _animator:
@@ -224,6 +233,115 @@ func attach_to_bone(item: Node3D, bone_name: String, placement: Transform3D) -> 
 	return attach
 
 
+# --- Gear --------------------------------------------------------------------
+# Items (data/items.json entries) worn on the body: fitted (skinned) pieces bend with
+# the body and hide the bare parts under them; rigid pieces ride on a bone at the
+# position the armour-fitting editor saved for this body type.
+
+var _worn := {}  # tag -> {"nodes", "hides", "item", "with_rigid"}
+
+## The body type changed (worn gear has been moved over; weapons need re-attaching).
+signal body_changed
+var _hidden_parts := {}  # part name -> how many worn items hide it
+
+
+func body_key() -> String:
+	return "femme" if body_type == BodyType.FEMME else "masc"
+
+
+## Puts an item on. `tag` names it for take_off() (e.g. the equipment slot).
+## `with_rigid` = false skips bone-attached parts (weapons the caller places itself).
+func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
+	take_off(tag)
+	var nodes: Array[Node] = []
+	var skel := get_skeleton()
+	if skel == null or item.is_empty():
+		return nodes
+	var body := body_key()
+	var fitted := String(item.get("fitted_" + body, ""))
+	if not fitted.is_empty() and ResourceLoader.exists(fitted):
+		var piece := (load(fitted) as PackedScene).instantiate()
+		for child in piece.get_children():
+			if child is MeshInstance3D:
+				piece.remove_child(child)
+				child.owner = null
+				skel.add_child(child)
+				(child as MeshInstance3D).skeleton = NodePath("..")
+				nodes.append(child)
+		piece.free()
+	if with_rigid:
+		var fits: Array = item.get("fit", {}).get(body, [])
+		for att: Dictionary in fits:
+			var node := attach_fitted(att, String(item.get("model", "")))
+			if node:
+				nodes.append(node)
+	var hides: Array = item.get("hides", [])
+	for part in hides:
+		_hidden_parts[part] = int(_hidden_parts.get(part, 0)) + 1
+	_worn[tag] = {"nodes": nodes, "hides": hides, "item": item, "with_rigid": with_rigid}
+	_update_hidden_parts()
+	return nodes
+
+
+func take_off(tag: String) -> void:
+	if not _worn.has(tag):
+		return
+	for node in _worn[tag].nodes:
+		if is_instance_valid(node):
+			node.queue_free()
+	for part in _worn[tag].hides:
+		_hidden_parts[part] = int(_hidden_parts.get(part, 1)) - 1
+	_worn.erase(tag)
+	_update_hidden_parts()
+
+
+## Shows or hides a worn item's bone-attached parts (e.g. the shield while the bow is drawn).
+func set_worn_visible(tag: String, on: bool) -> void:
+	if not _worn.has(tag):
+		return
+	for node in _worn[tag].nodes:
+		if is_instance_valid(node) and node is BoneAttachment3D:
+			(node as Node3D).visible = on
+
+
+func take_off_all() -> void:
+	for tag in _worn.keys():
+		take_off(tag)
+
+
+## One rigid attachment from an item's fit: {model?, bone, grip?, position, rotation, scale}.
+## Grip attachments sit in the hand's grip (position/rotation nudge it); others are placed
+## at `position`/`rotation` (degrees) in this model's space at the rest pose.
+func attach_fitted(att: Dictionary, default_model: String) -> BoneAttachment3D:
+	var model := String(att.get("model", default_model))
+	var item_node := WeaponModels.build(model)
+	if item_node == null:
+		return null
+	var p: Array = att.get("position", [0, 0, 0])
+	var r: Array = att.get("rotation", [0, 0, 0])
+	var sc := float(att.get("scale", 1.0))
+	var offset := Transform3D(Basis.from_euler(Vector3(deg_to_rad(r[0]), deg_to_rad(r[1]), deg_to_rad(r[2]))).scaled(Vector3.ONE * sc),
+		Vector3(p[0], p[1], p[2]))
+	var bone := String(att.get("bone", "mixamorig_Hips"))
+	if att.get("grip", false):
+		var attach := attach_to_hand(item_node, bone.contains("Right"))
+		if attach:
+			item_node.transform = item_node.transform * offset
+		return attach
+	return attach_to_bone(item_node, bone, offset)
+
+
+func _update_hidden_parts() -> void:
+	var skel := get_skeleton()
+	if skel == null:
+		return
+	var prefix := "f_" if body_type == BodyType.FEMME else ""
+	for child in skel.get_children():
+		if child is MeshInstance3D and child.material_override == _skin_material:
+			var part := String(child.name).trim_prefix(prefix)
+			(child as MeshInstance3D).visible = int(_hidden_parts.get(part, 0)) <= 0
+
+
 ## Where a bone sits in the rest pose, in this model's space.
 func bone_rest_position(bone_name: String) -> Vector3:
 	var skel := get_skeleton()
@@ -262,8 +380,23 @@ func _apply() -> void:
 			continue
 		armature.visible = type == body_type
 		for mesh in armature.find_children("*", "MeshInstance3D", true, false):
-			(mesh as MeshInstance3D).material_override = _skin_material
+			if mesh.owner != null:  # the body's own parts, not worn gear
+				(mesh as MeshInstance3D).material_override = _skin_material
 	_setup_animator()
+	_rewear()
+
+
+## Puts everything worn back on (on the current body type).
+func _rewear() -> void:
+	if _worn.is_empty():
+		return
+	var old := _worn.duplicate()
+	for tag: String in old:
+		take_off(tag)
+	_hidden_parts.clear()
+	for tag: String in old:
+		wear(old[tag].item, tag, old[tag].with_rigid)
+	body_changed.emit()
 
 
 func _setup_animator() -> void:

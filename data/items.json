@@ -1,0 +1,680 @@
+{
+	"items": [
+		{
+			"description": "Pitted and dull, but it still cuts.",
+			"rarity": "common",
+			"value": 6,
+			"stack_max": 0,
+			"attack": 4.0,
+			"spell_power": 0.0,
+			"armor": 0.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "builtin:sword",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [
+					{
+						"bone": "mixamorig_RightHand",
+						"grip": true,
+						"position": [
+							0,
+							0,
+							0
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				],
+				"femme": [
+					{
+						"bone": "mixamorig_RightHand",
+						"grip": true,
+						"position": [
+							0,
+							0,
+							0
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				]
+			},
+			"id": "rusty_sword",
+			"name": "Rusty Sword",
+			"kind": "weapon",
+			"slot": "main_hand",
+			"icon": "sword",
+			"icon_color": "#b8a48c"
+		},
+		{
+			"description": "Well balanced, freshly sharpened.",
+			"rarity": "uncommon",
+			"value": 40,
+			"stack_max": 0,
+			"attack": 9.0,
+			"spell_power": 0.0,
+			"armor": 0.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "builtin:sword",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [
+					{
+						"bone": "mixamorig_RightHand",
+						"grip": true,
+						"position": [
+							0,
+							0,
+							0
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				],
+				"femme": [
+					{
+						"bone": "mixamorig_RightHand",
+						"grip": true,
+						"position": [
+							0,
+							0,
+							0
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				]
+			},
+			"id": "iron_longsword",
+			"name": "Iron Longsword",
+			"kind": "weapon",
+			"slot": "main_hand",
+			"icon": "sword",
+			"icon_color": "#d8dde6"
+		},
+		{
+			"description": "A simple yew bow.",
+			"rarity": "common",
+			"value": 8,
+			"stack_max": 0,
+			"attack": 3.0,
+			"spell_power": 0.0,
+			"armor": 0.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "builtin:bow",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [
+					{
+						"bone": "mixamorig_LeftHand",
+						"grip": true,
+						"position": [
+							0,
+							0,
+							0
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				],
+				"femme": [
+					{
+						"bone": "mixamorig_LeftHand",
+						"grip": true,
+						"position": [
+							0,
+							0,
+							0
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				]
+			},
+			"id": "hunting_bow",
+			"name": "Hunting Bow",
+			"kind": "weapon",
+			"slot": "ranged",
+			"icon": "bow",
+			"icon_color": "#a0703c"
+		},
+		{
+			"description": "Blocks a little more of each hit while guarding.",
+			"rarity": "common",
+			"value": 10,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 6.0,
+			"block": 0.1,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "builtin:shield",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [
+					{
+						"bone": "mixamorig_LeftForeArm",
+						"position": [
+							-0.592,
+							1.477,
+							0.049
+						],
+						"rotation": [
+							-90,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				],
+				"femme": [
+					{
+						"bone": "mixamorig_LeftForeArm",
+						"position": [
+							-0.56,
+							1.561,
+							0.069
+						],
+						"rotation": [
+							-90,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				]
+			},
+			"id": "wooden_shield",
+			"name": "Wooden Shield",
+			"kind": "armor",
+			"slot": "off_hand",
+			"icon": "shield",
+			"icon_color": "#a05a2c"
+		},
+		{
+			"description": "",
+			"rarity": "uncommon",
+			"value": 25,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 5.0,
+			"block": 0.0,
+			"bonus_health": 10.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "builtin:helm",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0.0,
+							1.768,
+							-0.001
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.15
+					}
+				],
+				"femme": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0.0,
+							1.764,
+							0.061
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.12
+					}
+				]
+			},
+			"id": "iron_helm",
+			"name": "Iron Helm",
+			"kind": "armor",
+			"slot": "head",
+			"icon": "helm",
+			"icon_color": "#9aa0aa"
+		},
+		{
+			"description": "",
+			"rarity": "common",
+			"value": 18,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 4.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [
+					{
+						"model": "builtin:pauldron_left",
+						"bone": "mixamorig_LeftArm",
+						"position": [
+							-0.162,
+							1.54,
+							0.092
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					},
+					{
+						"model": "builtin:pauldron_right",
+						"bone": "mixamorig_RightArm",
+						"position": [
+							0.162,
+							1.54,
+							0.092
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				],
+				"femme": [
+					{
+						"model": "builtin:pauldron_left",
+						"bone": "mixamorig_LeftArm",
+						"position": [
+							-0.148,
+							1.562,
+							0.085
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					},
+					{
+						"model": "builtin:pauldron_right",
+						"bone": "mixamorig_RightArm",
+						"position": [
+							0.148,
+							1.562,
+							0.086
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				]
+			},
+			"id": "iron_pauldrons",
+			"name": "Iron Pauldrons",
+			"kind": "armor",
+			"slot": "shoulders",
+			"icon": "shoulders",
+			"icon_color": "#9aa0aa"
+		},
+		{
+			"description": "",
+			"rarity": "common",
+			"value": 15,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 8.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "res://assets/items/skinned/leather_jerkin_masc.scn",
+			"fitted_femme": "res://assets/items/skinned/leather_jerkin_femme.scn",
+			"hides": [
+				"torso",
+				"left_arm",
+				"right_arm"
+			],
+			"fit": {
+				"masc": [],
+				"femme": []
+			},
+			"id": "leather_jerkin",
+			"name": "Leather Jerkin",
+			"kind": "armor",
+			"slot": "chest",
+			"icon": "chest",
+			"icon_color": "#8a5a32"
+		},
+		{
+			"description": "",
+			"rarity": "common",
+			"value": 8,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 4.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "res://assets/items/skinned/travelers_trousers_masc.scn",
+			"fitted_femme": "res://assets/items/skinned/travelers_trousers_femme.scn",
+			"hides": [
+				"left_leg",
+				"right_leg"
+			],
+			"fit": {
+				"masc": [],
+				"femme": []
+			},
+			"id": "travelers_trousers",
+			"name": "Traveler's Trousers",
+			"kind": "armor",
+			"slot": "legs",
+			"icon": "legs",
+			"icon_color": "#4a5070"
+		},
+		{
+			"description": "",
+			"rarity": "common",
+			"value": 6,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 2.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "res://assets/items/skinned/worn_boots_masc.scn",
+			"fitted_femme": "res://assets/items/skinned/worn_boots_femme.scn",
+			"hides": [
+				"left_foot",
+				"right_foot"
+			],
+			"fit": {
+				"masc": [],
+				"femme": []
+			},
+			"id": "worn_boots",
+			"name": "Worn Boots",
+			"kind": "armor",
+			"slot": "feet",
+			"icon": "boots",
+			"icon_color": "#5a3a20"
+		},
+		{
+			"description": "",
+			"rarity": "common",
+			"value": 5,
+			"stack_max": 0,
+			"attack": 1.0,
+			"spell_power": 0.0,
+			"armor": 1.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "res://assets/items/skinned/leather_gloves_masc.scn",
+			"fitted_femme": "res://assets/items/skinned/leather_gloves_femme.scn",
+			"hides": [
+				"left_hand",
+				"right_hand"
+			],
+			"fit": {
+				"masc": [],
+				"femme": []
+			},
+			"id": "leather_gloves",
+			"name": "Leather Gloves",
+			"kind": "armor",
+			"slot": "hands",
+			"icon": "gloves",
+			"icon_color": "#6e4626"
+		},
+		{
+			"description": "Restores 40 health at once.",
+			"rarity": "common",
+			"value": 5,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 0.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 40.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [],
+				"femme": []
+			},
+			"id": "minor_healing_potion",
+			"name": "Minor Healing Potion",
+			"kind": "consumable",
+			"icon": "potion",
+			"icon_color": "#d0302a"
+		},
+		{
+			"description": "Heals 30 health over 10 seconds.",
+			"rarity": "common",
+			"value": 2,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 0.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 6.0,
+			"use_hot_ticks": 5,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [],
+				"femme": []
+			},
+			"id": "bandage",
+			"name": "Bandage",
+			"kind": "consumable",
+			"icon": "bandage",
+			"icon_color": "#e8e0c8"
+		},
+		{
+			"description": "Restores 40 mana.",
+			"rarity": "common",
+			"value": 6,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 0.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 40.0,
+			"model": "",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [],
+				"femme": []
+			},
+			"id": "mana_draught",
+			"name": "Mana Draught",
+			"kind": "consumable",
+			"icon": "potion",
+			"icon_color": "#3060d8"
+		},
+		{
+			"description": "Proof of a bandit dealt with. Some guards pay for these.",
+			"rarity": "common",
+			"value": 3,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 0.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [],
+				"femme": []
+			},
+			"id": "bandit_insignia",
+			"name": "Bandit Insignia",
+			"kind": "junk",
+			"icon": "coin",
+			"icon_color": "#7a6a50"
+		},
+		{
+			"description": "Used for bandages and simple clothes.",
+			"rarity": "common",
+			"value": 1,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 0.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [],
+				"femme": []
+			},
+			"id": "linen_cloth",
+			"name": "Linen Cloth",
+			"kind": "material",
+			"icon": "cloth",
+			"icon_color": "#d8d0b8"
+		}
+	]
+}
