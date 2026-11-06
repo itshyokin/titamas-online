@@ -6,23 +6,29 @@
 [ext_resource type="Script" uid="uid://bx1f4iwa1npf5" path="res://scripts/world/ocean.gd" id="4_r6e8q"]
 [ext_resource type="Script" uid="uid://5ixqu5qrpwvo" path="res://scripts/world/atmosphere_manager.gd" id="5_ujnkd"]
 [ext_resource type="Script" uid="uid://co1thgfda284y" path="res://scripts/world/region_atmosphere.gd" id="6_qb1br"]
-
+[ext_resource type="AudioStream" uid="uid://btb28gu1lxrs2" path="res://assets/audio/ambience/breeze_loop.ogg" id="8_4nsao"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/bandit.tscn" id="90_bandit"]
-[ext_resource type="Script" path="res://scripts/enemy/training_dummy.gd" id="91_dummy"]
-[ext_resource type="Script" path="res://scripts/world/world_cycle.gd" id="92_cycle"]
+[ext_resource type="Script" uid="uid://c0q1l2rd0tqsj" path="res://scripts/enemy/training_dummy.gd" id="91_dummy"]
+[ext_resource type="Script" uid="uid://cv0mayk5ckreu" path="res://scripts/world/world_cycle.gd" id="92_cycle"]
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
-shader_parameter/top_color = Color(0.10409584, 0.37107718, 0.2810466, 1)
-shader_parameter/horizon_color = Color(0.74, 0.83, 0.88, 1)
-shader_parameter/ground_color = Color(0.32, 0.36, 0.4, 1)
-shader_parameter/sun_color = Color(1, 0.95, 0.85, 1)
+shader_parameter/top_color = Color(0.105882354, 0.37254903, 0.28235295, 1)
+shader_parameter/horizon_color = Color(0.7411765, 0.83137256, 0.8784314, 1)
+shader_parameter/ground_color = Color(0.32156864, 0.36078432, 0.4, 1)
+shader_parameter/sun_color = Color(1, 0.9490196, 0.8509804, 1)
 shader_parameter/sun_size = 0.9995
 shader_parameter/sun_glow = 6.0
 shader_parameter/cloud_color = Color(1, 1, 1, 1)
-shader_parameter/cloud_shade = Color(0.7, 0.74, 0.82, 1)
+shader_parameter/cloud_shade = Color(0.7019608, 0.7411765, 0.81960785, 1)
 shader_parameter/cloud_coverage = 0.519
 shader_parameter/cloud_scale = 0.6
 shader_parameter/cloud_speed = 0.01
+shader_parameter/use_cycle = true
+shader_parameter/sun_direction = Vector3(0.5, 0.7848856, 0.36599815)
+shader_parameter/moon_direction = Vector3(-0.5, -0.7848856, -0.36599815)
+shader_parameter/night_amount = 0.0
+shader_parameter/moon_color = Color(0.85, 0.9, 1, 1)
 
 [sub_resource type="Sky" id="Sky_qvq52"]
 sky_material = SubResource("ShaderMaterial_suk2g")
@@ -35,13 +41,60 @@ ambient_light_energy = 0.6
 reflected_light_source = 2
 tonemap_mode = 2
 fog_enabled = true
-fog_light_color = Color(0.6305378, 0.82061297, 0.77238154, 1)
+fog_light_color = Color(0.6313726, 0.81960785, 0.77254903, 1)
 fog_sun_scatter = 0.15
 fog_density = 0.009
 fog_sky_affect = 0.366
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.0042
+volumetric_fog_albedo = Color(0.8156863, 0.9098039, 0.8862745, 1)
+volumetric_fog_anisotropy = 0.7
+volumetric_fog_length = 80.0
+volumetric_fog_sky_affect = 0.0
+adjustment_enabled = true
+adjustment_contrast = 1.05
+adjustment_saturation = 1.2
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ycjve"]
 albedo_color = Color(0.36, 0.5, 0.28, 1)
+
+[sub_resource type="Resource" id="Resource_4nsao"]
+script = ExtResource("6_qb1br")
+region_name = "Monolith"
+chunks = Rect2i(-1, 0, 4, 4)
+fog_color = Color(0.6313726, 0.81960785, 0.77254903, 1)
+fog_density = 0.009
+fog_sky_affect = 0.366
+sky_top = Color(0.105882354, 0.37254903, 0.28235295, 1)
+sky_horizon = Color(0.7411765, 0.83137256, 0.8784314, 1)
+sky_ground = Color(0.32156864, 0.36078432, 0.4, 1)
+cloud_shade = Color(0.7019608, 0.7411765, 0.81960785, 1)
+cloud_coverage = 0.519
+sun_color = Color(1, 0.9490196, 0.8509804, 1)
+god_rays = 0.35
+grass_base = Color(0.16470589, 0.36078432, 0.12156863, 1)
+grass_tip = Color(0.54901963, 0.78039217, 0.3019608, 1)
+ambient_loop = ExtResource("8_4nsao")
+
+[sub_resource type="Resource" id="Resource_r6e8q"]
+script = ExtResource("6_qb1br")
+region_name = "The Open Sea"
+fog_color = Color(0.6, 0.7019608, 0.8, 1)
+fog_density = 0.007
+fog_sky_affect = 0.7
+sky_top = Color(0.2, 0.38039216, 0.65882355, 1)
+sky_horizon = Color(0.61960787, 0.72156864, 0.81960785, 1)
+sky_ground = Color(0.32156864, 0.36078432, 0.4, 1)
+cloud_shade = Color(0.7019608, 0.7411765, 0.81960785, 1)
+cloud_coverage = 0.55
+sun_color = Color(0.92156863, 0.9490196, 1, 1)
+sun_energy = 1.0
+ambient_energy = 0.65
+god_rays = 0.15
+grass_density = 0.0
+grass_base = Color(0.16470589, 0.36078432, 0.12156863, 1)
+grass_tip = Color(0.54901963, 0.78039217, 0.3019608, 1)
+wind_volume_db = -15.0
 
 [node name="OverworldTest" type="Node3D" unique_id=58358637]
 
@@ -49,13 +102,14 @@ albedo_color = Color(0.36, 0.5, 0.28, 1)
 environment = SubResource("Environment_bsa0p")
 
 [node name="Sun" type="DirectionalLight3D" parent="." unique_id=1578033159]
-transform = Transform3D(0.81915206, 0.43938506, -0.36868784, 0, 0.64278764, 0.76604444, 0.57357645, -0.62750685, 0.5265408, 0, 0, 0)
-light_color = Color(1, 0.95, 0.85, 1)
+transform = Transform3D(0.5906618, -0.6333392, 0.5, 0, 0.6196407, 0.7848856, -0.80691916, -0.46360195, 0.36599815, 0, 0, 0)
+light_color = Color(1, 0.9490196, 0.8509804, 1)
 light_energy = 1.1
 shadow_enabled = true
+shadow_opacity = 0.6
 directional_shadow_max_distance = 150.0
 
-[node name="WorldCycle" type="Node" parent="."]
+[node name="WorldCycle" type="Node" parent="." unique_id=1652751186]
 script = ExtResource("92_cycle")
 sun_path = NodePath("../Sun")
 
@@ -65,7 +119,7 @@ target_path = NodePath("../Player")
 default_material = SubResource("StandardMaterial3D_ycjve")
 
 [node name="Player" parent="." unique_id=806400208 instance=ExtResource("3_4nsao")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49.14438, 2.485851, 76.27473)
 
 [node name="Ocean" type="Node3D" parent="." unique_id=1156260732]
 script = ExtResource("4_r6e8q")
@@ -74,18 +128,23 @@ streamer_path = NodePath("../ChunkStreamer")
 
 [node name="AtmosphereManager" type="Node" parent="." unique_id=2117838094]
 script = ExtResource("5_ujnkd")
+regions = Array[ExtResource("6_qb1br")]([SubResource("Resource_4nsao")])
+default_atmosphere = SubResource("Resource_r6e8q")
 environment_path = NodePath("../WorldEnvironment")
 sun_path = NodePath("../Sun")
 target_path = NodePath("../Player")
 
-[node name="Enemies" type="Node3D" parent="."]
+[node name="Enemies" type="Node3D" parent="." unique_id=1245119392]
 
-[node name="TrainingDummy" type="StaticBody3D" parent="Enemies"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, 5)
+[node name="TrainingDummy" type="StaticBody3D" parent="Enemies" unique_id=1295057077]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -59.063515, 2.537659, 62.096825)
 script = ExtResource("91_dummy")
 
-[node name="Bandit" parent="Enemies" instance=ExtResource("90_bandit")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 2)
+[node name="Bandit" parent="Enemies" unique_id=1918972890 instance=ExtResource("90_bandit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2.795746, 2)
 
-[node name="Bandit2" parent="Enemies" instance=ExtResource("90_bandit")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 10)
+[node name="Bandit2" parent="Enemies" unique_id=417441187 instance=ExtResource("90_bandit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 2.795746, 10)
+
+[node name="Bandit3" parent="Enemies" unique_id=808439722 instance=ExtResource("90_bandit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.0862, 4.603443, 10.822014)
