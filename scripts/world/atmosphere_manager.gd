@@ -7,10 +7,10 @@ extends Node
 ## Regions come from this file (edited with the Database editor: Godot toolbar →
 ## Database → Regions). Changes show up within a second, in the editor and in game.
 @export_file("*.json") var regions_file := DataFiles.REGIONS
-## Filled from regions_file (only used directly if there's no file).
-@export var regions: Array[RegionAtmosphere] = []
+# Filled from regions_file (not saved in the scene: the Database is the only copy).
+var regions: Array[RegionAtmosphere] = []
 ## Used outside every region (open sea, unassigned land): the region marked "default".
-@export var default_atmosphere: RegionAtmosphere
+var default_atmosphere: RegionAtmosphere
 @export var environment_path: NodePath
 @export var sun_path: NodePath
 @export var target_path: NodePath

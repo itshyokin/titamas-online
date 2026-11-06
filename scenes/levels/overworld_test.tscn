@@ -5,8 +5,6 @@
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="3_4nsao"]
 [ext_resource type="Script" uid="uid://bx1f4iwa1npf5" path="res://scripts/world/ocean.gd" id="4_r6e8q"]
 [ext_resource type="Script" uid="uid://5ixqu5qrpwvo" path="res://scripts/world/atmosphere_manager.gd" id="5_ujnkd"]
-[ext_resource type="Script" uid="uid://co1thgfda284y" path="res://scripts/world/region_atmosphere.gd" id="6_qb1br"]
-[ext_resource type="AudioStream" uid="uid://btb28gu1lxrs2" path="res://assets/audio/ambience/breeze_loop.ogg" id="8_4nsao"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/bandit.tscn" id="90_bandit"]
 [ext_resource type="Script" uid="uid://c0q1l2rd0tqsj" path="res://scripts/enemy/training_dummy.gd" id="91_dummy"]
 [ext_resource type="Script" uid="uid://cv0mayk5ckreu" path="res://scripts/world/world_cycle.gd" id="92_cycle"]
@@ -58,44 +56,6 @@ adjustment_saturation = 1.2
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ycjve"]
 albedo_color = Color(0.36, 0.5, 0.28, 1)
 
-[sub_resource type="Resource" id="Resource_4nsao"]
-script = ExtResource("6_qb1br")
-region_name = "Monolith"
-chunks = Rect2i(-1, 0, 4, 4)
-fog_color = Color(0.6313726, 0.81960785, 0.77254903, 1)
-fog_density = 0.009
-fog_sky_affect = 0.366
-sky_top = Color(0.105882354, 0.37254903, 0.28235295, 1)
-sky_horizon = Color(0.7411765, 0.83137256, 0.8784314, 1)
-sky_ground = Color(0.32156864, 0.36078432, 0.4, 1)
-cloud_shade = Color(0.7019608, 0.7411765, 0.81960785, 1)
-cloud_coverage = 0.519
-sun_color = Color(1, 0.9490196, 0.8509804, 1)
-god_rays = 0.35
-grass_base = Color(0.16470589, 0.36078432, 0.12156863, 1)
-grass_tip = Color(0.54901963, 0.78039217, 0.3019608, 1)
-ambient_loop = ExtResource("8_4nsao")
-
-[sub_resource type="Resource" id="Resource_r6e8q"]
-script = ExtResource("6_qb1br")
-region_name = "The Open Sea"
-fog_color = Color(0.6, 0.7019608, 0.8, 1)
-fog_density = 0.007
-fog_sky_affect = 0.7
-sky_top = Color(0.2, 0.38039216, 0.65882355, 1)
-sky_horizon = Color(0.61960787, 0.72156864, 0.81960785, 1)
-sky_ground = Color(0.32156864, 0.36078432, 0.4, 1)
-cloud_shade = Color(0.7019608, 0.7411765, 0.81960785, 1)
-cloud_coverage = 0.55
-sun_color = Color(0.92156863, 0.9490196, 1, 1)
-sun_energy = 1.0
-ambient_energy = 0.65
-god_rays = 0.15
-grass_density = 0.0
-grass_base = Color(0.16470589, 0.36078432, 0.12156863, 1)
-grass_tip = Color(0.54901963, 0.78039217, 0.3019608, 1)
-wind_volume_db = -15.0
-
 [node name="OverworldTest" type="Node3D" unique_id=58358637]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1703188105]
@@ -128,8 +88,6 @@ streamer_path = NodePath("../ChunkStreamer")
 
 [node name="AtmosphereManager" type="Node" parent="." unique_id=2117838094]
 script = ExtResource("5_ujnkd")
-regions = Array[ExtResource("6_qb1br")]([SubResource("Resource_4nsao")])
-default_atmosphere = SubResource("Resource_r6e8q")
 environment_path = NodePath("../WorldEnvironment")
 sun_path = NodePath("../Sun")
 target_path = NodePath("../Player")
