@@ -16,60 +16,63 @@ const BODIES := {"masc": "Armature_masc", "femme": "Armature_femme"}
 const BODY_SCENE := "res://assets/models/characters/base_bodies.glb"
 const ROOT_BONE := "mixamorig_Hips"
 const FPS := 30.0
+## Per-clip settings come from data/animations.json (Database → Animations), read by
+## _load_settings() into these:
+const SETTINGS := "res://data/animations.json"
 ## Animations that loop. Everything else plays once.
-const LOOPING := [
-	"idle", "walking", "running", "falling_loop", "hanging_idle",
-	"swimming", "treading_water", "climbing_up_wall", "climbing_down_wall", "climbing_ladder",
-	"idle_armed", "greatsword_idle", "rifle_idle", "pistol_idle", "block", "strafing", "strafing_left", "cast_channel",
-]
+var LOOPING: Array = []
 ## Looping animations whose hips should not drift horizontally (in-place).
-const IN_PLACE := LOOPING
+var IN_PLACE: Array = []
 ## One-shot animations that travel: their horizontal hip movement is stripped from the
 ## pose and stored as metadata "root_motion" (PackedVector3Array, one offset per frame at
 ## FPS, in the character's local space, facing -Z) so the game can move the body itself.
-const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back", "hanging_hop_left", "hanging_hop_right", "hanging_shimmy_left",
-	# Attacks and draws: the game moves the body (lunges), so the clips stay in place.
-	"attack_light_1_full", "attack_light_2_full", "attack_light_3", "attack_heavy_full", "greatsword_slash_1_full", "greatsword_slash_2_full",
-	"greatsword_heavy_full", "talk_1", "talk_2", "talk_3", "talk_4", "draw_sword", "draw_greatsword", "draw_rifle", "draw_pistol", "hit_react", "gun_reload",
-	"cast_release_full", "cast_heal_full", "casting_spell", "shooting", "gunplay", "bow_shot_full",
-	"cast_area_full", "cast_1h_a_full", "cast_1h_b_full"]
-## Clips made by playing another backwards (with its root motion reversed): a shimmy left
-## played in reverse is a shimmy right.
-const REVERSED := {"hanging_shimmy_right": "hanging_shimmy_left"}
-## Clips cut out of longer ones: name -> [source clip, start s, end s]. Lets one Mixamo
-## download (e.g. a full draw-and-shoot) feed several game clips, and trims wind-ups.
-## A cut replaces a stand-in of the same name. Loops if the name is in LOOPING.
-const SUBCLIPS := {
-	"attack_light_1": ["attack_light_1_full", 0.3, 1.35],
-	"greatsword_slash_1": ["greatsword_slash_1_full", 0.35, 1.7],
-	"cast_release": ["cast_release_full", 0.75, 2.2],
-	"bow_aim": ["bow_shot_full", 1.0, 2.6],
-	"bow_release": ["bow_shot_full", 3.85, 4.8],
-	"pistol_aim": ["shooting", 0.15, 0.3],
-	"cast_heal": ["cast_heal_full", 0.4, 2.2],
-	"cast_area": ["cast_area_full", 1.2, 3.0],
-	"cast_1h_a": ["cast_1h_a_full", 0.4, 1.9],
-	"cast_1h_b": ["cast_1h_b_full", 0.35, 1.9],
-	"pistol_fire": ["shooting", 0.22, 1.17],
-	"rifle_aim": ["gunplay", 0.0, 0.05],
-	"greatsword_slash_2": ["greatsword_slash_2_full", 0.1, 1.1],
-	"attack_light_2": ["attack_light_2_full", 0.3, 1.15],
-	"attack_heavy": ["attack_heavy_full", 0.6, 2.2],
-	"greatsword_heavy": ["greatsword_heavy_full", 0.15, 2.0],
-}
+var ROOT_MOTION: Array = []
+## Clips made by playing another backwards (with its root motion reversed).
+var REVERSED := {}
+## Clips cut out of longer ones: name -> [source clip, start s, end s].
+var SUBCLIPS := {}
 ## Animations whose hips may dip but not rise; the physics jump provides the height.
-const NO_HIP_RISE := ["jumping"]
+var NO_HIP_RISE: Array = []
 ## Clips authored facing the other way: extra turn (degrees) so they face forward.
-const YAW_FIX := {"climbing_ladder": 180.0}
-## Clips whose average hip height should match another clip's (Mixamo places some
-## in-place climbing clips at a different height).
-const HEIGHT_MATCH := {"climbing_down_wall": "climbing_up_wall"}
-## Extra outward angle (degrees) for each body's arms. Our bodies are broader than the
-## Mixamo skeleton the clips were made on, so without this the hands sink into the thighs.
-## Applied to the upper arm and everything below it, in every animation.
-const ARM_SPREAD := {"masc": 18.0, "femme": 14.0}
+var YAW_FIX := {}
+## Clips whose average hip height should match another clip's.
+var HEIGHT_MATCH := {}
+## Extra outward angle (degrees) for each body's arms (our bodies are broader than the
+## Mixamo skeleton, so without this the hands sink into the thighs).
+var ARM_SPREAD := {"masc": 18.0, "femme": 14.0}
 ## Clips that keep the original arm angles (hands must land on walls, ledges and rungs).
-const NO_ARM_SPREAD_PREFIXES := ["climbing_", "hanging_"]
+var NO_ARM_SPREAD_PREFIXES: Array = ["climbing_", "hanging_"]
+
+
+func _load_settings() -> void:
+	var d = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS))
+	if not d is Dictionary:
+		push_warning("couldn't read %s; using no per-clip settings" % SETTINGS)
+		return
+	ARM_SPREAD = d.get("arm_spread", ARM_SPREAD)
+	NO_ARM_SPREAD_PREFIXES = d.get("no_arm_spread_prefixes", NO_ARM_SPREAD_PREFIXES)
+	for c: Dictionary in d.get("clips", []):
+		var clip_name := String(c.get("name", ""))
+		if clip_name.is_empty():
+			continue
+		if bool(c.get("loop", false)):
+			LOOPING.append(clip_name)
+		if bool(c.get("in_place", false)):
+			IN_PLACE.append(clip_name)
+		if bool(c.get("root_motion", false)):
+			ROOT_MOTION.append(clip_name)
+		if bool(c.get("no_hip_rise", false)):
+			NO_HIP_RISE.append(clip_name)
+		if float(c.get("yaw_fix", 0.0)) != 0.0:
+			YAW_FIX[clip_name] = float(c.yaw_fix)
+		if not String(c.get("height_match", "")).is_empty():
+			HEIGHT_MATCH[clip_name] = String(c.height_match)
+		match String(c.get("kind", "file")):
+			"cut":
+				SUBCLIPS[clip_name] = [String(c.get("from", "")), float(c.get("start", 0.0)), float(c.get("end", 0.0))]
+			"reversed":
+				REVERSED[clip_name] = String(c.get("from", ""))
+
 
 ## Stand-in combat clips, posed from the idle clip by rotating bones. Any of these is
 ## replaced automatically by a Mixamo FBX with the same name in SOURCE_DIR.
@@ -223,6 +226,7 @@ const PLACEHOLDERS := {
 
 
 func _init() -> void:
+	_load_settings()
 	var body_scene: Node = (load(BODY_SCENE) as PackedScene).instantiate()
 	var sources := _load_sources()
 	for body in BODIES:

@@ -34,7 +34,7 @@ var data := {}
 var target: Node3D = null  # who it's fighting or fleeing from
 ## The player hit it in danger mode: it fights (or flees from) them until it calms down.
 var angry_at_player := false
-## Looks at the player when they're this close (m).
+## Looks at the player when they're this close (m); Database → Animations → Head turning overrides it.
 const LOOK_RANGE := 6.0
 var _gesture_wait := 0.5
 var _player_looking := false
@@ -594,7 +594,7 @@ func _update_head(delta: float) -> void:
 	elif ai == AI.FIGHT and target and is_instance_valid(target):
 		at = target
 	elif player and ai in [AI.IDLE, AI.RETURN, AI.FOLLOW] \
-			and player.global_position.distance_to(global_position) < LOOK_RANGE:
+			and player.global_position.distance_to(global_position) < float(Database.look_settings().get("range", LOOK_RANGE)):
 		at = player
 	look.forward = -model.global_basis.z
 	look.looking = at != null

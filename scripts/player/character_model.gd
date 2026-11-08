@@ -31,6 +31,12 @@ const LIBRARIES := {
 ## Animation played when nothing else is asked for (also previews in the editor).
 @export var default_animation := "idle"
 
+## Which clip plays for each role the game asks for ("running", "hanging_idle", "death"...),
+## from data/animations.json "roles" (Database → Animations). A role with no entry, or
+## whose clip is missing, plays the clip of the same name.
+static var roles := {}
+
+var _current_role := ""
 var _skin_material := StandardMaterial3D.new()
 var _animator: AnimationPlayer
 var _measure_cache := {}
@@ -46,10 +52,20 @@ func _ready() -> void:
 	_apply()
 
 
-## Crossfades to an animation. Does nothing if it's already playing.
-func play(anim: String, blend := 0.2, speed := 1.0) -> void:
+## The clip that plays for a role (see `roles`).
+func clip_for(role: String) -> String:
+	var clip := String(roles.get(role, role))
+	if clip != role and _animator and not _animator.has_animation(clip):
+		return role
+	return clip
+
+
+## Crossfades to an animation (a role name; see `roles`). Does nothing if it's already playing.
+func play(role: String, blend := 0.2, speed := 1.0) -> void:
+	var anim := clip_for(role)
 	if _animator == null or not _animator.has_animation(anim):
 		return
+	_current_role = role
 	_animator.speed_scale = speed
 	if _animator.current_animation != anim:
 		_animator.play(anim, blend)
@@ -76,9 +92,11 @@ func set_speed(speed: float) -> void:
 
 
 ## Plays an animation from a given time (restarts it even if already playing).
-func play_from(anim: String, time: float, blend := 0.15, speed := 1.0) -> void:
+func play_from(role: String, time: float, blend := 0.15, speed := 1.0) -> void:
+	var anim := clip_for(role)
 	if _animator == null or not _animator.has_animation(anim):
 		return
+	_current_role = role
 	_animator.speed_scale = speed
 	_animator.play(anim, blend)
 	_animator.seek(time, true)
@@ -86,7 +104,8 @@ func play_from(anim: String, time: float, blend := 0.15, speed := 1.0) -> void:
 
 ## Horizontal travel baked out of a one-shot animation (see retarget_mixamo.gd),
 ## one character-local offset per frame at 30 fps. Empty if the animation has none.
-func get_root_motion(anim: String) -> PackedVector3Array:
+func get_root_motion(role: String) -> PackedVector3Array:
+	var anim := clip_for(role)
 	if _animator == null or not _animator.has_animation(anim):
 		return PackedVector3Array()
 	return _animator.get_animation(anim).get_meta("root_motion", PackedVector3Array())
@@ -95,7 +114,8 @@ func get_root_motion(anim: String) -> PackedVector3Array:
 ## Where the fingertips and toe tips are at `time` into `anim`, in the character's
 ## own space (feet origin, facing -Z): {"hands": Vector3, "toes": Vector3}.
 ## Used to line hands up with ledges and rungs. Measured on the actual body, cached.
-func measure(anim: String, time: float) -> Dictionary:
+func measure(role: String, time: float) -> Dictionary:
+	var anim := clip_for(role)
 	var key := "%s@%.3f" % [anim, time]
 	if _measure_cache.has(key):
 		return _measure_cache[key]
@@ -126,7 +146,8 @@ func measure(anim: String, time: float) -> Dictionary:
 ## Times (seconds into `anim`) when each of `bones` comes down: its height drops below
 ## `fraction` of its range (0 = lowest point, 1 = highest). With the feet this gives the
 ## footfalls of a walk/run cycle; with the hands, the strokes of a swim. Cached.
-func bone_contacts(anim: String, bones: PackedStringArray, fraction := 0.2) -> PackedFloat32Array:
+func bone_contacts(role: String, bones: PackedStringArray, fraction := 0.2) -> PackedFloat32Array:
+	var anim := clip_for(role)
 	var key := "contacts:%s:%s:%.2f" % [anim, ",".join(bones), fraction]
 	if _measure_cache.has(key):
 		return _measure_cache[key]
@@ -365,18 +386,23 @@ func bone_rest_position(bone_name: String) -> Vector3:
 	return (global_transform.affine_inverse() * skel.global_transform * skel.get_bone_global_rest(bone)).origin
 
 
-func has_animation(anim: String) -> bool:
-	return _animator != null and _animator.has_animation(anim)
+func has_animation(role: String) -> bool:
+	return _animator != null and _animator.has_animation(clip_for(role))
 
 
-func get_animation_length(anim: String) -> float:
+func get_animation_length(role: String) -> float:
+	var anim := clip_for(role)
 	if _animator == null or not _animator.has_animation(anim):
 		return 0.0
 	return _animator.get_animation(anim).length
 
 
+## The role (or clip) playing now: the name it was started with.
 func current_animation() -> String:
-	return _animator.current_animation if _animator else ""
+	if _animator == null:
+		return ""
+	var clip := String(_animator.current_animation)
+	return _current_role if not _current_role.is_empty() and clip_for(_current_role) == clip else clip
 
 
 func animation_position() -> float:
@@ -400,6 +426,12 @@ func head_look() -> HeadLook:
 	if look == null:
 		look = HeadLook.new()
 		look.name = "HeadLook"
+		var db := get_tree().root.get_node_or_null("Database") if is_inside_tree() else null
+		var cfg: Dictionary = db.call("look_settings") if db else {}
+		look.max_yaw = float(cfg.get("max_yaw", look.max_yaw))
+		look.max_pitch = float(cfg.get("max_pitch", look.max_pitch))
+		look.speed = float(cfg.get("speed", look.speed))
+		look.neck_share = float(cfg.get("neck_share", look.neck_share))
 		skel.add_child(look)
 	return look
 
@@ -662,7 +694,7 @@ func _setup_animator() -> void:
 	_animator.root_node = _animator.get_path_to(get_node(_armature_name(body_type)))
 	_animator.add_animation_library("", lib)
 	_measure_cache.clear()
-	_animator.play(current if not current.is_empty() else default_animation)
+	_animator.play(current if not current.is_empty() else clip_for(default_animation))
 
 
 func _armature_name(type: BodyType) -> String:

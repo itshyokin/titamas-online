@@ -19,6 +19,7 @@ const FILES := {
 	"classes": "res://data/classes.json",
 	"npcs": "res://data/npcs.json",
 	"weapon_types": "res://data/weapon_types.json",
+	"animations": "res://data/animations.json",
 	"appearance": "res://data/appearance.json",
 }
 const MAX_BODY := 4 * 1024 * 1024
@@ -29,6 +30,14 @@ var _clients: Array = []  # [StreamPeerTCP, PackedByteArray buffer, float age]
 var _button: Button
 var _fit_button: Button
 const FITTER := "res://scenes/tools/armor_fitter.tscn"
+const RETARGET := "res://tools/godot/retarget_mixamo.gd"
+
+# Rebuilding animations (Database → Animations → Rebuild): the retarget tool runs in a
+# separate headless Godot, on a thread so the editor stays responsive.
+var _rebuild_thread: Thread
+var _rebuild_log := ""
+var _rebuild_ok := false
+var _rebuild_done := false
 
 
 func _enter_tree() -> void:
@@ -48,7 +57,48 @@ func _enter_tree() -> void:
 	_start_server()
 
 
+## Starts rebuilding masc.res / femme.res from the FBX files and data/animations.json.
+func _start_rebuild() -> bool:
+	if _rebuild_thread and _rebuild_thread.is_alive():
+		return false
+	if _rebuild_thread:
+		_rebuild_thread.wait_to_finish()
+	_rebuild_log = "Rebuilding…"
+	_rebuild_ok = false
+	_rebuild_done = false
+	_rebuild_thread = Thread.new()
+	_rebuild_thread.start(_run_rebuild)
+	return true
+
+
+func _run_rebuild() -> void:
+	var out := []
+	var args := ["--headless", "--path", ProjectSettings.globalize_path("res://"), "--script", RETARGET]
+	var code := OS.execute(OS.get_executable_path(), args, out, true)
+	var text := "\n".join(out)
+	# Keep the useful lines (clip list, errors), not the engine's start-up chatter.
+	var lines := []
+	for line in text.split("\n"):
+		if line.strip_edges().is_empty() or line.begins_with("Godot Engine"):
+			continue
+		lines.append(line)
+	_rebuild_ok = code == 0 and text.contains("saved res://assets/animations/femme.res")
+	_rebuild_log = "\n".join(lines.slice(maxi(lines.size() - 400, 0)))
+	_rebuild_done = true
+
+
+func _check_rebuild() -> void:
+	if _rebuild_done:
+		_rebuild_done = false
+		# Let the editor pick up the new libraries.
+		for path in ["res://assets/animations/masc.res", "res://assets/animations/femme.res"]:
+			EditorInterface.get_resource_filesystem().update_file(path)
+		EditorInterface.get_resource_filesystem().scan()
+
+
 func _exit_tree() -> void:
+	if _rebuild_thread:
+		_rebuild_thread.wait_to_finish()
 	remove_control_from_container(CONTAINER_TOOLBAR, _button)
 	_button.queue_free()
 	remove_control_from_container(CONTAINER_TOOLBAR, _fit_button)
@@ -80,6 +130,7 @@ func _start_server() -> bool:
 
 
 func _process(delta: float) -> void:
+	_check_rebuild()
 	if _server == null or not _server.is_listening():
 		return
 	while _server.is_connection_available():
@@ -144,7 +195,14 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 				out[key] = parsed
 			_json(peer, 200, out)
 		["GET", "/api/assets"]:
-			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"])})
+			var fbx := []
+			for f in _files("res://assets/animations/mixamo", ["fbx"]):
+				fbx.append(String(f).get_file().get_basename())
+			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"]), "fbx": fbx})
+		["POST", "/api/rebuild_animations"]:
+			_json(peer, 200, {"ok": _start_rebuild()})
+		["GET", "/api/rebuild_status"]:
+			_json(peer, 200, {"running": _rebuild_thread != null and _rebuild_thread.is_alive(), "log": _rebuild_log, "ok": _rebuild_ok})
 		["POST", "/api/save"]:
 			var data = JSON.parse_string(req.body)
 			if not data is Dictionary or not FILES.has(String(data.get("file", ""))) or not data.has("data"):

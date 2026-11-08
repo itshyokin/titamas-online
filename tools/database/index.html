@@ -139,6 +139,7 @@
 	.field.wide { grid-column: 1 / -1; }
 	.field label { font-size: 12px; color: var(--soft); font-weight: 600; }
 	.field .help { font-size: 11.5px; color: var(--soft); }
+	.rebuild-log { max-height: 260px; overflow: auto; font-size: 11px; background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; white-space: pre-wrap; margin-top: 8px; }
 	input[type=text], input[type=number], select, textarea {
 		font: inherit;
 		color: var(--ink);
@@ -330,7 +331,7 @@ const TABS = {
 			id: "new_enemy", name: "New Enemy", level: 1, max_health: 60, skin_color: "#9e8c80", weapon: "sword",
 			aggro_radius: 12, leash_distance: 35, wander_radius: 5, walk_speed: 1.4, run_speed: 4,
 			attack_power: 8, attack_range: 2, attack_cooldown: 1.6, attack_animation: "attack_light_1",
-			attack_animation_speed: 0.75, attack_hit_time: 0.32, attack_arc: 110, corpse_time: 6, respawn_time: 25,
+			attack_animation_speed: 0.75, attack_hit_time: 0.32, attack_arc: 110, corpse_time: 12, respawn_time: 90,
 			gold_min: 1, gold_max: 5, xp: 0, loot: [],
 		}),
 		groups: [
@@ -410,6 +411,15 @@ const TABS = {
 				{ key: "combat.cast_pushback", label: "Cast pushback (s)", type: "number", help: "A hit while casting knocks the cast bar back this much." },
 				{ key: "combat.interrupt_share", label: "Interrupting hit (share of health)", type: "number", help: "Hits this big (0.15 = 15% of max health), or heavy hits, interrupt casts and charges." },
 				{ key: "combat.move_cancels_cast", label: "Moving cancels casting", type: "bool" },
+				{ key: "combat.proficiency_damage", label: "Proficient weapons: extra damage", type: "number", help: "0.15 = 15% more (class Proficient with list)." },
+				{ key: "combat.proficiency_speed", label: "Proficient weapons: extra speed", type: "number", help: "Swings, shots and reloads; 0.1 = 10% faster." },
+				{ key: "combat.arrow_gravity", label: "Hand-aimed arrow drop (m/s²)", type: "number" },
+				{ key: "combat.combat_linger", label: "Weapon put away after (s)", type: "number", help: "Seconds without fighting before the weapon goes back on your back." },
+				{ key: "combat.block_arc", label: "Block covers (°)", type: "number", help: "Hits from within this arc in front are blocked." },
+				{ key: "combat.tab_range", label: "Target button reach (m)", type: "number" },
+				{ key: "combat.lock_range", label: "Lock-on breaks beyond (m)", type: "number", help: "Keep it at least the target button's reach." },
+				{ key: "combat.lose_range", label: "Target dropped beyond (m)", type: "number" },
+				{ key: "combat.snap_range", label: "Swings turn to enemies within (m)", type: "number", help: "Even behind you." },
 			]],
 			["Loadout", [
 				{ key: "loadout.light_combo", label: "Bare-hands combo (in order)", type: "abilities", wide: true, help: "Weapons bring their own moves (Weapon Types tab)." },
@@ -499,6 +509,99 @@ const TABS = {
 			]],
 		],
 	},
+	animation_roles: {
+		title: "Animations", file: "animations", single: true,
+		groups: [
+			["Which clip plays", [
+				{ key: "_intro", label: "", type: "note", wide: true, text: "Pick the clip for each thing characters do. Clips come from the FBX files in assets/animations/mixamo (Clips tab for their settings). Save, then Rebuild animations (bottom) after changing clip settings or adding FBX files; changing which clip plays needs no rebuild." },
+			]],
+			["Moving", [
+				{ key: "roles.idle", label: "Idle", type: "anim" },
+				{ key: "roles.idle_armed", label: "Idle, weapon out (default)", type: "anim", help: "Weapon types can pick their own (Weapon Types → Animations)." },
+				{ key: "roles.walking", label: "Walk", type: "anim" },
+				{ key: "roles.running", label: "Run", type: "anim" },
+				{ key: "roles.jumping", label: "Jump", type: "anim" },
+				{ key: "roles.falling_loop", label: "Falling", type: "anim" },
+				{ key: "roles.falling_land", label: "Landing", type: "anim" },
+				{ key: "roles.strafing", label: "Sidestep right (locked on)", type: "anim" },
+				{ key: "roles.strafing_left", label: "Sidestep left (locked on)", type: "anim" },
+				{ key: "roles.dodge_roll", label: "Dodge roll", type: "anim" },
+				{ key: "roles.dodge_left", label: "Dodge left", type: "anim" },
+				{ key: "roles.dodge_right", label: "Dodge right", type: "anim" },
+				{ key: "roles.dodge_back", label: "Dodge back", type: "anim" },
+			]],
+			["Climbing and swimming", [
+				{ key: "roles.hanging_idle", label: "Hanging from a ledge", type: "anim" },
+				{ key: "roles.hanging_climb_up", label: "Pulling up onto a ledge", type: "anim" },
+				{ key: "roles.hanging_shimmy_left", label: "Shimmy left", type: "anim" },
+				{ key: "roles.hanging_shimmy_right", label: "Shimmy right", type: "anim" },
+				{ key: "roles.hanging_hop_left", label: "Hop left (no shimmy clip)", type: "anim" },
+				{ key: "roles.hanging_hop_right", label: "Hop right (no shimmy clip)", type: "anim" },
+				{ key: "roles.climbing_up_wall", label: "Climbing a wall up", type: "anim" },
+				{ key: "roles.climbing_down_wall", label: "Climbing a wall down", type: "anim" },
+				{ key: "roles.climbing_ladder", label: "Climbing a ladder", type: "anim" },
+				{ key: "roles.swimming", label: "Swimming", type: "anim" },
+				{ key: "roles.treading_water", label: "Treading water", type: "anim" },
+			]],
+			["Fighting", [
+				{ key: "roles.block", label: "Blocking (held)", type: "anim" },
+				{ key: "roles.hit_react", label: "Flinch", type: "anim" },
+				{ key: "roles.death", label: "Dying", type: "anim" },
+				{ key: "roles.cast_channel", label: "Casting (while the bar fills)", type: "anim" },
+				{ key: "roles.bow_aim", label: "Aiming (default)", type: "anim", help: "Weapon types can pick their own." },
+			]],
+			["Talking (NPC gestures, picked at random)", [
+				{ key: "roles.talk_1", label: "Gesture 1", type: "anim" },
+				{ key: "roles.talk_2", label: "Gesture 2", type: "anim" },
+				{ key: "roles.talk_3", label: "Gesture 3", type: "anim" },
+				{ key: "roles.talk_4", label: "Gesture 4", type: "anim" },
+			]],
+			["Head turning", [
+				{ key: "look.range", label: "NPCs look at you within (m)", type: "number" },
+				{ key: "look.max_yaw", label: "Furthest head turn sideways (°)", type: "number" },
+				{ key: "look.max_pitch", label: "Furthest head turn up/down (°)", type: "number" },
+				{ key: "look.speed", label: "Turn speed", type: "number", help: "Higher = snappier." },
+				{ key: "look.neck_share", label: "Neck's share of the turn (0–1)", type: "number" },
+			]],
+			["Sidestep speed", [
+				{ key: "strafe.right_speed", label: "Right clip: metres per second at normal speed", type: "number", help: "Matches the clip's feet to the ground speed." },
+				{ key: "strafe.left_speed", label: "Left clip: metres per second at normal speed", type: "number" },
+			]],
+			["Rebuilding", [
+				{ key: "arm_spread.masc", label: "Arm spread, masc (°)", type: "number", help: "Our bodies are broader than Mixamo's; this keeps hands off the thighs." },
+				{ key: "arm_spread.femme", label: "Arm spread, femme (°)", type: "number" },
+				{ key: "_rebuild", label: "Rebuild animations", type: "rebuild", wide: true },
+			]],
+		],
+	},
+	animation_clips: {
+		title: "Clips", file: "animations", listKey: "clips", idKey: "name", nameKey: "name",
+		blank: () => ({ name: "new_clip", kind: "cut", from: "", start: 0, end: 1, loop: false, in_place: false, root_motion: true,
+			no_hip_rise: false, yaw_fix: 0, height_match: "", note: "" }),
+		groups: [
+			["Clip", [
+				{ key: "name", label: "Name", type: "text", help: "For a file: the FBX's name (e.g. running for running.fbx). FBX files without an entry here still come in, playing once." },
+				{ key: "kind", label: "Made from", type: "select", options: [["file", "Its own FBX file"], ["cut", "A piece of another clip"], ["reversed", "Another clip, backwards"]] },
+				{ key: "note", label: "Note", type: "text", wide: true },
+			]],
+			["Piece of another clip", [
+				{ key: "from", label: "From clip", type: "anim" },
+				{ key: "start", label: "Start (s)", type: "number" },
+				{ key: "end", label: "End (s)", type: "number" },
+			], e => e.kind === "cut"],
+			["Backwards", [
+				{ key: "from", label: "From clip", type: "anim" },
+			], e => e.kind === "reversed"],
+			["Playback", [
+				{ key: "loop", label: "Loops", type: "bool" },
+				{ key: "in_place", label: "In place (looping moves: hips don't drift)", type: "bool" },
+				{ key: "root_motion", label: "Travel handled by the game", type: "bool", help: "Strips the clip's forward/sideways travel (attacks, dodges, shimmies); the game moves the body." },
+				{ key: "no_hip_rise", label: "Hips may dip but not rise (jumps)", type: "bool" },
+				{ key: "yaw_fix", label: "Turn to face forward (°)", type: "number", help: "For clips that face backwards: 180." },
+				{ key: "height_match", label: "Match hip height of", type: "anim" },
+			]],
+		],
+	},
 	weapon_types: {
 		title: "Weapon Types", file: "weapon_types", listKey: "types", idKey: "id", nameKey: "name",
 		blank: () => ({
@@ -524,12 +627,12 @@ const TABS = {
 				{ key: "reload", label: "Reload (s)", type: "number", help: "0 = no reloading. Crossbows and guns reload after every shot." },
 			], e => e.category === "ranged"],
 			["Animations", [
-				{ key: "idle", label: "Idle (weapon out)", type: "text", help: "Clip name, e.g. idle_armed, greatsword_idle, rifle_idle." },
-				{ key: "draw_anim", label: "Draw", type: "text", help: "Played when drawing or swapping to it (standing still). Empty = none." },
+				{ key: "idle", label: "Idle (weapon out)", type: "anim", help: "Clip name, e.g. idle_armed, greatsword_idle, rifle_idle." },
+				{ key: "draw_anim", label: "Draw", type: "anim", help: "Played when drawing or swapping to it (standing still). Empty = none." },
 				{ key: "draw_grip", label: "In hand at (s)", type: "number", help: "When the draw clip's hand reaches the weapon." },
-				{ key: "aim", label: "Aim / draw-back", type: "text", help: "Ranged: held while aiming or drawing (bow_aim, rifle_aim, pistol_aim)." },
+				{ key: "aim", label: "Aim / draw-back", type: "anim", help: "Ranged: held while aiming or drawing (bow_aim, rifle_aim, pistol_aim)." },
 				{ key: "hold", label: "Held like", type: "select", options: [["", "A blade (out of the thumb side)"], ["gun", "A gun (along the hand)"]] },
-				{ key: "reload_anim", label: "Reload", type: "text", help: "Played (stretched to the reload time) when standing still." },
+				{ key: "reload_anim", label: "Reload", type: "anim", help: "Played (stretched to the reload time) when standing still." },
 			]],
 			["Sound", [
 				{ key: "swap_sound", label: "Swap to it", type: "sound" },
@@ -633,7 +736,7 @@ const TABS = {
 // ---------------------------------------------------------------------------
 let data = {};       // file -> JSON
 let saved = {};      // file -> JSON string as last saved
-let assets = { animations: [], sounds: [] };
+let assets = { animations: [], sounds: [], fbx: [] };
 let tab = "abilities";
 let selected = { abilities: 0, enemies: 0, regions: 0 };
 
@@ -972,7 +1075,7 @@ function fieldControl(t, entry, f) {
 			break;
 		}
 		case "anim": {
-			const s = selectOf(assets.animations, value, false);
+			const s = selectOf(assets.animations, value, true);
 			s.onchange = () => set(s.value);
 			wrap.append(label, s);
 			break;
@@ -1092,6 +1195,32 @@ function fieldControl(t, entry, f) {
 			const add = el("button", { textContent: "+ Add" });
 			add.onclick = () => { const o = itemOptions(); if (o.length) { list.push([o[0][0], 1]); set(list, true); } };
 			wrap.appendChild(add);
+			break;
+		}
+		case "note": {
+			wrap.append(el("div", { className: "help", textContent: f.text || "" }));
+			break;
+		}
+		case "rebuild": {
+			const btn = el("button", { textContent: "Rebuild animations", className: "primary" });
+			const log = el("pre", { className: "rebuild-log", textContent: "Turns the FBX files and the clip settings into the game's animations (about a minute). Save first." });
+			btn.onclick = async () => {
+				if (dirty("animations")) { toast("Save first", true); return; }
+				const r = await fetch("/api/rebuild_animations", { method: "POST" }).then(r => r.json()).catch(() => ({ ok: false }));
+				if (!r.ok) { toast("Couldn't start (already running?)", true); return; }
+				btn.disabled = true;
+				const poll = async () => {
+					const st = await fetch("/api/rebuild_status").then(r => r.json()).catch(() => null);
+					if (st) log.textContent = st.log || "Rebuilding…";
+					if (st && st.running) { setTimeout(poll, 1000); return; }
+					btn.disabled = false;
+					toast(st && st.ok ? "Animations rebuilt. Restart the game to see them." : "Rebuild had problems; see the log.", !(st && st.ok));
+					const a = await fetch("/api/assets").then(r => r.json()).catch(() => null);
+					if (a) assets = a;
+				};
+				setTimeout(poll, 1000);
+			};
+			wrap.append(label, btn, log);
 			break;
 		}
 		case "numlist": {

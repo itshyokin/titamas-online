@@ -10,7 +10,7 @@ signal changed(which: String)
 
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
 	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "npcs": DataFiles.NPCS,
-	"weapon_types": DataFiles.WEAPON_TYPES}
+	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS}
 
 const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
@@ -22,7 +22,9 @@ const PLAYER_STATS := ["max_health", "max_mana", "max_stamina", "stamina_regen",
 const PLAYER_MOVEMENT := ["run_speed", "walk_speed", "sprint_speed", "jump_velocity", "sprint_stamina_cost", "swim_speed",
 	"swim_sprint_speed", "swim_sprint_stamina_cost"]
 const PLAYER_COMBAT := ["tap_time", "quick_shot_power", "block_reduction", "lunge_range", "parry_window",
-	"counter_window", "perfect_dodge_window", "cast_pushback", "interrupt_share"]
+	"counter_window", "perfect_dodge_window", "cast_pushback", "interrupt_share", "proficiency_damage", "proficiency_speed",
+	"arrow_gravity", "combat_linger", "block_arc"]
+const PLAYER_TARGETING := ["tab_range", "lock_range", "lose_range", "snap_range"]
 
 var abilities := {}  # id -> Ability (the same objects for the whole session)
 var enemies := {}  # id -> Dictionary
@@ -33,6 +35,9 @@ var appearance := {}
 var classes: Array = []  # data/classes.json entries, in order
 var npcs := {}  # id -> Dictionary (data/npcs.json entries)
 var weapon_types := {}  # id -> Dictionary (data/weapon_types.json entries)
+## data/animations.json: clip import settings (used by the retarget tool), which clip
+## plays for each role (CharacterModel.roles), head turning and strafing settings.
+var animations := {}
 
 var _times := {}
 var _watch := 0.0
@@ -86,6 +91,9 @@ func _load(which: String) -> void:
 			appearance = data
 		"classes":
 			classes = data.get("classes", [])
+		"animations":
+			animations = data
+			CharacterModel.roles = data.get("roles", {})
 		"weapon_types":
 			weapon_types.clear()
 			for d in data.get("types", []):
@@ -111,6 +119,11 @@ func abilities_for(ids: Array) -> Array[Ability]:
 		if ab:
 			out.append(ab)
 	return out
+
+
+## Head-turning settings (data/animations.json "look"): range, max_yaw, max_pitch, speed, neck_share.
+func look_settings() -> Dictionary:
+	return animations.get("look", {})
 
 
 ## A weapon family (sword, bow, pistol...) from data/weapon_types.json ({} if unknown).
@@ -221,6 +234,13 @@ func apply_player(controller: Node, stats: Stats, combat: Node) -> void:
 	for field: String in PLAYER_COMBAT:
 		if c.has(field):
 			combat.set(field, float(c[field]))
+	var targeting = combat.get("targeting") if combat else null
+	if targeting == null and controller:
+		targeting = controller.get_node_or_null("Targeting")
+	if targeting:
+		for field: String in PLAYER_TARGETING:
+			if c.has(field):
+				targeting.set(field, float(c[field]))
 	if c.has("move_cancels_cast"):
 		combat.set("move_cancels_cast", bool(c.move_cancels_cast))
 	if c.has("perfect_dodge_window"):

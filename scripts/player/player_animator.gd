@@ -73,10 +73,11 @@ func _ground_animation(h_speed: float) -> void:
 	elif player.lock_facing and h_speed < run_strafe_max and _sideways() != 0.0:
 		# Locked on and moving sideways: sidestep (a left clip if there is one, else the right
 		# one played backwards).
+		var strafe: Dictionary = Database.animations.get("strafe", {})
 		if _sideways() < 0.0 and character.has_animation("strafing_left"):
-			character.play("strafing_left", 0.2, clampf(h_speed / strafe_left_anim_speed, 0.6, 1.6))
+			character.play("strafing_left", 0.2, clampf(h_speed / float(strafe.get("left_speed", strafe_left_anim_speed)), 0.6, 1.6))
 		else:
-			character.play("strafing", 0.2, _sideways() * clampf(h_speed / strafe_anim_speed, 0.6, 1.6))
+			character.play("strafing", 0.2, _sideways() * clampf(h_speed / float(strafe.get("right_speed", strafe_anim_speed)), 0.6, 1.6))
 	elif h_speed < walk_max:
 		character.play("walking", 0.2, clampf(h_speed / walk_anim_speed, 0.6, 1.6))
 	else:

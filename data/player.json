@@ -27,7 +27,16 @@
 		"perfect_dodge_window": 0.18,
 		"cast_pushback": 0.35,
 		"interrupt_share": 0.15,
-		"move_cancels_cast": true
+		"move_cancels_cast": true,
+		"proficiency_damage": 0.15,
+		"proficiency_speed": 0.1,
+		"arrow_gravity": 6.0,
+		"combat_linger": 6.0,
+		"block_arc": 150.0,
+		"tab_range": 35.0,
+		"lock_range": 40.0,
+		"lose_range": 55.0,
+		"snap_range": 2.5
 	},
 	"loadout": {
 		"light_combo": [

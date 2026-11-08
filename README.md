@@ -204,8 +204,9 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 
 1. Download from Mixamo (same character as the base bodies): FBX, **Without Skin**, 30 fps. Tick **In Place** for looping movement.
 2. Put the files in `assets/animations/mixamo/` with lowercase names (e.g. `running.fbx`).
-3. New looping animations: add the name to `LOOPING` at the top of `tools/godot/retarget_mixamo.gd`.
-4. Ask Claude to rebuild, or run `godot --headless --path . --script res://tools/godot/retarget_mixamo.gd`. This writes `assets/animations/masc.res` and `femme.res`.
+3. Database → **Clips**: settings per clip (loops, in place, travel handled by the game, face-forward turn, hip-height match), and clips made from others (a piece of a longer clip, or one played backwards). A new FBX with no entry comes in as a one-shot.
+4. Database → **Animations** → **Rebuild animations** (or ask Claude, or run `godot --headless --path . --script res://tools/godot/retarget_mixamo.gd`). This writes `assets/animations/masc.res` and `femme.res`.
+5. Database → **Animations**: which clip plays for each thing (idle, run, sidestep, hanging, climbing, swimming, block, flinch, dying, casting, talking gestures), plus head-turning and sidestep-speed settings. Weapon types pick their own idle / draw / aim / reload clips (Weapon Types → Animations), abilities their attack clips, enemies and NPCs their attack clips. Changing which clip plays needs no rebuild.
 
 ## Milestones
 
