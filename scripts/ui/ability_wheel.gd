@@ -1,7 +1,8 @@
 class_name AbilityWheel
 extends Control
 ## Controller hotbar: hold the wheel button (D-pad up) and the eight hotbar boxes (3-10)
-## fan out in a ring; point the left stick at one and let go to use it. Built by the HUD.
+## fan out in a ring; point the right stick at one and let go to use it. You can keep walking
+## with the left stick; the camera holds still while the wheel is up. Built by the HUD.
 
 const RADIUS := 130.0
 const BOX := 58.0
@@ -10,7 +11,6 @@ var hotbar: Hotbar
 var _open := false
 var _choice := -1
 var _icons: Array[Control] = []  # per entry: a holder with an icon
-var _blocked_menu := false
 
 
 func _init(bar: Hotbar) -> void:
@@ -59,9 +59,8 @@ func _show() -> void:
 	_open = true
 	_choice = -1
 	visible = true
-	# Stops walking while choosing (the left stick picks).
-	_blocked_menu = true
-	GameSettings.menu_open = true
+	# The right stick picks, so it stops turning the camera meanwhile.
+	GameSettings.wheel_open = true
 	var inv := hotbar.inventory
 	for i in 8:
 		var holder := _icons[i]
@@ -77,9 +76,7 @@ func _show() -> void:
 func _close(use: bool) -> void:
 	_open = false
 	visible = false
-	if _blocked_menu:
-		GameSettings.menu_open = false
-		_blocked_menu = false
+	GameSettings.wheel_open = false
 	if use and _choice >= 0:
 		hotbar.combat.use_hotbar(_choice)
 
@@ -87,7 +84,7 @@ func _close(use: bool) -> void:
 func _process(_delta: float) -> void:
 	if not _open:
 		return
-	var stick := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var stick := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down")
 	var before := _choice
 	if stick.length() > 0.5:
 		# 0 = top, going clockwise.

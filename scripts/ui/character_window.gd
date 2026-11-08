@@ -391,8 +391,8 @@ static func describe(d: Dictionary, compare := "") -> String:
 			kind += " · two-handed"
 		if float(wt.get("reload", 0.0)) > 0.0:
 			kind += " · %.1f s reload" % float(wt.reload)
-		if bool(d.get("auto_aim", false)):
-			kind += " · auto-aim"
+		if String(wt.get("category", "")) == "ranged" and not bool(d.get("auto_aim", true)):
+			kind += " · aimed by hand"
 	elif not slot.is_empty():
 		kind += " · " + String(Inventory.SLOT_NAMES.get(slot, slot))
 	t += "[color=#aaaaaa]%s[/color]\n" % kind
