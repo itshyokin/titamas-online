@@ -65,6 +65,7 @@ func _ready() -> void:
 	stats.mana_changed.connect(_set_bar.bind(mana_bar))
 	stats.stamina_changed.connect(_set_bar.bind(stamina_bar))
 	stats.emit_all()
+	_build_party()
 	var player := stats.get_parent() as PlayerController
 	if player:
 		player.fatigue_changed.connect(_on_fatigue_changed)
@@ -408,7 +409,8 @@ func _refresh_hints() -> void:
 		g.binding_label("jump"), g.binding_label("sprint"), g.binding_label("lock_on"), g.binding_label("target_next")]
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_process_party(delta)
 	var cycle := get_tree().get_first_node_in_group("world_cycle") as WorldCycle
 	_clock.visible = cycle != null
 	if cycle:
@@ -479,3 +481,46 @@ func _tint_bar(color: Color) -> void:
 		var sb := (fill as StyleBoxFlat).duplicate() as StyleBoxFlat
 		sb.bg_color = color
 		_charge_bar.add_theme_stylebox_override("fill", sb)
+
+
+# --- Party (followers now; other players in co-op later) ------------------------------
+
+var _party: VBoxContainer
+var _party_rows := {}  # node -> [Label, ProgressBar]
+var _party_refresh := 0.0
+
+
+func _build_party() -> void:
+	_party = VBoxContainer.new()
+	_party.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_party.position = Vector2(24, 150)
+	_party.add_theme_constant_override("separation", 6)
+	add_child(_party)
+
+
+func _process_party(delta: float) -> void:
+	_party_refresh -= delta
+	if _party == null or _party_refresh > 0.0:
+		return
+	_party_refresh = 0.2
+	var members := get_tree().get_nodes_in_group("followers")
+	for node in _party_rows.keys():
+		if not is_instance_valid(node) or not node in members:
+			(_party_rows[node][0] as Control).get_parent().queue_free()
+			_party_rows.erase(node)
+	for node in members:
+		var s := Combat.stats_of(node)
+		if s == null:
+			continue
+		if not _party_rows.has(node):
+			var row := VBoxContainer.new()
+			row.add_theme_constant_override("separation", 2)
+			var name_label := _label(s.display_name, 14)
+			row.add_child(name_label)
+			var bar := _progress(Color(0.3, 0.8, 0.35), Vector2(160, 10))
+			row.add_child(bar)
+			_party.add_child(row)
+			_party_rows[node] = [name_label, bar]
+		var bar := _party_rows[node][1] as ProgressBar
+		bar.value = s.health / maxf(s.max_health, 1.0) * 100.0
+		(_party_rows[node][0] as Label).text = s.display_name + ("  (down)" if s.is_dead() else "")

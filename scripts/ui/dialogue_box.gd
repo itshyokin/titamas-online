@@ -4,6 +4,10 @@ extends CanvasLayer
 ## Jump / talk, Attack, Enter or a click shows the whole line, then the next; Esc or
 ## B closes. Gameplay input is paused while it's open.
 ##
+## After the last line it can offer choices (buttons; left/right or the mouse to pick,
+## Jump / talk to choose). A choice's callable may return a reply line to show before
+## the window closes.
+##
 ## Lines can use {player} (the character's name) and the player's pronouns:
 ## {they} {them} {their} {theirs} {themself} (he/him/his..., she/her/hers..., they/them...).
 
@@ -21,12 +25,19 @@ var _text: RichTextLabel
 var _name: Label
 var _hint: Label
 var _on_done: Callable
+var _choices: Array = []  # [label, Callable]
+var _choice_row: HBoxContainer
+var _choosing := false
+var _replying := false
+var _from: Node
 
 
-static func open(from: Node, speaker: String, title: String, lines: Array, on_done: Callable) -> DialogueBox:
+static func open(from: Node, speaker: String, title: String, lines: Array, on_done: Callable, choices: Array = []) -> DialogueBox:
 	var box := DialogueBox.new()
 	box._lines = lines.map(func(l: Variant) -> String: return DialogueBox.fill(String(l), from))
 	box._on_done = on_done
+	box._choices = choices
+	box._from = from
 	from.get_tree().root.add_child(box)
 	box._name.text = speaker + ("  —  " + title if title != "" else "")
 	box._show_line()
@@ -78,6 +89,10 @@ func _init() -> void:
 	_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_text.add_theme_font_size_override("normal_font_size", 19)
 	v.add_child(_text)
+	_choice_row = HBoxContainer.new()
+	_choice_row.add_theme_constant_override("separation", 10)
+	_choice_row.visible = false
+	v.add_child(_choice_row)
 	_hint = Label.new()
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_hint.add_theme_font_size_override("font_size", 14)
@@ -96,7 +111,13 @@ func _show_line() -> void:
 	_text.visible_characters = 0
 	var keys := GameSettings.events_for("jump", GameSettings.gamepad)
 	var key := GameSettings.event_name(keys[0]) if not keys.is_empty() else "Jump"
-	_hint.text = ("%s  Next" if _index < _lines.size() - 1 else "%s  Goodbye") % key
+	var last := _index >= _lines.size() - 1
+	if last and _replying:
+		_hint.text = "%s  Close" % key
+	elif last and not _choices.is_empty():
+		_hint.text = "%s  Choose" % key
+	else:
+		_hint.text = ("%s  Next" if not last else "%s  Goodbye") % key
 
 
 func _process(delta: float) -> void:
@@ -108,6 +129,9 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if _choosing:
+		_choice_input(event)
+		return
 	var advance: bool = event.is_action_pressed("jump") or event.is_action_pressed("attack") or event.is_action_pressed("ui_accept") \
 		or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
 	var close: bool = event.is_action_pressed("ui_cancel") or event.is_action_pressed("dodge") or event.is_action_pressed("menu")
@@ -120,6 +144,59 @@ func _input(event: InputEvent) -> void:
 		_text.visible_characters = -1  # show the whole line first
 	elif _index < _lines.size() - 1:
 		_index += 1
+		_show_line()
+	elif not _choices.is_empty() and not _replying:
+		_show_choices()
+	else:
+		_finish()
+
+
+func _show_choices() -> void:
+	_choosing = true
+	_choice_row.visible = true
+	for c in _choice_row.get_children():
+		c.queue_free()
+	for i in _choices.size():
+		var b := Button.new()
+		b.text = String(_choices[i][0])
+		b.custom_minimum_size = Vector2(150, 38)
+		b.pressed.connect(_choose.bind(i))
+		_choice_row.add_child(b)
+	(_choice_row.get_child(0) as Button).grab_focus.call_deferred()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _choice_input(event: InputEvent) -> void:
+	var buttons := _choice_row.get_children()
+	if buttons.is_empty():
+		return
+	var focused := buttons.find(get_viewport().gui_get_focus_owner())
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("dodge") or event.is_action_pressed("menu"):
+		get_viewport().set_input_as_handled()
+		_finish()
+	elif event.is_action_pressed("move_left") or event.is_action_pressed("ui_left"):
+		get_viewport().set_input_as_handled()
+		(buttons[posmod(focused - 1, buttons.size())] as Button).grab_focus()
+	elif event.is_action_pressed("move_right") or event.is_action_pressed("ui_right"):
+		get_viewport().set_input_as_handled()
+		(buttons[posmod(focused + 1, buttons.size())] as Button).grab_focus()
+	elif event.is_action_pressed("jump") or event.is_action_pressed("attack") and not event is InputEventMouseButton:
+		get_viewport().set_input_as_handled()
+		_choose(maxi(focused, 0))
+
+
+## Runs choice i; shows its reply line if it gave one, otherwise closes.
+func _choose(i: int) -> void:
+	if not _choosing:
+		return
+	_choosing = false
+	_choice_row.visible = false
+	var action: Callable = _choices[i][1]
+	var reply = action.call() if action.is_valid() else null
+	if reply is String and reply != "":
+		_replying = true
+		_lines.append(DialogueBox.fill(reply, _from))
+		_index = _lines.size() - 1
 		_show_line()
 	else:
 		_finish()

@@ -143,6 +143,7 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 - **The NPCs tab:** name and title, level and health, "can't die", behaviour (stand, wander or patrol), whether it fights, its attack, its look (the creator's options), what it wears and wields, and its lines.
 - **Patrols:** add a `Node3D` named `Patrol` under the NPC with `Marker3D` children; it walks them in order.
 - **Fighting:** NPCs that fight and hold a weapon (main hand) take on enemies that come within their notice range, and enemies fight back. The rest shout "Help!" and run, then come home when it's safe. They ignore training dummies.
+- **Followers:** NPCs with **Can follow the player** (Katrina) offer **Follow me** / **Wait here** after their lines. A follower stays beside you, runs to catch up, fights whatever is fighting you (or what you attack), waits at the edge while you swim or climb, and turns up behind you if you get far ahead or it gets stuck. Its health shows under yours. Out of a fight, NPCs heal back up. Followers are saved with your character.
 - **Talking:** walk up to an NPC and press **Jump / talk** (Space, A). Each paragraph of its lines is one page; the same button shows the whole line, then the next. Esc or B closes. Lines can use `{player}` and the player's pronouns: `{they}`, `{them}`, `{their}`, `{theirs}`, `{themself}`.
 
 ## Equipment and backpack

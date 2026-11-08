@@ -44,7 +44,8 @@
 			"dialogue": [
 				"Stay sharp, {player}. Bandits have been creeping up from the shore.",
 				"If they follow you here, lead them my way. I'll handle it."
-			]
+			],
+			"can_follow": false
 		},
 		{
 			"id": "katrina",
@@ -86,7 +87,10 @@
 			},
 			"dialogue": [
 				"Oh, hello! Placeholder Katrina here. Write my real lines in the Database whenever you're ready."
-			]
+			],
+			"can_follow": true,
+			"follow_line": "Lead the way, {player}. I've got your back.",
+			"wait_line": "I'll wait here. Don't be long."
 		},
 		{
 			"id": "villager",
@@ -128,7 +132,8 @@
 			"dialogue": [
 				"Lovely weather, isn't it?",
 				"Mind the bandits down by the water. I don't go past the old stones anymore."
-			]
+			],
+			"can_follow": false
 		}
 	]
 }

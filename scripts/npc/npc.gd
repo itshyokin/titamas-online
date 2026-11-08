@@ -9,13 +9,21 @@ extends CharacterBody3D
 ## under it, walked in order). When enemies come close, NPCs that can fight and hold a
 ## weapon fight them (and enemies fight back); the rest run away until it's safe.
 ## Walk up and press Jump / talk (Space, A) to hear its lines.
+##
+## Followers (can_follow in its entry): talking offers "Follow me" / "Wait here". A follower
+## keeps beside the player, runs to catch up, joins fights against enemies going for the
+## player, and turns up next to the player if left far behind. Saved with the character.
 
-enum AI { IDLE, FIGHT, FLEE, RETURN, TALK, DEAD }
+enum AI { IDLE, FIGHT, FLEE, RETURN, TALK, DEAD, FOLLOW }
 
 ## Which entry in data/npcs.json this is.
 @export var npc_id := "villager"
 
 const TALK_RANGE := 2.6
+## Beyond this (m) from the player, a follower catches up by appearing behind them.
+const FOLLOW_TELEPORT := 35.0
+
+signal follow_changed(following: bool)
 
 @onready var stats: Stats = $Stats
 @onready var character: CharacterModel = $Model/Character
@@ -44,6 +52,11 @@ var _settled := false
 var _plate: Nameplate
 var _prompt: Label3D
 var _weapon: Node3D
+## The player it's following (null if not).
+var leader: Node3D = null
+var _since_hurt := 99.0
+var _stuck_time := 0.0
+var _stuck_from := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -158,10 +171,20 @@ func talk(player: Node3D) -> void:
 	if player.has_method("face_toward"):
 		player.face_toward(global_position)
 	character.play("idle", 0.25)
+	var choices := []
+	if can_follow():
+		if leader:
+			choices = [["Wait here", func() -> String:
+				follow(null)
+				return String(data.get("wait_line", "I'll wait here."))], ["Keep following", func() -> String: return ""]]
+		else:
+			choices = [["Follow me", func() -> String:
+				follow(player)
+				return String(data.get("follow_line", "Lead the way."))], ["Goodbye", func() -> String: return ""]]
 	DialogueBox.open(self, String(data.get("name", "")), String(data.get("title", "")), lines, func() -> void:
 		if ai == AI.TALK:
-			ai = AI.IDLE
-			_wait = randf_range(1.0, 3.0))
+			ai = AI.FOLLOW if leader else AI.IDLE
+			_wait = randf_range(1.0, 3.0), choices)
 
 
 # --- Physics and AI ------------------------------------------------------------------
@@ -176,15 +199,20 @@ func _physics_process(delta: float) -> void:
 		global_position = ground.position + Vector3.UP * 0.05
 		_home = global_position
 		_wander_to = _home
+		if _saved_as_follower():
+			var p := get_tree().get_first_node_in_group("player") as Node3D
+			if p:
+				follow(p, true)
 	if data.is_empty():
 		return
+	_regen(delta)
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = -0.5
 	_scan -= delta
-	if _scan <= 0.0 and ai in [AI.IDLE, AI.RETURN]:
+	if _scan <= 0.0 and ai in [AI.IDLE, AI.RETURN, AI.FOLLOW]:
 		_scan = 0.3
 		_look_for_threats()
 	var move := Vector3.ZERO
@@ -197,6 +225,8 @@ func _physics_process(delta: float) -> void:
 			move = _flee(delta)
 		AI.RETURN:
 			move = _return_home()
+		AI.FOLLOW:
+			move = _follow(delta)
 		AI.TALK, AI.DEAD:
 			pass
 	_walk.x = lerpf(_walk.x, move.x, 10.0 * delta)
@@ -215,6 +245,12 @@ func _look_for_threats() -> void:
 	var radius := _f("aggro_radius", 12.0)
 	var nearest: Node3D = null
 	var best := radius
+	var leader_target: Node3D = null
+	if leader and is_instance_valid(leader):
+		var tg := leader.get_node_or_null("Targeting")
+		var pc := leader.get_node_or_null("PlayerCombat")
+		if tg and pc and pc.get("in_combat"):
+			leader_target = tg.get("target")
 	for n in get_tree().get_nodes_in_group(Combat.GROUP):
 		var node := n as Node3D
 		var s := Combat.stats_of(node)
@@ -223,6 +259,13 @@ func _look_for_threats() -> void:
 		if node.has_method("is_alive") and not node.is_alive():
 			continue
 		var d := node.global_position.distance_to(global_position)
+		if leader and is_instance_valid(leader):
+			# Following: help with whatever is fighting the player (or us), or what the player attacks.
+			var their_target = node.get("target")
+			var involved: bool = their_target == leader or their_target == self or node == leader_target
+			if not involved or node.global_position.distance_to(leader.global_position) > 18.0:
+				continue
+			d = minf(d, radius - 0.01)
 		if d < best:
 			best = d
 			nearest = node
@@ -283,7 +326,8 @@ func _fight(delta: float) -> Vector3:
 	if _attack_time >= 0.0:
 		_attacking(delta)
 		return Vector3.ZERO
-	if not _target_valid() or global_position.distance_to(_home) > _f("leash_distance", 30.0):
+	var anchor := leader.global_position if leader and is_instance_valid(leader) else _home
+	if not _target_valid() or global_position.distance_to(anchor) > _f("leash_distance", 30.0):
 		_calm_down()
 		return Vector3.ZERO
 	var to := target.global_position - global_position
@@ -327,7 +371,7 @@ func _flee(_delta: float) -> Vector3:
 func _calm_down() -> void:
 	target = null
 	_attack_time = -1.0
-	ai = AI.RETURN
+	ai = AI.FOLLOW if leader else AI.RETURN
 	_show_weapon()
 
 
@@ -356,8 +400,9 @@ func stagger(seconds := 0.6) -> void:
 
 
 func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
+	_since_hurt = 0.0
 	# Hit by an enemy: fight back (or run).
-	if ai in [AI.IDLE, AI.RETURN, AI.TALK] and source is Node3D and Combat.is_enemy_of(self, source):
+	if ai in [AI.IDLE, AI.RETURN, AI.TALK, AI.FOLLOW] and source is Node3D and Combat.is_enemy_of(self, source):
 		target = source
 		ai = AI.FIGHT if bool(data.get("can_fight", false)) and armed else AI.FLEE
 		_show_weapon()
@@ -373,11 +418,122 @@ func _on_died() -> void:
 	model.visible = false
 	await get_tree().create_timer(maxf(_f("respawn_time", 30.0) - 6.0, 0.0)).timeout
 	global_position = _home
+	if leader and is_instance_valid(leader):
+		_appear_near_leader()
 	stats.restore()
 	collision_layer = 2
 	model.visible = true
-	ai = AI.IDLE
+	ai = AI.FOLLOW if leader else AI.IDLE
 	character.play("idle", 0.0)
+
+
+# --- Following -----------------------------------------------------------------------
+
+func can_follow() -> bool:
+	return bool(data.get("can_follow", false))
+
+
+## Starts (or stops, with null) following a player.
+func follow(who: Node3D, quietly := false) -> void:
+	leader = who
+	if leader:
+		add_to_group("followers")
+		ai = AI.FOLLOW
+		_stuck_time = 0.0
+	else:
+		remove_from_group("followers")
+		_home = global_position  # waits here
+		_wander_to = _home
+		ai = AI.IDLE
+		_wait = 2.0
+	if not quietly:
+		_remember_follower(leader != null)
+	follow_changed.emit(leader != null)
+
+
+func _saved_as_follower() -> bool:
+	var session := get_tree().root.get_node_or_null("GameSession")
+	return session != null and session.call("active") and npc_id in (session.get("data") as Dictionary).get("followers", [])
+
+
+func _remember_follower(on: bool) -> void:
+	var session := get_tree().root.get_node_or_null("GameSession")
+	if session == null or not session.call("active"):
+		return
+	var d: Dictionary = session.get("data")
+	var list: Array = d.get("followers", [])
+	list.erase(npc_id)
+	if on:
+		list.append(npc_id)
+	d["followers"] = list
+	session.call("save_game")
+
+
+## Where a follower stands relative to the player: behind and to one side (each
+## follower its own side and distance).
+func _follow_spot() -> Vector3:
+	var index := get_tree().get_nodes_in_group("followers").find(self)
+	var basis := (leader.get_node("Model") as Node3D).global_basis if leader.has_node("Model") else leader.global_basis
+	var back := basis.z
+	back.y = 0.0
+	back = back.normalized()
+	var side := Vector3.UP.cross(back).normalized()
+	var lane := 1.0 if index % 2 == 0 else -1.0
+	return leader.global_position + back * (2.0 + 0.9 * (index / 2)) + side * lane * 1.3
+
+
+func _follow(delta: float) -> Vector3:
+	if leader == null or not is_instance_valid(leader):
+		follow(null)
+		return Vector3.ZERO
+	var to_leader := leader.global_position - global_position
+	var far := Vector2(to_leader.x, to_leader.z).length()
+	if far > FOLLOW_TELEPORT or (far > 12.0 and absf(to_leader.y) > 8.0):
+		_appear_near_leader()
+		return Vector3.ZERO
+	# The player is swimming or climbing: wait at the edge, catch up afterwards.
+	var leader_state = leader.get("state")
+	if leader_state != null and leader_state not in [PlayerController.State.NORMAL, PlayerController.State.ACTION, PlayerController.State.DODGE]:
+		_face(leader.global_position, delta)
+		return Vector3.ZERO
+	var to := _follow_spot() - global_position
+	to.y = 0.0
+	if to.length() < 0.7:
+		_stuck_time = 0.0
+		var leader_dir := -(leader.get_node("Model") as Node3D).global_basis.z if leader.has_node("Model") else Vector3.FORWARD
+		_face(global_position + leader_dir, delta * 0.5)
+		return Vector3.ZERO
+	# Stuck behind something while the player gets away: catch up by appearing nearby.
+	_stuck_time += delta
+	if _stuck_time > 2.5:
+		if global_position.distance_to(_stuck_from) < 1.0 and far > 6.0:
+			_appear_near_leader()
+			return Vector3.ZERO
+		_stuck_time = 0.0
+		_stuck_from = global_position
+	var leader_speed := Vector2(leader.velocity.x, leader.velocity.z).length() if leader is CharacterBody3D else 0.0
+	var speed := clampf(leader_speed, _f("walk_speed", 1.2), _f("run_speed", 4.2))
+	if far > 7.0 or to.length() > 4.0:
+		speed = _f("run_speed", 4.2) * 1.25  # catching up
+	return to.normalized() * minf(speed, to.length() * 4.0)
+
+
+## Puts a follower just behind the player, on the ground.
+func _appear_near_leader() -> void:
+	var spot := _follow_spot()
+	var q := PhysicsRayQueryParameters3D.create(spot + Vector3.UP * 4.0, spot + Vector3.DOWN * 10.0, 1)
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	global_position = (hit.position + Vector3.UP * 0.05) if not hit.is_empty() else leader.global_position
+	_walk = Vector3.ZERO
+	_stuck_time = 0.0
+	_stuck_from = global_position
+
+
+## Out of a fight for a few seconds: health comes back.
+func _regen(delta: float) -> void:
+	_since_hurt += delta
+	if _since_hurt > 5.0 and ai != AI.FIGHT and ai != AI.DEAD and stats.health < stats.max_health:
+		stats.heal(stats.max_health * 0.08 * delta)
 
 
 # --- Looks -----------------------------------------------------------------------------
