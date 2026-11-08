@@ -19,8 +19,8 @@
 			"attack_animation_speed": 0.75,
 			"attack_hit_time": 0.32,
 			"attack_arc": 110.0,
-			"corpse_time": 6.0,
-			"respawn_time": 25.0,
+			"corpse_time": 12.0,
+			"respawn_time": 90.0,
 			"gold_min": 2,
 			"gold_max": 8,
 			"loot": [

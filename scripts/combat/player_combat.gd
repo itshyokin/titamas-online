@@ -338,6 +338,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_press_time = 0.0
 	elif event.is_action_pressed("cycle_mode"):
 		swap_weapon()
+	elif event.is_action_pressed("danger_mode"):
+		set_danger_mode(not Combat.danger_mode)
 	elif event.is_action_pressed("hotbar_1"):
 		select_weapon("primary")
 	elif event.is_action_pressed("hotbar_2"):
@@ -348,6 +350,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				use_hotbar(i)
 				get_viewport().set_input_as_handled()
 				return
+
+
+## Danger mode: friendly NPCs that can fight become targets (and fight back when hit).
+func set_danger_mode(on: bool) -> void:
+	Combat.danger_mode = on
+	notice.emit("Danger mode ON: you can attack NPCs" if on else "Danger mode off")
+	GameLog.post("Danger mode %s." % ("on: friendly NPCs can be attacked" if on else "off"), Color(1.0, 0.45, 0.35) if on else Color(0.7, 1.0, 0.7))
 
 
 ## Uses hotbar box `i` (0-7, the boxes after the two weapons).

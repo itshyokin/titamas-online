@@ -36,10 +36,24 @@ static func is_alive(node: Node) -> bool:
 	return s != null and not s.is_dead()
 
 
+## Danger mode (the player toggles it): this game's player may target and hit friendly
+## NPCs that can fight. An NPC they hit gets angry (`angry_at_player`) and fights back.
+static var danger_mode := false
+
+
 static func is_enemy_of(a: Node, b: Node) -> bool:
 	var sa := stats_of(a)
 	var sb := stats_of(b)
-	return sa != null and sb != null and sa.team != sb.team
+	if sa == null or sb == null:
+		return false
+	if sa.team != sb.team:
+		return true
+	# Same side: only the player and NPCs, through danger mode or an NPC's anger.
+	if a.is_in_group("player") and b.is_in_group("npcs"):
+		return danger_mode or bool(b.get("angry_at_player"))
+	if b.is_in_group("player") and a.is_in_group("npcs"):
+		return bool(a.get("angry_at_player"))
+	return false
 
 
 ## Where to aim at a combatant (its chest).

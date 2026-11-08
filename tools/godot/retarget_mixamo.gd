@@ -152,6 +152,31 @@ const PLACEHOLDERS := {
 			["aim", ARM_R, Vector3(0.5, -0.7, 0.3)], ["aim", ARM_L, Vector3(-0.5, -0.7, 0.3)]]],
 		[0.45, []],
 	]},
+	# Talking gestures (NPCs play one now and then while they speak). Each starts and ends
+	# in the idle pose. A Mixamo "talk_1".."talk_3" FBX replaces them.
+	"talk_1": {"length": 2.2, "keys": [
+		[0.0, []],
+		[0.45, [["aim", ARM_R, Vector3(0.42, -0.6, 0.5)], ["aim", FORE_R, Vector3(0.05, 0.3, 0.95)], ["turn", SPINE, Vector3.UP, 4.0]]],
+		[1.2, [["aim", ARM_R, Vector3(0.5, -0.58, 0.48)], ["aim", FORE_R, Vector3(0.4, 0.25, 0.88)], ["turn", SPINE, Vector3.UP, 6.0]]],
+		[1.9, []],
+		[2.2, []],
+	]},
+	"talk_2": {"length": 2.4, "keys": [
+		[0.0, []],
+		[0.5, [["aim", ARM_R, Vector3(0.48, -0.62, 0.45)], ["aim", FORE_R, Vector3(0.45, 0.12, 0.88)],
+			["aim", ARM_L, Vector3(-0.48, -0.62, 0.45)], ["aim", FORE_L, Vector3(-0.45, 0.12, 0.88)], ["turn", SPINE, Vector3.RIGHT, 3.0]]],
+		[1.3, [["aim", ARM_R, Vector3(0.55, -0.6, 0.4)], ["aim", FORE_R, Vector3(0.65, 0.15, 0.75)],
+			["aim", ARM_L, Vector3(-0.55, -0.6, 0.4)], ["aim", FORE_L, Vector3(-0.65, 0.15, 0.75)], ["turn", SPINE, Vector3.RIGHT, 4.0]]],
+		[2.0, []],
+		[2.4, []],
+	]},
+	"talk_3": {"length": 2.0, "keys": [
+		[0.0, []],
+		[0.4, [["turn", SPINE, Vector3.UP, -8.0], ["aim", ARM_L, Vector3(-0.4, -0.55, 0.6)], ["aim", FORE_L, Vector3(-0.15, 0.35, 0.92)]]],
+		[0.9, [["turn", SPINE, Vector3.UP, -6.0], ["aim", ARM_L, Vector3(-0.42, -0.5, 0.62)], ["aim", FORE_L, Vector3(-0.1, 0.5, 0.85)]]],
+		[1.4, [["turn", SPINE, Vector3.UP, -8.0], ["aim", ARM_L, Vector3(-0.4, -0.55, 0.6)], ["aim", FORE_L, Vector3(-0.15, 0.35, 0.92)]]],
+		[2.0, []],
+	]},
 	# Falls backwards and stays down.
 	"death": {"length": 1.4, "keys": [
 		[0.0, []],

@@ -388,6 +388,22 @@ func get_skeleton() -> Skeleton3D:
 	return armature.get_node("Skeleton3D") if armature else null
 
 
+## The head-turning modifier on the current body's skeleton (made on first use; only
+## in-game, so nothing is saved into scenes). Null in the editor.
+func head_look() -> HeadLook:
+	if Engine.is_editor_hint():
+		return null
+	var skel := get_skeleton()
+	if skel == null:
+		return null
+	var look := skel.get_node_or_null("HeadLook") as HeadLook
+	if look == null:
+		look = HeadLook.new()
+		look.name = "HeadLook"
+		skel.add_child(look)
+	return look
+
+
 func _apply() -> void:
 	if not is_inside_tree() or _batch:
 		return

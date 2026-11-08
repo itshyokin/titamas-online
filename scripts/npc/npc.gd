@@ -32,6 +32,12 @@ signal follow_changed(following: bool)
 var ai := AI.IDLE
 var data := {}
 var target: Node3D = null  # who it's fighting or fleeing from
+## The player hit it in danger mode: it fights (or flees from) them until it calms down.
+var angry_at_player := false
+## Looks at the player when they're this close (m).
+const LOOK_RANGE := 6.0
+var _gesture_wait := 0.5
+var _player_looking := false
 var armed := false
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -239,6 +245,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_animate()
 	_update_prompt()
+	_update_head(delta)
 
 
 func _look_for_threats() -> void:
@@ -369,6 +376,7 @@ func _flee(_delta: float) -> Vector3:
 
 
 func _calm_down() -> void:
+	angry_at_player = false
 	target = null
 	_attack_time = -1.0
 	ai = AI.FOLLOW if leader else AI.RETURN
@@ -401,6 +409,13 @@ func stagger(seconds := 0.6) -> void:
 
 func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
 	_since_hurt = 0.0
+	# Attacked by the player (danger mode): turn on them, and stop following them.
+	if source and source.is_in_group("player") and not angry_at_player:
+		angry_at_player = true
+		if leader == source:
+			follow(null, true)
+		if ai != AI.DEAD:
+			ai = AI.IDLE  # so the check below starts the fight
 	# Hit by an enemy: fight back (or run).
 	if ai in [AI.IDLE, AI.RETURN, AI.TALK, AI.FOLLOW] and source is Node3D and Combat.is_enemy_of(self, source):
 		target = source
@@ -410,6 +425,7 @@ func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
 
 func _on_died() -> void:
 	ai = AI.DEAD
+	angry_at_player = false
 	target = null
 	collision_layer = 0
 	_walk = Vector3.ZERO
@@ -551,6 +567,9 @@ func _animate() -> void:
 	if ai == AI.DEAD or _attack_time >= 0.0 or _stagger > 0.0:
 		return
 	var current := character.current_animation()
+	# Let a talking gesture finish.
+	if current.begins_with("talk_") and character.animation_position() < character.get_animation_length(current) - 0.25:
+		return
 	if current == "hit_react" and character.animation_position() < 0.4:
 		return
 	var speed := Vector2(velocity.x, velocity.z).length()
@@ -560,6 +579,56 @@ func _animate() -> void:
 		character.play("walking", 0.2, clampf(speed / 1.4, 0.6, 1.5))
 	else:
 		character.play("running", 0.2, clampf(speed / 4.5, 0.8, 1.4))
+
+
+## Looks at the player when they come close (or at whoever it's fighting), and while
+## talking also nods along, gestures now and then, and has the player look back.
+func _update_head(delta: float) -> void:
+	var look := character.head_look()
+	if look == null:
+		return
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var at: Node3D = null
+	if ai == AI.TALK:
+		at = player
+	elif ai == AI.FIGHT and target and is_instance_valid(target):
+		at = target
+	elif player and ai in [AI.IDLE, AI.RETURN, AI.FOLLOW] \
+			and player.global_position.distance_to(global_position) < LOOK_RANGE:
+		at = player
+	look.forward = -model.global_basis.z
+	look.looking = at != null
+	look.talking = ai == AI.TALK
+	if at:
+		look.target_position = _head_of(at)
+	# Gestures while talking.
+	if ai == AI.TALK:
+		_gesture_wait -= delta
+		if _gesture_wait <= 0.0 and character.current_animation() == "idle":
+			_gesture_wait = randf_range(1.5, 3.5)
+			character.play("talk_%d" % randi_range(1, 3), 0.3)
+	else:
+		_gesture_wait = randf_range(0.4, 1.0)
+	# The player looks back at whoever they're talking to.
+	if player and (ai == AI.TALK or _player_looking):
+		var pc := player.get_node_or_null("Model/Character") as CharacterModel
+		var plook := pc.head_look() if pc else null
+		if plook:
+			_player_looking = ai == AI.TALK
+			plook.looking = _player_looking
+			plook.forward = -(player.get_node("Model") as Node3D).global_basis.z
+			plook.target_position = _head_of(self)
+
+
+## Roughly where a character's eyes are.
+func _head_of(who: Node3D) -> Vector3:
+	var cm := who.get_node_or_null("Model/Character") as CharacterModel
+	var skel := cm.get_skeleton() if cm else null
+	if skel:
+		var bone := skel.find_bone("mixamorig_Head")
+		if bone >= 0:
+			return skel.global_transform * skel.get_bone_global_pose(bone).origin + Vector3.UP * 0.08
+	return Combat.aim_point(who) + Vector3.UP * 0.4
 
 
 ## "Space  Talk" over its head while the player is close and could talk.

@@ -4,7 +4,7 @@ extends CanvasLayer
 ## and the hotbar stay in view: equipment, stats, and the backpack in tabs
 ## (Weapons / Armour / Potions / Items / Keys: one 24-slot bag, filtered).
 ## Pointing at an item shows it, compared with what's equipped: weapon damage per second
-## and stat changes in green (better) or red (worse).
+## and stat changes in green (better), red (worse) or yellow (the same).
 ## Mouse: drag items between slots (onto the hotbar too; drag out of the window to throw
 ## away), right-click or double-click to equip / use / take off.
 ## Controller: move with the D-pad or stick, A = equip / use / take off, Y = pick up and
@@ -15,6 +15,7 @@ const PANEL := Color(0.08, 0.075, 0.1, 0.95)
 const ACCENT := Color(1.0, 0.85, 0.45)
 const GOOD := "7fe07f"
 const BAD := "ff7a6a"
+const EVEN := "ffd84a"
 const TABS := [["weapons", "Weapons"], ["armor", "Armour"], ["potions", "Potions"], ["items", "Items"], ["keys", "Keys"]]
 
 var inventory: Inventory
@@ -23,7 +24,7 @@ var combat: PlayerCombat
 
 var _window: PanelContainer
 var _title_label: Label
-var _tab_buttons: Array[Button] = []
+var _tabs: TabBar
 var _tab := 0
 var _grid: GridContainer
 var _bag_slots: Array[ItemSlot] = []  # the grid's slots (key = backpack index)
@@ -98,6 +99,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # --- Building --------------------------------------------------------------------
 
+## Fixed sizes, so the window never jumps around as you point at things.
+const DETAILS_SIZE := Vector2(300, 176)
+const GEAR_WIDTH := 158.0
+
+
 func _build() -> void:
 	_window = PanelContainer.new()
 	var sb := StyleBoxFlat.new()
@@ -118,7 +124,6 @@ func _build() -> void:
 	_window.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_window.offset_right = -18
 	_window.offset_bottom = -18
-	_window.custom_minimum_size = Vector2(318, 0)
 	_window.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_window)
 
@@ -128,6 +133,7 @@ func _build() -> void:
 	var head := HBoxContainer.new()
 	_title_label = _title("Character", 18)
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_title_label.clip_text = true
 	head.add_child(_title_label)
 	var close_button := Button.new()
 	close_button.text = "✕"
@@ -137,55 +143,81 @@ func _build() -> void:
 	head.add_child(close_button)
 	outer.add_child(head)
 
-	# Equipment: armour row, then weapons + stats.
-	var armour := HBoxContainer.new()
-	armour.add_theme_constant_override("separation", 4)
-	for slot: String in ["head", "shoulders", "chest", "hands", "legs", "feet"]:
-		armour.add_child(_equip_box(slot))
-	outer.add_child(armour)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	for slot: String in ["primary", "secondary", "off_hand"]:
-		row.add_child(_equip_box(slot))
+	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 12)
+	outer.add_child(columns)
+
+	# Left: what you're wearing, then your stats.
+	var gear := VBoxContainer.new()
+	gear.custom_minimum_size = Vector2(GEAR_WIDTH, 0)
+	gear.add_theme_constant_override("separation", 6)
+	columns.add_child(gear)
+	gear.add_child(_section_label("Equipment"))
+	var doll := GridContainer.new()
+	doll.columns = 3
+	doll.add_theme_constant_override("h_separation", 4)
+	doll.add_theme_constant_override("v_separation", 4)
+	for slot: String in ["head", "shoulders", "chest", "hands", "legs", "feet", "primary", "secondary", "off_hand"]:
+		doll.add_child(_equip_box(slot))
+	gear.add_child(doll)
+	gear.add_child(_section_label("Stats"))
 	_stats_label = RichTextLabel.new()
 	_stats_label.bbcode_enabled = true
-	_stats_label.fit_content = true
 	_stats_label.scroll_active = false
-	_stats_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_stats_label.add_theme_font_size_override("normal_font_size", 12)
-	_stats_label.add_theme_font_size_override("bold_font_size", 12)
-	row.add_child(_stats_label)
-	outer.add_child(row)
+	_stats_label.custom_minimum_size = Vector2(GEAR_WIDTH, 110)
+	_stats_label.add_theme_font_size_override("normal_font_size", 13)
+	_stats_label.add_theme_font_size_override("bold_font_size", 13)
+	gear.add_child(_stats_label)
 
-	# Tabs.
-	var tabs := HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", 2)
-	for i in TABS.size():
-		var b := Button.new()
-		b.text = TABS[i][1]
-		b.toggle_mode = true
-		b.focus_mode = Control.FOCUS_NONE
-		b.add_theme_font_size_override("font_size", 12)
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.pressed.connect(set_tab.bind(i))
-		_tab_buttons.append(b)
-		tabs.add_child(b)
-	outer.add_child(tabs)
+	columns.add_child(VSeparator.new())
 
+	# Right: the backpack, with real tabs along its top.
+	var bag := VBoxContainer.new()
+	bag.add_theme_constant_override("separation", 0)
+	columns.add_child(bag)
+	_tabs = TabBar.new()
+	_tabs.clip_tabs = false
+	_tabs.focus_mode = Control.FOCUS_NONE
+	_tabs.add_theme_font_size_override("font_size", 13)
+	_style_tabs(_tabs)
+	for t: Array in TABS:
+		_tabs.add_tab(t[1])
+	_tabs.tab_changed.connect(func(i: int) -> void:
+		if i != _tab:
+			set_tab(i))
+	bag.add_child(_tabs)
+	# The page under the tabs.
+	var page := PanelContainer.new()
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.13, 0.12, 0.16, 1.0)
+	ps.border_color = ACCENT.darkened(0.45)
+	ps.set_border_width_all(1)
+	ps.border_width_top = 2
+	ps.corner_radius_bottom_left = 6
+	ps.corner_radius_bottom_right = 6
+	ps.corner_radius_top_right = 6
+	ps.set_content_margin_all(8)
+	page.add_theme_stylebox_override("panel", ps)
+	bag.add_child(page)
+	var page_box := VBoxContainer.new()
+	page_box.add_theme_constant_override("separation", 8)
+	page.add_child(page_box)
 	_grid = GridContainer.new()
 	_grid.columns = 6
 	_grid.add_theme_constant_override("h_separation", 4)
 	_grid.add_theme_constant_override("v_separation", 4)
-	outer.add_child(_grid)
+	page_box.add_child(_grid)
 
 	_details = RichTextLabel.new()
 	_details.bbcode_enabled = true
-	_details.custom_minimum_size = Vector2(0, 150)
+	_details.custom_minimum_size = DETAILS_SIZE
+	_details.scroll_active = true
 	_details.add_theme_font_size_override("normal_font_size", 13)
 	_details.add_theme_font_size_override("bold_font_size", 13)
 	_details.add_theme_font_size_override("italics_font_size", 13)
-	outer.add_child(_details)
+	page_box.add_child(_details)
 	var buttons := HBoxContainer.new()
+	buttons.custom_minimum_size = Vector2(0, 31)
 	_use_button = Button.new()
 	_use_button.pressed.connect(func() -> void: if _selected: activate(_selected))
 	_bar_button = Button.new()
@@ -198,7 +230,7 @@ func _build() -> void:
 		b.focus_mode = Control.FOCUS_NONE
 		b.add_theme_font_size_override("font_size", 13)
 		buttons.add_child(b)
-	outer.add_child(buttons)
+	page_box.add_child(buttons)
 
 	_confirm = ConfirmationDialog.new()
 	_confirm.title = "Throw away"
@@ -208,6 +240,39 @@ func _build() -> void:
 		_pending_discard = -1)
 	add_child(_confirm)
 	set_tab(0)
+
+
+func _section_label(text: String) -> Label:
+	var l := Label.new()
+	l.text = text.to_upper()
+	l.add_theme_font_size_override("font_size", 11)
+	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
+	return l
+
+
+## Folder-style tabs: the open one joins the page below; the others sit back, darker.
+func _style_tabs(bar: TabBar) -> void:
+	var make := func(bg: Color, border: Color, top: int) -> StyleBoxFlat:
+		var t := StyleBoxFlat.new()
+		t.bg_color = bg
+		t.border_color = border
+		t.border_width_left = 1
+		t.border_width_right = 1
+		t.border_width_top = top
+		t.corner_radius_top_left = 6
+		t.corner_radius_top_right = 6
+		t.content_margin_left = 9
+		t.content_margin_right = 9
+		t.content_margin_top = 5
+		t.content_margin_bottom = 5
+		return t
+	bar.add_theme_stylebox_override("tab_selected", make.call(Color(0.13, 0.12, 0.16, 1.0), ACCENT, 3))
+	bar.add_theme_stylebox_override("tab_hovered", make.call(Color(0.1, 0.095, 0.12, 1.0), ACCENT.darkened(0.4), 1))
+	bar.add_theme_stylebox_override("tab_unselected", make.call(Color(0.06, 0.055, 0.075, 1.0), Color(0.25, 0.23, 0.28), 1))
+	bar.add_theme_color_override("font_selected_color", ACCENT)
+	bar.add_theme_color_override("font_unselected_color", Color(0.7, 0.68, 0.72))
+	bar.add_theme_color_override("font_hovered_color", Color(1, 0.95, 0.85))
+	bar.add_theme_constant_override("h_separation", 2)
 
 
 func _equip_box(slot: String) -> Control:
@@ -244,8 +309,8 @@ static func tab_of(d: Dictionary) -> String:
 
 func set_tab(i: int) -> void:
 	_tab = posmod(i, TABS.size())
-	for j in _tab_buttons.size():
-		_tab_buttons[j].button_pressed = j == _tab
+	if _tabs.current_tab != _tab:
+		_tabs.current_tab = _tab
 	_fill_grid()
 
 
@@ -255,8 +320,8 @@ func _fill_grid() -> void:
 	var focus_index := -1
 	if GameSettings.gamepad and _grid.get_viewport() and _grid.get_viewport().gui_get_focus_owner() is ItemSlot:
 		focus_index = _bag_slots.find(_grid.get_viewport().gui_get_focus_owner())
-	for s in _bag_slots:
-		s.queue_free()
+	for c in _grid.get_children():
+		c.queue_free()
 	_bag_slots.clear()
 	var want: String = TABS[_tab][0]
 	var shown: Array[int] = []
@@ -273,6 +338,17 @@ func _fill_grid() -> void:
 		_bag_slots.append(slot)
 		_grid.add_child(slot)
 		slot.refresh()
+	# Always 24 boxes, so the page keeps its size (the rest belong to other tabs).
+	for _i in Inventory.SIZE - shown.size():
+		var filler := Panel.new()
+		filler.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
+		var fs := StyleBoxFlat.new()
+		fs.bg_color = Color(0, 0, 0, 0.25)
+		fs.set_corner_radius_all(4)
+		filler.add_theme_stylebox_override("panel", fs)
+		filler.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		filler.tooltip_text = ""
+		_grid.add_child(filler)
 	if focus_index >= 0 and not _bag_slots.is_empty():
 		_bag_slots[mini(focus_index, _bag_slots.size() - 1)].grab_focus.call_deferred()
 	# Count per tab on the buttons.
@@ -281,7 +357,7 @@ func _fill_grid() -> void:
 		for s in inventory.bag:
 			if s and tab_of(Database.item(s.id)) == TABS[j][0]:
 				n += 1
-		_tab_buttons[j].text = TABS[j][1] + ((" %d" % n) if n > 0 else "")
+		_tabs.set_tab_title(j, TABS[j][1] + ((" %d" % n) if n > 0 else ""))
 
 
 # --- Contents ----------------------------------------------------------------------
@@ -312,14 +388,16 @@ func refresh() -> void:
 func _refresh_stats() -> void:
 	if _stats_label == null:
 		return
-	var lines := [
-		"Armour [b]%d[/b]   Attack [b]+%d[/b]" % [stats.armor, stats.attack],
-		"Spell power [b]+%d[/b]" % stats.spell_power,
+	var lines: Array[String] = [
+		"Health  [b]%d / %d[/b]" % [ceili(stats.health), roundi(stats.max_health)],
+		"Armour  [b]%d[/b]" % stats.armor,
+		"Attack  [b]+%d[/b]" % stats.attack,
+		"Spell power  [b]+%d[/b]" % stats.spell_power,
 	]
 	if combat:
 		var dps := combat.dps_of(combat.weapon) if not combat.weapon.is_empty() else 0.0
-		lines.append("Weapon DPS [b]%.1f[/b]" % dps)
-	lines.append("[color=#ffd76a]Gold [b]%d[/b][/color]" % inventory.gold)
+		lines.append("Weapon DPS  [b]%.1f[/b]" % dps)
+	lines.append("[color=#ffd76a]Gold  [b]%d[/b][/color]" % inventory.gold)
 	_stats_label.text = "\n".join(lines)
 
 
@@ -345,7 +423,7 @@ func _show_details(slot: ItemSlot) -> void:
 	_details.text = describe(d, _compare_text(d, slot))
 
 
-## Green/red changes against what this item would replace.
+## Changes against what this item would replace: green better, red worse, yellow even.
 func _compare_text(d: Dictionary, slot: ItemSlot) -> String:
 	if slot == null or slot.where != "bag" or String(d.get("slot", "")).is_empty():
 		return ""
@@ -357,8 +435,10 @@ func _compare_text(d: Dictionary, slot: ItemSlot) -> String:
 		var mine := combat.dps_of(d)
 		var theirs := combat.dps_of(current) if not current.is_empty() else 0.0
 		var delta := mine - theirs
-		var col := GOOD if delta >= 0.0 else BAD
-		lines.append("[b]%.1f DPS[/b]  [color=#%s](%s%.1f)[/color]" % [mine, col, "+" if delta >= 0.0 else "−", absf(delta)])
+		if absf(delta) < 0.05 and not current.is_empty():
+			lines.append("[b]%.1f DPS[/b]  [color=#%s](same)[/color]" % [mine, EVEN])
+		else:
+			lines.append("[b]%.1f DPS[/b]  [color=#%s](%s%.1f)[/color]" % [mine, GOOD if delta >= 0.0 else BAD, "+" if delta >= 0.0 else "−", absf(delta)])
 		var type_id := String(d.get("weapon_type", ""))
 		if combat.is_proficient(type_id):
 			lines.append("[color=#%s]Proficient: +%d%% damage, +%d%% speed[/color]" % [GOOD, int(combat.proficiency_damage * 100), int(combat.proficiency_speed * 100)])
@@ -368,8 +448,12 @@ func _compare_text(d: Dictionary, slot: ItemSlot) -> String:
 	for key: String in names:
 		if inventory.is_weapon(id) and key == "attack":
 			continue  # shown as DPS
-		var delta := float(d.get(key, 0.0)) - float(current.get(key, 0.0))
+		var mine := float(d.get(key, 0.0))
+		var delta := mine - float(current.get(key, 0.0))
 		if absf(delta) < 0.001:
+			if absf(mine) > 0.001:
+				var same := ("%d%%" % int(mine * 100)) if key == "block" else ("%d" % mine)
+				lines.append("[color=#%s]%s %s (same)[/color]" % [EVEN, same, names[key]])
 			continue
 		var shown := ("%d%%" % int(absf(delta) * 100)) if key == "block" else ("%d" % absf(delta))
 		lines.append("[color=#%s]%s%s %s[/color]" % [GOOD if delta > 0.0 else BAD, "+" if delta > 0.0 else "−", shown, names[key]])

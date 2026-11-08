@@ -17,13 +17,14 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 | Block (melee) / aim (ranged), hold | LT | F |
 | Swap primary / secondary weapon | Y | R |
 | Primary / secondary weapon | (Y) | 1 / 2 |
-| Hotbar boxes 3–10 (spells, potions…) | Hold D-pad up: ability wheel | 3–9, 0 |
+| Hotbar boxes 3–10 (spells, potions…) | Hold D-pad up: ability wheel | 3–9, 0 (or keypad) |
 | Jump / talk | A | Space |
 | Dodge (with a direction; none = back-hop) | B | Alt |
 | Sprint (controller: tap to toggle) | X | Shift (hold) |
 | Character and backpack | Back | I or B |
 | Spellbook | | P |
-| Target + lock on / clear target | RB | Tab |
+| Danger mode (lets you attack friendly NPCs) | | K |
+| Target + lock on (the enemy nearest the middle of the screen) / clear | RB | Tab |
 | Cycle targets | LB | Shift+Tab |
 | Lock on (toggle) | R3 | Middle mouse |
 | Camera | Right stick | Hold right mouse, wheel zoom |
@@ -31,6 +32,12 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 Settings → **How to play** lists the controls as currently bound.
 
 **Weapons:** you carry a primary and a secondary weapon (hotbar boxes 1 and 2; the one in use has the gold frame) and swap between them. Each weapon type plays differently (data/weapon_types.json, Database → **Weapon Types**): daggers are fast and light, greatswords, hammers and axes slow and heavy, bows draw (tap = quick shot, hold = harder), crossbows and flintlock pistols/rifles fire on the press and then reload (a "Reloading" bar). Melee: rapid taps chain the type's combo, hold for a heavy blow; swings turn to any enemy within 2.5 m. Hold block with a ranged weapon to aim over the shoulder. Ranged weapons auto-aim by default (shots home in on the target, no crosshair); untick **Auto-aim** on an item to aim it by hand with a crosshair (red = an enemy in range; hand-aimed arrows and bolts drop over distance, and locked on they arc onto the target). Arrows and bolts stick in the ground and in enemies; bullets fly fast and straight and leave holes in the ground and walls. Every class can use every weapon; the class's **proficient** types hit 15% harder and swing, shoot and reload 10% faster. A chest by the road near the start holds one of each weapon to try (once per character).
+
+**Danger mode** (K): friendly NPCs that can fight become targets. One you hit gets angry and fights back (a follower stops following you); it calms down when it gives up the chase or you die. A red "DANGER MODE" shows under your bars while it's on. Other players in co-op are never targets.
+
+**Enemies** stay down for 12 seconds when they die (you can walk through them), sink away, and come back after 90 seconds (enemies.json `corpse_time`, `respawn_time`).
+
+**NPCs** turn their heads to look at you when you're close (or at whoever they're fighting). While talking they nod along and gesture now and then (placeholder `talk_1`–`talk_3` clips; a Mixamo FBX with the same name replaces each), and your character looks at them.
 
 **Levels and dying:** kills give experience (the purple bar above the hotbar; tougher enemies give more, much weaker ones little or nothing). Levels go up to 10, each adding health, mana, attack and spell power. Dying sends you home (where your hearthstone goes) and costs 10% of the gold you carry, and you're **Weakened** for 2 minutes (20% less damage and maximum health; shown under your bars). Numbers are in the Database's Player tab (Levels, Dying) and each enemy's "Experience for a kill". Falling out of the world still just puts you back on the last solid ground.
 
@@ -179,7 +186,7 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 
 ## Equipment and backpack
 
-- **Character window** (I, B or Back on a controller), bottom right so the hotbar and cast bar stay in view: armour slots, primary / secondary / off-hand, stats, then the 24-slot backpack in tabs (Weapons, Armour, Potions, Items, Keys). Point at an item to see it, compared with what it would replace: weapons show damage per second, armour the stat changes, green when better and red when worse. Right-click or double-click equips or uses it; drag between slots to move or equip (or onto the hotbar); drag out of the window to throw it away (it asks first). On a controller: A equips/uses, Y picks up and places, X puts it on the hotbar, LB/RB switch tabs.
+- **Character window** (I, B or Back on a controller), bottom right so the hotbar and cast bar stay in view, always the same size: equipment and stats on the left, the 24-slot backpack on the right with tabs along its top (Weapons, Armour, Potions, Items, Keys). Point at an item to see it, compared with what it would replace: weapons show damage per second, armour the stat changes, green when better, red when worse, yellow when the same. Right-click or double-click equips or uses it; drag between slots to move or equip (or onto the hotbar); drag out of the window to throw it away (it asks first). On a controller: A equips/uses, Y picks up and places, X puts it on the hotbar, LB/RB switch tabs.
 - **Gear shows on the body**, on both masc and femme. Armour adds armour (less damage taken), health and mana; weapons add attack or spell power (only the weapon in use counts); a shield adds block (not with a two-handed or ranged weapon).
 - **Loot:** bandits drop a sack with gold and items. Walk over it to pick it up; anything that doesn't fit stays in the sack for a few minutes.
 - **Items** are in the Database's **Items** tab: name, kind, slot, rarity, stats, what using it does, and its look. The Player tab has the **Starting kit**. Each character keeps its own backpack and gear in its save.

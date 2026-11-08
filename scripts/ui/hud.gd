@@ -38,6 +38,7 @@ var _spellbook: Spellbook
 var _name_label: Label
 var _bar_values := {}  # ProgressBar -> Label with "85 / 100"
 var _weakened: Label
+var _danger: Label
 var _weakened_progress: PlayerProgress
 
 var _settings: SettingsMenu
@@ -281,6 +282,11 @@ func _build_combat_hud() -> void:
 
 	_crosshair = Crosshair.new()
 	add_child(_crosshair)
+	_danger = _label("⚠ DANGER MODE", 14)
+	_danger.add_theme_color_override("font_color", Color(1.0, 0.35, 0.3))
+	_danger.tooltip_text = "Friendly NPCs can be targeted and attacked (%s to turn off)." % GameSettings.binding_label("danger_mode")
+	_danger.visible = false
+	health_bar.get_parent().add_child(_danger)
 
 	_combat.cast_interrupted.connect(_on_cast_interrupted)
 	_combat.notice.connect(func(text: String) -> void: show_message(text, 1.0))
@@ -353,6 +359,7 @@ func _process(delta: float) -> void:
 					_tint_bar(Color(0.95, 0.7, 0.2))
 					_cast_label.text = "Full power!" if float(b.fraction) >= 1.0 else String(b.name)
 	_crosshair.state = _combat.crosshair()
+	_danger.visible = Combat.danger_mode
 	if _weakened:
 		var left := _weakened_progress.weakened_left()
 		_weakened.visible = left > 0.0

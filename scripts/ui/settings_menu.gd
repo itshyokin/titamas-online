@@ -222,6 +222,7 @@ func _help_tab() -> Control:
 			"",
 			"[b]Windows[/b]",
 			"%s character and backpack · %s spellbook · %s chat · %s / gear: this menu" % [k.call("inventory"), k.call("spellbook"), k.call("chat"), k.call("menu")],
+			"%s danger mode: lets you target and attack friendly NPCs (they fight back)" % k.call("danger_mode"),
 		])
 	fill.call()
 	GameSettings.bindings_changed.connect(fill)

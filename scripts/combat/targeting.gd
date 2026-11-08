@@ -12,12 +12,12 @@ extends Node
 signal target_changed(target: Node3D)
 signal lock_changed(locked: bool)
 
-@export var tab_range := 40.0
+@export var tab_range := 35.0
 ## The target is dropped when further away than this.
 @export var lose_range := 55.0
 @export var enemy_mask := 4  # physics layer 3
 ## Lock-on breaks beyond this distance.
-@export var lock_range := 30.0
+@export var lock_range := 40.0
 ## Swings turn to enemies this close even if they're behind you.
 @export var snap_range := 2.5
 
@@ -97,14 +97,37 @@ func toggle_lock() -> void:
 	set_locked(has_target())
 
 
-## Target button: picks the enemy nearest the centre of the screen and locks on, or (with
-## a target already) clears it.
+## Target button: with nothing locked, picks the enemy you're looking at (nearest the
+## centre of the screen, nearer ones preferred) and locks on; while locked, clears it.
 func toggle_target() -> void:
-	if has_target():
+	if is_locked():
 		set_target(null)
 		return
-	cycle(1)
-	set_locked(has_target())
+	var best := best_in_view()
+	if best:
+		set_target(best)
+		set_locked(true)
+
+
+## The enemy closest to where the camera looks (within tab_range), weighing distance a
+## little; with none on screen, the nearest one.
+func best_in_view() -> Node3D:
+	var cam := get_viewport().get_camera_3d()
+	var best: Node3D = null
+	var best_score := INF
+	for n in Combat.enemies_near(player, player.global_position, tab_range):
+		var aim := Combat.aim_point(n)
+		var dist := aim.distance_to(player.global_position)
+		var score := 1000.0 + dist  # off screen: nearest wins, after anything on screen
+		if cam and cam.is_position_in_frustum(aim) and not cam.is_position_behind(aim):
+			var screen := cam.unproject_position(aim)
+			var size := get_viewport().get_visible_rect().size
+			var off := (screen - size * 0.5).length() / size.y  # 0 = centre, ~0.9 = corner
+			score = off * 30.0 + dist * 0.4
+		if score < best_score:
+			best_score = score
+			best = n
+	return best
 
 
 ## Next enemy in view; stays locked if it was.
@@ -210,6 +233,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(_delta: float) -> void:
 	if target and not is_instance_valid(target):
+		set_target(null)
+	# No longer an enemy (danger mode switched off): let go.
+	if target and Combat.is_alive(target) and not Combat.is_enemy_of(player, target):
 		set_target(null)
 	if target and target.global_position.distance_to(player.global_position) > lose_range:
 		set_target(null)
