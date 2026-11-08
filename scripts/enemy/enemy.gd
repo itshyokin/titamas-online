@@ -50,6 +50,9 @@ var tagged_by_player := false
 ## Seconds before the body disappears, and before it comes back.
 @export var corpse_time := 12.0
 @export var respawn_time := 90.0
+## A body with loot left on it stays up to this long before sinking (s).
+@export var loot_time := 60.0
+var _loot: LootBag = null
 
 @onready var stats: Stats = $Stats
 @onready var character: CharacterModel = $Model/Character
@@ -313,7 +316,7 @@ func _on_target_died() -> void:
 
 func _on_died() -> void:
 	ai = AI.DEAD
-	LootBag.drop_for(Database.enemy(enemy_id), Combat.world_root(self), global_position + model.global_basis.z * 0.6)
+	_loot = LootBag.drop_for(Database.enemy(enemy_id), Combat.world_root(self), global_position, self)
 	credit_kill()
 	target = null
 	collision_layer = 0
@@ -322,13 +325,21 @@ func _on_died() -> void:
 	character.play_from("death", 0.0, 0.15, 1.0)
 	_set_shapes_disabled(true)  # nothing bumps into (or stands on) a body
 	await get_tree().create_timer(corpse_time).timeout
+	# A body with loot left on it stays a while longer (and while someone's looking through it).
+	var waited := corpse_time
+	while is_instance_valid(_loot) and (_loot.open or waited < loot_time):
+		await get_tree().create_timer(0.5).timeout
+		waited += 0.5
+	if is_instance_valid(_loot):
+		_loot.queue_free()
+	_loot = null
 	# Sink into the ground, then gone.
 	var sink := create_tween()
 	sink.tween_property(model, "position:y", model.position.y - 1.2, 1.5)
 	await sink.finished
 	model.visible = false
 	model.position.y += 1.2
-	await get_tree().create_timer(maxf(respawn_time - corpse_time, 0.0)).timeout
+	await get_tree().create_timer(maxf(respawn_time - waited, 5.0)).timeout
 	_respawn()
 
 

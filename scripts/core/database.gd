@@ -15,7 +15,7 @@ const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, 
 const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
 	"attack_range", "attack_cooldown", "attack_animation", "attack_animation_speed", "attack_hit_time",
-	"attack_arc", "corpse_time", "respawn_time", "knockback", "heavy_every", "heavy_power",
+	"attack_arc", "corpse_time", "respawn_time", "loot_time", "knockback", "heavy_every", "heavy_power",
 	"heavy_animation", "heavy_animation_speed", "heavy_hit_time",
 ]
 const PLAYER_STATS := ["max_health", "max_mana", "max_stamina", "stamina_regen", "stamina_regen_delay", "mana_regen"]

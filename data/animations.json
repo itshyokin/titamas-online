@@ -1001,6 +1001,20 @@
 			"yaw_fix": 0.0,
 			"height_match": "",
 			"note": ""
+		},
+		{
+			"name": "loot_kneel",
+			"kind": "file",
+			"from": "",
+			"start": 0,
+			"end": 0,
+			"loop": false,
+			"in_place": false,
+			"root_motion": true,
+			"no_hip_rise": false,
+			"yaw_fix": 0.0,
+			"height_match": "",
+			"note": "Kneeling to loot a body (Mixamo 'Kneel')"
 		}
 	],
 	"roles": {
@@ -1036,7 +1050,8 @@
 		"talk_1": "talk_1",
 		"talk_2": "talk_2",
 		"talk_3": "talk_3",
-		"talk_4": "talk_4"
+		"talk_4": "talk_4",
+		"loot": "loot_kneel"
 	},
 	"look": {
 		"range": 6.0,
@@ -1048,5 +1063,8 @@
 	"strafe": {
 		"right_speed": 0.86,
 		"left_speed": 1.6
+	},
+	"loot": {
+		"pause_at": 1.33
 	}
 }

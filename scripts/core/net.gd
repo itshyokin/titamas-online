@@ -316,7 +316,7 @@ func _enemy_died(path: NodePath) -> void:
 	var player := _local_player()
 	if enemy and player and enemy.global_position.distance_to(player.global_position) < 40.0:
 		# Everyone gets their own loot.
-		LootBag.drop_for(Database.enemy(enemy.enemy_id), Combat.world_root(enemy), enemy.global_position + Vector3(0, 0, 0.6))
+		LootBag.drop_for(Database.enemy(enemy.enemy_id), Combat.world_root(enemy), enemy.global_position, enemy)
 	if enemy:
 		enemy.credit_kill()  # experience, if this game's player fought it
 

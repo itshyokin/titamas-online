@@ -331,7 +331,7 @@ const TABS = {
 			id: "new_enemy", name: "New Enemy", level: 1, max_health: 60, skin_color: "#9e8c80", weapon: "sword",
 			aggro_radius: 12, leash_distance: 35, wander_radius: 5, walk_speed: 1.4, run_speed: 4,
 			attack_power: 8, attack_range: 2, attack_cooldown: 1.6, attack_animation: "attack_light_1",
-			attack_animation_speed: 0.75, attack_hit_time: 0.32, attack_arc: 110, corpse_time: 12, respawn_time: 90,
+			attack_animation_speed: 0.75, attack_hit_time: 0.32, attack_arc: 110, corpse_time: 12, respawn_time: 90, loot_time: 60,
 			gold_min: 1, gold_max: 5, xp: 0, loot: [],
 		}),
 		groups: [
@@ -370,6 +370,7 @@ const TABS = {
 			["Death", [
 				{ key: "corpse_time", label: "Body stays (s)", type: "number" },
 				{ key: "respawn_time", label: "Respawns after (s)", type: "number" },
+				{ key: "loot_time", label: "Body with loot stays up to (s)", type: "number", help: "Unlooted bodies wait this long before sinking (from death)." },
 			]],
 			["Loot", [
 				{ key: "xp", label: "Experience for a kill", type: "int", help: "0 = automatic (Player tab: base + per level)." },
@@ -548,6 +549,8 @@ const TABS = {
 				{ key: "roles.hit_react", label: "Flinch", type: "anim" },
 				{ key: "roles.death", label: "Dying", type: "anim" },
 				{ key: "roles.cast_channel", label: "Casting (while the bar fills)", type: "anim" },
+				{ key: "roles.loot", label: "Looting a body (kneel)", type: "anim" },
+				{ key: "loot.pause_at", label: "Looting: hold the kneel at (s)", type: "number", help: "Where the clip pauses while the loot window is open (frame 40 = 1.33 s)." },
 				{ key: "roles.bow_aim", label: "Aiming (default)", type: "anim", help: "Weapon types can pick their own." },
 			]],
 			["Talking (NPC gestures, picked at random)", [

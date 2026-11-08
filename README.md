@@ -35,6 +35,8 @@ Settings → **How to play** lists the controls as currently bound.
 
 **Danger mode** (K): friendly NPCs that can fight become targets. One you hit gets angry and fights back (a follower stops following you); it calms down when it gives up the chase or you die. A red "DANGER MODE" shows under your bars while it's on. Other players in co-op are never targets.
 
+**Looting:** what an enemy drops lies with its body (golden motes). Walk up and press Jump / A ("Space  Loot Bandit"): your character kneels (Mixamo Kneel, holding partway down while you look) and a small window opens over the body. Click an entry (or A / Space on it) to take it, **Take all** (R / Y), or close with Esc / B or by walking off; whatever you leave stays on the body. A body with loot left on it stays up to a minute (enemies.json `loot_time`) before sinking. Database → Animations: the kneel clip and where it pauses.
+
 **Enemies** stay down for 12 seconds when they die (you can walk through them), sink away, and come back after 90 seconds (enemies.json `corpse_time`, `respawn_time`).
 
 **NPCs** turn their heads to look at you when you're close (or at whoever they're fighting). While talking they nod along and gesture now and then (placeholder `talk_1`–`talk_3` clips; a Mixamo FBX with the same name replaces each), and your character looks at them.
