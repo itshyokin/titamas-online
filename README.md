@@ -195,7 +195,7 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 
 1. Movement and camera
 2. Combat
-3. Equipment ← **done, being tested**
-4. Co-op
+3. Equipment, character creator, saves
+4. Co-op ← **foundation in, being tested**
 5. Content tools
 6. World
