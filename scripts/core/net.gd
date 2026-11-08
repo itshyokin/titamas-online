@@ -18,6 +18,8 @@ signal peers_changed
 signal connected_to_host
 signal connection_failed(reason: String)
 signal host_left
+## A chat line from another player.
+signal chat_received(who: String, text: String)
 
 const DEFAULT_PORT := 24565
 const MAX_PLAYERS := 10
@@ -130,6 +132,8 @@ func _on_peer_connected(_id: int) -> void:
 
 
 func _on_peer_disconnected(id: int) -> void:
+	if peers.has(id):
+		GameLog.post("%s left the game." % peers[id].get("name", "A player"), Color(0.6, 0.9, 1.0))
 	_remove_remote(id)
 	peers.erase(id)
 	peers_changed.emit()
@@ -152,6 +156,7 @@ func _hello(info: Dictionary) -> void:
 	_welcome.rpc_id(id, scene.scene_file_path if scene else GameSession.START_SCENE, [spot.x, spot.y, spot.z], others)
 	_peer_joined.rpc(id, info)
 	_spawn_remote(id, info)
+	GameLog.post("%s joined the game." % info.get("name", "A player"), Color(0.6, 0.9, 1.0))
 	peers_changed.emit()
 
 
@@ -173,6 +178,7 @@ func _peer_joined(id: int, info: Dictionary) -> void:
 		return
 	peers[id] = info
 	_spawn_remote(id, info)
+	GameLog.post("%s joined the game." % info.get("name", "A player"), Color(0.6, 0.9, 1.0))
 	peers_changed.emit()
 
 
@@ -189,6 +195,18 @@ func _info_changed(info: Dictionary) -> void:
 func send_info() -> void:
 	if active:
 		_info_changed.rpc(my_info())
+
+
+# --- Chat --------------------------------------------------------------------------
+
+func send_chat(who: String, text: String) -> void:
+	if active:
+		_chat.rpc(who, text.left(200))
+
+
+@rpc("any_peer", "reliable")
+func _chat(who: String, text: String) -> void:
+	chat_received.emit(who, text)
 
 
 # --- Every frame --------------------------------------------------------------------
@@ -299,6 +317,8 @@ func _enemy_died(path: NodePath) -> void:
 	if enemy and player and enemy.global_position.distance_to(player.global_position) < 40.0:
 		# Everyone gets their own loot.
 		LootBag.drop_for(Database.enemy(enemy.enemy_id), Combat.world_root(enemy), enemy.global_position + Vector3(0, 0, 0.6))
+	if enemy:
+		enemy.credit_kill()  # experience, if this game's player fought it
 
 
 ## Joined game: my player hit an enemy (the host works out the damage).

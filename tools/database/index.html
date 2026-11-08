@@ -330,7 +330,7 @@ const TABS = {
 			aggro_radius: 12, leash_distance: 35, wander_radius: 5, walk_speed: 1.4, run_speed: 4,
 			attack_power: 8, attack_range: 2, attack_cooldown: 1.6, attack_animation: "attack_light_1",
 			attack_animation_speed: 0.75, attack_hit_time: 0.32, attack_arc: 110, corpse_time: 6, respawn_time: 25,
-			gold_min: 1, gold_max: 5, loot: [],
+			gold_min: 1, gold_max: 5, xp: 0, loot: [],
 		}),
 		groups: [
 			["General", [
@@ -370,6 +370,7 @@ const TABS = {
 				{ key: "respawn_time", label: "Respawns after (s)", type: "number" },
 			]],
 			["Loot", [
+				{ key: "xp", label: "Experience for a kill", type: "int", help: "0 = automatic (Player tab: base + per level)." },
 				{ key: "gold_min", label: "Gold (at least)", type: "int" },
 				{ key: "gold_max", label: "Gold (at most)", type: "int" },
 				{ key: "loot", label: "Drops", type: "loot", wide: true, help: "Chance 0–1 (0.25 = one in four kills)." },
@@ -415,6 +416,22 @@ const TABS = {
 				{ key: "loadout.ranged_attack", label: "Fallback ranged shot", type: "ability" },
 				{ key: "loadout.spells", label: "Spellbook (known spells)", type: "abilities", wide: true },
 				{ key: "hotbar", label: "Hotbar (boxes 3–10)", type: "hotbar", wide: true, help: "New characters start with this bar." },
+			]],
+			["Levels", [
+				{ key: "leveling.max_level", label: "Highest level", type: "int" },
+				{ key: "leveling.xp_to_next", label: "Experience to the next level (from level 1)", type: "numlist", wide: true },
+				{ key: "leveling.health_per_level", label: "Health per level", type: "number" },
+				{ key: "leveling.mana_per_level", label: "Mana per level", type: "number" },
+				{ key: "leveling.attack_per_level", label: "Attack per level", type: "number" },
+				{ key: "leveling.spell_power_per_level", label: "Spell power per level", type: "number" },
+				{ key: "leveling.kill_xp_base", label: "Kill experience: base", type: "number", help: "Enemies without their own value give base + per level × their level." },
+				{ key: "leveling.kill_xp_per_level", label: "Kill experience: per enemy level", type: "number", help: "Tougher enemies give more (+15% per level above you), much weaker ones little or none." },
+			]],
+			["Dying", [
+				{ key: "death.gold_loss", label: "Gold lost (share)", type: "number", help: "0.1 = 10% of the gold you carry." },
+				{ key: "death.weakened_seconds", label: "Weakened for (s)", type: "number" },
+				{ key: "death.weakened_damage", label: "Weakened damage", type: "number", help: "0.8 = deal 20% less damage." },
+				{ key: "death.weakened_health", label: "Weakened max health", type: "number", help: "0.8 = 20% less maximum health." },
 			]],
 			["Starting kit (new characters)", [
 				{ key: "starting_kit.gold", label: "Gold", type: "int" },
@@ -1066,6 +1083,16 @@ function fieldControl(t, entry, f) {
 			const add = el("button", { textContent: "+ Add" });
 			add.onclick = () => { const o = itemOptions(); if (o.length) { list.push([o[0][0], 1]); set(list, true); } };
 			wrap.appendChild(add);
+			break;
+		}
+		case "numlist": {
+			const list = Array.isArray(value) ? value.slice() : [];
+			const t = el("input", { type: "text", value: list.join(", ") });
+			t.oninput = () => {
+				const nums = t.value.split(/[ ,]+/).filter(x => x !== "").map(Number);
+				if (nums.every(n => !Number.isNaN(n))) set(nums);
+			};
+			wrap.append(label, t, el("div", { className: "help", textContent: "Numbers separated by commas." }));
 			break;
 		}
 		case "weapontype": {

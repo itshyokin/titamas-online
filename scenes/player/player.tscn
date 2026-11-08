@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://scripts/player/water_effects.gd" id="11_water"]
 [ext_resource type="Script" path="res://scripts/items/inventory.gd" id="12_inv"]
 [ext_resource type="Script" path="res://scripts/items/player_gear.gd" id="13_gear"]
+[ext_resource type="Script" path="res://scripts/player/player_progress.gd" id="14_progress"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ugbui"]
 radius = 0.35
@@ -44,6 +45,9 @@ script = ExtResource("5_je7p5")
 
 [node name="PlayerAudio" type="Node3D" parent="."]
 script = ExtResource("8_paudio")
+
+[node name="Progress" type="Node" parent="."]
+script = ExtResource("14_progress")
 
 [node name="Inventory" type="Node" parent="."]
 script = ExtResource("12_inv")

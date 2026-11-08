@@ -98,5 +98,31 @@
 		"",
 		"",
 		""
-	]
+	],
+	"leveling": {
+		"max_level": 10,
+		"xp_to_next": [
+			100,
+			160,
+			240,
+			340,
+			460,
+			600,
+			760,
+			940,
+			1140
+		],
+		"health_per_level": 12,
+		"mana_per_level": 8,
+		"attack_per_level": 1,
+		"spell_power_per_level": 1,
+		"kill_xp_base": 15,
+		"kill_xp_per_level": 10
+	},
+	"death": {
+		"gold_loss": 0.1,
+		"weakened_seconds": 120,
+		"weakened_damage": 0.8,
+		"weakened_health": 0.8
+	}
 }

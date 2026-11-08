@@ -79,10 +79,13 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 	# Co-op: some targets are worked out on another machine (see Net).
 	if target.has_method("forward_hit") and target.forward_hit(source, power, stagger, knockback):
 		if source is PlayerController:
+			_tag(source, target)
 			impact(source, target, stagger, false, 0.0)  # the feel stays local
 		return 0.0
 	var ss := stats_of(source)
 	var amount := scaled_power(power, ss.level if ss else 1, ts.level)
+	if ss:
+		amount *= ss.damage_scale  # Weakened
 	amount *= randf_range(0.9, 1.1)
 	var crit := randf() < CRIT_CHANCE
 	if crit:
@@ -97,6 +100,7 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 	if amount <= 0.0:
 		return 0.0
 	amount = maxf(roundf(amount), 1.0)
+	_tag(source, target)
 	ts.take_damage(amount, source, crit)
 	var blocked := amount < before * 0.75
 	play_sound(target, BLOCK_SOUND if blocked else HIT_SOUND, -2.0)
@@ -106,6 +110,13 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 		target.stagger()
 	impact(source, target, stagger or crit, blocked, knockback)
 	return amount
+
+
+## Remembers that this game's player (or a follower) fought an enemy, so its death gives
+## them experience.
+static func _tag(source: Node, target: Node) -> void:
+	if source and (source.is_in_group("player") or source.is_in_group("followers")) and "tagged_by_player" in target:
+		target.set("tagged_by_player", true)
 
 
 ## The feel of a blow landing: sparks, a white flash, a push, and for the player a

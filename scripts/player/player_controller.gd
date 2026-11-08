@@ -862,7 +862,22 @@ func _update_survival(delta: float) -> void:
 
 
 func _respawn(reason: String) -> void:
-	global_position = _last_safe + Vector3.UP * 0.3
+	var spot := _last_safe + Vector3.UP * 0.3
+	if reason in ["died", "drowned"]:
+		# Dying: penalties, then home (where the hearthstone goes).
+		var progress := get_node_or_null("Progress")
+		if progress:
+			progress.call("apply_death_penalty")
+		var home: Dictionary = GameSession.data.get("home", {}) if GameSession.active() else {}
+		var scene := get_tree().current_scene
+		var here := scene != null and String(home.get("scene", "")) == scene.scene_file_path
+		var p: Array = home.get("position", [])
+		if here and p.size() == 3:
+			spot = Vector3(p[0], p[1], p[2]) + Vector3.UP * 0.3
+		elif not home.is_empty() and not Net.active:
+			stats.restore()
+			GameSession.travel_home.call_deferred()  # home is in another level
+	global_position = spot
 	velocity = Vector3.ZERO
 	state = State.NORMAL
 	model.position = Vector3.ZERO

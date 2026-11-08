@@ -37,6 +37,8 @@ var _wheel: AbilityWheel
 var _spellbook: Spellbook
 var _name_label: Label
 var _bar_values := {}  # ProgressBar -> Label with "85 / 100"
+var _weakened: Label
+var _weakened_progress: PlayerProgress
 
 var _settings: SettingsMenu
 var _clock: Label
@@ -185,8 +187,15 @@ func _build_inventory_hud(stats: Stats) -> void:
 	_inventory.gold_changed.connect(func(g: int) -> void: _gold.text = "%d gold" % g)
 	_inventory.item_added.connect(func(id: String, count: int) -> void:
 		var d := Database.item(id)
-		_log_pickup("+ %s%s" % [d.get("name", id), (" x%d" % count) if count > 1 else ""], ItemIcon.rarity_color(d)))
+		var text := "%s%s" % [d.get("name", id), (" x%d" % count) if count > 1 else ""]
+		_log_pickup("+ " + text, ItemIcon.rarity_color(d))
+		GameLog.post("You receive: %s." % text, ItemIcon.rarity_color(d)))
 	_gold.text = "%d gold" % _inventory.gold
+	var last_gold := [_inventory.gold]
+	_inventory.gold_changed.connect(func(g: int) -> void:
+		if g > last_gold[0]:
+			GameLog.post("You get %d gold." % (g - last_gold[0]), Color(1.0, 0.85, 0.4))
+		last_gold[0] = g)
 
 
 func _log_pickup(text: String, color: Color) -> void:
@@ -278,6 +287,7 @@ func _build_combat_hud() -> void:
 
 
 func _build_hotbar() -> void:
+	add_child(GameLog.new())
 	_hotbar = Hotbar.new(_inventory, _combat)
 	_hotbar.anchor_left = 0.5
 	_hotbar.anchor_right = 0.5
@@ -292,6 +302,17 @@ func _build_hotbar() -> void:
 	add_child(_wheel)
 	_spellbook = Spellbook.new(_combat, _inventory)
 	add_child(_spellbook)
+	# Experience bar and the Weakened marker.
+	var progress := _combat.player.get_node_or_null("Progress") as PlayerProgress
+	if progress:
+		progress.xp_changed.connect(set_xp)
+		set_xp(progress.xp, progress.needed(), progress.level, progress.is_max_level())
+		_weakened_progress = progress
+		_weakened = _label("", 13)
+		_weakened.add_theme_color_override("font_color", Color(1.0, 0.5, 0.45))
+		_weakened.tooltip_text = "Weakened: you deal less damage and have less health until it wears off."
+		_weakened.mouse_filter = Control.MOUSE_FILTER_PASS
+		health_bar.get_parent().add_child(_weakened)
 
 
 ## The hotbar's experience bar (set by the levelling code).
@@ -332,6 +353,11 @@ func _process(delta: float) -> void:
 					_tint_bar(Color(0.95, 0.7, 0.2))
 					_cast_label.text = "Full power!" if float(b.fraction) >= 1.0 else String(b.name)
 	_crosshair.state = _combat.crosshair()
+	if _weakened:
+		var left := _weakened_progress.weakened_left()
+		_weakened.visible = left > 0.0
+		if left > 0.0:
+			_weakened.text = "Weakened  %d:%02d" % [int(left) / 60, int(left) % 60]
 
 
 func _refresh_target() -> void:

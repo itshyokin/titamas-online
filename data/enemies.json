@@ -60,7 +60,8 @@
 			"heavy_power": 1.8,
 			"heavy_animation": "attack_heavy",
 			"heavy_animation_speed": 0.7,
-			"heavy_hit_time": 0.68
+			"heavy_hit_time": 0.68,
+			"xp": 0
 		}
 	]
 }

@@ -152,7 +152,7 @@ func use(i: int) -> void:
 
 func set_xp(current: int, needed: int, level: int, max_level: bool) -> void:
 	xp_bar.max_value = maxf(needed, 1)
-	xp_bar.value = needed if max_level else current
+	xp_bar.value = xp_bar.max_value if max_level else current
 	xp_label.text = "Level %d · max level" % level if max_level else "Level %d · %d / %d XP" % [level, current, needed]
 	xp_bar.tooltip_text = xp_label.text
 

@@ -10,6 +10,8 @@ enum AI { IDLE, CHASE, ATTACK, STAGGER, RETURN, DEAD }
 ## Which entry in data/enemies.json this is (name, level, health, speeds, attack...).
 ## Edit those with the Database editor; the values below are only fallbacks.
 @export var enemy_id := "bandit"
+## This game's player (or a follower) hit it since it last spawned: its death gives them experience.
+var tagged_by_player := false
 
 @export_group("Behaviour")
 ## Players closer than this are noticed.
@@ -312,6 +314,7 @@ func _on_target_died() -> void:
 func _on_died() -> void:
 	ai = AI.DEAD
 	LootBag.drop_for(Database.enemy(enemy_id), Combat.world_root(self), global_position + model.global_basis.z * 0.6)
+	credit_kill()
 	target = null
 	collision_layer = 0
 	velocity = Vector3.ZERO
@@ -323,7 +326,18 @@ func _on_died() -> void:
 	_respawn()
 
 
+## Experience for the player who fought it (each game credits its own player).
+func credit_kill() -> void:
+	if not tagged_by_player:
+		return
+	tagged_by_player = false
+	var progress := get_tree().get_first_node_in_group("player_progress")
+	if progress:
+		progress.call("credit_kill", self)
+
+
 func _respawn() -> void:
+	tagged_by_player = false
 	global_position = _home
 	velocity = Vector3.ZERO
 	stats.restore()

@@ -45,9 +45,13 @@ var attack := 0.0
 var spell_power := 0.0
 var armor := 0.0
 var block := 0.0
+## Damage this character deals is multiplied by this (Weakened after dying: 0.8).
+var damage_scale := 1.0
 var _base_health := -1.0
 var _base_mana := -1.0
 var _bonus := {}
+var _level_bonus := {}  # {health, mana, attack, spell_power} from levels (PlayerProgress)
+var _max_health_scale := 1.0
 
 var _stamina_idle_time := 0.0
 var _hots: Array[Dictionary] = []  # {per_tick, ticks_left, interval, timer, source}
@@ -177,15 +181,27 @@ func set_bonuses(bonus: Dictionary) -> void:
 		_base_health = max_health
 		_base_mana = max_mana
 	_bonus = bonus
-	attack = float(bonus.get("attack", 0.0))
-	spell_power = float(bonus.get("spell_power", 0.0))
+	attack = float(bonus.get("attack", 0.0)) + float(_level_bonus.get("attack", 0.0))
+	spell_power = float(bonus.get("spell_power", 0.0)) + float(_level_bonus.get("spell_power", 0.0))
 	armor = float(bonus.get("armor", 0.0))
 	block = float(bonus.get("block", 0.0))
-	max_health = _base_health + float(bonus.get("bonus_health", 0.0))
-	max_mana = _base_mana + float(bonus.get("bonus_mana", 0.0))
+	max_health = roundf((_base_health + float(bonus.get("bonus_health", 0.0)) + float(_level_bonus.get("health", 0.0))) * _max_health_scale)
+	max_mana = _base_mana + float(bonus.get("bonus_mana", 0.0)) + float(_level_bonus.get("mana", 0.0))
 	health = minf(health, max_health)
 	mana = minf(mana, max_mana)
 	emit_all()
+
+
+## Extra health, mana, attack and spell power from the character's level.
+func set_level_bonus(bonus: Dictionary) -> void:
+	_level_bonus = bonus
+	set_bonuses(_bonus)
+
+
+## Shrinks (or restores) maximum health, e.g. 0.8 while Weakened.
+func set_max_health_scale(k: float) -> void:
+	_max_health_scale = k
+	set_bonuses(_bonus)
 
 
 func restore_mana(amount: float) -> void:
