@@ -77,7 +77,7 @@ func _process(delta: float) -> void:
 			var rise := lock.global_position.y - owner_body.global_position.y
 			var want_pitch := clampf(-14.0 + rad_to_deg(atan2(rise, maxf(to.length(), 1.0))) * 0.5, min_pitch, max_pitch)
 			_pitch = lerpf(_pitch, want_pitch, 1.0 - exp(-2.0 * delta))
-	elif not GameSettings.menu_open:
+	elif not GameSettings.menu_open and not GameSettings.wheel_open:
 		var stick := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down")
 		if stick.length() > 0.0:
 			var speed := stick_speed * GameSettings.camera_sensitivity * delta

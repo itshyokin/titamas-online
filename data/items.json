@@ -63,7 +63,7 @@
 			"icon_color": "#b8a48c",
 			"weapon_type": "sword",
 			"speed": 1.0,
-			"auto_aim": false
+			"auto_aim": true
 		},
 		{
 			"description": "Well balanced, freshly sharpened.",
@@ -128,7 +128,7 @@
 			"icon_color": "#d8dde6",
 			"weapon_type": "sword",
 			"speed": 1.0,
-			"auto_aim": false
+			"auto_aim": true
 		},
 		{
 			"description": "A simple yew bow.",
@@ -193,7 +193,7 @@
 			"icon_color": "#a0703c",
 			"weapon_type": "bow",
 			"speed": 1.0,
-			"auto_aim": false
+			"auto_aim": true
 		},
 		{
 			"description": "Blocks a little more of each hit while guarding.",
@@ -751,7 +751,7 @@
 			"icon_color": "#c8c8d0",
 			"weapon_type": "dagger",
 			"speed": 1.0,
-			"auto_aim": false
+			"auto_aim": true
 		},
 		{
 			"description": "Two hands, slow swings, big hits.",
@@ -784,7 +784,7 @@
 			"icon_color": "#d8dce4",
 			"weapon_type": "greatsword",
 			"speed": 1.0,
-			"auto_aim": false
+			"auto_aim": true
 		},
 		{
 			"description": "Heavy and slow. Every blow staggers... eventually.",
@@ -817,7 +817,7 @@
 			"icon_color": "#8c8c96",
 			"weapon_type": "hammer",
 			"speed": 1.0,
-			"auto_aim": false
+			"auto_aim": true
 		},
 		{
 			"description": "Meant for logs, works on bandits.",
@@ -850,7 +850,7 @@
 			"icon_color": "#c8c8d0",
 			"weapon_type": "axe",
 			"speed": 1.0,
-			"auto_aim": false
+			"auto_aim": true
 		},
 		{
 			"description": "Hits hard, but has to be reloaded after every shot.",
@@ -883,7 +883,7 @@
 			"icon_color": "#9a7a4a",
 			"weapon_type": "crossbow",
 			"speed": 1.0,
-			"auto_aim": false
+			"auto_aim": true
 		},
 		{
 			"description": "One loud shot, then a slow reload.",
@@ -916,7 +916,7 @@
 			"icon_color": "#6a6a72",
 			"weapon_type": "pistol",
 			"speed": 1.0,
-			"auto_aim": false
+			"auto_aim": true
 		},
 		{
 			"description": "Long range and a very slow reload. Aim carefully.",
@@ -949,7 +949,7 @@
 			"icon_color": "#6a6a72",
 			"weapon_type": "rifle",
 			"speed": 1.0,
-			"auto_aim": false
+			"auto_aim": true
 		}
 	]
 }

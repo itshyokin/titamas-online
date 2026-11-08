@@ -35,6 +35,8 @@ const REBINDABLE := [
 	["camera_look", "Hold to look (mouse)"], ["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["menu", "Settings menu"],
 ]
 
+## The controller ability wheel is up (its right-stick choice mustn't turn the camera).
+var wheel_open := false
 var volumes := DEFAULT_VOLUMES.duplicate()
 var pixel := DEFAULT_PIXEL
 var grass := DEFAULT_GRASS

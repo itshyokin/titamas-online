@@ -7,7 +7,7 @@ extends Node
 ##   Crossbows and guns: each press fires, then the weapon reloads (a "Reloading" bar).
 ## Block (held) guards with melee weapons and aims with ranged ones (over the shoulder,
 ## zoomed, with a crosshair). Ranged weapons aim by hand (where the crosshair is, or at a
-## locked target) unless the item has "auto_aim", which homes onto the target.
+## locked target) only when the item has "auto_aim" off; by default shots home onto the target.
 ## Spells and items sit on the hotbar (boxes 3-10) and are cast with a cast bar.
 ## Weapon families (speed, power, combo, reload, sounds) are data/weapon_types.json; the
 ## class's "proficient" families hit harder and faster. Lives under Player, next to Targeting.
@@ -192,9 +192,9 @@ func is_ranged(type := weapon_type) -> bool:
 	return String(type.get("category", "melee")) == "ranged"
 
 
-## Manual aim (crosshair) unless the item says auto_aim.
+## Manual aim (crosshair) only for items with auto_aim turned off.
 func is_manual_aim() -> bool:
-	return is_ranged() and not bool(weapon.get("auto_aim", false))
+	return is_ranged() and not bool(weapon.get("auto_aim", true))
 
 
 func is_proficient(type_id: String) -> bool:
