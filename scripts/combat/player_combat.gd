@@ -109,6 +109,10 @@ var _counter_until := 0  # msec: next hit is a counter
 var _flourish := false  # this swing is a fully charged heavy
 var _buffer_until := 0  # msec: an attack tapped during a dodge (-1 while it lasts)
 var _auto_release := false  # spell tapped: goes off when the cast bar fills
+# A plain channel (hearthstone and the like): a cast bar, then a callback.
+var _channel: Ability = null
+var _channel_time := 0.0
+var _channel_done: Callable
 var _cooldowns := {}  # Ability -> seconds left
 var _combat_timer := 0.0
 
@@ -254,6 +258,11 @@ func _physics_process(delta: float) -> void:
 				_buffer_until = -1  # pending until the dodge ends
 		return
 
+	if _channel:
+		_update_channel(delta)
+		if released:
+			_attack_down = false
+		return
 	if _current:
 		_update_action(delta)
 	elif _blocking:
@@ -610,8 +619,60 @@ func _update_charge(delta: float) -> void:
 	charge_progress.emit(_charge_fraction(), _charge_level())
 
 
+## Casts something that isn't an ability (a hearthstone): the cast bar fills over
+## `seconds`, then `on_done` runs. Moving, dodging or being hit stops it.
+func channel(display: String, seconds: float, on_done: Callable) -> bool:
+	if _channel or _current or _charging or _blocking:
+		notice.emit("You're busy")
+		return false
+	if not player.start_action(0.0):
+		notice.emit("Can't do that now")
+		return false
+	_channel = Ability.new()
+	_channel.display_name = display
+	_channel.cast_time = seconds
+	_channel_time = 0.0
+	_channel_done = on_done
+	player.action_animation.emit("cast_channel", 0.0, 0.2, 1.0)
+	charge_started.emit(_channel)
+	return true
+
+
+func _update_channel(delta: float) -> void:
+	_channel_time += delta
+	if _move_input().length() > 0.5:
+		_interrupt("Cancelled", false)
+		return
+	charge_progress.emit(clampf(_channel_time / maxf(_channel.cast_time, 0.01), 0.0, 1.0), 1)
+	if _channel_time >= _channel.cast_time:
+		var done := _channel_done
+		_channel = null
+		charge_ended.emit()
+		player.end_action()
+		if done.is_valid():
+			done.call()
+
+
+func _stop_channel() -> void:
+	if _channel:
+		_channel = null
+		charge_ended.emit()
+		player.end_action()
+
+
+## What the cast bar should name.
+func casting_name() -> String:
+	if _channel:
+		return _channel.display_name
+	if _charging:
+		return _charging.display_name
+	return ""
+
+
 ## Spells: still filling the cast bar (can't go off yet).
 func is_casting() -> bool:
+	if _channel:
+		return true
 	return _charging != null and mode == Mode.MAGIC and _charge < _charging.cast_time
 
 
@@ -728,6 +789,9 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 			return amount
 	# Hit while casting or charging: light hits push the cast back, big or heavy hits interrupt.
 	var heavy := Combat.incoming_heavy or amount >= interrupt_share * stats.max_health
+	if _channel:
+		_interrupt("Interrupted")
+		return amount
 	if _charging:
 		if mode == Mode.MAGIC and not heavy:
 			_charge = maxf(_charge - cast_pushback, 0.0)
@@ -748,6 +812,7 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 ## Stops a cast, charge or wind-up.
 func _interrupt(reason: String, flinch := true) -> void:
 	var ab := _charging if _charging else _current
+	_stop_channel()
 	_cancel_charge()
 	if _current:
 		_finish_action()
@@ -789,6 +854,10 @@ func _set_combat(value: bool) -> void:
 
 
 func _cancel_all() -> void:
+	if _channel:
+		cast_interrupted.emit("Cancelled")
+		_channel = null
+		charge_ended.emit()
 	if _charging and mode == Mode.MAGIC and _charge < _charging.cast_time:
 		cast_interrupted.emit("Cancelled")
 	_auto_release = false

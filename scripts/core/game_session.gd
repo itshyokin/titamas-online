@@ -95,12 +95,43 @@ func start_game() -> void:
 	var level := (load(scene_path) as PackedScene).instantiate()
 	var pos = data.get("position")
 	var player := level.get_node_or_null("Player") as Node3D
+	# A new character's home is where the level starts them (until they rest somewhere).
+	if player and not data.has("home"):
+		var p := player.position
+		data["home"] = {"scene": scene_path, "position": [p.x, p.y, p.z], "name": "the starting point"}
 	# Placed before the level enters the tree, so the terrain loads around this spot.
 	if player and pos is Array and pos.size() == 3:
 		player.position = Vector3(pos[0], pos[1], pos[2])
 	_since_save = 0.0
 	_play_started = Time.get_ticks_msec()
 	_switch_to(level)
+
+
+## Makes a spot the character's home (where the hearthstone takes them).
+func set_home(scene_path: String, at: Vector3, home_name: String) -> void:
+	data["home"] = {"scene": scene_path, "position": [at.x, at.y, at.z], "name": home_name}
+	save_game()
+
+
+func home_name() -> String:
+	return String(data.get("home", {}).get("name", "home"))
+
+
+## Seconds until the hearthstone can be used again.
+func hearth_cooldown_left() -> float:
+	return maxf(float(data.get("hearth_ready_at", 0.0)) - Time.get_unix_time_from_system(), 0.0)
+
+
+## Hearthstone: reload at home (its level, its spot).
+func travel_home() -> void:
+	var home: Dictionary = data.get("home", {})
+	if home.is_empty():
+		return
+	save_game()
+	data["scene"] = home.get("scene", START_SCENE)
+	data["position"] = home.get("position")
+	_write()
+	start_game()
 
 
 ## Saves, forgets the character and goes back to the title screen.

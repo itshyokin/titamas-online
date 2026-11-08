@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/home_point.gd" id="1_home"]
+
+[node name="HomePoint" type="StaticBody3D"]
+script = ExtResource("1_home")

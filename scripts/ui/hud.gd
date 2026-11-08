@@ -456,8 +456,8 @@ func _on_charge_progress(fraction: float, level: int) -> void:
 	_charge_bar.value = fraction * 100.0
 	var ab := _combat.selected_spell() if _combat.mode == PlayerCombat.Mode.MAGIC else null
 	_tint_bar(Color(0.55, 0.6, 1.0) if _combat.is_casting() else Color(0.95, 0.7, 0.2))
-	if ab and _combat.is_casting():
-		_charge_label.text = "Casting %s" % ab.display_name
+	if _combat.is_casting():
+		_charge_label.text = "Casting %s" % _combat.casting_name()
 	elif ab and ab.max_charge_level > 1:
 		_charge_label.text = "%s  —  level %d" % [ab.display_name, level]
 	elif fraction >= 1.0:

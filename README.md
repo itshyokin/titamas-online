@@ -137,6 +137,12 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 - **Hair and facial hair:** the placeholders are made from the head mesh by `tools/godot/make_appearance.gd`. Hair made in Blender, weight-painted to the same rig, replaces them: set the style's `fitted_masc` / `fitted_femme` to your file. Rigid extras (ponytail, bun, long hair) are `model` + `fit`, like items. Helmets hide the hair ("hair" under Hides in the Items tab).
 - **Height and build:** height scales the whole character (Short 0.93, Tall 1.07). Thin and Heavy push the body in or out along its surface: most at the belly and hips, less on the limbs, a little on the face. Armour follows. If you add shape keys named `heavy` and `thin` to the body parts in Blender, those are used instead.
 
+## Hearthstone and homes
+
+- **Hearthstone:** every character carries one (older saves get one too) and it can't be thrown away. Use it from the backpack or a quick slot: an 8-second cast (moving, dodging or being hit stops it), then you're back home. It then needs 10 minutes to recharge, and the recharge is saved. Cast time and recharge are on the item in the Database's Items tab ("use_hearth" items).
+- **Home:** starts as the spot the level first put the character. Walk up to a **home point** (an inn bed) and press **Jump / talk** → **Make this my home**. The hearthstone's description names your current home.
+- **Placing home points:** drag `scenes/world/home_point.tscn` into a level and set **Home Name** (e.g. "the Riverside Inn") and the greeting. It builds a simple bed; turn **Build Bed** off and add your own model under it instead. Add a `Marker3D` named `Spawn` under it to choose exactly where players appear. The overworld has one by the spawn ("the village inn").
+
 ## Water
 
 - **Reflections:** water mirrors whatever is on screen (trees, cliffs, characters) on top of the sky reflection; stronger at low angles. Settings → Graphics → **Water reflections** turns it off on slower PCs. Strength is `reflection_strength` on the water material.

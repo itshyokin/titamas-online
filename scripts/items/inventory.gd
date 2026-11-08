@@ -39,6 +39,9 @@ func _ready() -> void:
 	bag.resize(SIZE)
 	if not load_character():
 		_starting_kit()
+	# Everyone has a hearthstone (older saves get one too).
+	if count_of("hearthstone") == 0 and not item("hearthstone").is_empty():
+		add_item("hearthstone", 1)
 	_apply_bonuses()
 	Database.changed.connect(func(which: String) -> void:
 		if which == "items":
@@ -144,7 +147,14 @@ func move(from: int, to: int) -> void:
 
 
 ## Throws away the stack in a slot.
+## Items marked "keep" (the hearthstone) can't be thrown away.
+func can_discard(index: int) -> bool:
+	return bag[index] != null and not bool(item(bag[index].id).get("keep", false))
+
+
 func discard(index: int) -> void:
+	if not can_discard(index):
+		return
 	bag[index] = null
 	_changed()
 
@@ -220,7 +230,7 @@ func _apply_bonuses() -> void:
 
 func is_usable(id: String) -> bool:
 	var d := item(id)
-	return float(d.get("use_heal", 0.0)) > 0.0 or float(d.get("use_hot_per_tick", 0.0)) > 0.0 \
+	return bool(d.get("use_hearth", false)) or float(d.get("use_heal", 0.0)) > 0.0 or float(d.get("use_hot_per_tick", 0.0)) > 0.0 \
 		or float(d.get("use_mana", 0.0)) > 0.0
 
 
@@ -234,6 +244,8 @@ func use_at(index: int) -> bool:
 	if not is_usable(s.id) or stats.is_dead():
 		return false
 	var d := item(s.id)
+	if bool(d.get("use_hearth", false)):
+		return _use_hearthstone(d)
 	if float(d.get("use_heal", 0.0)) > 0.0:
 		stats.heal(float(d.use_heal))
 	if float(d.get("use_hot_per_tick", 0.0)) > 0.0:
@@ -243,6 +255,29 @@ func use_at(index: int) -> bool:
 		stats.restore_mana(float(d.use_mana))
 	remove_at(index, 1)
 	return true
+
+
+## Hearthstone: a cast (moving or being hit stops it), then home. Not used up; it
+## recharges (the time is saved with the character).
+func _use_hearthstone(d: Dictionary) -> bool:
+	var player := get_parent()
+	var combat := player.get_node_or_null("PlayerCombat")
+	var left := GameSession.hearth_cooldown_left()
+	if left > 0.0:
+		if combat:
+			combat.notice.emit("Hearthstone recharging (%d min)" % ceili(left / 60.0))
+		return false
+	if not GameSession.active():
+		if combat:
+			combat.notice.emit("No home to go back to (testing without a saved character)")
+		return false
+	if combat == null:
+		return false
+	var home: Dictionary = GameSession.data.get("home", {})
+	return combat.channel("Hearthstone: %s" % home.get("name", "Home"), float(d.get("cast_time", 8.0)), func() -> void:
+		GameSession.data["hearth_ready_at"] = Time.get_unix_time_from_system() + float(d.get("cooldown", 600.0))
+		Effects.burst(Combat.world_root(player), (player as Node3D).global_position + Vector3.UP, Color(0.45, 0.75, 1.0), 1.4)
+		GameSession.travel_home())
 
 
 ## Uses the item assigned to quick slot `i` (from the first stack of it in the backpack).

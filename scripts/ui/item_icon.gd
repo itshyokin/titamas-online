@@ -81,6 +81,10 @@ func _draw() -> void:
 		"coin":
 			draw_circle(p.call(0.5, 0.5), s * 0.3, color)
 			draw_arc(p.call(0.5, 0.5), s * 0.22, 0.0, TAU, 20, dark, s * 0.04)
+		"hearthstone":
+			draw_colored_polygon(PackedVector2Array([p.call(0.5, 0.15), p.call(0.8, 0.35), p.call(0.75, 0.75), p.call(0.45, 0.88), p.call(0.2, 0.65), p.call(0.25, 0.3)]), dark)
+			draw_colored_polygon(PackedVector2Array([p.call(0.5, 0.25), p.call(0.7, 0.4), p.call(0.66, 0.68), p.call(0.46, 0.78), p.call(0.3, 0.6), p.call(0.33, 0.36)]), color)
+			draw_circle(p.call(0.5, 0.52), s * 0.09, light)
 		"cloth":
 			draw_colored_polygon(PackedVector2Array([p.call(0.15, 0.3), p.call(0.8, 0.2), p.call(0.85, 0.7), p.call(0.2, 0.8)]), color)
 			draw_line(p.call(0.2, 0.45), p.call(0.82, 0.37), dark, s * 0.02)

@@ -677,6 +677,39 @@
 			"kind": "material",
 			"icon": "cloth",
 			"icon_color": "#d8d0b8"
+		},
+		{
+			"description": "A smooth stone, warm to the touch. Hold it and think of home.",
+			"rarity": "uncommon",
+			"value": 0,
+			"stack_max": 1,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 0.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [],
+				"femme": []
+			},
+			"id": "hearthstone",
+			"name": "Hearthstone",
+			"kind": "consumable",
+			"icon": "hearthstone",
+			"icon_color": "#6fb8e8",
+			"use_hearth": true,
+			"cast_time": 8.0,
+			"cooldown": 600.0,
+			"keep": true
 		}
 	]
 }

@@ -290,6 +290,9 @@ static func describe(d: Dictionary) -> String:
 			t += "[color=#7fe07f]+%d %s[/color]\n" % [v, stat_names[key]]
 	if float(d.get("block", 0.0)) > 0.0:
 		t += "[color=#7fe07f]+%d%% Block[/color]\n" % int(float(d.block) * 100)
+	if bool(d.get("use_hearth", false)):
+		var home: Dictionary = GameSession.data.get("home", {})
+		t += "Use: return to %s (%d s, then %d min to recharge).\n" % [home.get("name", "your home"), int(d.get("cast_time", 8)), int(float(d.get("cooldown", 600)) / 60.0)]
 	if float(d.get("use_heal", 0.0)) > 0.0:
 		t += "Use: restores %d health.\n" % float(d.use_heal)
 	if float(d.get("use_hot_per_tick", 0.0)) > 0.0:
@@ -393,6 +396,11 @@ func dropped_outside(data: Dictionary) -> void:
 
 
 func _ask_discard(index: int) -> void:
+	if not inventory.can_discard(index):
+		var combat := inventory.get_parent().get_node_or_null("PlayerCombat")
+		if combat:
+			combat.notice.emit("You can't throw that away.")
+		return
 	var s = inventory.bag[index]
 	if s == null:
 		return
