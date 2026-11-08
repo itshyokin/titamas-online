@@ -29,7 +29,7 @@ const IN_PLACE := LOOPING
 ## FPS, in the character's local space, facing -Z) so the game can move the body itself.
 const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back", "hanging_hop_left", "hanging_hop_right", "hanging_shimmy_left",
 	# Attacks and draws: the game moves the body (lunges), so the clips stay in place.
-	"attack_light_1_full", "attack_light_2", "attack_light_3", "attack_heavy", "greatsword_slash_1_full", "greatsword_slash_2_full",
+	"attack_light_1_full", "attack_light_2_full", "attack_light_3", "attack_heavy_full", "greatsword_slash_1_full", "greatsword_slash_2_full",
 	"greatsword_heavy_full", "talk_1", "talk_2", "talk_3", "talk_4", "draw_sword", "draw_greatsword", "draw_rifle", "draw_pistol", "hit_react", "gun_reload",
 	"cast_release_full", "cast_heal_full", "casting_spell", "shooting", "gunplay", "bow_shot_full",
 	"cast_area_full", "cast_1h_a_full", "cast_1h_b_full"]
@@ -53,6 +53,8 @@ const SUBCLIPS := {
 	"pistol_fire": ["shooting", 0.22, 1.17],
 	"rifle_aim": ["gunplay", 0.0, 0.05],
 	"greatsword_slash_2": ["greatsword_slash_2_full", 0.1, 1.1],
+	"attack_light_2": ["attack_light_2_full", 0.3, 1.15],
+	"attack_heavy": ["attack_heavy_full", 0.6, 2.2],
 	"greatsword_heavy": ["greatsword_heavy_full", 0.15, 2.0],
 }
 ## Animations whose hips may dip but not rise; the physics jump provides the height.

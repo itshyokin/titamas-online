@@ -48,7 +48,7 @@
 			"description": "A backhand sweep that follows Slash.",
 			"display_name": "Backslash",
 			"hit_sound": "",
-			"hit_time": 0.3,
+			"hit_time": 0.33,
 			"id": "slash_2",
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
@@ -58,7 +58,7 @@
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
 			"reach": 2.4,
-			"recovery_time": 0.48,
+			"recovery_time": 0.55,
 			"sounds": [
 				"res://assets/audio/combat/swing_3.ogg",
 				"res://assets/audio/combat/swing_2.ogg"
@@ -74,7 +74,7 @@
 		},
 		{
 			"animation": "attack_heavy",
-			"animation_speed": 1.5,
+			"animation_speed": 1.4,
 			"arc": 110.0,
 			"charge_power": 1.0,
 			"charge_time": 1.0,
@@ -84,7 +84,7 @@
 			"description": "The third swing of the combo: a heavy overhead that staggers and knocks back.",
 			"display_name": "Finishing Blow",
 			"hit_sound": "",
-			"hit_time": 0.68,
+			"hit_time": 0.7,
 			"id": "slash_3",
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
@@ -94,7 +94,7 @@
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
 			"reach": 2.4,
-			"recovery_time": 0.95,
+			"recovery_time": 1.0,
 			"sounds": [
 				"res://assets/audio/combat/swing_heavy.ogg"
 			],
@@ -119,7 +119,7 @@
 			"description": "Hold to wind up a two-handed chop; release to strike. Longer charge hits harder and staggers.",
 			"display_name": "Heavy Strike",
 			"hit_sound": "",
-			"hit_time": 0.68,
+			"hit_time": 0.7,
 			"id": "heavy_strike",
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
@@ -129,7 +129,7 @@
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
 			"reach": 2.7,
-			"recovery_time": 1.0,
+			"recovery_time": 1.1,
 			"sounds": [
 				"res://assets/audio/combat/swing_heavy.ogg"
 			],
@@ -140,7 +140,7 @@
 			"knockback": 7.0,
 			"cast_time": 0.0,
 			"icon": "heavy",
-			"windup_time": 0.45
+			"windup_time": 0.5
 		},
 		{
 			"animation": "bow_release",
