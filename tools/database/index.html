@@ -522,6 +522,14 @@ const TABS = {
 				{ key: "draw", label: "Hold to draw (bows)", type: "bool", help: "Tap = quick shot, hold = draw harder. Off = fires on the press." },
 				{ key: "reload", label: "Reload (s)", type: "number", help: "0 = no reloading. Crossbows and guns reload after every shot." },
 			], e => e.category === "ranged"],
+			["Animations", [
+				{ key: "idle", label: "Idle (weapon out)", type: "text", help: "Clip name, e.g. idle_armed, greatsword_idle, rifle_idle." },
+				{ key: "draw_anim", label: "Draw", type: "text", help: "Played when drawing or swapping to it (standing still). Empty = none." },
+				{ key: "draw_grip", label: "In hand at (s)", type: "number", help: "When the draw clip's hand reaches the weapon." },
+				{ key: "aim", label: "Aim / draw-back", type: "text", help: "Ranged: held while aiming or drawing (bow_aim, rifle_aim, pistol_aim)." },
+				{ key: "hold", label: "Held like", type: "select", options: [["", "A blade (out of the thumb side)"], ["gun", "A gun (along the hand)"]] },
+				{ key: "reload_anim", label: "Reload", type: "text", help: "Played (stretched to the reload time) when standing still." },
+			]],
 			["Sound", [
 				{ key: "swap_sound", label: "Swap to it", type: "sound" },
 				{ key: "fire_sound", label: "Firing", type: "sound" },

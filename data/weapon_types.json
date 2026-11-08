@@ -17,7 +17,13 @@
 			"draw": false,
 			"reload": 0.0,
 			"swap_sound": "res://assets/audio/weapons/swap_dagger.ogg",
-			"fire_sound": ""
+			"fire_sound": "",
+			"idle": "idle_armed",
+			"draw_grip": 0.3,
+			"aim": "",
+			"reload_anim": "",
+			"draw_anim": "draw_sword",
+			"hold": ""
 		},
 		{
 			"id": "sword",
@@ -36,7 +42,13 @@
 			"draw": false,
 			"reload": 0.0,
 			"swap_sound": "res://assets/audio/weapons/swap_sword.ogg",
-			"fire_sound": ""
+			"fire_sound": "",
+			"idle": "idle_armed",
+			"draw_grip": 0.3,
+			"aim": "",
+			"reload_anim": "",
+			"draw_anim": "draw_sword",
+			"hold": ""
 		},
 		{
 			"id": "greatsword",
@@ -44,8 +56,7 @@
 			"category": "melee",
 			"hands": 2,
 			"combo": [
-				"slash_1",
-				"slash_2",
+				"gs_slash",
 				"slash_3"
 			],
 			"heavy": "heavy_strike",
@@ -55,7 +66,13 @@
 			"draw": false,
 			"reload": 0.0,
 			"swap_sound": "res://assets/audio/weapons/swap_heavy.ogg",
-			"fire_sound": ""
+			"fire_sound": "",
+			"idle": "greatsword_idle",
+			"draw_grip": 0.35,
+			"aim": "",
+			"reload_anim": "",
+			"draw_anim": "draw_greatsword",
+			"hold": ""
 		},
 		{
 			"id": "hammer",
@@ -63,7 +80,7 @@
 			"category": "melee",
 			"hands": 2,
 			"combo": [
-				"slash_1",
+				"gs_slash",
 				"slash_3"
 			],
 			"heavy": "heavy_strike",
@@ -73,7 +90,13 @@
 			"draw": false,
 			"reload": 0.0,
 			"swap_sound": "res://assets/audio/weapons/swap_heavy.ogg",
-			"fire_sound": ""
+			"fire_sound": "",
+			"idle": "greatsword_idle",
+			"draw_grip": 0.35,
+			"aim": "",
+			"reload_anim": "",
+			"draw_anim": "draw_greatsword",
+			"hold": ""
 		},
 		{
 			"id": "axe",
@@ -92,7 +115,13 @@
 			"draw": false,
 			"reload": 0.0,
 			"swap_sound": "res://assets/audio/weapons/swap_heavy.ogg",
-			"fire_sound": ""
+			"fire_sound": "",
+			"idle": "idle_armed",
+			"draw_grip": 0.3,
+			"aim": "",
+			"reload_anim": "",
+			"draw_anim": "draw_sword",
+			"hold": ""
 		},
 		{
 			"id": "bow",
@@ -107,7 +136,13 @@
 			"draw": true,
 			"reload": 0.0,
 			"swap_sound": "res://assets/audio/weapons/swap_bow.ogg",
-			"fire_sound": "res://assets/audio/combat/arrow_fire.ogg"
+			"fire_sound": "res://assets/audio/combat/arrow_fire.ogg",
+			"idle": "idle",
+			"draw_grip": 0.0,
+			"aim": "bow_aim",
+			"reload_anim": "",
+			"draw_anim": "",
+			"hold": ""
 		},
 		{
 			"id": "crossbow",
@@ -122,7 +157,13 @@
 			"draw": false,
 			"reload": 1.4,
 			"swap_sound": "res://assets/audio/weapons/swap_crossbow.ogg",
-			"fire_sound": "res://assets/audio/weapons/crossbow_fire.ogg"
+			"fire_sound": "res://assets/audio/weapons/crossbow_fire.ogg",
+			"idle": "rifle_idle",
+			"draw_grip": 0.2,
+			"aim": "rifle_aim",
+			"reload_anim": "gun_reload",
+			"draw_anim": "draw_rifle",
+			"hold": "gun"
 		},
 		{
 			"id": "pistol",
@@ -137,7 +178,13 @@
 			"draw": false,
 			"reload": 2.0,
 			"swap_sound": "res://assets/audio/weapons/swap_pistol.ogg",
-			"fire_sound": "res://assets/audio/weapons/pistol_shot.ogg"
+			"fire_sound": "res://assets/audio/weapons/pistol_shot.ogg",
+			"idle": "pistol_idle",
+			"draw_grip": 0.3,
+			"aim": "pistol_aim",
+			"reload_anim": "gun_reload",
+			"draw_anim": "draw_pistol",
+			"hold": "gun"
 		},
 		{
 			"id": "rifle",
@@ -152,7 +199,13 @@
 			"draw": false,
 			"reload": 2.8,
 			"swap_sound": "res://assets/audio/weapons/swap_rifle.ogg",
-			"fire_sound": "res://assets/audio/weapons/rifle_shot.ogg"
+			"fire_sound": "res://assets/audio/weapons/rifle_shot.ogg",
+			"idle": "rifle_idle",
+			"draw_grip": 0.2,
+			"aim": "rifle_aim",
+			"reload_anim": "gun_reload",
+			"draw_anim": "draw_rifle",
+			"hold": "gun"
 		}
 	]
 }

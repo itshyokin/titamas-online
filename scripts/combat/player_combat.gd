@@ -121,6 +121,8 @@ var _aiming := false
 var _aim_pose := false
 var _counter_until := 0  # msec: next hit is a counter
 var _flourish := false  # this swing is a fully charged heavy
+var _draw_until := 0
+var _drawing_for_action := false  # msec: the draw clip hasn't reached the weapon yet
 var _buffer_until := 0  # msec: an attack tapped during a dodge (-1 while it lasts)
 # A plain channel (hearthstone and the like): a cast bar, then a callback.
 var _channel: Ability = null
@@ -264,7 +266,9 @@ func select_weapon(slot: String) -> void:
 	var sound := String(t.get("swap_sound", ""))
 	if not sound.is_empty() and ResourceLoader.exists(sound):
 		Combat.play_sound(player, load(sound), -4.0)
-	_enter_combat()
+	_enter_combat(false)
+	_play_draw()
+	_show_weapons()
 	weapon_changed.emit(slot)
 
 
@@ -291,6 +295,11 @@ func _equip_weapons() -> void:
 		var fits: Array = item.get("fit", {}).get(character.body_key(), [])
 		var hand := character.attach_fitted(fits[0] if not fits.is_empty() else
 			{"bone": "mixamorig_LeftHand" if left else "mixamorig_RightHand", "grip": true}, String(item.get("model", "")))
+		# Guns and crossbows: barrel along the hand (towards the knuckles), not out of the
+		# thumb side like a blade.
+		if fits.is_empty() and String(t.get("hold", "")) == "gun" and hand and hand.get_child_count() > 0:
+			var held := hand.get_child(0) as Node3D
+			held.basis = held.basis * Basis(Vector3(0, 0, 1), PI) * Basis(Vector3(1, 0, 0), PI * 0.5)
 		var back_model := WeaponModels.build(String(item.get("model", "")))
 		var back: Node3D = null
 		if back_model:
@@ -312,7 +321,7 @@ func _equip_weapons() -> void:
 func _show_weapons() -> void:
 	var slot := active_slot()
 	for s: String in _models:
-		var drawn := in_combat and s == slot
+		var drawn := in_combat and s == slot and Time.get_ticks_msec() >= _draw_until
 		var m: Dictionary = _models[s]
 		if m.hand and is_instance_valid(m.hand):
 			m.hand.visible = drawn
@@ -321,7 +330,33 @@ func _show_weapons() -> void:
 	# The shield only goes with a one-handed melee weapon.
 	var hands := int(weapon_type.get("hands", 1))
 	character.set_worn_visible("off_hand", not (in_combat and (is_ranged() or hands >= 2)))
-	animator.idle_animation = "idle_armed" if in_combat and not is_ranged() and _models.has(slot) else "idle"
+	animator.idle_animation = String(weapon_type.get("idle", "idle_armed")) if in_combat and _models.has(slot) else "idle"
+
+
+## Plays the weapon's draw clip (standing still only); the weapon moves from the back to
+## the hand when the clip's hand reaches it (`draw_grip`).
+func _play_draw() -> void:
+	var anim := String(weapon_type.get("draw_anim", ""))
+	var still := Vector2(player.velocity.x, player.velocity.z).length() < 0.5
+	if anim.is_empty() or not _models.has(active_slot()) or player.state != PlayerController.State.NORMAL or not still:
+		_draw_until = 0
+		return
+	var grip := float(weapon_type.get("draw_grip", 0.3))
+	_draw_until = Time.get_ticks_msec() + int(grip * 1000.0)
+	player.action_animation.emit(anim, 0.0, 0.12, 1.0)
+	get_tree().create_timer(grip + 0.02).timeout.connect(_show_weapons)
+
+
+## Weapons appear in the hand straight away (an attack started mid-draw).
+func _skip_draw() -> void:
+	if _draw_until > 0:
+		_draw_until = 0
+		_show_weapons()
+
+
+func _aim_animation() -> String:
+	var a := String(weapon_type.get("aim", ""))
+	return a if not a.is_empty() else "bow_aim"
 
 
 # --- Input -------------------------------------------------------------------
@@ -767,7 +802,7 @@ func _begin_charge() -> void:
 	_charge = 0.0
 	_enter_combat()
 	if is_ranged():
-		player.action_animation.emit("bow_aim", 0.0, 0.12, 1.0)
+		player.action_animation.emit(_aim_animation(), 0.0, 0.12, 1.0)
 		Combat.play_sound(player, DRAW_SOUND, -6.0)
 	else:
 		player.action_animation.emit(heavy.animation, 0.0, 0.1, 1.0)
@@ -938,6 +973,12 @@ func _start_reload() -> void:
 		return
 	_reload_total = t / speed_of(weapon)
 	_reload_left = _reload_total
+	var anim := String(weapon_type.get("reload_anim", ""))
+	if not anim.is_empty() and player.state == PlayerController.State.NORMAL \
+			and Vector2(player.velocity.x, player.velocity.z).length() < 0.5 and not _aiming:
+		var length := character.get_animation_length(anim)
+		if length > 0.0:
+			player.action_animation.emit(anim, 0.0, 0.15, length / _reload_total)
 	Combat.play_sound(player, RELOAD_SOUND, -6.0, 1.15 if String(weapon.get("weapon_type", "")) == "crossbow" else 1.0)
 
 
@@ -978,7 +1019,7 @@ func _update_aim(delta: float) -> void:
 	# Between shots, hold the aiming pose (walking slowly).
 	if not _aim_pose and _current == null and _charging == null and player.start_action(0.45):
 		_aim_pose = true
-		player.action_animation.emit("bow_aim", 0.0, 0.12, 1.0)
+		player.action_animation.emit(_aim_animation(), 0.0, 0.12, 1.0)
 
 
 func _set_aiming(on: bool) -> void:
@@ -1138,14 +1179,20 @@ func _parry(attacker: Node3D) -> void:
 
 # --- Combat state ------------------------------------------------------------
 
-func _enter_combat() -> void:
+func _enter_combat(from_action := true) -> void:
 	_combat_timer = combat_linger
 	if not in_combat:
+		_drawing_for_action = from_action  # attacking straight away: no draw clip
 		_set_combat(true)
+		_drawing_for_action = false
+	elif from_action:
+		_skip_draw()
 
 
 func _set_combat(value: bool) -> void:
 	in_combat = value
+	if value and not _drawing_for_action:
+		_play_draw()
 	_show_weapons()
 	combat_changed.emit(value)
 

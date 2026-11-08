@@ -20,6 +20,10 @@ extends Node
 
 ## Standing animation; "idle_armed" while a weapon is drawn (set by PlayerCombat).
 var idle_animation := "idle"
+## Sidestep clip: ground covered per second at speed 1, and the fastest sideways speed
+## that still sidesteps (faster runs).
+@export var strafe_anim_speed := 0.86
+@export var run_strafe_max := 6.5
 
 var _air_time := 0.0
 var _was_on_floor := true
@@ -65,10 +69,26 @@ func _physics_process(delta: float) -> void:
 func _ground_animation(h_speed: float) -> void:
 	if h_speed < idle_max:
 		character.play(idle_animation, 0.25)
+	elif player.lock_facing and h_speed < run_strafe_max and _sideways() != 0.0:
+		# Locked on and moving sideways: sidestep (the clip steps right; played backwards to the left).
+		character.play("strafing", 0.2, _sideways() * clampf(h_speed / strafe_anim_speed, 0.6, 1.6))
 	elif h_speed < walk_max:
 		character.play("walking", 0.2, clampf(h_speed / walk_anim_speed, 0.6, 1.6))
 	else:
 		character.play("running", 0.2, clampf(h_speed / run_anim_speed, 0.8, 1.6))
+
+
+## +1 moving to the character's right, -1 to the left, 0 mostly forwards/backwards.
+func _sideways() -> float:
+	var v := Vector3(player.velocity.x, 0.0, player.velocity.z)
+	if v.length() < 0.1 or not character.has_animation("strafing"):
+		return 0.0
+	var right := player.model.global_basis.x
+	var fwd := -player.model.global_basis.z
+	var side := v.normalized().dot(right)
+	if absf(side) < absf(v.normalized().dot(fwd)) * 1.2:
+		return 0.0
+	return signf(side)
 
 
 func _on_jumped() -> void:
@@ -81,8 +101,9 @@ func _on_jumped() -> void:
 func _on_action_animation(anim: String, start_time: float, blend: float, speed: float) -> void:
 	_jump_air = 0.0
 	character.play_from(anim, start_time, blend, speed)
-	# A one-shot played during normal movement (a flinch): let it finish unless the player moves off.
-	if player.state == PlayerController.State.NORMAL and anim == "hit_react":
+	# A one-shot played during normal movement (a flinch, drawing a weapon, reloading):
+	# let it finish unless the player moves off.
+	if player.state == PlayerController.State.NORMAL:
 		_landing_lock = (character.get_animation_length(anim) - start_time) / maxf(speed, 0.01)
 
 

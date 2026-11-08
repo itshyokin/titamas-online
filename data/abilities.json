@@ -22,7 +22,7 @@
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
 			"reach": 2.4,
-			"recovery_time": 0.5,
+			"recovery_time": 0.6,
 			"sounds": [
 				"res://assets/audio/combat/swing_1.ogg",
 				"res://assets/audio/combat/swing_2.ogg"
@@ -150,7 +150,7 @@
 			"description": "Tap for a quick shot; hold to draw, release to fire. A full draw hits much harder. Aims at your target.",
 			"display_name": "Bow",
 			"hit_sound": "",
-			"hit_time": 0.03,
+			"hit_time": 0.1,
 			"id": "arrow_shot",
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
@@ -160,7 +160,7 @@
 			"projectile_speed": 38.0,
 			"projectile_style": "arrow",
 			"reach": 40.0,
-			"recovery_time": 0.3,
+			"recovery_time": 0.45,
 			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
@@ -172,7 +172,7 @@
 		},
 		{
 			"animation": "cast_release",
-			"animation_speed": 1.0,
+			"animation_speed": 1.2,
 			"arc": 120.0,
 			"charge_power": 1.5,
 			"charge_time": 0.8,
@@ -182,7 +182,7 @@
 			"description": "Hurls a bolt of fire at your target.",
 			"display_name": "Firebolt",
 			"hit_sound": "",
-			"hit_time": 0.12,
+			"hit_time": 0.37,
 			"id": "firebolt",
 			"mana_cost": 8.0,
 			"max_charge_level": 3.0,
@@ -192,7 +192,7 @@
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
 			"reach": 30.0,
-			"recovery_time": 0.35,
+			"recovery_time": 0.7,
 			"sounds": [
 				"res://assets/audio/combat/fireball_throw.ogg"
 			],
@@ -239,7 +239,7 @@
 			"icon": "heal"
 		},
 		{
-			"animation": "bow_release",
+			"animation": "rifle_aim",
 			"animation_speed": 1.0,
 			"arc": 120.0,
 			"charge_power": 0.9,
@@ -250,7 +250,7 @@
 			"description": "A heavy bolt, faster and harder-hitting than an arrow.",
 			"display_name": "Crossbow bolt",
 			"hit_sound": "",
-			"hit_time": 0.03,
+			"hit_time": 0.02,
 			"id": "crossbow_shot",
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
@@ -260,7 +260,7 @@
 			"projectile_speed": 42.0,
 			"projectile_style": "arrow",
 			"reach": 40.0,
-			"recovery_time": 0.3,
+			"recovery_time": 0.35,
 			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
@@ -271,7 +271,7 @@
 			"icon": "arrow"
 		},
 		{
-			"animation": "bow_release",
+			"animation": "pistol_fire",
 			"animation_speed": 1.0,
 			"arc": 120.0,
 			"charge_power": 0.9,
@@ -282,7 +282,7 @@
 			"description": "A lead ball from a flintlock pistol.",
 			"display_name": "Pistol shot",
 			"hit_sound": "",
-			"hit_time": 0.03,
+			"hit_time": 0.06,
 			"id": "pistol_shot",
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
@@ -292,7 +292,7 @@
 			"projectile_speed": 120.0,
 			"projectile_style": "bullet",
 			"reach": 30.0,
-			"recovery_time": 0.3,
+			"recovery_time": 0.45,
 			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
@@ -303,7 +303,7 @@
 			"icon": "bullet"
 		},
 		{
-			"animation": "bow_release",
+			"animation": "rifle_aim",
 			"animation_speed": 1.0,
 			"arc": 120.0,
 			"charge_power": 0.9,
@@ -314,7 +314,7 @@
 			"description": "A long shot from a flintlock rifle.",
 			"display_name": "Rifle shot",
 			"hit_sound": "",
-			"hit_time": 0.03,
+			"hit_time": 0.02,
 			"id": "rifle_shot",
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
@@ -324,7 +324,7 @@
 			"projectile_speed": 160.0,
 			"projectile_style": "bullet",
 			"reach": 70.0,
-			"recovery_time": 0.3,
+			"recovery_time": 0.35,
 			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
@@ -333,6 +333,41 @@
 			"knockback": 3.5,
 			"cast_time": 0.0,
 			"icon": "bullet"
+		},
+		{
+			"animation": "greatsword_slash_1",
+			"animation_speed": 1.0,
+			"arc": 170.0,
+			"charge_power": 1.0,
+			"charge_time": 1.0,
+			"color": "#bfbfcc",
+			"cooldown": 0.0,
+			"delivery": "melee",
+			"description": "A wide two-handed cleave.",
+			"display_name": "Greatsword cleave",
+			"hit_sound": "",
+			"hit_time": 0.45,
+			"id": "gs_slash",
+			"mana_cost": 0.0,
+			"max_charge_level": 1.0,
+			"move_scale": 0.1,
+			"power": 18.0,
+			"projectile_color": "#ff8026",
+			"projectile_speed": 18.0,
+			"projectile_style": "bolt",
+			"reach": 2.8,
+			"recovery_time": 0.9,
+			"sounds": [
+				"res://assets/audio/combat/swing_1.ogg",
+				"res://assets/audio/combat/swing_2.ogg"
+			],
+			"staggers": false,
+			"stamina_cost": 0.0,
+			"tick_interval": 2.0,
+			"ticks": 4.0,
+			"knockback": 2.5,
+			"cast_time": 0.0,
+			"icon": "slash"
 		}
 	]
 }

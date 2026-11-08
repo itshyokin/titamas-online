@@ -20,13 +20,32 @@ const FPS := 30.0
 const LOOPING := [
 	"idle", "walking", "running", "falling_loop", "hanging_idle",
 	"swimming", "treading_water", "climbing_up_wall", "climbing_down_wall", "climbing_ladder",
+	"idle_armed", "greatsword_idle", "rifle_idle", "pistol_idle", "block", "strafing", "cast_channel",
 ]
 ## Looping animations whose hips should not drift horizontally (in-place).
 const IN_PLACE := LOOPING
 ## One-shot animations that travel: their horizontal hip movement is stripped from the
 ## pose and stored as metadata "root_motion" (PackedVector3Array, one offset per frame at
 ## FPS, in the character's local space, facing -Z) so the game can move the body itself.
-const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back", "hanging_hop_left", "hanging_hop_right"]
+const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back", "hanging_hop_left", "hanging_hop_right",
+	# Attacks and draws: the game moves the body (lunges), so the clips stay in place.
+	"attack_light_1_full", "attack_light_2", "attack_light_3", "attack_heavy", "greatsword_slash_1_full", "greatsword_slash_2",
+	"greatsword_heavy", "draw_sword", "draw_greatsword", "draw_rifle", "draw_pistol", "hit_react", "gun_reload",
+	"cast_release_full", "cast_heal", "casting_spell", "shooting", "gunplay", "bow_shot_full"]
+## Clips cut out of longer ones: name -> [source clip, start s, end s]. Lets one Mixamo
+## download (e.g. a full draw-and-shoot) feed several game clips, and trims wind-ups.
+## A cut replaces a stand-in of the same name. Loops if the name is in LOOPING.
+const SUBCLIPS := {
+	"attack_light_1": ["attack_light_1_full", 0.3, 1.35],
+	"greatsword_slash_1": ["greatsword_slash_1_full", 0.35, 1.7],
+	"cast_release": ["cast_release_full", 0.75, 2.2],
+	"bow_aim": ["bow_shot_full", 1.0, 2.6],
+	"bow_release": ["bow_shot_full", 3.85, 4.8],
+	"cast_channel": ["casting_spell", 1.5, 3.6],
+	"pistol_aim": ["shooting", 0.15, 0.3],
+	"pistol_fire": ["shooting", 0.22, 1.17],
+	"rifle_aim": ["gunplay", 0.0, 0.4],
+}
 ## Animations whose hips may dip but not rise; the physics jump provides the height.
 const NO_HIP_RISE := ["jumping"]
 ## Clips authored facing the other way: extra turn (degrees) so they face forward.
@@ -204,6 +223,13 @@ func _init() -> void:
 			var spread := 0.0 if NO_ARM_SPREAD_PREFIXES.any(func(p: String) -> bool: return anim_name.begins_with(p)) else _spread(body)
 			var anim := _retarget(src.skeleton, src.animation, target, anim_name, spread)
 			lib.add_animation(anim_name, anim)
+		for cut_name in SUBCLIPS:
+			var c: Array = SUBCLIPS[cut_name]
+			if lib.has_animation(c[0]):
+				if lib.has_animation(cut_name):
+					lib.remove_animation(cut_name)
+				lib.add_animation(cut_name, _cut(lib.get_animation(c[0]), float(c[1]), float(c[2]), cut_name in LOOPING))
+				print("  %-20s %5.2fs  cut from %s" % [cut_name, float(c[2]) - float(c[1]), c[0]])
 		_add_placeholders(lib, target)
 		for anim_name in HEIGHT_MATCH:
 			if lib.has_animation(anim_name) and lib.has_animation(HEIGHT_MATCH[anim_name]):
@@ -229,6 +255,32 @@ func _load_sources() -> Dictionary:
 				anim = player.get_animation(a)
 				break
 		out[file.get_basename()] = {"skeleton": skel, "animation": anim, "scene": scene}
+	return out
+
+
+## A copy of part of a clip (resampled at FPS), starting at 0.
+func _cut(src: Animation, start: float, end: float, loop: bool) -> Animation:
+	var out := Animation.new()
+	end = minf(end, src.length)
+	out.length = end - start
+	out.loop_mode = Animation.LOOP_LINEAR if loop else Animation.LOOP_NONE
+	for t in src.get_track_count():
+		var type := src.track_get_type(t)
+		if not type in [Animation.TYPE_POSITION_3D, Animation.TYPE_ROTATION_3D, Animation.TYPE_SCALE_3D]:
+			continue
+		var nt := out.add_track(type)
+		out.track_set_path(nt, src.track_get_path(t))
+		var time := start
+		while time <= end + 0.0001:
+			var at := minf(time, end)
+			match type:
+				Animation.TYPE_POSITION_3D:
+					out.position_track_insert_key(nt, at - start, src.position_track_interpolate(t, at))
+				Animation.TYPE_ROTATION_3D:
+					out.rotation_track_insert_key(nt, at - start, src.rotation_track_interpolate(t, at))
+				Animation.TYPE_SCALE_3D:
+					out.scale_track_insert_key(nt, at - start, src.scale_track_interpolate(t, at))
+			time += 1.0 / FPS
 	return out
 
 
