@@ -414,6 +414,61 @@ const TABS = {
 			]],
 		],
 	},
+	npcs: {
+		title: "NPCs", file: "npcs", listKey: "npcs", idKey: "id", nameKey: "name",
+		blank: () => ({
+			id: "new_npc", name: "New NPC", title: "", level: 1, max_health: 80, immortal: true, can_fight: false,
+			behaviour: "stand", wander_radius: 4, walk_speed: 1.2, run_speed: 4.2, aggro_radius: 10, leash_distance: 30,
+			attack_power: 8, attack_range: 2, attack_cooldown: 1.5, attack_animation: "attack_light_1", attack_animation_speed: 1, attack_hit_time: 0.32,
+			respawn_time: 30, look: { body: "masc" }, equipment: {}, dialogue: ["Hello there."],
+		}),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Set this as the NPC scene's Npc Id in a level." },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "title", label: "Title", type: "text", help: "Shown after the name, e.g. Blacksmith." },
+				{ key: "level", label: "Level", type: "int" },
+				{ key: "max_health", label: "Health", type: "number" },
+				{ key: "immortal", label: "Can't die", type: "bool", help: "Quest givers and companions: health never drops below 1." },
+			]],
+			["Behaviour", [
+				{ key: "behaviour", label: "When idle", type: "select", options: [["stand", "Stand where placed"], ["wander", "Wander nearby"], ["patrol", "Patrol (Marker3D children of a Patrol node)"]] },
+				{ key: "wander_radius", label: "Wanders within (m)", type: "number" },
+				{ key: "walk_speed", label: "Walk speed (m/s)", type: "number" },
+				{ key: "run_speed", label: "Run speed (m/s)", type: "number" },
+				{ key: "aggro_radius", label: "Notices enemies within (m)", type: "number" },
+				{ key: "leash_distance", label: "Stops chasing beyond (m from home)", type: "number" },
+			]],
+			["Fighting", [
+				{ key: "can_fight", label: "Fights enemies", type: "bool", help: "Needs a main-hand weapon too. NPCs that don't fight run away instead." },
+				{ key: "attack_power", label: "Damage", type: "number" },
+				{ key: "attack_range", label: "Range (m)", type: "number" },
+				{ key: "attack_cooldown", label: "Time between attacks (s)", type: "number" },
+				{ key: "attack_animation", label: "Animation", type: "anim" },
+				{ key: "attack_animation_speed", label: "Animation speed", type: "number" },
+				{ key: "attack_hit_time", label: "Hit time (s)", type: "number" },
+				{ key: "respawn_time", label: "Comes back after (s)", type: "number", help: "If it can die." },
+			]],
+			["Look", [
+				{ key: "look.body", label: "Body", type: "select", options: [["masc", "Masc"], ["femme", "Femme"]] },
+				{ key: "look.skin", label: "Skin colour", type: "color" },
+				{ key: "look.hair", label: "Hair style", type: "lookopt", list: "hair_styles" },
+				{ key: "look.hair_color", label: "Hair colour", type: "color" },
+				{ key: "look.facial_hair", label: "Facial hair", type: "lookopt", list: "facial_hair" },
+				{ key: "look.facial_color", label: "Facial hair colour", type: "color" },
+				{ key: "look.eyes", label: "Eyes", type: "lookopt", list: "eyes" },
+				{ key: "look.eye_color", label: "Eye colour", type: "color" },
+				{ key: "look.height", label: "Height", type: "lookopt", list: "heights" },
+				{ key: "look.build", label: "Build", type: "lookopt", list: "builds" },
+			]],
+			["Gear", [
+				{ key: "equipment", label: "Wearing", type: "kitgear", wide: true, help: "Main hand = the weapon it fights with." },
+			]],
+			["Talking", [
+				{ key: "dialogue", label: "Lines", type: "lines", wide: true, help: "One line per paragraph (leave an empty line between them). {player} = the player's name; {they} {them} {their} use the player's pronouns." },
+			]],
+		],
+	},
 	classes: {
 		title: "Classes", file: "classes", listKey: "classes", idKey: "id", nameKey: "name",
 		blank: () => ({
@@ -598,7 +653,8 @@ function renameItem(from, to) {
 	for (const e of ((data.enemies || {}).enemies || [])) {
 		for (const r of (e.loot || [])) r.item = fix(r.item);
 	}
-	const kits = [(data.player || {}).starting_kit, ...((data.classes || {}).classes || []).map(c => c.starting_kit)];
+	const kits = [(data.player || {}).starting_kit, ...((data.classes || {}).classes || []).map(c => c.starting_kit),
+		...((data.npcs || {}).npcs || []).map(n => ({ equipment: n.equipment || {} }))];
 	for (const kit of kits) {
 		if (!kit || typeof kit !== "object") continue;
 		for (const slot of Object.keys(kit.equipment || {})) kit.equipment[slot] = fix(kit.equipment[slot]);
@@ -798,6 +854,19 @@ function fieldControl(t, entry, f) {
 				}
 				set(v);
 			};
+			wrap.append(label, i);
+			break;
+		}
+		case "lookopt": {
+			const opts = ((data.appearance || {})[f.list] || []).map(o => [o.id, o.name]);
+			const sel = selectOf(opts, value, true);
+			sel.onchange = () => set(sel.value);
+			wrap.append(label, sel);
+			break;
+		}
+		case "lines": {
+			const i = el("textarea", { value: (value || []).join("\n\n"), rows: 6 });
+			i.oninput = () => set(i.value.split(/\n\s*\n/).map(t => t.trim()).filter(t => t));
 			wrap.append(label, i);
 			break;
 		}

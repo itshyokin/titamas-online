@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/bandit.tscn" id="90_bandit"]
 [ext_resource type="Script" uid="uid://c0q1l2rd0tqsj" path="res://scripts/enemy/training_dummy.gd" id="91_dummy"]
 [ext_resource type="Script" uid="uid://cv0mayk5ckreu" path="res://scripts/world/world_cycle.gd" id="92_cycle"]
+[ext_resource type="PackedScene" path="res://scenes/npcs/npc.tscn" id="95_npc"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
@@ -106,3 +107,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 2.795746, 10)
 
 [node name="Bandit3" parent="Enemies" unique_id=808439722 instance=ExtResource("90_bandit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.0862, 4.603443, 10.822014)
+
+[node name="NPCs" type="Node3D" parent="."]
+
+[node name="VillageGuard" parent="NPCs" instance=ExtResource("95_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -54, 3, 70)
+npc_id = "village_guard"
+
+[node name="Patrol" type="Node3D" parent="NPCs/VillageGuard"]
+
+[node name="Point1" type="Marker3D" parent="NPCs/VillageGuard/Patrol"]
+
+[node name="Point2" type="Marker3D" parent="NPCs/VillageGuard/Patrol"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -4)
+
+[node name="Point3" type="Marker3D" parent="NPCs/VillageGuard/Patrol"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 6)
+
+[node name="Katrina" parent="NPCs" instance=ExtResource("95_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 3, 80)
+npc_id = "katrina"
+
+[node name="Villager" parent="NPCs" instance=ExtResource("95_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 3, 72)
+npc_id = "villager"

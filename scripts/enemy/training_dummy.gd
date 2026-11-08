@@ -15,6 +15,7 @@ var _settled := false
 
 
 func _ready() -> void:
+	add_to_group("practice_targets")  # NPCs leave it alone
 	collision_layer = 4
 	collision_mask = 0
 	add_to_group(Combat.GROUP)

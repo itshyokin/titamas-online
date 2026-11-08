@@ -155,6 +155,7 @@ var _push := Vector3.ZERO
 
 
 func _ready() -> void:
+	add_to_group("player")
 	_last_safe = global_position
 	stats.died.connect(_on_died)
 
@@ -200,6 +201,29 @@ func _apply_push(delta: float) -> void:
 	_push = _push.move_toward(Vector3.ZERO, 20.0 * delta)
 	if state != State.NORMAL and state != State.ACTION:
 		_push = Vector3.ZERO
+
+
+## Jump / talk next to someone who can talk (and roughly faced) starts a conversation.
+func _try_talk() -> bool:
+	var best: Node3D = null
+	var best_d := 2.6
+	var fwd := _forward()
+	for n in get_tree().get_nodes_in_group("talkable"):
+		var node := n as Node3D
+		if node == null or not node.has_method("can_talk") or not node.can_talk():
+			continue
+		var to := node.global_position - global_position
+		to.y = 0.0
+		var d := to.length()
+		if d < best_d and (d < 1.2 or fwd.dot(to.normalized()) > -0.2):
+			best_d = d
+			best = node
+	if best == null:
+		return false
+	velocity.x = 0.0
+	velocity.z = 0.0
+	best.call("talk", self)
+	return true
 
 
 ## True during the invulnerable part of a dodge.
@@ -252,6 +276,8 @@ func _normal_movement(delta: float) -> void:
 				return
 			if _try_attach_surface(false):
 				return
+	elif _pressed("jump") and (_try_talk() or Time.get_ticks_msec() - DialogueBox.closed_at < 300):
+		return  # talking, or the press that just closed a conversation
 	elif _pressed("jump") and stats.use_stamina(jump_stamina_cost):
 		velocity.y = jump_velocity
 		jumped.emit()

@@ -137,6 +137,14 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 - **Hair and facial hair:** the placeholders are made from the head mesh by `tools/godot/make_appearance.gd`. Hair made in Blender, weight-painted to the same rig, replaces them: set the style's `fitted_masc` / `fitted_femme` to your file. Rigid extras (ponytail, bun, long hair) are `model` + `fit`, like items. Helmets hide the hair ("hair" under Hides in the Items tab).
 - **Height and build:** height scales the whole character (Short 0.93, Tall 1.07). Thin and Heavy push the body in or out along its surface: most at the belly and hips, less on the limbs, a little on the face. Armour follows. If you add shape keys named `heavy` and `thin` to the body parts in Blender, those are used instead.
 
+## NPCs
+
+- **Placing one:** drag `scenes/npcs/npc.tscn` into a level and set **Npc Id** to an entry in the Database's **NPCs** tab. The overworld and the test level have a village guard, Katrina and a villager near the spawn.
+- **The NPCs tab:** name and title, level and health, "can't die", behaviour (stand, wander or patrol), whether it fights, its attack, its look (the creator's options), what it wears and wields, and its lines.
+- **Patrols:** add a `Node3D` named `Patrol` under the NPC with `Marker3D` children; it walks them in order.
+- **Fighting:** NPCs that fight and hold a weapon (main hand) take on enemies that come within their notice range, and enemies fight back. The rest shout "Help!" and run, then come home when it's safe. They ignore training dummies.
+- **Talking:** walk up to an NPC and press **Jump / talk** (Space, A). Each paragraph of its lines is one page; the same button shows the whole line, then the next. Esc or B closes. Lines can use `{player}` and the player's pronouns: `{they}`, `{them}`, `{their}`, `{theirs}`, `{themself}`.
+
 ## Equipment and backpack
 
 - **Character window** (I, B or Back on a controller): equipment slots on the left, stats and gold in the middle, a 24-slot backpack on the right. Click an item to see it. Right-click or double-click equips or uses it; drag between slots to move or equip; drag out of the window to throw it away (it asks first). On a controller: A equips/uses, Y picks up and places, X sets the item as a quick item.

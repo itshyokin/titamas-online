@@ -9,7 +9,7 @@ extends Node
 signal changed(which: String)
 
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
-	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES}
+	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "npcs": DataFiles.NPCS}
 
 const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
@@ -29,6 +29,7 @@ var items := {}  # id -> Dictionary (data/items.json entries)
 ## data/appearance.json: the character creator's choices (styles, colours, sizes).
 var appearance := {}
 var classes: Array = []  # data/classes.json entries, in order
+var npcs := {}  # id -> Dictionary (data/npcs.json entries)
 
 var _times := {}
 var _watch := 0.0
@@ -82,6 +83,10 @@ func _load(which: String) -> void:
 			appearance = data
 		"classes":
 			classes = data.get("classes", [])
+		"npcs":
+			npcs.clear()
+			for d in data.get("npcs", []):
+				npcs[String(d.get("id", ""))] = d
 
 
 func ability(id: String) -> Ability:
@@ -99,6 +104,11 @@ func abilities_for(ids: Array) -> Array[Ability]:
 		if ab:
 			out.append(ab)
 	return out
+
+
+## An NPC's data ({} if unknown).
+func npc(id: String) -> Dictionary:
+	return npcs.get(id, {})
 
 
 ## A class entry from data/classes.json ({} if unknown).

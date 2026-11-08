@@ -5,6 +5,7 @@
 
 [ext_resource type="PackedScene" path="res://scenes/enemies/bandit.tscn" id="90_bandit"]
 [ext_resource type="Script" path="res://scripts/enemy/training_dummy.gd" id="91_dummy"]
+[ext_resource type="PackedScene" path="res://scenes/npcs/npc.tscn" id="95_npc"]
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_v45ci"]
 
 [sub_resource type="Sky" id="Sky_48ne7"]
@@ -235,3 +236,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0, 8)
 
 [node name="Bandit2" parent="Enemies" instance=ExtResource("90_bandit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0, 15)
+
+[node name="NPCs" type="Node3D" parent="."]
+
+[node name="VillageGuard" parent="NPCs" instance=ExtResource("95_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.5, 2)
+npc_id = "village_guard"
+
+[node name="Patrol" type="Node3D" parent="NPCs/VillageGuard"]
+
+[node name="Point1" type="Marker3D" parent="NPCs/VillageGuard/Patrol"]
+
+[node name="Point2" type="Marker3D" parent="NPCs/VillageGuard/Patrol"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -4)
+
+[node name="Point3" type="Marker3D" parent="NPCs/VillageGuard/Patrol"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 6)
+
+[node name="Katrina" parent="NPCs" instance=ExtResource("95_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, 7)
+npc_id = "katrina"
+
+[node name="Villager" parent="NPCs" instance=ExtResource("95_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, 8)
+npc_id = "villager"
