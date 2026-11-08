@@ -137,6 +137,12 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 - **Hair and facial hair:** the placeholders are made from the head mesh by `tools/godot/make_appearance.gd`. Hair made in Blender, weight-painted to the same rig, replaces them: set the style's `fitted_masc` / `fitted_femme` to your file. Rigid extras (ponytail, bun, long hair) are `model` + `fit`, like items. Helmets hide the hair ("hair" under Hides in the Items tab).
 - **Height and build:** height scales the whole character (Short 0.93, Tall 1.07). Thin and Heavy push the body in or out along its surface: most at the belly and hips, less on the limbs, a little on the face. Armour follows. If you add shape keys named `heavy` and `thin` to the body parts in Blender, those are used instead.
 
+## Water
+
+- **Reflections:** water mirrors whatever is on screen (trees, cliffs, characters) on top of the sky reflection; stronger at low angles. Settings → Graphics → **Water reflections** turns it off on slower PCs. Strength is `reflection_strength` on the water material.
+- **Underwater:** when the camera dips below the surface it goes blue-green and wobbly, darker the deeper it is, with bubbles; sound effects, footsteps and ambience are muffled.
+- **Sprint-swimming:** sprint while swimming to go faster (3.8 m/s instead of 2.2); it uses stamina. Speeds and cost are in the Database's Player tab.
+
 ## Co-op
 
 - **Hosting:** Load Game → pick a character → **Host co-op**. The top of the screen shows the address friends join (your local network address) and how many have joined.

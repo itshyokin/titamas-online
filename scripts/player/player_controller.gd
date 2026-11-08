@@ -80,6 +80,9 @@ const WATER_MASK := 8  # layer 4
 
 @export_group("Swimming")
 @export var swim_speed := 2.2
+## Sprinting while swimming: faster, and it uses stamina.
+@export var swim_sprint_speed := 3.8
+@export var swim_sprint_stamina_cost := 18.0
 ## Water deeper than this (surface above the feet) makes the character swim.
 @export var swim_depth := 1.3
 ## Origin depth below the surface when treading water and when swimming forward.
@@ -156,6 +159,7 @@ var _push := Vector3.ZERO
 
 func _ready() -> void:
 	add_to_group("player")
+	add_child(UnderwaterView.new())
 	_last_safe = global_position
 	stats.died.connect(_on_died)
 
@@ -298,7 +302,7 @@ func _normal_movement(delta: float) -> void:
 		model.rotation.y = lerp_angle(model.rotation.y, _yaw_of(direction), turn_speed * delta)
 
 
-func _update_sprint(moving: bool, delta: float) -> void:
+func _update_sprint(moving: bool, delta: float, swimming := false) -> void:
 	if _sprint_exhausted and stats.stamina >= sprint_restart_threshold:
 		_sprint_exhausted = false
 	if not moving or _sprint_exhausted or Input.is_action_pressed("walk"):
@@ -306,8 +310,8 @@ func _update_sprint(moving: bool, delta: float) -> void:
 	# Keyboard: hold to sprint. Controller: tap to toggle.
 	var held := Input.is_action_pressed("sprint") and not GameSettings.gamepad and not GameSettings.menu_open
 	var wants := (held or _sprint_toggle) and moving and not _sprint_exhausted
-	if wants and is_on_floor() or wants and is_sprinting:
-		is_sprinting = stats.drain_stamina(sprint_stamina_cost * delta)
+	if wants and (is_on_floor() or swimming) or wants and is_sprinting:
+		is_sprinting = stats.drain_stamina((swim_sprint_stamina_cost if swimming else sprint_stamina_cost) * delta)
 		if not is_sprinting:
 			_sprint_exhausted = true
 			_sprint_toggle = false
@@ -792,7 +796,8 @@ func _swim_movement(delta: float) -> void:
 		state = State.NORMAL
 		return
 	var direction := _input_direction()
-	var target := direction * swim_speed
+	_update_sprint(direction != Vector3.ZERO, delta, true)
+	var target := direction * (swim_sprint_speed if is_sprinting else swim_speed)
 	velocity.x = lerpf(velocity.x, target.x, 3.0 * delta)
 	velocity.z = lerpf(velocity.z, target.z, 3.0 * delta)
 	if direction != Vector3.ZERO:
@@ -805,7 +810,7 @@ func _swim_movement(delta: float) -> void:
 	velocity.y = (target_y - global_position.y) * 4.0
 
 	if stroke > 0.3:
-		character.play("swimming", 0.4, clampf(h_speed / swim_speed, 0.6, 1.3))
+		character.play("swimming", 0.4, clampf(h_speed / swim_speed, 0.6, 1.8))
 	else:
 		character.play("treading_water", 0.4)
 

@@ -203,6 +203,10 @@ zoom_out={
 
 [shader_globals]
 
+water_reflections={
+"type": "float",
+"value": 1.0
+}
 pixel_texels={
 "type": "float",
 "value": 64.0

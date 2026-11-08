@@ -240,6 +240,11 @@ func _graphics_tab() -> Control:
 	rays.button_pressed = GameSettings.god_rays
 	rays.toggled.connect(func(on: bool) -> void: GameSettings.set_god_rays(on))
 	page.add_child(rays)
+	var reflect := CheckBox.new()
+	reflect.text = "Water reflections (trees and cliffs mirrored in water)"
+	reflect.button_pressed = GameSettings.water_reflections
+	reflect.toggled.connect(func(on: bool) -> void: GameSettings.set_water_reflections(on))
+	page.add_child(reflect)
 	var shake := HSlider.new()
 	shake.min_value = 0.0
 	shake.max_value = 1.0

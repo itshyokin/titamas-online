@@ -12,7 +12,10 @@
 		"walk_speed": 1.8,
 		"sprint_speed": 8.0,
 		"jump_velocity": 5.0,
-		"sprint_stamina_cost": 25.0
+		"sprint_stamina_cost": 25.0,
+		"swim_speed": 2.2,
+		"swim_sprint_speed": 3.8,
+		"swim_sprint_stamina_cost": 18.0
 	},
 	"combat": {
 		"tap_time": 0.22,

@@ -36,6 +36,8 @@ var volumes := DEFAULT_VOLUMES.duplicate()
 var pixel := DEFAULT_PIXEL
 var grass := DEFAULT_GRASS
 var god_rays := true
+## Trees, cliffs and characters reflected in water (costs a little on slower PCs).
+var water_reflections := true
 ## Camera shake on hits: 0 = off, 1 = full.
 var screen_shake := 1.0
 var camera_sensitivity := 1.0
@@ -68,6 +70,7 @@ func apply_all() -> void:
 	for key: String in BUSES:
 		set_volume(key, volumes.get(key, 1.0), false)
 	set_pixel(pixel, false)
+	set_water_reflections(water_reflections, false)
 
 
 func set_volume(key: String, value: float, save := true) -> void:
@@ -93,6 +96,13 @@ func grass_multiplier() -> float:
 func set_screen_shake(value: float) -> void:
 	screen_shake = clampf(value, 0.0, 1.0)
 	save_settings()
+
+
+func set_water_reflections(on: bool, save := true) -> void:
+	water_reflections = on
+	RenderingServer.global_shader_parameter_set("water_reflections", 1.0 if on else 0.0)
+	if save:
+		save_settings()
 
 
 func set_god_rays(on: bool) -> void:
@@ -215,6 +225,7 @@ func save_settings() -> void:
 	cfg.set_value("graphics", "grass", grass)
 	cfg.set_value("graphics", "god_rays", god_rays)
 	cfg.set_value("graphics", "screen_shake", screen_shake)
+	cfg.set_value("graphics", "water_reflections", water_reflections)
 	cfg.set_value("controls", "camera_sensitivity", camera_sensitivity)
 	cfg.set_value("controls", "invert_camera_y", invert_camera_y)
 	for entry in REBINDABLE:
@@ -237,6 +248,7 @@ func load_settings() -> void:
 	grass = String(cfg.get_value("graphics", "grass", DEFAULT_GRASS))
 	god_rays = bool(cfg.get_value("graphics", "god_rays", true))
 	screen_shake = float(cfg.get_value("graphics", "screen_shake", 1.0))
+	water_reflections = bool(cfg.get_value("graphics", "water_reflections", true))
 	camera_sensitivity = float(cfg.get_value("controls", "camera_sensitivity", 1.0))
 	invert_camera_y = bool(cfg.get_value("controls", "invert_camera_y", false))
 	if cfg.has_section("bindings"):
