@@ -323,7 +323,6 @@ func _on_died() -> void:
 	velocity = Vector3.ZERO
 	_walk = Vector3.ZERO
 	character.play_from("death", 0.0, 0.15, 1.0)
-	_set_shapes_disabled(true)  # nothing bumps into (or stands on) a body
 	await get_tree().create_timer(corpse_time).timeout
 	# A body with loot left on it stays a while longer (and while someone's looking through it).
 	var waited := corpse_time
@@ -343,12 +342,6 @@ func _on_died() -> void:
 	_respawn()
 
 
-func _set_shapes_disabled(off: bool) -> void:
-	for c in get_children():
-		if c is CollisionShape3D:
-			(c as CollisionShape3D).set_deferred("disabled", off)
-
-
 ## Experience for the player who fought it (each game credits its own player).
 func credit_kill() -> void:
 	if not tagged_by_player:
@@ -365,7 +358,6 @@ func _respawn() -> void:
 	velocity = Vector3.ZERO
 	stats.restore()
 	collision_layer = 4
-	_set_shapes_disabled(false)
 	model.visible = true
 	ai = AI.IDLE
 	_wait = randf_range(1.0, 3.0)
