@@ -137,6 +137,15 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 - **Hair and facial hair:** the placeholders are made from the head mesh by `tools/godot/make_appearance.gd`. Hair made in Blender, weight-painted to the same rig, replaces them: set the style's `fitted_masc` / `fitted_femme` to your file. Rigid extras (ponytail, bun, long hair) are `model` + `fit`, like items. Helmets hide the hair ("hair" under Hides in the Items tab).
 - **Height and build:** height scales the whole character (Short 0.93, Tall 1.07). Thin and Heavy push the body in or out along its surface: most at the belly and hips, less on the limbs, a little on the face. Armour follows. If you add shape keys named `heavy` and `thin` to the body parts in Blender, those are used instead.
 
+## Co-op
+
+- **Hosting:** Load Game → pick a character → **Host co-op**. The top of the screen shows the address friends join (your local network address) and how many have joined.
+- **Joining:** Load Game → pick your character → **Join co-op…** → type the host's address → **Connect**. You appear next to the host in their world.
+- **Over the internet:** the host's router has to let UDP port 24565 through (port forwarding), and friends use the host's public IP. An easier way for now is a free virtual-LAN app (Tailscale, ZeroTier or Radmin VPN) and the address it gives the host. Steam or Epic invites can come later without changing the game code.
+- **Testing alone:** in the Godot editor, Debug → Customize Run Instances → run 2 instances. Host in one; join `127.0.0.1` in the other (needs a second saved character).
+- **How it works:** the host's game runs the enemies. Everyone moves their own character, and its position, animation, health and gear are sent to the others. Your hits on enemies go to the host, which applies them; enemy hits on you are worked out on your own game (so your block, dodge and armour count). Loot is personal: each player gets their own drops. Hit-stop and slow motion are off in co-op. Each player's character saves to their own save as usual. If the host leaves, everyone else goes back to the title screen.
+- **Not yet:** NPCs and followers aren't shared (each game runs its own), other players' arrows and spell bolts aren't shown (their animations and damage are), there's no chat, and enemies aren't yet scaled per player.
+
 ## NPCs
 
 - **Placing one:** drag `scenes/npcs/npc.tscn` into a level and set **Npc Id** to an entry in the Database's **NPCs** tab. The overworld and the test level have a village guard, Katrina and a villager near the spawn.

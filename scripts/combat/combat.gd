@@ -76,6 +76,11 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 	var ts := stats_of(target)
 	if ts == null or ts.is_dead():
 		return 0.0
+	# Co-op: some targets are worked out on another machine (see Net).
+	if target.has_method("forward_hit") and target.forward_hit(source, power, stagger, knockback):
+		if source is PlayerController:
+			impact(source, target, stagger, false, 0.0)  # the feel stays local
+		return 0.0
 	var ss := stats_of(source)
 	var amount := scaled_power(power, ss.level if ss else 1, ts.level)
 	amount *= randf_range(0.9, 1.1)

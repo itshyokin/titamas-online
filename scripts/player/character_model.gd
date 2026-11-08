@@ -64,6 +64,11 @@ func show_rest_pose() -> void:
 		skel.reset_bone_poses()
 
 
+## Current playback speed (clip speed × speed scale).
+func get_speed() -> float:
+	return _animator.get_playing_speed() if _animator else 1.0
+
+
 ## Changes the playback speed of the current animation (0 holds the pose).
 func set_speed(speed: float) -> void:
 	if _animator:

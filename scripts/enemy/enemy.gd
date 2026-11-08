@@ -72,6 +72,11 @@ var _anim := ""
 var _anim_speed := 1.0
 var _hit_time := 0.3
 var _walk := Vector3.ZERO  # steering velocity (knockback is added on top)
+# Co-op: on a joined game the enemy copies the host (Net) instead of thinking.
+var _net_pos := Vector3.ZERO
+var _net_yaw := 0.0
+var _net_anim := ""
+var _net_seen := false
 var _push := Vector3.ZERO
 var _swing_sound: AudioStream = preload("res://assets/audio/combat/swing_1.ogg")
 var _heavy_sound: AudioStream = preload("res://assets/audio/combat/swing_heavy.ogg")
@@ -102,7 +107,15 @@ func aim_point() -> Vector3:
 	return global_position + Vector3.UP * 1.2
 
 
+func _is_puppet() -> bool:
+	var net := get_tree().root.get_node_or_null("Net")
+	return net != null and net.call("is_client")
+
+
 func _physics_process(delta: float) -> void:
+	if _is_puppet():
+		_puppet_update(delta)
+		return
 	if not _settled:
 		# Wait for the ground (chunks stream in) before moving.
 		var q := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 60.0, global_position + Vector3.DOWN * 100.0, 1)
@@ -319,6 +332,58 @@ func _respawn() -> void:
 	ai = AI.IDLE
 	_wait = randf_range(1.0, 3.0)
 	character.play("idle", 0.0)
+
+
+# --- Co-op ------------------------------------------------------------------------
+
+## Host: [path, x, y, z, yaw, animation, speed, health, max health, ai, model visible]
+func net_state(path: NodePath) -> Array:
+	var p := global_position
+	return [path, p.x, p.y, p.z, model.rotation.y, character.current_animation(), character.get_speed(),
+		stats.health, stats.max_health, ai, model.visible]
+
+
+## Joined game: copy the host's enemy.
+func apply_net_state(s: Array) -> void:
+	_net_pos = Vector3(s[1], s[2], s[3])
+	_net_yaw = s[4]
+	if not _net_seen:
+		_net_seen = true
+		global_position = _net_pos
+	var anim := String(s[5])
+	if anim != _net_anim and anim != "":
+		_net_anim = anim
+		if anim in ["idle", "idle_armed", "walking", "running"]:
+			character.play(anim, 0.2, float(s[6]))
+		else:
+			character.play_from(anim, 0.0, 0.1, float(s[6]))
+	var was_dead := stats.is_dead()
+	stats.max_health = float(s[8])
+	stats.health = float(s[7])
+	stats.health_changed.emit(stats.health, stats.max_health)
+	ai = int(s[9]) as AI
+	model.visible = bool(s[10])
+	collision_layer = 0 if ai == AI.DEAD else 4
+	if not was_dead and stats.is_dead():
+		target = null
+
+
+func _puppet_update(delta: float) -> void:
+	if not _net_seen:
+		return
+	var t := 1.0 - exp(-12.0 * delta)
+	global_position = global_position.lerp(_net_pos, t)
+	model.rotation.y = lerp_angle(model.rotation.y, _net_yaw, t)
+
+
+## Joined game: hits on this enemy go to the host (only our own player's); the host
+## applies them and sends back the damage.
+func forward_hit(source: Node3D, power: float, stagger: bool, knockback: float) -> bool:
+	if not _is_puppet():
+		return false
+	if source is PlayerController:
+		get_tree().root.get_node("Net").call("request_hit", self, power, stagger, knockback)
+	return true
 
 
 # --- Animation ----------------------------------------------------------------

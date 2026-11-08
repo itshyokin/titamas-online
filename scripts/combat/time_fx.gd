@@ -15,6 +15,10 @@ var _slow_length := 1
 static func _instance(from: Node) -> TimeFX:
 	if from == null or not from.is_inside_tree():
 		return null
+	# Co-op: slowing the game would slow it for everyone.
+	var net := from.get_tree().root.get_node_or_null("Net")
+	if net and net.get("active"):
+		return null
 	var root := from.get_tree().root
 	var fx := root.get_node_or_null("TimeFX") as TimeFX
 	if fx == null:

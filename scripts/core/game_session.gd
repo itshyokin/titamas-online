@@ -22,9 +22,19 @@ const AUTOSAVE_SECONDS := 60.0
 var data := {}
 ## Its file.
 var path := ""
+## Shown on the title screen after coming back to it (e.g. "The host left the game.").
+var last_message := ""
 
 var _since_save := 0.0
 var _play_started := 0
+
+
+func _ready() -> void:
+	(func() -> void:
+		Net.host_left.connect(func() -> void:
+			if active():
+				last_message = "The host left the game."
+				quit_to_title())).call_deferred()
 
 
 func active() -> bool:
@@ -96,6 +106,7 @@ func start_game() -> void:
 ## Saves, forgets the character and goes back to the title screen.
 func quit_to_title() -> void:
 	save_game()
+	Net.leave()
 	data = {}
 	path = ""
 	GameSettings.menu_open = false

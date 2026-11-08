@@ -20,6 +20,7 @@ config/features=PackedStringArray("4.6", "Forward Plus")
 GameSettings="*res://scripts/core/game_settings.gd"
 Database="*res://scripts/core/database.gd"
 GameSession="*res://scripts/core/game_session.gd"
+Net="*res://scripts/core/net.gd"
 
 [display]
 

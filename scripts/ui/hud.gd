@@ -488,6 +488,7 @@ func _tint_bar(color: Color) -> void:
 var _party: VBoxContainer
 var _party_rows := {}  # node -> [Label, ProgressBar]
 var _party_refresh := 0.0
+var _coop_label: Label
 
 
 func _build_party() -> void:
@@ -496,6 +497,13 @@ func _build_party() -> void:
 	_party.position = Vector2(24, 150)
 	_party.add_theme_constant_override("separation", 6)
 	add_child(_party)
+	_coop_label = _label("", 13)
+	_coop_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_coop_label.position = Vector2(-300, 8)
+	_coop_label.size = Vector2(600, 20)
+	_coop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_coop_label.modulate = Color(1, 1, 1, 0.8)
+	add_child(_coop_label)
 
 
 func _process_party(delta: float) -> void:
@@ -503,7 +511,17 @@ func _process_party(delta: float) -> void:
 	if _party == null or _party_refresh > 0.0:
 		return
 	_party_refresh = 0.2
-	var members := get_tree().get_nodes_in_group("followers")
+	if Net.active:
+		var count := Net.peers.size()
+		if Net.is_host:
+			var lan := Net.local_addresses()
+			_coop_label.text = "Hosting co-op · friends join at %s (port %d) · %d joined" % [
+				", ".join(lan) if not lan.is_empty() else "your IP address", Net.DEFAULT_PORT, count]
+		else:
+			_coop_label.text = "Co-op · %d other player%s" % [count, "" if count == 1 else "s"]
+	else:
+		_coop_label.text = ""
+	var members := get_tree().get_nodes_in_group("party_members") + get_tree().get_nodes_in_group("followers")
 	for node in _party_rows.keys():
 		if not is_instance_valid(node) or not node in members:
 			(_party_rows[node][0] as Control).get_parent().queue_free()

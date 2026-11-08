@@ -54,6 +54,11 @@ var _play_button: Button
 var _delete_button: Button
 var _confirm_delete: ConfirmationDialog
 var _load_game_button: Button
+var _host_button: Button
+var _join_button: Button
+var _join_box: HBoxContainer
+var _join_address: LineEdit
+var _net_status: Label
 
 
 func _ready() -> void:
@@ -68,6 +73,12 @@ func _ready() -> void:
 		_model.visible = false
 	_show("title")
 	_camera.global_transform = _shot_transform("title")
+	Net.connected_to_host.connect(_on_net_connected)
+	Net.connection_failed.connect(_on_net_failed)
+	if GameSession.last_message != "":
+		_show("load")
+		_net_status.text = GameSession.last_message
+		GameSession.last_message = ""
 
 
 func _process(delta: float) -> void:
@@ -513,6 +524,30 @@ func _load_page() -> Control:
 	_play_button.custom_minimum_size.y = 52
 	_play_button.add_theme_font_size_override("font_size", 24)
 	v.add_child(_play_button)
+	# Co-op: host this character's world, or join a friend's.
+	var coop := HBoxContainer.new()
+	coop.add_theme_constant_override("separation", 10)
+	_host_button = _button("Host co-op", _host_selected)
+	_host_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_host_button.tooltip_text = "Play this character and let friends join you."
+	coop.add_child(_host_button)
+	_join_button = _button("Join co-op…", func() -> void: _join_box.visible = not _join_box.visible)
+	_join_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_join_button.tooltip_text = "Bring this character into a friend's game."
+	coop.add_child(_join_button)
+	v.add_child(coop)
+	_join_box = HBoxContainer.new()
+	_join_box.add_theme_constant_override("separation", 8)
+	_join_box.visible = false
+	_join_address = LineEdit.new()
+	_join_address.placeholder_text = "Host's address, e.g. 192.168.1.20"
+	_join_address.text = "127.0.0.1"
+	_join_address.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_join_box.add_child(_join_address)
+	_join_box.add_child(_button("Connect", _join_selected))
+	v.add_child(_join_box)
+	_net_status = _note("")
+	v.add_child(_net_status)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	var back := _button("Back", func() -> void: _show("title"))
@@ -567,6 +602,8 @@ func _refresh_saves() -> void:
 		_select_save(clampi(_selected_save, 0, _saves.size() - 1))
 	_play_button.disabled = _saves.is_empty()
 	_delete_button.disabled = _saves.is_empty()
+	_host_button.disabled = _saves.is_empty()
+	_join_button.disabled = _saves.is_empty()
 
 
 func _select_save(i: int) -> void:
@@ -582,6 +619,40 @@ func _play_selected() -> void:
 		return
 	if GameSession.load_save(String(_saves[_selected_save].path)):
 		_start()
+
+
+func _host_selected() -> void:
+	if _selected_save < 0 or not GameSession.load_save(String(_saves[_selected_save].path)):
+		return
+	var err := Net.host_game()
+	if err != OK:
+		_net_status.text = "Couldn't host (port %d may be in use)." % Net.DEFAULT_PORT
+		return
+	_start()
+
+
+func _join_selected() -> void:
+	if _selected_save < 0 or not GameSession.load_save(String(_saves[_selected_save].path)):
+		return
+	var address := _join_address.text.strip_edges()
+	if address.is_empty():
+		_net_status.text = "Type the host's address first."
+		return
+	if Net.join_game(address) != OK:
+		_net_status.text = "That address doesn't look right."
+		return
+	_net_status.text = "Connecting to %s…" % address
+	_loading.visible = true
+
+
+func _on_net_connected() -> void:
+	_net_status.text = ""
+	_start()
+
+
+func _on_net_failed(reason: String) -> void:
+	_loading.visible = false
+	_net_status.text = reason
 
 
 func _start() -> void:
