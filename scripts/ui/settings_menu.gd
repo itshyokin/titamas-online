@@ -155,7 +155,8 @@ func _build_window() -> void:
 		save.pressed.connect(func() -> void:
 			GameSession.save_game()
 			save.text = "Saved ✓"
-			get_tree().create_timer(1.5).timeout.connect(func() -> void: save.text = "Save game"))
+			# A method, not a lambda: the menu may be gone by then (quit to title right after saving).
+			get_tree().create_timer(1.5).timeout.connect(_reset_save_label.bind(save)))
 		head.add_child(save)
 		var leave := Button.new()
 		leave.text = "Quit to title"
@@ -382,3 +383,8 @@ class GearIcon:
 			draw_colored_polygon(p, col)
 		draw_circle(c, r, col)
 		draw_circle(c, r * 0.42, Color(0.1, 0.1, 0.12, 0.95))
+
+
+func _reset_save_label(button: Button) -> void:
+	if is_instance_valid(button):
+		button.text = "Save game"

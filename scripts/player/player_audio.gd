@@ -219,8 +219,12 @@ func _land(speed: float) -> void:
 	var db := lerpf(walk_db, 0.0, hard)
 	_play(_feet, _step(surface), db, lerpf(1.0, 0.85, hard))
 	# Second foot a moment later.
-	get_tree().create_timer(0.06).timeout.connect(
-		func() -> void: _play(_feet, _step(surface), db - 3.0, lerpf(1.05, 0.9, hard)))
+	# (A method, not a lambda: the connection goes away if the player is freed first.)
+	get_tree().create_timer(0.06).timeout.connect(_second_step.bind(surface, db, hard))
+
+
+func _second_step(surface: String, db: float, hard: float) -> void:
+	_play(_feet, _step(surface), db - 3.0, lerpf(1.05, 0.9, hard))
 
 
 func _play(p: AudioStreamPlayer3D, stream: AudioStream, db: float, pitch := 1.0) -> void:
