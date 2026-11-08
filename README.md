@@ -26,7 +26,7 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 | Lock on (toggle) | R3 | Middle mouse |
 | Camera | Right stick | Hold right mouse, wheel zoom |
 
-Melee: rapid taps chain the combo, hold for a heavy blow. Ranged: tap for a quick shot, hold to draw (harder the longer). Magic: press attack to start casting; the cast bar has to fill before the spell goes off (tap and it goes off when full; keep holding to charge it up to level 3). Moving cancels a cast, light hits knock the bar back, and heavy hits interrupt it. Locked on, the camera keeps the target in view and moving sideways circles it. Stamina is only used by sprinting. The test level and the overworld each have a training dummy and two bandits.
+Melee: rapid taps chain a three-hit combo (Slash, Backslash, then a staggering Finishing Blow), hold for a heavy blow. Ranged: tap for a quick shot, hold to draw (harder the longer). Magic: press attack to start casting; the cast bar has to fill before the spell goes off (tap and it goes off when full; keep holding to charge it up to level 3). Moving cancels a cast, light hits knock the bar back, and heavy hits interrupt it. Locked on, the camera keeps the target in view and moving sideways circles it. Stamina is only used by sprinting. The test level and the overworld each have a training dummy and two bandits.
 
 **Traversal:** jump at a ledge to grab it (A/D shimmy, W or Space pull up, S or Ctrl drop) · jump at a climbable wall, or walk into a ladder, then W/S to climb (Space jumps off, Ctrl lets go) · swim in deep water, Space at an edge climbs out. The gray-box level (`scenes/levels/test_level.tscn`) has a test spot for each. · hold right mouse to look · mouse wheel zoom.
 

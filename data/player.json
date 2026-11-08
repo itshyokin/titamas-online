@@ -29,7 +29,8 @@
 	"loadout": {
 		"light_combo": [
 			"slash_1",
-			"slash_2"
+			"slash_2",
+			"slash_3"
 		],
 		"heavy_attack": "heavy_strike",
 		"ranged_attack": "arrow_shot",

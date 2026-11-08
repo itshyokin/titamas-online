@@ -326,8 +326,10 @@ func _tap() -> void:
 		Mode.MELEE:
 			if light_combo.is_empty():
 				return
+			# Mid-combo, the next tap is the next swing in the chain (it waits for this one's
+			# recovery); after the last swing, or out of a combo, it starts again.
 			var next: Ability = light_combo[0]
-			if _current and light_combo.has(_current) and _hit_done:
+			if _current and light_combo.has(_current):
 				next = light_combo[(light_combo.find(_current) + 1) % light_combo.size()]
 			if _current and _time < _current.recovery_time:
 				_queued = next  # chain into the next swing when this one allows
