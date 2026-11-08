@@ -121,9 +121,9 @@ static func flash(node: Node, color := Color(1, 1, 1), seconds := 0.12, strength
 	var tween := node.create_tween()
 	tween.tween_property(mat, "albedo_color:a", 0.0, seconds).set_ease(Tween.EASE_IN)
 	tween.tween_callback(func() -> void:
-		for mi: MeshInstance3D in meshes:
-			if is_instance_valid(mi) and mi.material_overlay == mat:
-				mi.material_overlay = null)
+		for m in meshes:  # untyped: some may have been freed meanwhile
+			if is_instance_valid(m) and (m as MeshInstance3D).material_overlay == mat:
+				(m as MeshInstance3D).material_overlay = null)
 
 
 ## Soft rising motes around a combatant for `seconds` (healing over time).
