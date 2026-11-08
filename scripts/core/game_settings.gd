@@ -36,6 +36,8 @@ var volumes := DEFAULT_VOLUMES.duplicate()
 var pixel := DEFAULT_PIXEL
 var grass := DEFAULT_GRASS
 var god_rays := true
+## Camera shake on hits: 0 = off, 1 = full.
+var screen_shake := 1.0
 var camera_sensitivity := 1.0
 var invert_camera_y := false
 ## True while a menu is open: gameplay ignores input.
@@ -86,6 +88,11 @@ func set_grass(option: String) -> void:
 
 func grass_multiplier() -> float:
 	return GRASS_OPTIONS.get(grass, 1.0)
+
+
+func set_screen_shake(value: float) -> void:
+	screen_shake = clampf(value, 0.0, 1.0)
+	save_settings()
 
 
 func set_god_rays(on: bool) -> void:
@@ -207,6 +214,7 @@ func save_settings() -> void:
 	cfg.set_value("graphics", "pixel", pixel)
 	cfg.set_value("graphics", "grass", grass)
 	cfg.set_value("graphics", "god_rays", god_rays)
+	cfg.set_value("graphics", "screen_shake", screen_shake)
 	cfg.set_value("controls", "camera_sensitivity", camera_sensitivity)
 	cfg.set_value("controls", "invert_camera_y", invert_camera_y)
 	for entry in REBINDABLE:
@@ -228,6 +236,7 @@ func load_settings() -> void:
 	pixel = String(cfg.get_value("graphics", "pixel", DEFAULT_PIXEL))
 	grass = String(cfg.get_value("graphics", "grass", DEFAULT_GRASS))
 	god_rays = bool(cfg.get_value("graphics", "god_rays", true))
+	screen_shake = float(cfg.get_value("graphics", "screen_shake", 1.0))
 	camera_sensitivity = float(cfg.get_value("controls", "camera_sensitivity", 1.0))
 	invert_camera_y = bool(cfg.get_value("controls", "invert_camera_y", false))
 	if cfg.has_section("bindings"):

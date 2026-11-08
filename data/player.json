@@ -18,7 +18,13 @@
 		"tap_time": 0.22,
 		"quick_shot_power": 0.6,
 		"block_reduction": 0.75,
-		"lunge_range": 6.5
+		"lunge_range": 6.5,
+		"parry_window": 0.25,
+		"counter_window": 1.5,
+		"perfect_dodge_window": 0.18,
+		"cast_pushback": 0.35,
+		"interrupt_share": 0.15,
+		"move_cancels_cast": true
 	},
 	"loadout": {
 		"light_combo": [

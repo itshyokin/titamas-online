@@ -21,6 +21,8 @@ signal combat_changed(in_combat: bool)
 signal loadout_changed
 ## Short feedback for the HUD ("Not enough mana", "No target").
 signal notice(text: String)
+## A cast or charge was stopped ("Interrupted", "Cancelled").
+signal cast_interrupted(reason: String)
 
 @export_group("Abilities")
 # Filled from data/player.json (loadout) and data/abilities.json by the Database.
@@ -49,6 +51,19 @@ signal notice(text: String)
 ## Stamina each blocked hit costs (0 = blocking is free; stamina is for sprinting).
 @export var block_stamina_per_hit := 0.0
 @export var block_arc := 150.0
+
+@export_group("Parry, dodge and casting")
+## Starting to block this soon (s) before a hit lands parries it: no damage, the attacker
+## is staggered, and your next hit is a counter.
+@export var parry_window := 0.25
+## How long a counter stays ready after a parry or a perfect dodge.
+@export var counter_window := 1.5
+## A light hit while casting knocks the cast bar back this many seconds.
+@export var cast_pushback := 0.35
+## Hits at least this share of max health (or heavy hits) interrupt casts and charges.
+@export var interrupt_share := 0.15
+## Moving (or dodging) cancels a spell being cast.
+@export var move_cancels_cast := true
 
 @export_group("Combat state")
 ## Seconds after the last attack or hit before the weapon is put away.
@@ -89,6 +104,11 @@ var _power := 0.0
 var _level := 1
 
 var _blocking := false
+var _block_started := 0  # msec
+var _counter_until := 0  # msec: next hit is a counter
+var _flourish := false  # this swing is a fully charged heavy
+var _buffer_until := 0  # msec: an attack tapped during a dodge (-1 while it lasts)
+var _auto_release := false  # spell tapped: goes off when the cast bar fills
 var _cooldowns := {}  # Ability -> seconds left
 var _combat_timer := 0.0
 
@@ -229,6 +249,9 @@ func _physics_process(delta: float) -> void:
 	if player.state != PlayerController.State.NORMAL and player.state != PlayerController.State.ACTION:
 		if released:
 			_attack_down = false
+			# Tapped during a dodge: attack as soon as it ends.
+			if player.state == PlayerController.State.DODGE:
+				_buffer_until = -1  # pending until the dodge ends
 		return
 
 	if _current:
@@ -236,19 +259,36 @@ func _physics_process(delta: float) -> void:
 	elif _blocking:
 		_update_block(delta)
 
-	var busy := _current != null and _time < _current.recovery_time
+	# Until the blow lands you're committed; after that, block or dodge cancel the rest.
+	var busy := _current != null and not _hit_done
+	var swinging := _current != null and _time < _current.recovery_time
 
-	# Attack button: tap or hold.
+	if _buffer_until < 0:
+		_buffer_until = Time.get_ticks_msec() + 250  # the dodge just ended
+	if _buffer_until > 0 and _current == null and _charging == null and not _attack_down:
+		if Time.get_ticks_msec() <= _buffer_until:
+			_tap()
+		_buffer_until = 0
+
+	# Attack button: tap or hold. Spells start casting straight away.
 	if _charging:
 		_update_charge(delta)
-		if released:
+		if _charging and released:
 			_attack_down = false
-			_release_charge()
+			if mode == Mode.MAGIC and _charge < _charging.cast_time:
+				_auto_release = true  # tapped: cast goes off when the bar fills
+			else:
+				_release_charge()
 	elif _attack_down:
-		if released:
+		if mode == Mode.MAGIC and not swinging and not _blocking:
+			_begin_charge()
+			if _charging == null:
+				_attack_down = false
+		elif released:
 			_attack_down = false
-			_tap()
-		elif _press_time >= tap_time and not busy and not _blocking:
+			if mode != Mode.MAGIC:
+				_tap()
+		elif _press_time >= tap_time and not swinging and not _blocking and mode != Mode.MAGIC:
 			_begin_charge()
 
 	# Block.
@@ -372,6 +412,9 @@ func _begin_release(ab: Ability, power: float, level: int, anim_start := 0.0) ->
 	if ab.cooldown > 0.0:
 		_cooldowns[ab] = ab.cooldown
 	_lunge = Vector3.ZERO
+	if ab.delivery == Ability.Delivery.MELEE and (_target == null or _target == player):
+		# No target: a small step into the swing so it has some weight.
+		_lunge = -player.model.global_basis.z * 1.4
 	if ab.delivery == Ability.Delivery.MELEE and _target and _target != player:
 		var to := _target.global_position - player.global_position
 		to.y = 0.0
@@ -420,6 +463,19 @@ func _land(ab: Ability) -> void:
 	match ab.delivery:
 		Ability.Delivery.MELEE:
 			var fwd := -player.model.global_basis.z
+			var power := _power
+			var staggers := ab.staggers
+			var push := ab.knockback
+			if _flourish:
+				power *= 1.3
+				staggers = true
+				push *= 1.6
+			var countering := _use_counter()
+			if countering:
+				power *= 1.75
+				staggers = true
+				push *= 1.5
+			var landed := false
 			for n in Combat.enemies_near(player, player.global_position, ab.reach + 0.6):
 				var to := n.global_position - player.global_position
 				if absf(to.y) > 2.0:
@@ -427,12 +483,18 @@ func _land(ab: Ability) -> void:
 				to.y = 0.0
 				if to.length() > 0.5 and rad_to_deg(fwd.angle_to(to.normalized())) > ab.arc * 0.5:
 					continue
-				Combat.hit(player, n, _power, ab.staggers)
+				if Combat.hit(player, n, power, staggers, push) > 0.0:
+					landed = true
+					if countering:
+						FloatingText.spawn(n, "Counter!", Color(1.0, 0.85, 0.3), 1.2)
+			if landed and _flourish:
+				FloatingText.spawn(player, "Flourish!", Color(1.0, 0.8, 0.3), 1.3)
+				TimeFX.hit_stop(player, 0.14)
 		Ability.Delivery.PROJECTILE:
 			var from := _hand_position(ab.projectile_style == Ability.ProjectileStyle.BOLT)
 			var target: Node3D = _target if _target and Combat.is_alive(_target) else null
 			var aim := _free_aim_direction(from)
-			Projectile.launch(from, player, target, ab, _power, aim)
+			Projectile.launch(from, player, target, ab, _power * (1.5 if _use_counter() else 1.0), aim)
 			if ab.projectile_style == Ability.ProjectileStyle.ARROW:
 				Combat.play_sound(player, SHOT_SOUND, -4.0)
 			elif ab.sounds.size() > 0:
@@ -454,9 +516,23 @@ func _free_aim_direction(_from: Vector3) -> Vector3:
 	return (fwd.normalized() + Vector3.UP * 0.02).normalized()
 
 
+## True (once) if a counter is ready from a parry or perfect dodge.
+func _use_counter() -> bool:
+	if Time.get_ticks_msec() <= _counter_until:
+		_counter_until = 0
+		return true
+	return false
+
+
+## After a parry or a perfect dodge: the next hit within counter_window is a counter.
+func grant_counter() -> void:
+	_counter_until = Time.get_ticks_msec() + int(counter_window * 1000.0)
+
+
 func _finish_action() -> void:
 	_current = null
 	_queued = null
+	_flourish = false
 	player.end_action()
 
 
@@ -493,10 +569,14 @@ func _begin_charge() -> void:
 		notice.emit("Not enough mana")
 		_attack_down = false
 		return
-	if not player.start_action(0.3 if mode != Mode.MELEE else 0.15):
+	var move := 0.15 if mode == Mode.MELEE else 0.3
+	if mode == Mode.MAGIC and move_cancels_cast:
+		move = 0.0
+	if not player.start_action(move):
 		return
 	_charging = ab
 	_charge = 0.0
+	_auto_release = false
 	_enter_combat()
 	match mode:
 		Mode.MELEE:
@@ -514,6 +594,13 @@ func _begin_charge() -> void:
 func _update_charge(delta: float) -> void:
 	_charge += delta
 	var ab := _charging
+	if mode == Mode.MAGIC:
+		if move_cancels_cast and _move_input().length() > 0.5:
+			_interrupt("Cancelled", false)
+			return
+		if _auto_release and _charge >= ab.cast_time:
+			_release_charge()
+			return
 	if targeting.has_target():
 		player.face_toward(targeting.target.global_position, delta)
 	if mode == Mode.MELEE and character.current_animation() == ab.animation and character.animation_position() >= heavy_windup_time:
@@ -521,19 +608,28 @@ func _update_charge(delta: float) -> void:
 	charge_progress.emit(_charge_fraction(), _charge_level())
 
 
+## Spells: still filling the cast bar (can't go off yet).
+func is_casting() -> bool:
+	return _charging != null and mode == Mode.MAGIC and _charge < _charging.cast_time
+
+
 func _charge_fraction() -> float:
 	if _charging == null:
 		return 0.0
 	if mode == Mode.MAGIC:
+		if is_casting():
+			return clampf(_charge / maxf(_charging.cast_time, 0.01), 0.0, 1.0)
 		var levels := maxi(_charging.max_charge_level, 1)
-		return clampf(_charge / (_charging.charge_time * levels), 0.0, 1.0)
+		if levels <= 1:
+			return 1.0
+		return clampf((_charge - _charging.cast_time) / (_charging.charge_time * (levels - 1)), 0.0, 1.0)
 	return clampf(_charge / maxf(_charging.charge_time, 0.01), 0.0, 1.0)
 
 
 func _charge_level() -> int:
 	if _charging == null or mode != Mode.MAGIC:
 		return 1
-	var level := 1 + int(_charge / maxf(_charging.charge_time, 0.01))
+	var level := 1 + int(maxf(_charge - _charging.cast_time, 0.0) / maxf(_charging.charge_time, 0.01))
 	level = mini(level, maxi(_charging.max_charge_level, 1))
 	# Only as many levels as there's mana for.
 	while level > 1 and stats.mana < _charging.mana_cost * level:
@@ -551,7 +647,8 @@ func _release_charge() -> void:
 	match mode:
 		Mode.MELEE:
 			player.end_action()
-			_start(ab, ab.power * (1.0 + ab.charge_power * k), 1, heavy_windup_time)
+			if _start(ab, ab.power * (1.0 + ab.charge_power * k), 1, heavy_windup_time):
+				_flourish = k >= 0.98
 		Mode.RANGED:
 			player.end_action()
 			var power := ab.power * lerpf(quick_shot_power, 1.0 + ab.charge_power, k)
@@ -560,6 +657,7 @@ func _release_charge() -> void:
 			player.end_action()
 			var levels := maxi(ab.max_charge_level, 1)
 			var level_k := float(level - 1) / maxf(levels - 1, 1)
+			_auto_release = false
 			_start(ab, ab.power * (1.0 + ab.charge_power * level_k), level, 0.0)
 
 
@@ -584,7 +682,12 @@ func _end_charge_visuals() -> void:
 func _start_block() -> void:
 	if not player.start_action(0.0):
 		return
+	# Blocking cancels the end of a swing.
+	_current = null
+	_queued = null
+	_flourish = false
 	_blocking = true
+	_block_started = Time.get_ticks_msec()
 	_enter_combat()
 	player.action_animation.emit("block", 0.0, 0.1, 1.0)
 
@@ -611,6 +714,9 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 		to.y = 0.0
 		var fwd := -player.model.global_basis.z
 		if to.length() < 0.01 or rad_to_deg(fwd.angle_to(to.normalized())) <= block_arc * 0.5:
+			if Time.get_ticks_msec() - _block_started <= int(parry_window * 1000.0):
+				_parry(source as Node3D)
+				return 0.0
 			if block_stamina_per_hit <= 0.0 or stats.use_stamina(block_stamina_per_hit):
 				FloatingText.spawn(player, "Blocked", Color(0.8, 0.85, 0.9), 0.8)
 				return amount * (1.0 - clampf(block_reduction + stats.block, 0.0, 0.95))
@@ -618,11 +724,52 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 			_end_block()
 			player.action_animation.emit("hit_react", 0.0, 0.05, 1.0)
 			return amount
+	# Hit while casting or charging: light hits push the cast back, big or heavy hits interrupt.
+	var heavy := Combat.incoming_heavy or amount >= interrupt_share * stats.max_health
+	if _charging:
+		if mode == Mode.MAGIC and not heavy:
+			_charge = maxf(_charge - cast_pushback, 0.0)
+			charge_progress.emit(_charge_fraction(), _charge_level())
+		else:
+			_interrupt("Interrupted")
+			return amount
+	elif _current and not _hit_done and heavy:
+		_interrupt("Interrupted")
+		return amount
 	# Flinch when standing still and not busy.
 	if player.state == PlayerController.State.NORMAL and player.is_on_floor() \
 			and Vector2(player.velocity.x, player.velocity.z).length() < 0.5:
 		player.action_animation.emit("hit_react", 0.0, 0.05, 1.0)
 	return amount
+
+
+## Stops a cast, charge or wind-up.
+func _interrupt(reason: String, flinch := true) -> void:
+	var ab := _charging if _charging else _current
+	_cancel_charge()
+	if _current:
+		_finish_action()
+	_attack_down = false
+	_auto_release = false
+	if ab and ab.delivery != Ability.Delivery.MELEE:
+		_cooldowns[ab] = maxf(cooldown_left(ab), 0.5)  # a short lockout
+	cast_interrupted.emit(reason)
+	FloatingText.spawn(player, reason, Color(1.0, 0.45, 0.4), 0.9)
+	if flinch:
+		player.action_animation.emit("hit_react", 0.0, 0.05, 1.0)
+
+
+func _parry(attacker: Node3D) -> void:
+	FloatingText.spawn(player, "Parry!", Color(0.7, 0.9, 1.0), 1.3)
+	Combat.play_sound(player, Combat.BLOCK_SOUND, 0.0, 1.15)
+	Effects.sparks(Combat.world_root(player), _hand_position(false), Color(0.85, 0.95, 1.0), 2.0, Vector3.UP)
+	TimeFX.hit_stop(player, 0.12)
+	var cam := get_tree().get_first_node_in_group("player_camera")
+	if cam:
+		cam.call("shake", 0.3)
+	if attacker and attacker.has_method("stagger"):
+		attacker.call("stagger", 1.4)
+	grant_counter()
 
 
 # --- Combat state ------------------------------------------------------------
@@ -640,6 +787,10 @@ func _set_combat(value: bool) -> void:
 
 
 func _cancel_all() -> void:
+	if _charging and mode == Mode.MAGIC and _charge < _charging.cast_time:
+		cast_interrupted.emit("Cancelled")
+	_auto_release = false
+	_flourish = false
 	if _charging:
 		_charging = null
 		_end_charge_visuals()

@@ -30,7 +30,9 @@
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
-			"ticks": 4.0
+			"ticks": 4.0,
+			"knockback": 2.5,
+			"cast_time": 0.0
 		},
 		{
 			"animation": "attack_light_2",
@@ -62,7 +64,9 @@
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
-			"ticks": 4.0
+			"ticks": 4.0,
+			"knockback": 3.0,
+			"cast_time": 0.0
 		},
 		{
 			"animation": "attack_heavy",
@@ -93,7 +97,9 @@
 			"staggers": true,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
-			"ticks": 4.0
+			"ticks": 4.0,
+			"knockback": 7.0,
+			"cast_time": 0.0
 		},
 		{
 			"animation": "bow_release",
@@ -122,7 +128,9 @@
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
-			"ticks": 4.0
+			"ticks": 4.0,
+			"knockback": 1.5,
+			"cast_time": 0.0
 		},
 		{
 			"animation": "cast_release",
@@ -153,7 +161,9 @@
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
-			"ticks": 4.0
+			"ticks": 4.0,
+			"knockback": 3.5,
+			"cast_time": 1.1
 		},
 		{
 			"animation": "cast_heal",
@@ -184,7 +194,9 @@
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
-			"ticks": 4.0
+			"ticks": 4.0,
+			"knockback": 0.0,
+			"cast_time": 1.4
 		}
 	]
 }

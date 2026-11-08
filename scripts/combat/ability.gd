@@ -31,6 +31,10 @@ enum Delivery {
 @export var arc := 120.0
 ## Heavy hits interrupt an enemy's attack.
 @export var staggers := false
+## How hard a hit pushes the target back (m/s).
+@export var knockback := 2.0
+## Spells: seconds of casting before it can go off (the cast bar). 0 = instant.
+@export var cast_time := 0.0
 
 @export_group("Charging")
 ## Holding the attack button charges it. Melee/bows: seconds to full charge.

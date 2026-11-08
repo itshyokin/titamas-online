@@ -301,6 +301,7 @@ func _build_combat_hud() -> void:
 	_combat.charge_started.connect(_on_charge_started)
 	_combat.charge_progress.connect(_on_charge_progress)
 	_combat.charge_ended.connect(func() -> void: _charge_bar.visible = false)
+	_combat.cast_interrupted.connect(_on_cast_interrupted)
 	_combat.notice.connect(func(text: String) -> void: show_message(text, 1.0))
 	_combat.mode_changed.connect(func(_m: int) -> void: _refresh_slots())
 	_combat.spell_changed.connect(func(_i: int) -> void: _refresh_slots())
@@ -372,7 +373,7 @@ func _paint_slot(slot: Slot, active: bool) -> void:
 func _refresh_slots() -> void:
 	for i in _mode_slots.size():
 		_paint_slot(_mode_slots[i], i == _combat.mode)
-	var spell_tip := "Tap attack in magic mode to cast; hold to charge."
+	var spell_tip := "Magic: press attack to cast (the bar has to fill; moving or a hard hit stops it). Keep holding to charge it higher."
 	_mode_slots[0].panel.tooltip_text = "Melee: tap attack to swing (tap again to combo), hold to charge a heavy blow."
 	_mode_slots[1].panel.tooltip_text = "Ranged: tap attack for a quick shot, hold to draw and release to fire."
 	_mode_slots[2].panel.tooltip_text = "Magic: " + spell_tip
@@ -452,7 +453,29 @@ func _on_charge_started(ab: Ability) -> void:
 func _on_charge_progress(fraction: float, level: int) -> void:
 	_charge_bar.value = fraction * 100.0
 	var ab := _combat.selected_spell() if _combat.mode == PlayerCombat.Mode.MAGIC else null
-	if ab and ab.max_charge_level > 1:
+	_tint_bar(Color(0.55, 0.6, 1.0) if _combat.is_casting() else Color(0.95, 0.7, 0.2))
+	if ab and _combat.is_casting():
+		_charge_label.text = "Casting %s" % ab.display_name
+	elif ab and ab.max_charge_level > 1:
 		_charge_label.text = "%s  —  level %d" % [ab.display_name, level]
 	elif fraction >= 1.0:
 		_charge_label.text = "Full power!"
+
+
+## Shows "Interrupted" / "Cancelled" on the cast bar for a moment.
+func _on_cast_interrupted(reason: String) -> void:
+	_charge_bar.visible = true
+	_tint_bar(Color(0.9, 0.3, 0.25))
+	_charge_label.text = reason
+	var shown := _charge_label.text
+	get_tree().create_timer(0.7).timeout.connect(func() -> void:
+		if _charge_label.text == shown and not _combat.is_casting():
+			_charge_bar.visible = false)
+
+
+func _tint_bar(color: Color) -> void:
+	var fill := _charge_bar.get_theme_stylebox("fill")
+	if fill is StyleBoxFlat and (fill as StyleBoxFlat).bg_color != color:
+		var sb := (fill as StyleBoxFlat).duplicate() as StyleBoxFlat
+		sb.bg_color = color
+		_charge_bar.add_theme_stylebox_override("fill", sb)

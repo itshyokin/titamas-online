@@ -47,6 +47,9 @@ const WATER_MASK := 8  # layer 4
 ## Invulnerable window, in seconds from the start of a dodge.
 @export var iframe_start := 0.05
 @export var iframe_end := 0.45
+## A hit landing this soon (s) after the dodge's invulnerability starts is a perfect
+## dodge: slow motion and a counter.
+@export var perfect_dodge_window := 0.18
 
 @export_group("Ledges")
 ## Ledge height above the feet that can be grabbed while in the air.
@@ -148,6 +151,7 @@ var action_velocity := Vector3.ZERO
 var fatigue := 0.0
 var _last_safe := Vector3.ZERO
 var _safe_timer := 0.0
+var _push := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -163,6 +167,7 @@ func _physics_process(delta: float) -> void:
 	match state:
 		State.NORMAL:
 			_normal_movement(delta)
+			_apply_push(delta)
 			move_and_slide()
 		State.DODGE:
 			_dodge_movement(delta)
@@ -178,12 +183,23 @@ func _physics_process(delta: float) -> void:
 			move_and_slide()
 		State.ACTION:
 			_action_movement(delta)
+			_apply_push(delta)
 			move_and_slide()
 		State.DEAD:
 			velocity.x = move_toward(velocity.x, 0.0, 10.0 * delta)
 			velocity.z = move_toward(velocity.z, 0.0, 10.0 * delta)
 			velocity.y -= gravity * delta
 			move_and_slide()
+
+
+func _apply_push(delta: float) -> void:
+	if _push == Vector3.ZERO:
+		return
+	velocity.x += _push.x
+	velocity.z += _push.z
+	_push = _push.move_toward(Vector3.ZERO, 20.0 * delta)
+	if state != State.NORMAL and state != State.ACTION:
+		_push = Vector3.ZERO
 
 
 ## True during the invulnerable part of a dodge.
@@ -306,6 +322,12 @@ func face_toward(point: Vector3, delta := 0.0) -> void:
 	model.rotation.y = yaw if delta <= 0.0 else lerp_angle(model.rotation.y, yaw, turn_speed * delta)
 
 
+## Pushed by a hit (m/s, flat). Only while on foot.
+func apply_knockback(push: Vector3) -> void:
+	if state in [State.NORMAL, State.ACTION]:
+		_push = push * 0.6
+
+
 func is_alive() -> bool:
 	return state != State.DEAD
 
@@ -315,7 +337,15 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 	if state == State.DEAD:
 		return 0.0
 	if is_invulnerable():
-		FloatingText.spawn(self, "Dodged", Color(0.8, 0.9, 1.0), 0.8)
+		var combat_node := get_node_or_null("PlayerCombat")
+		if _dodge_time - iframe_start <= perfect_dodge_window:
+			# Dodged at the last moment: time slows and a counter is ready.
+			FloatingText.spawn(self, "Perfect dodge!", Color(0.7, 0.95, 1.0), 1.2)
+			TimeFX.slow_motion(self, 0.9)
+			if combat_node:
+				combat_node.call("grant_counter")
+		else:
+			FloatingText.spawn(self, "Dodged", Color(0.8, 0.9, 1.0), 0.8)
 		return 0.0
 	var combat := get_node_or_null("PlayerCombat")
 	if combat:

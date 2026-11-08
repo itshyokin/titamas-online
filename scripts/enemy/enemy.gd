@@ -32,6 +32,18 @@ enum AI { IDLE, CHASE, ATTACK, STAGGER, RETURN, DEAD }
 @export var attack_hit_time := 0.32
 @export var attack_arc := 110.0
 
+## How hard its hits push (m/s).
+@export var knockback := 3.0
+
+@export_group("Heavy attack")
+## Every Nth attack is a slow heavy one: it flashes orange first, staggers, and interrupts
+## spells. 0 = never. Parrying it leaves the enemy wide open.
+@export var heavy_every := 3
+@export var heavy_power := 1.8
+@export var heavy_animation := "attack_heavy"
+@export var heavy_animation_speed := 0.7
+@export var heavy_hit_time := 0.68
+
 @export_group("Death")
 ## Seconds before the body disappears, and before it comes back.
 @export var corpse_time := 6.0
@@ -54,7 +66,15 @@ var _cooldown := 0.0
 var _stagger := 0.0
 var _plate: Nameplate
 var _settled := false  # ground found under the spawn point
+var _attack_count := 0
+var _heavy := false
+var _anim := ""
+var _anim_speed := 1.0
+var _hit_time := 0.3
+var _walk := Vector3.ZERO  # steering velocity (knockback is added on top)
+var _push := Vector3.ZERO
 var _swing_sound: AudioStream = preload("res://assets/audio/combat/swing_1.ogg")
+var _heavy_sound: AudioStream = preload("res://assets/audio/combat/swing_heavy.ogg")
 
 
 func _ready() -> void:
@@ -114,8 +134,11 @@ func _physics_process(delta: float) -> void:
 			move = _return_home(delta)
 		AI.DEAD:
 			pass
-	velocity.x = lerpf(velocity.x, move.x, 10.0 * delta)
-	velocity.z = lerpf(velocity.z, move.z, 10.0 * delta)
+	_walk.x = lerpf(_walk.x, move.x, 10.0 * delta)
+	_walk.z = lerpf(_walk.z, move.z, 10.0 * delta)
+	velocity.x = _walk.x + _push.x
+	velocity.z = _walk.z + _push.z
+	_push = _push.move_toward(Vector3.ZERO, 16.0 * delta)
 	if move.length() > 0.1:
 		_face(global_position + move, delta)
 	move_and_slide()
@@ -164,25 +187,34 @@ func _start_attack() -> void:
 	ai = AI.ATTACK
 	_attack_time = 0.0
 	_attack_hit = false
+	_attack_count += 1
+	_heavy = heavy_every > 0 and _attack_count % heavy_every == 0 and character.has_animation(heavy_animation)
+	_anim = heavy_animation if _heavy else attack_animation
+	_anim_speed = heavy_animation_speed if _heavy else attack_animation_speed
+	_hit_time = heavy_hit_time if _heavy else attack_hit_time
 	_face(target.global_position, 0.0)
-	character.play_from(attack_animation, 0.0, 0.1, attack_animation_speed)
+	character.play_from(_anim, 0.0, 0.1, _anim_speed)
+	if _heavy:
+		# The tell: an orange flash, so the player knows to dodge or parry.
+		Effects.flash(model, Color(1.0, 0.55, 0.1), 0.45, 0.65)
+		FloatingText.spawn(self, "!", Color(1.0, 0.6, 0.2), 1.2)
 
 
 func _attacking(delta: float) -> void:
-	_attack_time += delta * attack_animation_speed
+	_attack_time += delta * _anim_speed
 	if not _attack_hit and _target_valid():
 		_face(target.global_position, delta * 0.5)  # tracks slowly, so side-steps work
-	if not _attack_hit and _attack_time >= attack_hit_time - 0.12 and _attack_time - delta * attack_animation_speed < attack_hit_time - 0.12:
-		Combat.play_sound(self, _swing_sound, -6.0, 0.85)
-	if not _attack_hit and _attack_time >= attack_hit_time:
+	if not _attack_hit and _attack_time >= _hit_time - 0.12 and _attack_time - delta * _anim_speed < _hit_time - 0.12:
+		Combat.play_sound(self, _heavy_sound if _heavy else _swing_sound, -6.0 if not _heavy else -3.0, 0.85)
+	if not _attack_hit and _attack_time >= _hit_time:
 		_attack_hit = true
 		if _target_valid():
 			var to := target.global_position - global_position
 			var fwd := -model.global_basis.z
 			to.y = 0.0
 			if to.length() <= attack_range + 0.6 and rad_to_deg(fwd.angle_to(to.normalized())) <= attack_arc * 0.5:
-				Combat.hit(self, target, attack_power)
-	if _attack_time >= character.get_animation_length(attack_animation):
+				Combat.hit(self, target, attack_power * (heavy_power if _heavy else 1.0), _heavy, knockback * (2.0 if _heavy else 1.0))
+	if _attack_time >= character.get_animation_length(_anim):
 		_cooldown = attack_cooldown * randf_range(0.8, 1.2)
 		ai = AI.CHASE
 
@@ -198,12 +230,18 @@ func _return_home(delta: float) -> Vector3:
 	return to.normalized() * run_speed
 
 
-## Interrupts the wind-up of an attack (heavy hits).
-func stagger() -> void:
+## Pushed by a hit (m/s, flat).
+func apply_knockback(push: Vector3) -> void:
+	if ai != AI.DEAD:
+		_push = push
+
+
+## Interrupts the wind-up of an attack (heavy hits; a parry staggers for longer).
+func stagger(seconds := 0.7) -> void:
 	if ai == AI.DEAD:
 		return
 	ai = AI.STAGGER
-	_stagger = 0.7
+	_stagger = seconds
 	character.play_from("hit_react", 0.0, 0.05, 0.8)
 	FloatingText.spawn(self, "Staggered", Color(1.0, 0.8, 0.4), 0.8)
 
@@ -264,6 +302,7 @@ func _on_died() -> void:
 	target = null
 	collision_layer = 0
 	velocity = Vector3.ZERO
+	_walk = Vector3.ZERO
 	character.play_from("death", 0.0, 0.15, 1.0)
 	await get_tree().create_timer(corpse_time).timeout
 	model.visible = false

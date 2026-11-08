@@ -23,9 +23,12 @@ extends Node3D
 var _yaw := 0.0
 var _pitch := -15.0
 var _target_distance := 5.0
+var _trauma := 0.0  # 0..1, from hits; decays
+var _shake_time := 0.0
 
 
 func _ready() -> void:
+	add_to_group("player_camera")
 	top_level = true  # don't inherit the character's rotation
 	_target_distance = spring_arm.spring_length
 	spring_arm.add_excluded_object(get_parent().get_rid())
@@ -71,7 +74,18 @@ func _process(delta: float) -> void:
 			_yaw -= stick.x * speed
 			_pitch = clampf(_pitch - stick.y * speed * 0.7 * invert, min_pitch, max_pitch)
 	rotation_degrees = Vector3(_pitch, _yaw, 0)
+	if _trauma > 0.0:
+		# Shake: trauma squared, so small knocks are subtle and big ones punchy.
+		_shake_time += delta * 40.0
+		var k := _trauma * _trauma * 2.5 * GameSettings.screen_shake
+		rotation_degrees += Vector3(sin(_shake_time * 1.3) * k, sin(_shake_time * 0.9 + 2.0) * k, sin(_shake_time * 1.1 + 4.0) * k * 0.5)
+		_trauma = maxf(_trauma - delta * 2.2, 0.0)
 	spring_arm.spring_length = lerpf(spring_arm.spring_length, _target_distance, zoom_smoothing * delta)
+
+
+## Shakes the view; strength 0..1 adds up (Settings → Graphics → Screen shake scales it).
+func shake(strength: float) -> void:
+	_trauma = clampf(_trauma + strength, 0.0, 1.0)
 
 
 ## Flat forward/right vectors of the camera, used for camera-relative movement.

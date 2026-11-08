@@ -240,6 +240,13 @@ func _graphics_tab() -> Control:
 	rays.button_pressed = GameSettings.god_rays
 	rays.toggled.connect(func(on: bool) -> void: GameSettings.set_god_rays(on))
 	page.add_child(rays)
+	var shake := HSlider.new()
+	shake.min_value = 0.0
+	shake.max_value = 1.0
+	shake.step = 0.05
+	shake.value = GameSettings.screen_shake
+	shake.value_changed.connect(func(v: float) -> void: GameSettings.set_screen_shake(v))
+	page.add_child(_row("Screen shake", shake))
 	var note := Label.new()
 	note.text = "Off = smooth textures. Fine, Chunky and Retro show textures as bigger and bigger square pixels."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD

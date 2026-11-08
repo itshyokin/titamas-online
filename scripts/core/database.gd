@@ -14,11 +14,13 @@ const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, 
 const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
 	"attack_range", "attack_cooldown", "attack_animation", "attack_animation_speed", "attack_hit_time",
-	"attack_arc", "corpse_time", "respawn_time",
+	"attack_arc", "corpse_time", "respawn_time", "knockback", "heavy_every", "heavy_power",
+	"heavy_animation", "heavy_animation_speed", "heavy_hit_time",
 ]
 const PLAYER_STATS := ["max_health", "max_mana", "max_stamina", "stamina_regen", "stamina_regen_delay", "mana_regen"]
 const PLAYER_MOVEMENT := ["run_speed", "walk_speed", "sprint_speed", "jump_velocity", "sprint_stamina_cost"]
-const PLAYER_COMBAT := ["tap_time", "quick_shot_power", "block_reduction", "lunge_range"]
+const PLAYER_COMBAT := ["tap_time", "quick_shot_power", "block_reduction", "lunge_range", "parry_window",
+	"counter_window", "perfect_dodge_window", "cast_pushback", "interrupt_share"]
 
 var abilities := {}  # id -> Ability (the same objects for the whole session)
 var enemies := {}  # id -> Dictionary
@@ -197,6 +199,10 @@ func apply_player(controller: Node, stats: Stats, combat: Node) -> void:
 	for field: String in PLAYER_COMBAT:
 		if c.has(field):
 			combat.set(field, float(c[field]))
+	if c.has("move_cancels_cast"):
+		combat.set("move_cancels_cast", bool(c.move_cancels_cast))
+	if c.has("perfect_dodge_window"):
+		controller.set("perfect_dodge_window", float(c.perfect_dodge_window))
 	var l: Dictionary = player.get("loadout", {})
 	if l.has("light_combo"):
 		combat.set("light_combo", abilities_for(l.light_combo))

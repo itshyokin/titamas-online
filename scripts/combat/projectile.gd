@@ -102,7 +102,7 @@ func _physics_process(delta: float) -> void:
 
 func _hit(who: Node3D) -> void:
 	if who and Combat.is_alive(who) and is_instance_valid(source):
-		Combat.hit(source, who, power, ability.staggers)
+		Combat.hit(source, who, power, ability.staggers, ability.knockback)
 	if _arrow:
 		Combat.play_sound(self, ARROW_HIT_SOUND, -6.0)
 	else:

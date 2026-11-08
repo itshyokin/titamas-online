@@ -360,6 +360,10 @@ func bone_rest_position(bone_name: String) -> Vector3:
 	return (global_transform.affine_inverse() * skel.global_transform * skel.get_bone_global_rest(bone)).origin
 
 
+func has_animation(anim: String) -> bool:
+	return _animator != null and _animator.has_animation(anim)
+
+
 func get_animation_length(anim: String) -> float:
 	if _animator == null or not _animator.has_animation(anim):
 		return 0.0

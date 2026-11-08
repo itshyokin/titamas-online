@@ -10,6 +10,13 @@ const CRIT_MULTIPLIER := 1.5
 const HIT_SOUND := preload("res://assets/audio/combat/hit_body.ogg")
 const IMPACT_SOUND := preload("res://assets/audio/combat/hit_impact.ogg")
 const BLOCK_SOUND := preload("res://assets/audio/combat/block_hit.ogg")
+## Hit-stop (seconds of freeze) when the player lands or takes a blow.
+const HIT_STOP_LIGHT := 0.045
+const HIT_STOP_HEAVY := 0.09
+
+## True while a heavy (staggering) hit is being worked out, so whoever is hit can tell
+## it from a light one in modify_incoming_damage (interrupting casts, breaking guard).
+static var incoming_heavy := false
 
 
 ## Where to put short-lived things (sounds, numbers, bolts): the running level.
@@ -63,8 +70,9 @@ static func scaled_power(power: float, attacker_level: int, defender_level: int)
 
 ## Hits `target` for `power` (before scaling) from `source`. The target can lessen it
 ## (dodging, blocking) by having `modify_incoming_damage(amount, source) -> float`.
+## `knockback` pushes the target away (m/s) if it has `apply_knockback(velocity)`.
 ## Returns the damage dealt.
-static func hit(source: Node3D, target: Node3D, power: float, stagger := false) -> float:
+static func hit(source: Node3D, target: Node3D, power: float, stagger := false, knockback := 0.0) -> float:
 	var ts := stats_of(target)
 	if ts == null or ts.is_dead():
 		return 0.0
@@ -78,7 +86,9 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false) 
 	amount *= 100.0 / (100.0 + maxf(ts.armor, 0.0))
 	var before := amount
 	if target.has_method("modify_incoming_damage"):
+		incoming_heavy = stagger
 		amount = target.modify_incoming_damage(amount, source)
+		incoming_heavy = false
 	if amount <= 0.0:
 		return 0.0
 	amount = maxf(roundf(amount), 1.0)
@@ -89,7 +99,34 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false) 
 		play_sound(target, IMPACT_SOUND, -10.0, randf_range(0.8, 1.0))
 	if stagger and not blocked and target.has_method("stagger"):
 		target.stagger()
+	impact(source, target, stagger or crit, blocked, knockback)
 	return amount
+
+
+## The feel of a blow landing: sparks, a white flash, a push, and for the player a
+## split-second freeze and a camera shake.
+static func impact(source: Node3D, target: Node3D, heavy: bool, blocked := false, knockback := 0.0) -> void:
+	if target == null or not target.is_inside_tree():
+		return
+	var dir := Vector3.ZERO
+	if source and is_instance_valid(source):
+		dir = target.global_position - source.global_position
+		dir.y = 0.0
+		dir = dir.normalized() if dir.length() > 0.01 else Vector3.ZERO
+	var at := aim_point(target) - dir * 0.3
+	var color := Color(0.75, 0.85, 1.0) if blocked else Color(1.0, 0.7, 0.3)
+	Effects.sparks(world_root(target), at, color, 1.6 if heavy else 1.0, -dir + Vector3.UP * 0.6)
+	if not blocked:
+		Effects.flash(target, Color(1, 1, 1), 0.14 if heavy else 0.1, 0.8 if heavy else 0.6)
+	if knockback > 0.0 and dir != Vector3.ZERO and target.has_method("apply_knockback"):
+		target.apply_knockback(dir * knockback * (0.3 if blocked else 1.0))
+	var player_hit := target is PlayerController
+	if source is PlayerController or player_hit:
+		TimeFX.hit_stop(target, HIT_STOP_HEAVY if heavy else HIT_STOP_LIGHT)
+		var cam := target.get_tree().get_first_node_in_group("player_camera")
+		if cam:
+			var strength := (0.45 if heavy else 0.25) if player_hit else (0.35 if heavy else 0.12)
+			cam.call("shake", strength * (0.5 if blocked else 1.0))
 
 
 ## A one-shot 3D sound at a node's position (the player frees itself when done).

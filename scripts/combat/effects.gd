@@ -81,6 +81,51 @@ static func burst(parent: Node, at: Vector3, color: Color, size := 1.0) -> void:
 	tween.tween_callback(holder.queue_free)
 
 
+## Quick sparks where a blow lands (no light, so many can go off at once).
+static func sparks(parent: Node, at: Vector3, color: Color, size := 1.0, toward := Vector3.UP) -> void:
+	var p := CPUParticles3D.new()
+	parent.add_child(p)
+	p.global_position = at
+	p.amount = int(14 * size) + 4
+	p.lifetime = 0.35
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.mesh = _quad(0.09 * size, color)
+	p.direction = toward if toward.length() > 0.01 else Vector3.UP
+	p.spread = 60.0
+	p.initial_velocity_min = 3.0 * size
+	p.initial_velocity_max = 7.0 * size
+	p.gravity = Vector3(0, -9, 0)
+	p.damping_min = 4.0
+	p.damping_max = 8.0
+	p.scale_amount_min = 0.5
+	p.scale_amount_max = 1.2
+	p.color_ramp = _fade_ramp(color)
+	p.emitting = true
+	p.finished.connect(p.queue_free)
+
+
+## Flashes every mesh under `node` a colour for a moment (being hit, a wind-up warning).
+static func flash(node: Node, color := Color(1, 1, 1), seconds := 0.12, strength := 0.75) -> void:
+	if node == null or not node.is_inside_tree():
+		return
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(color, strength)
+	mat.no_depth_test = false
+	var meshes: Array = node.find_children("*", "MeshInstance3D", true, false)
+	for mi: MeshInstance3D in meshes:
+		if mi.is_visible_in_tree() and mi.material_overlay == null:
+			mi.material_overlay = mat
+	var tween := node.create_tween()
+	tween.tween_property(mat, "albedo_color:a", 0.0, seconds).set_ease(Tween.EASE_IN)
+	tween.tween_callback(func() -> void:
+		for mi: MeshInstance3D in meshes:
+			if is_instance_valid(mi) and mi.material_overlay == mat:
+				mi.material_overlay = null)
+
+
 ## Soft rising motes around a combatant for `seconds` (healing over time).
 static func heal_glow(on: Node3D, seconds: float, color := Color(0.4, 1.0, 0.5)) -> void:
 	var old := on.get_node_or_null("HealGlow")

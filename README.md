@@ -26,7 +26,7 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 | Lock on (toggle) | R3 | Middle mouse |
 | Camera | Right stick | Hold right mouse, wheel zoom |
 
-Melee: rapid taps chain the combo, hold for a heavy blow. Ranged: tap for a quick shot, hold to draw (harder the longer). Magic: tap to cast the selected spell, hold to charge it up to level 3. Locked on, the camera keeps the target in view and moving sideways circles it. Stamina is only used by sprinting. The test level and the overworld each have a training dummy and two bandits.
+Melee: rapid taps chain the combo, hold for a heavy blow. Ranged: tap for a quick shot, hold to draw (harder the longer). Magic: press attack to start casting; the cast bar has to fill before the spell goes off (tap and it goes off when full; keep holding to charge it up to level 3). Moving cancels a cast, light hits knock the bar back, and heavy hits interrupt it. Locked on, the camera keeps the target in view and moving sideways circles it. Stamina is only used by sprinting. The test level and the overworld each have a training dummy and two bandits.
 
 **Traversal:** jump at a ledge to grab it (A/D shimmy, W or Space pull up, S or Ctrl drop) · jump at a climbable wall, or walk into a ladder, then W/S to climb (Space jumps off, Ctrl lets go) · swim in deep water, Space at an edge climbs out. The gray-box level (`scenes/levels/test_level.tscn`) has a test spot for each. · hold right mouse to look · mouse wheel zoom.
 
@@ -112,7 +112,15 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 ## Combat
 
 - **Abilities are data:** each attack or spell is an entry in the Database (damage, costs, cooldown, charge time and power, reach, animation and its hit time, sounds). The Player tab's loadout picks the melee combo, heavy attack, bow and up to four spells. New spells of an existing kind (melee, bolt/arrow, heal over time) need no code.
-- **Enemies:** `scenes/enemies/bandit.tscn`. Drop it into a level and set its **Enemy Id** to an entry from the Database's Enemies tab (name, level, health, skin colour, aggro range, leash, attack damage and timing, respawn time). Enemies wait for the ground to stream in, then stand on it.
+- **Feel:** blows that land freeze the game for a split second (hit-stop), shake the camera (Settings → Graphics → Screen shake), flash the target white, throw sparks and knock it back (each ability's **Knockback**).
+- **Skill moves:**
+  - **Parry:** start blocking just before a hit lands (**Parry window**, Player tab). You take no damage, the attacker is staggered, and your next hit is a **counter** (×1.75 and staggers).
+  - **Perfect dodge:** dodge at the last moment and time slows down, with a counter ready.
+  - **Flourish:** a fully charged heavy attack hits harder, staggers and knocks back further.
+  - **Flow:** a swing can be cancelled into a block or dodge once it has landed, and an attack tapped during a dodge comes out as soon as the dodge ends.
+- **Interrupts:** heavy hits (and hits worth 15% of your health or more) interrupt casts, charges and swings that haven't landed yet; smaller hits push a cast back.
+- **Enemies:** `scenes/enemies/bandit.tscn`. Every third bandit attack is a slow heavy one: it flashes orange and shows "!" first. Dodge it, or parry it for a long stagger (Enemies tab → **Heavy attack**).
+- **Placing enemies:** `scenes/enemies/bandit.tscn`. Drop it into a level and set its **Enemy Id** to an entry from the Database's Enemies tab (name, level, health, skin colour, aggro range, leash, attack damage and timing, respawn time). Enemies wait for the ground to stream in, then stand on it.
 - **Training dummy:** a `StaticBody3D` with `scripts/enemy/training_dummy.gd`; it never dies and resets a few seconds after the last hit.
 - **Animations:** the attack, block, cast, flinch and death clips are stand-ins posed by the retarget tool. Put a Mixamo FBX with the same name in `assets/animations/mixamo/` (`attack_light_1`, `attack_light_2`, `attack_heavy`, `block`, `bow_aim`, `bow_release`, `cast_channel`, `cast_release`, `cast_heal`, `hit_react`, `death`, `idle_armed`) and rebuild; it replaces the stand-in. If a clip's timing changes, adjust the ability's **Hit Time** to match.
 

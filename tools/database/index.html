@@ -224,7 +224,7 @@ const TABS = {
 		blank: () => ({
 			id: "new_ability", display_name: "New Ability", description: "", delivery: "melee", color: "#bfbfcc",
 			power: 10, mana_cost: 0, stamina_cost: 0, cooldown: 0, reach: 2.4, arc: 120, staggers: false,
-			charge_time: 1, charge_power: 1, max_charge_level: 1, ticks: 4, tick_interval: 2,
+			knockback: 2, cast_time: 0, charge_time: 1, charge_power: 1, max_charge_level: 1, ticks: 4, tick_interval: 2,
 			projectile_speed: 18, projectile_color: "#ff8026", projectile_style: "bolt",
 			animation: "attack_light_1", animation_speed: 1, hit_time: 0.3, recovery_time: 0.5, move_scale: 0.2,
 			sounds: [], hit_sound: "",
@@ -243,7 +243,9 @@ const TABS = {
 				{ key: "cooldown", label: "Cooldown (s)", type: "number" },
 				{ key: "reach", label: "Reach / range (m)", type: "number" },
 				{ key: "arc", label: "Swing width (°)", type: "number", show: isMelee },
-				{ key: "staggers", label: "Staggers enemies", type: "bool" },
+				{ key: "staggers", label: "Staggers enemies", type: "bool", help: "Heavy hit: interrupts attacks and spells." },
+				{ key: "knockback", label: "Knockback (m/s)", type: "number", help: "How hard a hit pushes the target back." },
+				{ key: "cast_time", label: "Cast time (s)", type: "number", help: "Spells: the cast bar has to fill before it goes off. 0 = instant." },
 			]],
 			["Charging (hold the attack button)", [
 				{ key: "charge_time", label: "Charge time (s)", type: "number", help: "Melee / bow: to full charge. Spells: per level." },
@@ -348,6 +350,14 @@ const TABS = {
 				{ key: "attack_animation", label: "Animation", type: "anim" },
 				{ key: "attack_animation_speed", label: "Animation speed", type: "number", help: "Lower = slower, easier to dodge." },
 				{ key: "attack_hit_time", label: "Hit time (s)", type: "number" },
+				{ key: "knockback", label: "Knockback (m/s)", type: "number" },
+			]],
+			["Heavy attack", [
+				{ key: "heavy_every", label: "Every Nth attack", type: "int", help: "0 = never. Slow, flashes orange first, staggers, interrupts spells. Parry it for a big opening." },
+				{ key: "heavy_power", label: "Damage multiplier", type: "number" },
+				{ key: "heavy_animation", label: "Animation", type: "anim" },
+				{ key: "heavy_animation_speed", label: "Animation speed", type: "number" },
+				{ key: "heavy_hit_time", label: "Hit time (s)", type: "number" },
 			]],
 			["Death", [
 				{ key: "corpse_time", label: "Body stays (s)", type: "number" },
@@ -383,6 +393,12 @@ const TABS = {
 				{ key: "combat.quick_shot_power", label: "Quick shot power", type: "number", help: "Share of a full draw (0–1)." },
 				{ key: "combat.block_reduction", label: "Block stops", type: "number", help: "Share of damage blocked (0–1)." },
 				{ key: "combat.lunge_range", label: "Lunge distance (m)", type: "number" },
+				{ key: "combat.parry_window", label: "Parry window (s)", type: "number", help: "Block this soon before a hit lands to parry it." },
+				{ key: "combat.counter_window", label: "Counter window (s)", type: "number", help: "After a parry or perfect dodge, your next hit is a counter." },
+				{ key: "combat.perfect_dodge_window", label: "Perfect dodge window (s)", type: "number", help: "Dodge this late and time slows down." },
+				{ key: "combat.cast_pushback", label: "Cast pushback (s)", type: "number", help: "A hit while casting knocks the cast bar back this much." },
+				{ key: "combat.interrupt_share", label: "Interrupting hit (share of health)", type: "number", help: "Hits this big (0.15 = 15% of max health), or heavy hits, interrupt casts and charges." },
+				{ key: "combat.move_cancels_cast", label: "Moving cancels casting", type: "bool" },
 			]],
 			["Loadout", [
 				{ key: "loadout.light_combo", label: "Melee combo (in order)", type: "abilities", wide: true },
