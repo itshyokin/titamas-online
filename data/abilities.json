@@ -33,7 +33,8 @@
 			"ticks": 4.0,
 			"knockback": 2.5,
 			"cast_time": 0.0,
-			"icon": "slash"
+			"icon": "slash",
+			"windup_time": 0.45
 		},
 		{
 			"animation": "attack_light_2",
@@ -68,7 +69,8 @@
 			"ticks": 4.0,
 			"knockback": 3.0,
 			"cast_time": 0.0,
-			"icon": "slash"
+			"icon": "slash",
+			"windup_time": 0.45
 		},
 		{
 			"animation": "attack_heavy",
@@ -102,7 +104,8 @@
 			"ticks": 4.0,
 			"knockback": 6.0,
 			"cast_time": 0.0,
-			"icon": "slash"
+			"icon": "slash",
+			"windup_time": 0.45
 		},
 		{
 			"animation": "attack_heavy",
@@ -136,7 +139,8 @@
 			"ticks": 4.0,
 			"knockback": 7.0,
 			"cast_time": 0.0,
-			"icon": "heavy"
+			"icon": "heavy",
+			"windup_time": 0.45
 		},
 		{
 			"animation": "bow_release",
@@ -168,7 +172,8 @@
 			"ticks": 4.0,
 			"knockback": 1.5,
 			"cast_time": 0.0,
-			"icon": "arrow"
+			"icon": "arrow",
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_release",
@@ -202,7 +207,8 @@
 			"ticks": 4.0,
 			"knockback": 3.5,
 			"cast_time": 1.1,
-			"icon": "fire"
+			"icon": "fire",
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_heal",
@@ -236,10 +242,11 @@
 			"ticks": 4.0,
 			"knockback": 0.0,
 			"cast_time": 1.4,
-			"icon": "heal"
+			"icon": "heal",
+			"windup_time": 0.45
 		},
 		{
-			"animation": "rifle_aim",
+			"animation": "gunplay",
 			"animation_speed": 1.0,
 			"arc": 120.0,
 			"charge_power": 0.9,
@@ -250,7 +257,7 @@
 			"description": "A heavy bolt, faster and harder-hitting than an arrow.",
 			"display_name": "Crossbow bolt",
 			"hit_sound": "",
-			"hit_time": 0.02,
+			"hit_time": 0.05,
 			"id": "crossbow_shot",
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
@@ -268,7 +275,8 @@
 			"ticks": 4.0,
 			"knockback": 2.5,
 			"cast_time": 0.0,
-			"icon": "arrow"
+			"icon": "arrow",
+			"windup_time": 0.45
 		},
 		{
 			"animation": "pistol_fire",
@@ -300,10 +308,11 @@
 			"ticks": 4.0,
 			"knockback": 3.5,
 			"cast_time": 0.0,
-			"icon": "bullet"
+			"icon": "bullet",
+			"windup_time": 0.45
 		},
 		{
-			"animation": "rifle_aim",
+			"animation": "gunplay",
 			"animation_speed": 1.0,
 			"arc": 120.0,
 			"charge_power": 0.9,
@@ -314,7 +323,7 @@
 			"description": "A long shot from a flintlock rifle.",
 			"display_name": "Rifle shot",
 			"hit_sound": "",
-			"hit_time": 0.02,
+			"hit_time": 0.05,
 			"id": "rifle_shot",
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
@@ -332,7 +341,8 @@
 			"ticks": 4.0,
 			"knockback": 3.5,
 			"cast_time": 0.0,
-			"icon": "bullet"
+			"icon": "bullet",
+			"windup_time": 0.45
 		},
 		{
 			"animation": "greatsword_slash_1",
@@ -367,7 +377,79 @@
 			"ticks": 4.0,
 			"knockback": 2.5,
 			"cast_time": 0.0,
-			"icon": "slash"
+			"icon": "slash",
+			"windup_time": 0.45
+		},
+		{
+			"animation": "greatsword_slash_2",
+			"animation_speed": 1.0,
+			"arc": 170.0,
+			"charge_power": 1.0,
+			"charge_time": 1.0,
+			"color": "#bfbfcc",
+			"cooldown": 0.0,
+			"delivery": "melee",
+			"description": "An overhead two-handed chop.",
+			"display_name": "Greatsword chop",
+			"hit_sound": "",
+			"hit_time": 0.32,
+			"id": "gs_slash_2",
+			"mana_cost": 0.0,
+			"max_charge_level": 1.0,
+			"move_scale": 0.1,
+			"power": 20.0,
+			"projectile_color": "#ff8026",
+			"projectile_speed": 18.0,
+			"projectile_style": "bolt",
+			"reach": 2.8,
+			"recovery_time": 0.7,
+			"sounds": [
+				"res://assets/audio/combat/swing_1.ogg",
+				"res://assets/audio/combat/swing_2.ogg"
+			],
+			"staggers": false,
+			"stamina_cost": 0.0,
+			"tick_interval": 2.0,
+			"ticks": 4.0,
+			"knockback": 2.5,
+			"cast_time": 0.0,
+			"icon": "slash",
+			"windup_time": 0.45
+		},
+		{
+			"animation": "greatsword_heavy",
+			"animation_speed": 1.0,
+			"arc": 140.0,
+			"charge_power": 0.8,
+			"charge_time": 1.0,
+			"color": "#d98c4d",
+			"cooldown": 0.0,
+			"delivery": "melee",
+			"description": "Spin, leap and slam the blade down. Hold to charge.",
+			"display_name": "Leaping slam",
+			"hit_sound": "",
+			"hit_time": 1.0,
+			"id": "gs_heavy",
+			"mana_cost": 0.0,
+			"max_charge_level": 1.0,
+			"move_scale": 0.0,
+			"power": 30.0,
+			"projectile_color": "#ff8026",
+			"projectile_speed": 18.0,
+			"projectile_style": "bolt",
+			"reach": 3.0,
+			"recovery_time": 1.5,
+			"sounds": [
+				"res://assets/audio/combat/swing_heavy.ogg"
+			],
+			"staggers": true,
+			"stamina_cost": 0.0,
+			"tick_interval": 2.0,
+			"ticks": 4.0,
+			"knockback": 7.0,
+			"cast_time": 0.0,
+			"icon": "heavy",
+			"windup_time": 0.3
 		}
 	]
 }

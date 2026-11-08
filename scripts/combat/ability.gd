@@ -42,6 +42,8 @@ enum Delivery {
 ## Holding the attack button charges it. Melee/bows: seconds to full charge.
 ## Spells: seconds per charge level.
 @export var charge_time := 1.0
+## Heavy blows: where the clip holds while the button is held (its wind-up, seconds).
+@export var windup_time := 0.45
 ## Extra power at full charge: 1.0 = double damage when fully charged.
 @export var charge_power := 1.0
 ## Spells: highest charge level (skill tree ranks will raise this). Mana cost is per level.

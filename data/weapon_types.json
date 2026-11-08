@@ -57,9 +57,9 @@
 			"hands": 2,
 			"combo": [
 				"gs_slash",
-				"slash_3"
+				"gs_slash_2"
 			],
-			"heavy": "heavy_strike",
+			"heavy": "gs_heavy",
 			"shot": "",
 			"speed": 0.75,
 			"power": 1.55,
@@ -81,9 +81,9 @@
 			"hands": 2,
 			"combo": [
 				"gs_slash",
-				"slash_3"
+				"gs_slash_2"
 			],
-			"heavy": "heavy_strike",
+			"heavy": "gs_heavy",
 			"shot": "",
 			"speed": 0.7,
 			"power": 1.65,

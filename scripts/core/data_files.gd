@@ -25,7 +25,7 @@ const ABILITY_ENUMS := {
 }
 const ABILITY_FIELDS := [
 	"id", "display_name", "description", "delivery", "color", "icon", "power", "mana_cost", "stamina_cost",
-	"cooldown", "reach", "arc", "staggers", "knockback", "cast_time", "charge_time", "charge_power", "max_charge_level", "ticks",
+	"cooldown", "reach", "arc", "staggers", "knockback", "cast_time", "charge_time", "windup_time", "charge_power", "max_charge_level", "ticks",
 	"tick_interval", "projectile_speed", "projectile_color", "projectile_style", "animation",
 	"animation_speed", "hit_time", "recovery_time", "move_scale", "sounds", "hit_sound",
 ]

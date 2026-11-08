@@ -815,7 +815,7 @@ func _update_charge(delta: float) -> void:
 		player.face_toward(aim_point, delta)
 	elif targeting.has_target():
 		player.face_toward(targeting.target.global_position, delta)
-	if not is_ranged() and character.current_animation() == ab.animation and character.animation_position() >= heavy_windup_time:
+	if not is_ranged() and character.current_animation() == ab.animation and character.animation_position() >= ab.windup_time:
 		character.set_speed(0.0)  # hold the wind-up
 
 
@@ -833,7 +833,7 @@ func _release_charge() -> void:
 	player.end_action()
 	if is_ranged():
 		_start(ab, ab.power * lerpf(quick_shot_power, 1.0 + ab.charge_power, k))
-	elif _start(ab, ab.power * (1.0 + ab.charge_power * k), heavy_windup_time):
+	elif _start(ab, ab.power * (1.0 + ab.charge_power * k), ab.windup_time):
 		_flourish = k >= 0.98
 
 

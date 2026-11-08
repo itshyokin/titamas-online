@@ -23,6 +23,7 @@ var idle_animation := "idle"
 ## Sidestep clip: ground covered per second at speed 1, and the fastest sideways speed
 ## that still sidesteps (faster runs).
 @export var strafe_anim_speed := 0.86
+@export var strafe_left_anim_speed := 1.6
 @export var run_strafe_max := 6.5
 
 var _air_time := 0.0
@@ -70,8 +71,12 @@ func _ground_animation(h_speed: float) -> void:
 	if h_speed < idle_max:
 		character.play(idle_animation, 0.25)
 	elif player.lock_facing and h_speed < run_strafe_max and _sideways() != 0.0:
-		# Locked on and moving sideways: sidestep (the clip steps right; played backwards to the left).
-		character.play("strafing", 0.2, _sideways() * clampf(h_speed / strafe_anim_speed, 0.6, 1.6))
+		# Locked on and moving sideways: sidestep (a left clip if there is one, else the right
+		# one played backwards).
+		if _sideways() < 0.0 and character.has_animation("strafing_left"):
+			character.play("strafing_left", 0.2, clampf(h_speed / strafe_left_anim_speed, 0.6, 1.6))
+		else:
+			character.play("strafing", 0.2, _sideways() * clampf(h_speed / strafe_anim_speed, 0.6, 1.6))
 	elif h_speed < walk_max:
 		character.play("walking", 0.2, clampf(h_speed / walk_anim_speed, 0.6, 1.6))
 	else:

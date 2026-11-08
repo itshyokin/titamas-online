@@ -568,7 +568,7 @@ func _animate() -> void:
 		return
 	var current := character.current_animation()
 	# Let a talking gesture finish.
-	if current.begins_with("talk_") and character.animation_position() < character.get_animation_length(current) - 0.25:
+	if ai == AI.TALK and current.begins_with("talk_") and character.animation_position() < character.get_animation_length(current) - 0.25:
 		return
 	if current == "hit_react" and character.animation_position() < 0.4:
 		return
@@ -606,7 +606,7 @@ func _update_head(delta: float) -> void:
 		_gesture_wait -= delta
 		if _gesture_wait <= 0.0 and character.current_animation() == "idle":
 			_gesture_wait = randf_range(1.5, 3.5)
-			character.play("talk_%d" % randi_range(1, 3), 0.3)
+			character.play(_random_talk(), 0.3)
 	else:
 		_gesture_wait = randf_range(0.4, 1.0)
 	# The player looks back at whoever they're talking to.
@@ -618,6 +618,14 @@ func _update_head(delta: float) -> void:
 			plook.looking = _player_looking
 			plook.forward = -(player.get_node("Model") as Node3D).global_basis.z
 			plook.target_position = _head_of(self)
+
+
+## One of the talk_1, talk_2... clips this body has.
+func _random_talk() -> String:
+	var n := 1
+	while character.has_animation("talk_%d" % (n + 1)):
+		n += 1
+	return "talk_%d" % randi_range(1, n)
 
 
 ## Roughly where a character's eyes are.

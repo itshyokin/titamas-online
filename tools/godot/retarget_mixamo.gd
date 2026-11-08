@@ -20,7 +20,7 @@ const FPS := 30.0
 const LOOPING := [
 	"idle", "walking", "running", "falling_loop", "hanging_idle",
 	"swimming", "treading_water", "climbing_up_wall", "climbing_down_wall", "climbing_ladder",
-	"idle_armed", "greatsword_idle", "rifle_idle", "pistol_idle", "block", "strafing", "cast_channel",
+	"idle_armed", "greatsword_idle", "rifle_idle", "pistol_idle", "block", "strafing", "strafing_left", "cast_channel",
 ]
 ## Looping animations whose hips should not drift horizontally (in-place).
 const IN_PLACE := LOOPING
@@ -29,8 +29,8 @@ const IN_PLACE := LOOPING
 ## FPS, in the character's local space, facing -Z) so the game can move the body itself.
 const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back", "hanging_hop_left", "hanging_hop_right", "hanging_shimmy_left",
 	# Attacks and draws: the game moves the body (lunges), so the clips stay in place.
-	"attack_light_1_full", "attack_light_2", "attack_light_3", "attack_heavy", "greatsword_slash_1_full", "greatsword_slash_2",
-	"greatsword_heavy", "draw_sword", "draw_greatsword", "draw_rifle", "draw_pistol", "hit_react", "gun_reload",
+	"attack_light_1_full", "attack_light_2", "attack_light_3", "attack_heavy", "greatsword_slash_1_full", "greatsword_slash_2_full",
+	"greatsword_heavy_full", "talk_1", "talk_2", "talk_3", "talk_4", "draw_sword", "draw_greatsword", "draw_rifle", "draw_pistol", "hit_react", "gun_reload",
 	"cast_release_full", "cast_heal_full", "casting_spell", "shooting", "gunplay", "bow_shot_full",
 	"cast_area_full", "cast_1h_a_full", "cast_1h_b_full"]
 ## Clips made by playing another backwards (with its root motion reversed): a shimmy left
@@ -51,7 +51,9 @@ const SUBCLIPS := {
 	"cast_1h_a": ["cast_1h_a_full", 0.4, 1.9],
 	"cast_1h_b": ["cast_1h_b_full", 0.35, 1.9],
 	"pistol_fire": ["shooting", 0.22, 1.17],
-	"rifle_aim": ["gunplay", 0.0, 0.4],
+	"rifle_aim": ["gunplay", 0.0, 0.05],
+	"greatsword_slash_2": ["greatsword_slash_2_full", 0.1, 1.1],
+	"greatsword_heavy": ["greatsword_heavy_full", 0.15, 2.0],
 }
 ## Animations whose hips may dip but not rise; the physics jump provides the height.
 const NO_HIP_RISE := ["jumping"]
