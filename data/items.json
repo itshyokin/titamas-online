@@ -264,7 +264,9 @@
 			"model": "builtin:helm",
 			"fitted_masc": "",
 			"fitted_femme": "",
-			"hides": [],
+			"hides": [
+				"hair"
+			],
 			"fit": {
 				"masc": [
 					{

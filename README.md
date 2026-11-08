@@ -6,7 +6,8 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 
 1. Pull with GitHub Desktop.
 2. Open Godot 4.6, click **Import**, pick this folder's `project.godot`.
-3. Press **F5** (Play). The overworld test loads your terrain chunks. The gray-box test level is `scenes/levels/test_level.tscn` (open it and press **F6**).
+3. Press **F5** (Play). The title screen opens: **New Game** goes to the character creator, then class select, then the overworld. **Load Game** lists your characters.
+4. To skip the menus while testing, open a level and press **F6** (`scenes/levels/overworld_test.tscn`, or the gray-box `scenes/levels/test_level.tscn`). That plays a default character with the starting kit and saves nothing.
 
 **Controls** (all rebindable: gear icon top right, or Esc / Start → Settings):
 
@@ -115,13 +116,26 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 - **Training dummy:** a `StaticBody3D` with `scripts/enemy/training_dummy.gd`; it never dies and resets a few seconds after the last hit.
 - **Animations:** the attack, block, cast, flinch and death clips are stand-ins posed by the retarget tool. Put a Mixamo FBX with the same name in `assets/animations/mixamo/` (`attack_light_1`, `attack_light_2`, `attack_heavy`, `block`, `bow_aim`, `bow_release`, `cast_channel`, `cast_release`, `cast_heal`, `hit_react`, `death`, `idle_armed`) and rebuild; it replaces the stand-in. If a clip's timing changes, adjust the ability's **Hit Time** to match.
 
+## Title screen, characters and saves
+
+- **Title screen** (`scenes/ui/main_menu.tscn`, the main scene): New Game, Load Game, Achievements (later), Settings, Credits, Quit. The last character you played stands on the dais.
+- **Character creator:** species (Human for now), body type, pronouns, skin colour, height, build, hair style and colour, facial hair and colour (both bodies), eyes and eye colour, and a name. Drag to turn the character, mouse wheel to zoom on the face, **Randomize** for ideas. All the choices are in `data/appearance.json` (colour lists, styles, heights, builds, where the eyes sit on each face).
+- **Class select:** Fighter for now; Rogue, Mage and Druid show as "coming soon". The preview wears the class's starting gear. Classes are in the Database's **Classes** tab; a class can have its own starting kit (empty = the Player tab's). Skill trees and stats come later.
+- **Saves:** one file per character in Godot's user folder (`user://saves/`; on Windows `%APPDATA%\Godot\app_userdata\Titamas Online\saves`). Saved when the backpack changes, every minute, from **Settings → Save game**, on **Quit to title**, and when you close the window. It keeps the look, class, gear, backpack, gold, level, where you are and play time. Load Game shows your characters (double-click or **Play**) and can delete them.
+- **Credits** text is in `data/credits.json`.
+
+**Your own art for the creator**
+- **Eyes:** each style is `assets/characters/eyes/<id>.png` (the eye, outer corner on the right, iris drawn light grey) plus `<id>_iris.png` (white where the eye colour goes). Draw over the placeholders or add new ones and list them under `eyes` in `data/appearance.json`. If the eyes sit wrong on a face, adjust `eye_placement` there (height, apart, width, tall).
+- **Hair and facial hair:** the placeholders are made from the head mesh by `tools/godot/make_appearance.gd`. Hair made in Blender, weight-painted to the same rig, replaces them: set the style's `fitted_masc` / `fitted_femme` to your file. Rigid extras (ponytail, bun, long hair) are `model` + `fit`, like items. Helmets hide the hair ("hair" under Hides in the Items tab).
+- **Height and build:** height scales the whole character (Short 0.93, Tall 1.07). Thin and Heavy push the body in or out along its surface: most at the belly and hips, less on the limbs, a little on the face. Armour follows. If you add shape keys named `heavy` and `thin` to the body parts in Blender, those are used instead.
+
 ## Equipment and backpack
 
 - **Character window** (I, B or Back on a controller): equipment slots on the left, stats and gold in the middle, a 24-slot backpack on the right. Click an item to see it. Right-click or double-click equips or uses it; drag between slots to move or equip; drag out of the window to throw it away (it asks first). On a controller: A equips/uses, Y picks up and places, X sets the item as a quick item.
 - **Quick items:** two slots, used with D-pad up/down (Z/C). Set them from the window.
 - **Gear shows on the body**, on both masc and femme. Armour adds armour (less damage taken), health and mana; weapons add attack or spell power; a shield adds block. The bow only works with a bow equipped in the Ranged slot.
 - **Loot:** bandits drop a sack with gold and items. Walk over it to pick it up; anything that doesn't fit stays in the sack for a few minutes.
-- **Items** are in the Database's **Items** tab: name, kind, slot, rarity, stats, what using it does, and its look. The Player tab has the **Starting kit**. Your character is saved to `user://character.json`; **Settings → Graphics → Reset character** starts over with the kit.
+- **Items** are in the Database's **Items** tab: name, kind, slot, rarity, stats, what using it does, and its look. The Player tab has the **Starting kit**. Each character keeps its own backpack and gear in its save.
 - **Fit Armor** (toolbar button) opens the armour-fitting editor with both bodies side by side. Pick an item and a body, then move, turn and scale each piece on its bone (arrow keys and Page Up/Down nudge, Shift for bigger steps, right-drag orbits the camera). **Save** writes `data/items.json`. "Copy to other body" gives you a starting point for the other body.
 - **Your own models:** the current armour is placeholder, made from the body meshes. Rigid pieces (helms, pauldrons, weapons, shields): export a `.glb` and set the item's **Model**, then fit it. Skinned pieces (shirts, trousers, boots): skin them to the same Mixamo armature in Blender and set **Fitted (masc)/(femme)** to the scene; tick the body parts it covers under **Hides**. `tools/godot/make_placeholder_armor.gd` rebuilds the placeholders.
 

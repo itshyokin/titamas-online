@@ -269,12 +269,16 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 				(child as MeshInstance3D).skeleton = NodePath("..")
 				nodes.append(child)
 		piece.free()
+		if weight != 0.0:
+			_morph_group(nodes.duplicate())
 	if with_rigid:
 		var fits: Array = item.get("fit", {}).get(body, [])
 		for att: Dictionary in fits:
 			var node := attach_fitted(att, String(item.get("model", "")))
 			if node:
 				nodes.append(node)
+	if item.has("tint"):
+		_tint(nodes, item.tint)
 	var hides: Array = item.get("hides", [])
 	for part in hides:
 		_hidden_parts[part] = int(_hidden_parts.get(part, 0)) + 1
@@ -340,6 +344,11 @@ func _update_hidden_parts() -> void:
 		if child is MeshInstance3D and child.material_override == _skin_material:
 			var part := String(child.name).trim_prefix(prefix)
 			(child as MeshInstance3D).visible = int(_hidden_parts.get(part, 0)) <= 0
+	# Helmets can hide the hair (its "hides" lists "hair").
+	if _worn.has("hair"):
+		for node in _worn.hair.nodes:
+			if is_instance_valid(node):
+				(node as Node3D).visible = int(_hidden_parts.get("hair", 0)) <= 0
 
 
 ## Where a bone sits in the rest pose, in this model's space.
@@ -371,7 +380,7 @@ func get_skeleton() -> Skeleton3D:
 
 
 func _apply() -> void:
-	if not is_inside_tree():
+	if not is_inside_tree() or _batch:
 		return
 	_skin_material.albedo_color = skin_color
 	for type in BodyType.values():
@@ -382,12 +391,16 @@ func _apply() -> void:
 		for mesh in armature.find_children("*", "MeshInstance3D", true, false):
 			if mesh.owner != null:  # the body's own parts, not worn gear
 				(mesh as MeshInstance3D).material_override = _skin_material
+	_apply_morph()
 	_setup_animator()
 	_rewear()
+	_apply_look_parts()
 
 
 ## Puts everything worn back on (on the current body type).
 func _rewear() -> void:
+	for tag in LOOK_TAGS:
+		take_off(tag)
 	if _worn.is_empty():
 		return
 	var old := _worn.duplicate()
@@ -397,6 +410,217 @@ func _rewear() -> void:
 	for tag: String in old:
 		wear(old[tag].item, tag, old[tag].with_rigid)
 	body_changed.emit()
+
+
+# --- Appearance (character creator) -------------------------------------------
+# Database.resolve_appearance() turns a saved look into what's applied here:
+# {body, skin, hair: style entry, hair_color, facial_hair: entry, facial_color,
+#  eyes: entry, eye_color, eye_placement: {height, apart, width, tall, forward},
+#  height_scale, weight}. Hair and facial hair are worn like gear (tags below).
+
+const LOOK_TAGS := ["underwear", "hair", "facial_hair"]
+const EYE_SHADER := preload("res://assets/materials/eye.gdshader")
+## How far the "heavy" and "thin" builds push the body out / in (m, at the belly).
+const HEAVY_PUSH := 0.032
+const THIN_PULL := 0.013
+
+## -1 thin, 0 medium, 1 heavy. Uses "thin"/"heavy" shape keys if the body has them,
+## otherwise pushes the mesh in or out (more at the belly, less on the limbs).
+var weight := 0.0
+var _look := {}
+var _eye_nodes: Array[Node] = []
+var _morph_cache := {}  # "body:weight" -> {part name: Mesh}
+var _batch := false
+
+
+func apply_appearance(look: Dictionary) -> void:
+	_look = look
+	_batch = true
+	scale = Vector3.ONE * float(look.get("height_scale", 1.0))
+	weight = float(look.get("weight", 0.0))
+	body_type = BodyType.FEMME if String(look.get("body", "masc")) == "femme" else BodyType.MASC
+	skin_color = look.get("skin", skin_color)
+	_batch = false
+	_apply()
+
+
+func _apply_look_parts() -> void:
+	for node in _eye_nodes:
+		if is_instance_valid(node):
+			node.queue_free()
+	_eye_nodes.clear()
+	if _look.is_empty() or get_skeleton() == null:
+		return
+	for tag: String in LOOK_TAGS:
+		var entry: Dictionary = _look.get(tag, {})
+		if entry.has("fitted_masc") or entry.has("model"):
+			var item := entry.duplicate()
+			if tag == "underwear":
+				item["tint"] = Color.html(String(entry.get("color", "#cbbd9f")))
+			else:
+				item["tint"] = _look.get("facial_color" if tag == "facial_hair" else "hair_color", Color(0.3, 0.2, 0.1))
+			wear(item, tag)
+	_build_eyes()
+
+
+func _tint(nodes: Array, color: Color) -> void:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.roughness = 0.9
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	for node in nodes:
+		var meshes: Array = (node as Node).find_children("*", "MeshInstance3D", true, false)
+		if node is MeshInstance3D:
+			meshes.append(node)
+		for mi: MeshInstance3D in meshes:
+			mi.material_override = mat
+
+
+## Two flat eye quads laid on the face, following its shape, on the head bone.
+func _build_eyes() -> void:
+	var eyes: Dictionary = _look.get("eyes", {})
+	var place: Dictionary = _look.get("eye_placement", {})
+	var skel := get_skeleton()
+	var head := skel.get_node_or_null(("f_" if body_type == BodyType.FEMME else "") + "head") as MeshInstance3D
+	if eyes.is_empty() or place.is_empty() or head == null or not ResourceLoader.exists(String(eyes.get("texture", ""))):
+		return
+	var verts: PackedVector3Array = head.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var mat := ShaderMaterial.new()
+	mat.shader = EYE_SHADER
+	mat.set_shader_parameter("eye_texture", load(String(eyes.texture)))
+	if ResourceLoader.exists(String(eyes.get("iris", ""))):
+		mat.set_shader_parameter("iris_mask", load(String(eyes.iris)))
+	mat.set_shader_parameter("eye_color", _look.get("eye_color", Color(0.3, 0.5, 0.8)))
+	var y := float(place.height)
+	var w := float(place.width) * 0.5
+	var h := float(place.tall) * 0.5
+	for side: float in [-1.0, 1.0]:
+		var cx := side * float(place.apart)
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		# Corners: inner-top, outer-top, outer-bottom, inner-bottom (the texture's outer corner is u = 1).
+		var corners := [Vector2(-w, h), Vector2(w, h), Vector2(w, -h), Vector2(-w, -h)]
+		var uvs := [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
+		var pts: Array[Vector3] = []
+		for c: Vector2 in corners:
+			var px := cx + c.x * side
+			var py := y + c.y
+			pts.append(Vector3(px, py, _face_z(verts, px, py, w * 0.7) - float(place.forward)))
+		for k: int in [0, 1, 2, 0, 2, 3]:
+			st.set_uv(uvs[k])
+			st.add_vertex(pts[k])
+		st.generate_normals()
+		var mi := MeshInstance3D.new()
+		mi.name = "Eye"
+		mi.mesh = st.commit()
+		mi.material_override = mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var attach := attach_to_bone(mi, "mixamorig_Head", Transform3D.IDENTITY)
+		if attach:
+			attach.name = "Eye%s" % ("L" if side > 0.0 else "R")
+			_eye_nodes.append(attach)
+
+
+## Front of the face (smallest z) near (x, y), from the head mesh.
+static func _face_z(verts: PackedVector3Array, x: float, y: float, radius: float) -> float:
+	var best := INF
+	var r := radius
+	while best == INF and r < 0.05:
+		for p in verts:
+			if absf(p.x - x) < r and absf(p.y - y) < r:
+				best = minf(best, p.z)
+		r *= 1.6
+	return best if best != INF else 0.0
+
+
+func _apply_morph() -> void:
+	var armature := get_node_or_null(_armature_name(body_type))
+	# Never in the editor: the stored base meshes would get saved into scenes.
+	if armature == null or Engine.is_editor_hint():
+		return
+	var parts: Array = []
+	for mi in armature.find_children("*", "MeshInstance3D", true, false):
+		if mi.owner == null:
+			continue
+		if not mi.has_meta("base_mesh"):
+			mi.set_meta("base_mesh", mi.mesh)
+		parts.append(mi)
+	# Shape keys from Blender win if the body has them.
+	var keyed := false
+	for mi: MeshInstance3D in parts:
+		mi.mesh = mi.get_meta("base_mesh")
+		var heavy := mi.find_blend_shape_by_name("heavy")
+		var thin := mi.find_blend_shape_by_name("thin")
+		if heavy >= 0 or thin >= 0:
+			keyed = true
+			if heavy >= 0:
+				mi.set_blend_shape_value(heavy, maxf(weight, 0.0))
+			if thin >= 0:
+				mi.set_blend_shape_value(thin, maxf(-weight, 0.0))
+	if keyed or weight == 0.0:
+		return
+	var key := "%d:%.2f" % [body_type, weight]
+	if not _morph_cache.has(key):
+		var morphed := _morph_meshes(parts.map(func(mi: MeshInstance3D) -> Mesh: return mi.get_meta("base_mesh")))
+		var by_name := {}
+		for i in parts.size():
+			by_name[parts[i].name] = morphed[i]
+		_morph_cache[key] = by_name
+	for mi: MeshInstance3D in parts:
+		mi.mesh = _morph_cache[key].get(mi.name, mi.mesh)
+
+
+## Morphs worn skinned pieces in place (they were cut from the base bodies, so the same
+## push keeps them on the body).
+func _morph_group(meshes: Array) -> void:
+	var morphed := _morph_meshes(meshes.map(func(mi: MeshInstance3D) -> Mesh: return mi.mesh))
+	for i in meshes.size():
+		(meshes[i] as MeshInstance3D).mesh = morphed[i]
+
+
+## Pushes every vertex along its normal (averaged over all the meshes at that spot, so
+## seams between body parts stay closed) by the build's amount for that part of the body.
+func _morph_meshes(meshes: Array) -> Array:
+	var pooled := {}
+	var all_arrays := []
+	for mesh: Mesh in meshes:
+		var arrays := mesh.surface_get_arrays(0)
+		all_arrays.append(arrays)
+		var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var n: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+		for i in v.size():
+			var k := Vector3i((v[i] * 1000.0).round())
+			pooled[k] = pooled.get(k, Vector3.ZERO) + n[i]
+	var push := HEAVY_PUSH * weight if weight > 0.0 else THIN_PULL * weight
+	var out := []
+	for a in all_arrays.size():
+		var arrays: Array = all_arrays[a]
+		var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		for i in v.size():
+			var nrm: Vector3 = pooled[Vector3i((v[i] * 1000.0).round())].normalized()
+			v[i] += nrm * push * _build_factor(v[i])
+		arrays[Mesh.ARRAY_VERTEX] = v
+		arrays[Mesh.ARRAY_TANGENT] = null
+		var mesh := ArrayMesh.new()
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		var src: Mesh = meshes[a]
+		if src.get_surface_count() > 0 and src.surface_get_material(0):
+			mesh.surface_set_material(0, src.surface_get_material(0))
+		out.append(mesh)
+	return out
+
+
+## How much of the build's push a point gets (rest pose, metres): most on the belly and
+## hips, less on the arms and legs, a little on the face, almost none on hands and feet.
+static func _build_factor(p: Vector3) -> float:
+	var ax := absf(p.x)
+	var belly := 0.7 * smoothstep(0.02, -0.07, p.z) * smoothstep(0.92, 1.05, p.y) * smoothstep(1.38, 1.22, p.y)
+	var torso := 1.0 + belly + 0.2 * smoothstep(1.0, 0.9, p.y)
+	var leg := lerpf(0.3, 0.85, smoothstep(0.12, 0.88, p.y)) * lerpf(0.15, 1.0, smoothstep(0.05, 0.14, p.y))
+	var f := lerpf(leg, torso, smoothstep(0.82, 0.98, p.y))
+	f = lerpf(f, 0.12, smoothstep(1.52, 1.62, p.y) * smoothstep(0.2, 0.14, ax))
+	var arm := lerpf(0.55, 0.25, smoothstep(0.3, 0.7, ax)) * lerpf(1.0, 0.12, smoothstep(0.69, 0.76, ax))
+	return lerpf(f, arm, smoothstep(0.2, 0.3, ax) * smoothstep(1.2, 1.3, p.y))
 
 
 func _setup_animator() -> void:

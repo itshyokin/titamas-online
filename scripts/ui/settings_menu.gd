@@ -7,8 +7,12 @@ extends CanvasLayer
 const PANEL_COLOR := Color(0.09, 0.08, 0.12, 0.94)
 const ACCENT := Color(1.0, 0.85, 0.45)
 
+signal closed
+
 ## Set by the HUD so Esc clears a target before it opens the menu.
 var targeting: Node = null
+## The title screen opens the window itself: no gear button, no Esc/Start shortcut.
+var title_screen := false
 
 var _window: PanelContainer
 var _tabs: TabContainer
@@ -19,7 +23,8 @@ var _waiting: Array = []  # [action, gamepad, Button] while waiting for a key/bu
 
 func _ready() -> void:
 	layer = 20
-	_build_gear()
+	if not title_screen:
+		_build_gear()
 	_build_window()
 	_window.visible = false
 	GameSettings.bindings_changed.connect(_refresh_bindings)
@@ -42,9 +47,12 @@ func close() -> void:
 	_cancel_wait()
 	_window.visible = false
 	GameSettings.menu_open = false
+	closed.emit()
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if title_screen and not _window.visible:
+		return
 	if _window.visible:
 		if event.is_action_pressed("menu") or (event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE):
 			close()
@@ -141,6 +149,20 @@ func _build_window() -> void:
 	title.add_theme_color_override("font_color", ACCENT)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
+	if not title_screen and GameSession.active():
+		var save := Button.new()
+		save.text = "Save game"
+		save.pressed.connect(func() -> void:
+			GameSession.save_game()
+			save.text = "Saved ✓"
+			get_tree().create_timer(1.5).timeout.connect(func() -> void: save.text = "Save game"))
+		head.add_child(save)
+		var leave := Button.new()
+		leave.text = "Quit to title"
+		leave.pressed.connect(func() -> void:
+			close()
+			GameSession.quit_to_title())
+		head.add_child(leave)
 	var close_button := Button.new()
 	close_button.text = "Close"
 	close_button.pressed.connect(close)
@@ -218,21 +240,11 @@ func _graphics_tab() -> Control:
 	rays.button_pressed = GameSettings.god_rays
 	rays.toggled.connect(func(on: bool) -> void: GameSettings.set_god_rays(on))
 	page.add_child(rays)
-	var reset := Button.new()
-	reset.text = "Reset character (empty backpack, starting kit again)"
-	reset.pressed.connect(func() -> void:
-		var inv := get_tree().get_first_node_in_group("player_inventory")
-		if inv:
-			inv.call("reset_character"))
 	var note := Label.new()
 	note.text = "Off = smooth textures. Fine, Chunky and Retro show textures as bigger and bigger square pixels."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD
 	note.modulate = Color(1, 1, 1, 0.7)
 	page.add_child(note)
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 16)
-	page.add_child(spacer)
-	page.add_child(reset)
 	return page
 
 

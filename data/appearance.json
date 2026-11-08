@@ -1,0 +1,367 @@
+{
+	"species": [
+		{
+			"id": "human",
+			"name": "Human",
+			"description": "Adaptable and stubborn, humans are found in every corner of Titamas."
+		}
+	],
+	"pronouns": [
+		{
+			"id": "he",
+			"name": "He / him"
+		},
+		{
+			"id": "she",
+			"name": "She / her"
+		},
+		{
+			"id": "they",
+			"name": "They / them"
+		}
+	],
+	"skin_colors": [
+		"#f3d9c6",
+		"#ebc4a4",
+		"#dcab86",
+		"#c99167",
+		"#b37a52",
+		"#9d7553",
+		"#8a5a3b",
+		"#6e4229",
+		"#53311e",
+		"#3d2316"
+	],
+	"hair_colors": [
+		"#1c1716",
+		"#3b2618",
+		"#5e3b22",
+		"#7a3520",
+		"#b0461f",
+		"#d0782f",
+		"#dcb96c",
+		"#efe2bd",
+		"#9a9894",
+		"#ece9e4",
+		"#3a5fb0",
+		"#6b3fa0",
+		"#3f8a4a",
+		"#d46a9a"
+	],
+	"eye_colors": [
+		"#5a3418",
+		"#8a6a2c",
+		"#c98a1c",
+		"#3f8a3c",
+		"#3f78c8",
+		"#7a8e9c",
+		"#8048b8",
+		"#c03030",
+		"#e0b030",
+		"#8ad0e0"
+	],
+	"hair_styles": [
+		{
+			"id": "bald",
+			"name": "Bald"
+		},
+		{
+			"id": "buzz",
+			"name": "Buzz cut",
+			"fitted_masc": "res://assets/characters/hair/buzz_masc.scn",
+			"fitted_femme": "res://assets/characters/hair/buzz_femme.scn"
+		},
+		{
+			"id": "short",
+			"name": "Short",
+			"fitted_masc": "res://assets/characters/hair/short_masc.scn",
+			"fitted_femme": "res://assets/characters/hair/short_femme.scn"
+		},
+		{
+			"id": "spiky",
+			"name": "Spiky",
+			"fitted_masc": "res://assets/characters/hair/spiky_masc.scn",
+			"fitted_femme": "res://assets/characters/hair/spiky_femme.scn"
+		},
+		{
+			"id": "swept",
+			"name": "Swept back",
+			"fitted_masc": "res://assets/characters/hair/swept_masc.scn",
+			"fitted_femme": "res://assets/characters/hair/swept_femme.scn"
+		},
+		{
+			"id": "mohawk",
+			"name": "Mohawk",
+			"fitted_masc": "res://assets/characters/hair/mohawk_masc.scn",
+			"fitted_femme": "res://assets/characters/hair/mohawk_femme.scn"
+		},
+		{
+			"id": "long",
+			"name": "Long",
+			"fitted_masc": "res://assets/characters/hair/long_masc.scn",
+			"fitted_femme": "res://assets/characters/hair/long_femme.scn",
+			"model": "builtin:hair_long",
+			"fit": {
+				"masc": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0,
+							1.76,
+							0.014
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				],
+				"femme": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0,
+							1.745,
+							0.072
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.08
+					}
+				]
+			}
+		},
+		{
+			"id": "ponytail",
+			"name": "Ponytail",
+			"fitted_masc": "res://assets/characters/hair/ponytail_masc.scn",
+			"fitted_femme": "res://assets/characters/hair/ponytail_femme.scn",
+			"model": "builtin:hair_ponytail",
+			"fit": {
+				"masc": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0,
+							1.78,
+							0.118
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				],
+				"femme": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0,
+							1.765,
+							0.182
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				]
+			}
+		},
+		{
+			"id": "bun",
+			"name": "Bun",
+			"fitted_masc": "res://assets/characters/hair/bun_masc.scn",
+			"fitted_femme": "res://assets/characters/hair/bun_femme.scn",
+			"model": "builtin:hair_bun",
+			"fit": {
+				"masc": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0,
+							1.83,
+							0.1
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				],
+				"femme": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0,
+							1.815,
+							0.165
+						],
+						"rotation": [
+							0,
+							0,
+							0
+						],
+						"scale": 1.0
+					}
+				]
+			}
+		}
+	],
+	"facial_hair": [
+		{
+			"id": "none",
+			"name": "None"
+		},
+		{
+			"id": "stubble",
+			"name": "Stubble",
+			"fitted_masc": "res://assets/characters/facial_hair/stubble_masc.scn",
+			"fitted_femme": "res://assets/characters/facial_hair/stubble_femme.scn"
+		},
+		{
+			"id": "mustache",
+			"name": "Mustache",
+			"fitted_masc": "res://assets/characters/facial_hair/mustache_masc.scn",
+			"fitted_femme": "res://assets/characters/facial_hair/mustache_femme.scn"
+		},
+		{
+			"id": "goatee",
+			"name": "Goatee",
+			"fitted_masc": "res://assets/characters/facial_hair/goatee_masc.scn",
+			"fitted_femme": "res://assets/characters/facial_hair/goatee_femme.scn"
+		},
+		{
+			"id": "short_beard",
+			"name": "Short beard",
+			"fitted_masc": "res://assets/characters/facial_hair/short_beard_masc.scn",
+			"fitted_femme": "res://assets/characters/facial_hair/short_beard_femme.scn"
+		},
+		{
+			"id": "full_beard",
+			"name": "Full beard",
+			"fitted_masc": "res://assets/characters/facial_hair/full_beard_masc.scn",
+			"fitted_femme": "res://assets/characters/facial_hair/full_beard_femme.scn"
+		}
+	],
+	"eyes": [
+		{
+			"id": "round",
+			"name": "Round",
+			"texture": "res://assets/characters/eyes/round.png",
+			"iris": "res://assets/characters/eyes/round_iris.png"
+		},
+		{
+			"id": "almond",
+			"name": "Almond",
+			"texture": "res://assets/characters/eyes/almond.png",
+			"iris": "res://assets/characters/eyes/almond_iris.png"
+		},
+		{
+			"id": "narrow",
+			"name": "Narrow",
+			"texture": "res://assets/characters/eyes/narrow.png",
+			"iris": "res://assets/characters/eyes/narrow_iris.png"
+		},
+		{
+			"id": "large",
+			"name": "Large",
+			"texture": "res://assets/characters/eyes/large.png",
+			"iris": "res://assets/characters/eyes/large_iris.png"
+		},
+		{
+			"id": "sleepy",
+			"name": "Sleepy",
+			"texture": "res://assets/characters/eyes/sleepy.png",
+			"iris": "res://assets/characters/eyes/sleepy_iris.png"
+		},
+		{
+			"id": "fierce",
+			"name": "Fierce",
+			"texture": "res://assets/characters/eyes/fierce.png",
+			"iris": "res://assets/characters/eyes/fierce_iris.png"
+		}
+	],
+	"heights": [
+		{
+			"id": "short",
+			"name": "Short",
+			"scale": 0.93
+		},
+		{
+			"id": "medium",
+			"name": "Medium",
+			"scale": 1.0
+		},
+		{
+			"id": "tall",
+			"name": "Tall",
+			"scale": 1.07
+		}
+	],
+	"builds": [
+		{
+			"id": "thin",
+			"name": "Thin",
+			"weight": -1.0
+		},
+		{
+			"id": "medium",
+			"name": "Medium",
+			"weight": 0.0
+		},
+		{
+			"id": "heavy",
+			"name": "Heavy",
+			"weight": 1.0
+		}
+	],
+	"eye_placement": {
+		"masc": {
+			"height": 1.75,
+			"apart": 0.036,
+			"width": 0.041,
+			"tall": 0.031,
+			"forward": 0.002
+		},
+		"femme": {
+			"height": 1.742,
+			"apart": 0.038,
+			"width": 0.043,
+			"tall": 0.032,
+			"forward": 0.002
+		}
+	},
+	"default": {
+		"species": "human",
+		"body": "masc",
+		"pronouns": "he",
+		"skin": "#c99167",
+		"hair": "short",
+		"hair_color": "#3b2618",
+		"facial_hair": "none",
+		"facial_color": "#3b2618",
+		"eyes": "almond",
+		"eye_color": "#3f78c8",
+		"height": "medium",
+		"build": "medium"
+	},
+	"underwear": {
+		"id": "underwear",
+		"name": "Underclothes",
+		"fitted_masc": "res://assets/characters/underwear_masc.scn",
+		"fitted_femme": "res://assets/characters/underwear_femme.scn",
+		"color": "#cbbd9f"
+	}
+}

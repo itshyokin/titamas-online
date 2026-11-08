@@ -1,0 +1,52 @@
+{
+	"classes": [
+		{
+			"id": "fighter",
+			"name": "Fighter",
+			"available": true,
+			"role": "Melee \u00b7 Versatile",
+			"color": "#c8553d",
+			"icon": "sword",
+			"description": "A trained soldier who can handle any weapon. Fighters stand at the front, trade blows with sword and shield, and carry a bow and a little magic for when the enemy keeps its distance.",
+			"strengths": [
+				"Sturdy in close combat",
+				"Uses every weapon type",
+				"Easy to learn"
+			],
+			"starting_kit": {}
+		},
+		{
+			"id": "rogue",
+			"name": "Rogue",
+			"available": false,
+			"role": "Melee \u00b7 Stealth",
+			"color": "#5a6b4a",
+			"icon": "dagger",
+			"description": "Coming in a later update.",
+			"strengths": [],
+			"starting_kit": {}
+		},
+		{
+			"id": "mage",
+			"name": "Mage",
+			"available": false,
+			"role": "Magic \u00b7 Ranged",
+			"color": "#4a6ac8",
+			"icon": "staff",
+			"description": "Coming in a later update.",
+			"strengths": [],
+			"starting_kit": {}
+		},
+		{
+			"id": "druid",
+			"name": "Druid",
+			"available": false,
+			"role": "Healing \u00b7 Nature",
+			"color": "#3f8a4a",
+			"icon": "leaf",
+			"description": "Coming in a later update.",
+			"strengths": [],
+			"starting_kit": {}
+		}
+	]
+}

@@ -8,7 +8,8 @@ extends Node
 ## A data file was reloaded: "abilities", "enemies" or "player".
 signal changed(which: String)
 
-const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS}
+const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
+	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES}
 
 const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
@@ -23,6 +24,9 @@ var abilities := {}  # id -> Ability (the same objects for the whole session)
 var enemies := {}  # id -> Dictionary
 var player := {}
 var items := {}  # id -> Dictionary (data/items.json entries)
+## data/appearance.json: the character creator's choices (styles, colours, sizes).
+var appearance := {}
+var classes: Array = []  # data/classes.json entries, in order
 
 var _times := {}
 var _watch := 0.0
@@ -72,6 +76,10 @@ func _load(which: String) -> void:
 			items.clear()
 			for d: Dictionary in data.get("items", []):
 				items[String(d.get("id", ""))] = d
+		"appearance":
+			appearance = data
+		"classes":
+			classes = data.get("classes", [])
 
 
 func ability(id: String) -> Ability:
@@ -89,6 +97,45 @@ func abilities_for(ids: Array) -> Array[Ability]:
 		if ab:
 			out.append(ab)
 	return out
+
+
+## A class entry from data/classes.json ({} if unknown).
+func class_data(id: String) -> Dictionary:
+	for c: Dictionary in classes:
+		if String(c.get("id", "")) == id:
+			return c
+	return {}
+
+
+## One entry of an appearance list ("hair_styles", "eyes", "heights"...) by id ({} if unknown).
+func appearance_option(list: String, id: String) -> Dictionary:
+	for o in appearance.get(list, []):
+		if o is Dictionary and String(o.get("id", "")) == id:
+			return o
+	return {}
+
+
+## Turns a saved look (ids and "#rrggbb" colours, see data/appearance.json "default")
+## into what CharacterModel.apply_appearance() needs.
+func resolve_appearance(look: Dictionary) -> Dictionary:
+	var d: Dictionary = appearance.get("default", {})
+	var get := func(key: String) -> String: return String(look.get(key, d.get(key, "")))
+	var body: String = get.call("body")
+	var placement: Dictionary = appearance.get("eye_placement", {})
+	return {
+		"body": body,
+		"skin": Color.html(get.call("skin")) if Color.html_is_valid(get.call("skin")) else Color(0.8, 0.6, 0.45),
+		"hair": appearance_option("hair_styles", get.call("hair")),
+		"hair_color": Color.html(get.call("hair_color")) if Color.html_is_valid(get.call("hair_color")) else Color(0.25, 0.15, 0.1),
+		"facial_hair": appearance_option("facial_hair", get.call("facial_hair")),
+		"facial_color": Color.html(get.call("facial_color")) if Color.html_is_valid(get.call("facial_color")) else Color(0.25, 0.15, 0.1),
+		"eyes": appearance_option("eyes", get.call("eyes")),
+		"eye_color": Color.html(get.call("eye_color")) if Color.html_is_valid(get.call("eye_color")) else Color(0.3, 0.5, 0.8),
+		"eye_placement": placement.get(body, {}),
+		"underwear": appearance.get("underwear", {}),
+		"height_scale": float(appearance_option("heights", get.call("height")).get("scale", 1.0)),
+		"weight": float(appearance_option("builds", get.call("build")).get("weight", 0.0)),
+	}
 
 
 ## An item's data ({} if there's no such item).

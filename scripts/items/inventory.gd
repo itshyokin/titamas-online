@@ -2,8 +2,8 @@ class_name Inventory
 extends Node
 ## The player's backpack (24 slots; consumables and materials stack to 64, gear to 1),
 ## equipped gear, gold and the two quick-item slots. Lives under Player. Item details come
-## from data/items.json (Database → Items). Saved to user://character.json whenever it
-## changes; a new character starts with the player data's starting kit.
+## from data/items.json (Database → Items). Saved with the character (GameSession) whenever
+## it changes; a new character starts with its class's (or the player data's) starting kit.
 
 signal changed
 signal equipment_changed
@@ -12,7 +12,6 @@ signal gold_changed(gold: int)
 signal item_added(id: String, count: int)
 
 const SIZE := 24
-const SAVE_PATH := "user://character.json"
 ## Equipment slots, in the order the character window shows them.
 const SLOTS := ["head", "shoulders", "chest", "hands", "legs", "feet", "main_hand", "off_hand", "ranged"]
 const SLOT_NAMES := {
@@ -295,16 +294,19 @@ func _queue_save() -> void:
 		save_character()).call_deferred()
 
 
+func to_dict() -> Dictionary:
+	return {"bag": bag.duplicate(true), "equipped": equipped.duplicate(), "gold": gold, "quick": quick.duplicate()}
+
+
+## Saves the character (GameSession writes the save file; nothing when there's none).
 func save_character() -> void:
-	var data := {"bag": bag, "equipped": equipped, "gold": gold, "quick": quick}
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(data, "\t"))
+	GameSession.save_game()
 
 
+## Loads the backpack and equipment from the current save. False if there's nothing yet.
 func load_character() -> bool:
-	var data = DataFiles.read(SAVE_PATH)
-	if not data is Dictionary:
+	var data = GameSession.data.get("inventory", {}) if GameSession.active() else {}
+	if not data is Dictionary or data.is_empty():
 		return false
 	bag = []
 	bag.resize(SIZE)
@@ -338,8 +340,13 @@ func reset_character() -> void:
 	gold_changed.emit(gold)
 
 
+## The class's starting kit if it has one, otherwise the player data's.
 func _starting_kit() -> void:
 	var kit: Dictionary = Database.player.get("starting_kit", {})
+	if GameSession.active():
+		var class_kit = Database.class_data(String(GameSession.data.get("class", ""))).get("starting_kit", {})
+		if class_kit is Dictionary and (not class_kit.get("equipment", {}).is_empty() or not class_kit.get("backpack", []).is_empty()):
+			kit = class_kit
 	gold = int(kit.get("gold", 0))
 	var eq: Dictionary = kit.get("equipment", {})
 	for slot: String in eq:

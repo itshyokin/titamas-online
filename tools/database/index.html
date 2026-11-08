@@ -398,6 +398,29 @@ const TABS = {
 			]],
 		],
 	},
+	classes: {
+		title: "Classes", file: "classes", listKey: "classes", idKey: "id", nameKey: "name",
+		blank: () => ({
+			id: "new_class", name: "New Class", available: false, role: "", color: "#888888", icon: "",
+			description: "", strengths: [], starting_kit: {},
+		}),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Saved with each character. Lowercase, no spaces." },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "available", label: "Can be chosen", type: "bool", help: "Off = shown as \"Coming soon\"." },
+				{ key: "role", label: "Role line", type: "text", help: "Short line under the name, e.g. Melee · Versatile." },
+				{ key: "color", label: "Colour", type: "color" },
+				{ key: "description", label: "Description", type: "textarea", wide: true },
+			]],
+			["Starting kit (leave empty to use the Player tab's)", [
+				{ key: "starting_kit.gold", label: "Gold", type: "int" },
+				{ key: "starting_kit.equipment", label: "Equipped", type: "kitgear", wide: true },
+				{ key: "starting_kit.backpack", label: "In the backpack", type: "kitbag", wide: true },
+				{ key: "starting_kit.quick", label: "Quick items", type: "itemlist", max: 2, wide: true },
+			]],
+		],
+	},
 	world: {
 		title: "World", file: "world", single: true,
 		groups: [
@@ -559,8 +582,9 @@ function renameItem(from, to) {
 	for (const e of ((data.enemies || {}).enemies || [])) {
 		for (const r of (e.loot || [])) r.item = fix(r.item);
 	}
-	const kit = (data.player || {}).starting_kit;
-	if (kit) {
+	const kits = [(data.player || {}).starting_kit, ...((data.classes || {}).classes || []).map(c => c.starting_kit)];
+	for (const kit of kits) {
+		if (!kit || typeof kit !== "object") continue;
 		for (const slot of Object.keys(kit.equipment || {})) kit.equipment[slot] = fix(kit.equipment[slot]);
 		for (const r of (kit.backpack || [])) r[0] = fix(r[0]);
 		if (Array.isArray(kit.quick)) kit.quick = kit.quick.map(fix);
@@ -837,7 +861,7 @@ function fieldControl(t, entry, f) {
 			break;
 		}
 		case "parts": {
-			const all = ["head", "torso", "left_arm", "right_arm", "left_hand", "right_hand", "left_leg", "right_leg", "left_foot", "right_foot"];
+			const all = ["hair", "head", "torso", "left_arm", "right_arm", "left_hand", "right_hand", "left_leg", "right_leg", "left_foot", "right_foot"];
 			const on = new Set(Array.isArray(value) ? value : []);
 			const box = el("div", { className: "parts" });
 			for (const name of all) {

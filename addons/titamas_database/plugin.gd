@@ -16,6 +16,7 @@ const FILES := {
 	"regions": "res://data/regions.json",
 	"world": "res://data/world.json",
 	"items": "res://data/items.json",
+	"classes": "res://data/classes.json",
 }
 const MAX_BODY := 4 * 1024 * 1024
 
@@ -30,7 +31,7 @@ const FITTER := "res://scenes/tools/armor_fitter.tscn"
 func _enter_tree() -> void:
 	_button = Button.new()
 	_button.text = "Database"
-	_button.tooltip_text = "Open the game database (abilities, enemies, player, regions) in your browser."
+	_button.tooltip_text = "Open the game database (abilities, items, enemies, player, classes, world, regions) in your browser."
 	_button.flat = true
 	_button.pressed.connect(open_editor)
 	add_control_to_container(CONTAINER_TOOLBAR, _button)

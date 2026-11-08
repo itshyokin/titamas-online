@@ -1,6 +1,7 @@
 class_name PlayerGear
 extends Node
-## Shows the player's equipped armour on their body (weapons are handled by PlayerCombat,
+## Gives the player their look from the character creator, and shows their equipped armour
+## on their body (weapons are handled by PlayerCombat,
 ## which draws and sheathes them). Lives under Player, next to Inventory.
 
 const ARMOR_SLOTS := ["head", "shoulders", "chest", "hands", "legs", "feet", "off_hand"]
@@ -13,6 +14,7 @@ var _force := false
 
 
 func _ready() -> void:
+	_apply_look()
 	inventory.equipment_changed.connect(refresh)
 	refresh.call_deferred()
 	# Item data edited in the Database (e.g. a new fit): put everything on again.
@@ -20,7 +22,20 @@ func _ready() -> void:
 		if which == "items":
 			_force = true
 			refresh()
-			_force = false)
+			_force = false
+		elif which == "appearance":
+			_apply_look())
+
+
+## The character's look and name from the save (character creator); the default look
+## when playing a level straight from the editor.
+func _apply_look() -> void:
+	character.apply_appearance(Database.resolve_appearance(GameSession.data.get("look", {})))
+	if not GameSession.active():
+		return
+	var stats := get_node_or_null("../Stats")
+	if stats:
+		stats.set("display_name", String(GameSession.data.get("name", "Adventurer")))
 
 
 func refresh() -> void:

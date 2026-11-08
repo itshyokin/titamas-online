@@ -17,6 +17,9 @@ static func build(model: String) -> Node3D:
 			"helm": return helm()
 			"pauldron_left": return pauldron(true)
 			"pauldron_right": return pauldron(false)
+			"hair_long": return hair_long()
+			"hair_ponytail": return hair_ponytail()
+			"hair_bun": return hair_bun()
 		push_warning("WeaponModels: no builtin model '%s'" % model)
 		return null
 	if model.is_empty() or not ResourceLoader.exists(model):
@@ -101,6 +104,91 @@ static func helm() -> Node3D:
 	_box(root, Vector3(0.025, 0.09, 0.02), Vector3(0, -0.03, -0.14), iron)  # nose guard
 	_box(root, Vector3(0.02, 0.035, 0.24), Vector3(0, 0.135, 0), band)  # crest
 	return root
+
+
+# --- Hair pieces (rigid, on the head bone; tinted by the hair colour) ------------
+
+## Long hair falling behind the head to the shoulders. Origin at the middle of the head;
+## the back of the head is +Z.
+static func hair_long() -> Node3D:
+	var root := Node3D.new()
+	root.name = "HairLong"
+	var mat := _hair_material()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var segs := 16
+	var rows := 6
+	for i in segs:
+		for j in rows:
+			var quad := []
+			for c: Vector2i in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1)]:
+				var a := deg_to_rad(lerpf(-105.0, 105.0, float(i + c.x) / segs))
+				var t := float(j + c.y) / rows
+				var bottom := -0.31 - (0.035 if (i + c.x) % 2 == 1 else 0.0)  # ragged ends
+				var y := lerpf(0.1, bottom, t)
+				# Starts under the scalp, falls past the ears and spreads a little over the back.
+				var r := lerpf(0.1, 0.122, sqrt(t))
+				var back := 0.045 * t * t
+				var narrow := lerpf(1.0, 0.82, t)
+				quad.append(Vector3(sin(a) * r * narrow, y, cos(a) * r + back))
+			for k: int in [0, 1, 2, 0, 2, 3]:
+				st.add_vertex(quad[k])
+	st.generate_normals()
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = mat
+	root.add_child(mi)
+	return root
+
+
+## A ponytail: a band and a tapering tail. Origin where it leaves the back of the head.
+static func hair_ponytail() -> Node3D:
+	var root := Node3D.new()
+	root.name = "HairPonytail"
+	var mat := _hair_material()
+	var points := [Vector3(0, 0, 0), Vector3(0, -0.02, 0.06), Vector3(0, -0.11, 0.09), Vector3(0, -0.22, 0.085), Vector3(0, -0.3, 0.07)]
+	var radii := [0.03, 0.032, 0.027, 0.018, 0.006]
+	for i in points.size() - 1:
+		var a: Vector3 = points[i]
+		var b: Vector3 = points[i + 1]
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = radii[i]
+		cyl.bottom_radius = radii[i + 1]
+		cyl.height = a.distance_to(b)
+		cyl.radial_segments = 8
+		cyl.rings = 1
+		var mi := MeshInstance3D.new()
+		mi.mesh = cyl
+		mi.material_override = mat
+		# Cylinder runs along Y; point its top at a, bottom at b.
+		var dir := (a - b).normalized()
+		var side := dir.cross(Vector3.RIGHT).normalized()
+		mi.transform = Transform3D(Basis(dir.cross(side), dir, side).orthonormalized(), (a + b) * 0.5)
+		root.add_child(mi)
+	return root
+
+
+## A bun on the back of the head. Origin at its centre.
+static func hair_bun() -> Node3D:
+	var root := Node3D.new()
+	root.name = "HairBun"
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.052
+	sphere.height = 0.09
+	sphere.radial_segments = 10
+	sphere.rings = 6
+	var mi := MeshInstance3D.new()
+	mi.mesh = sphere
+	mi.material_override = _hair_material()
+	mi.rotation_degrees.x = 60.0
+	root.add_child(mi)
+	return root
+
+
+static func _hair_material() -> StandardMaterial3D:
+	var m := _material(Color(0.35, 0.22, 0.12), 0.0, 0.9)
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return m
 
 
 ## One shoulder plate, origin at the top of the shoulder.

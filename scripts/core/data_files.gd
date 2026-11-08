@@ -12,6 +12,8 @@ const PLAYER := "res://data/player.json"
 const REGIONS := "res://data/regions.json"
 const WORLD := "res://data/world.json"
 const ITEMS := "res://data/items.json"
+const APPEARANCE := "res://data/appearance.json"
+const CLASSES := "res://data/classes.json"
 
 ## Ability fields that need converting (everything else is a plain number/string/bool).
 const ABILITY_COLORS := ["color", "projectile_color"]

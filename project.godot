@@ -12,13 +12,14 @@ config_version=5
 
 config/name="Titamas Online"
 config/description="Small-group co-op 3D RPG set in the world of Titamas."
-run/main_scene="res://scenes/levels/overworld_test.tscn"
+run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
 [autoload]
 
 GameSettings="*res://scripts/core/game_settings.gd"
 Database="*res://scripts/core/database.gd"
+GameSession="*res://scripts/core/game_session.gd"
 
 [display]
 
