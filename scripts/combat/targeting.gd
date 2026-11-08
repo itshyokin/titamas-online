@@ -1,8 +1,10 @@
 class_name Targeting
 extends Node
-## The player's current target. Next/previous target cycle through enemies in view
-## (nearest to the centre of the screen first), clear target drops it, clicking an enemy
-## selects it. Attacks pick the nearest enemy in front when nothing is selected.
+## The player's current target. Target (Tab / RB) picks the enemy nearest the centre of
+## the screen and locks on; pressing it again clears the target. Cycle targets
+## (Shift+Tab / LB) walks through the enemies in view, keeping the lock. Clicking an enemy
+## selects it. Attacks pick the nearest enemy in front when nothing is selected, and swings
+## snap to any enemy within `snap_range`, whichever way you face.
 ## Lock-on (Fable style): the camera keeps the target in view and the character faces
 ## it while moving, so moving sideways circles it. A ring marks the target; brackets
 ## round its body show the lock.
@@ -16,6 +18,8 @@ signal lock_changed(locked: bool)
 @export var enemy_mask := 4  # physics layer 3
 ## Lock-on breaks beyond this distance.
 @export var lock_range := 30.0
+## Swings turn to enemies this close even if they're behind you.
+@export var snap_range := 2.5
 
 @onready var player: PlayerController = get_parent()
 
@@ -93,6 +97,26 @@ func toggle_lock() -> void:
 	set_locked(has_target())
 
 
+## Target button: picks the enemy nearest the centre of the screen and locks on, or (with
+## a target already) clears it.
+func toggle_target() -> void:
+	if has_target():
+		set_target(null)
+		return
+	cycle(1)
+	set_locked(has_target())
+
+
+## Next enemy in view; stays locked if it was.
+func cycle_keeping_lock(step: int) -> void:
+	var was_locked := locked
+	cycle(step)
+	if was_locked or not has_target():
+		set_locked(has_target())
+	else:
+		set_locked(true)
+
+
 func has_target() -> bool:
 	return target != null and is_instance_valid(target) and Combat.is_alive(target)
 
@@ -133,7 +157,7 @@ func pick_for_attack(max_distance: float, select := true) -> Node3D:
 		var to := n.global_position - player.global_position
 		to.y = 0.0
 		var facing := fwd.dot(to.normalized()) if to.length() > 0.01 else 1.0
-		if facing < -0.2:
+		if facing < -0.2 and to.length() > snap_range:
 			continue
 		var s := to.length() * (2.0 - facing)
 		if s < best_score:
@@ -168,10 +192,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if GameSettings.menu_open:
 		return
 	if event.is_action_pressed("target_next"):
-		cycle(1)
+		if event is InputEventKey and (event as InputEventKey).shift_pressed:
+			cycle_keeping_lock(-1)
+		else:
+			toggle_target()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("target_prev"):
-		cycle(-1)
+		cycle_keeping_lock(1)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("lock_on"):
 		toggle_lock()

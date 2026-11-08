@@ -16,8 +16,8 @@ var _target_pos := Vector3.ZERO
 var _target_yaw := 0.0
 var _anim_seq := -1
 var _has_state := false
-var _sword: Node3D
-var _bow: Node3D
+var _sword: Node3D  # primary weapon
+var _bow: Node3D  # secondary weapon
 var _plate: Nameplate
 
 
@@ -74,15 +74,16 @@ func apply_info(info: Dictionary) -> void:
 	for node in [_sword, _bow]:
 		if node and is_instance_valid(node):
 			node.queue_free()
-	_sword = _hand_weapon(Database.item(String(eq.get("main_hand", ""))), "mixamorig_RightHand")
-	_bow = _hand_weapon(Database.item(String(eq.get("ranged", ""))), "mixamorig_LeftHand")
+	_sword = _hand_weapon(Database.item(String(eq.get("primary", eq.get("main_hand", "")))))
+	_bow = _hand_weapon(Database.item(String(eq.get("secondary", eq.get("ranged", "")))))
 	if _plate:
 		_plate.call("_refresh_label")
 
 
-func _hand_weapon(item: Dictionary, bone: String) -> Node3D:
+func _hand_weapon(item: Dictionary) -> Node3D:
 	if item.is_empty():
 		return null
+	var bone := "mixamorig_LeftHand" if String(item.get("weapon_type", "")) == "bow" else "mixamorig_RightHand"
 	var fits: Array = item.get("fit", {}).get(character.body_key(), [])
 	var node := character.attach_fitted(fits[0] if not fits.is_empty() else {"bone": bone, "grip": true}, String(item.get("model", "")))
 	if node:
@@ -90,7 +91,8 @@ func _hand_weapon(item: Dictionary, bone: String) -> Node3D:
 	return node
 
 
-## [x, y, z, yaw, animation, animation number, position in it, speed, health, max health, drawn]
+## [x, y, z, yaw, animation, animation number, position in it, speed, health, max health,
+##  drawn (0 none, 1 primary, 2 secondary)]
 func apply_state(s: Array) -> void:
 	_target_pos = Vector3(s[0], s[1], s[2])
 	_target_yaw = s[3]

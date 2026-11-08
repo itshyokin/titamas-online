@@ -172,6 +172,8 @@ func _build_window() -> void:
 	_tabs = TabContainer.new()
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(_tabs)
+	if not title_screen:
+		_tabs.add_child(_help_tab())
 	_tabs.add_child(_sound_tab())
 	_tabs.add_child(_graphics_tab())
 	_tabs.add_child(_controls_tab(false))
@@ -194,6 +196,37 @@ func _row(label_text: String, control: Control) -> HBoxContainer:
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(control)
 	return row
+
+
+## How to play: the controls in use right now (they follow rebinding and the device).
+func _help_tab() -> Control:
+	var page := _page("How to play")
+	var text := RichTextLabel.new()
+	text.bbcode_enabled = true
+	text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	page.add_child(text)
+	var fill := func() -> void:
+		var g := GameSettings
+		var k := func(action: String) -> String: return "[color=#ffd76a]%s[/color]" % g.binding_label(action)
+		text.text = "\n".join([
+			"[b]Moving[/b]",
+			"%s/%s/%s/%s move · %s walk · %s sprint · %s jump (and talk) · %s dodge" % [k.call("move_forward"), k.call("move_left"), k.call("move_back"), k.call("move_right"), k.call("walk"), k.call("sprint"), k.call("jump"), k.call("dodge")],
+			"%s hold to look around · %s / %s zoom" % [k.call("camera_look"), k.call("zoom_in"), k.call("zoom_out")],
+			"",
+			"[b]Fighting[/b]",
+			"%s attack: tap to swing (tap again to combo), hold for a heavy blow or to draw a bow" % k.call("attack"),
+			"%s block with melee weapons (start just before a hit to parry) · aim with ranged weapons" % k.call("block"),
+			"%s swap primary / secondary weapon · %s / %s pick one" % [k.call("cycle_mode"), k.call("hotbar_1"), k.call("hotbar_2")],
+			"%s…%s use hotbar boxes 3–10 (spells, potions) · %s ability wheel (controller)" % [k.call("hotbar_3"), k.call("hotbar_10"), k.call("ability_wheel")],
+			"%s target and lock on (again to clear) · %s cycle targets · %s lock on / off" % [k.call("target_next"), k.call("target_prev"), k.call("lock_on")],
+			"",
+			"[b]Windows[/b]",
+			"%s character and backpack · %s spellbook · %s chat · %s / gear: this menu" % [k.call("inventory"), k.call("spellbook"), k.call("chat"), k.call("menu")],
+		])
+	fill.call()
+	GameSettings.bindings_changed.connect(fill)
+	GameSettings.device_changed.connect(func(_g: bool) -> void: fill.call())
+	return page
 
 
 func _sound_tab() -> Control:

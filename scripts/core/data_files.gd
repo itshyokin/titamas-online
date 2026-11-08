@@ -15,15 +15,16 @@ const ITEMS := "res://data/items.json"
 const APPEARANCE := "res://data/appearance.json"
 const CLASSES := "res://data/classes.json"
 const NPCS := "res://data/npcs.json"
+const WEAPON_TYPES := "res://data/weapon_types.json"
 
 ## Ability fields that need converting (everything else is a plain number/string/bool).
 const ABILITY_COLORS := ["color", "projectile_color"]
 const ABILITY_ENUMS := {
 	"delivery": ["melee", "projectile", "heal_over_time"],
-	"projectile_style": ["bolt", "arrow"],
+	"projectile_style": ["bolt", "arrow", "bullet"],
 }
 const ABILITY_FIELDS := [
-	"id", "display_name", "description", "delivery", "color", "power", "mana_cost", "stamina_cost",
+	"id", "display_name", "description", "delivery", "color", "icon", "power", "mana_cost", "stamina_cost",
 	"cooldown", "reach", "arc", "staggers", "knockback", "cast_time", "charge_time", "charge_power", "max_charge_level", "ticks",
 	"tick_interval", "projectile_speed", "projectile_color", "projectile_style", "animation",
 	"animation_speed", "hit_time", "recovery_time", "move_scale", "sounds", "hit_sound",

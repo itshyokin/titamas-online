@@ -4,7 +4,8 @@ extends RefCounted
 ## Blender. Weapons are built with the grip at the origin and the blade along +Y.
 ## Items refer to these as "builtin:<name>" (see build()).
 
-const BUILTIN := ["sword", "bow", "shield", "helm", "pauldron_left", "pauldron_right"]
+const BUILTIN := ["sword", "dagger", "greatsword", "hammer", "axe", "bow", "crossbow", "pistol", "rifle",
+	"shield", "helm", "pauldron_left", "pauldron_right"]
 
 
 ## An item model: "builtin:<name>" for the stand-ins here, or a .glb/.tscn/.scn path.
@@ -12,7 +13,14 @@ static func build(model: String) -> Node3D:
 	if model.begins_with("builtin:"):
 		match model.trim_prefix("builtin:"):
 			"sword": return sword()
+			"dagger": return dagger()
+			"greatsword": return greatsword()
+			"hammer": return hammer()
+			"axe": return axe()
 			"bow": return bow()
+			"crossbow": return crossbow()
+			"pistol": return pistol()
+			"rifle": return rifle()
 			"shield": return shield()
 			"helm": return helm()
 			"pauldron_left": return pauldron(true)
@@ -39,6 +47,102 @@ static func sword() -> Node3D:
 	_box(root, Vector3(0.2, 0.03, 0.04), Vector3(0, 0.1, 0), brass)  # crossguard
 	_box(root, Vector3(0.032, 0.17, 0.032), Vector3(0, 0.0, 0), leather)  # grip
 	_box(root, Vector3(0.05, 0.04, 0.05), Vector3(0, -0.1, 0), brass)  # pommel
+	return root
+
+
+static func dagger() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Dagger"
+	var steel := _material(Color(0.8, 0.82, 0.86), 0.75, 0.3)
+	var leather := _material(Color(0.25, 0.16, 0.1), 0.0, 0.8)
+	_box(root, Vector3(0.04, 0.26, 0.01), Vector3(0, 0.2, 0), steel)
+	_box(root, Vector3(0.02, 0.04, 0.008), Vector3(0, 0.345, 0), steel, 45.0)
+	_box(root, Vector3(0.1, 0.02, 0.03), Vector3(0, 0.07, 0), steel)
+	_box(root, Vector3(0.028, 0.12, 0.028), Vector3(0, 0.0, 0), leather)
+	return root
+
+
+static func greatsword() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Greatsword"
+	var steel := _material(Color(0.72, 0.74, 0.8), 0.75, 0.3)
+	var leather := _material(Color(0.22, 0.12, 0.08), 0.0, 0.8)
+	var iron := _material(Color(0.35, 0.36, 0.4), 0.7, 0.4)
+	_box(root, Vector3(0.08, 1.15, 0.016), Vector3(0, 0.78, 0), steel)
+	_box(root, Vector3(0.04, 0.08, 0.014), Vector3(0, 1.38, 0), steel, 45.0)
+	_box(root, Vector3(0.32, 0.04, 0.05), Vector3(0, 0.2, 0), iron)
+	_box(root, Vector3(0.035, 0.36, 0.035), Vector3(0, 0.0, 0), leather)
+	_box(root, Vector3(0.06, 0.05, 0.06), Vector3(0, -0.2, 0), iron)
+	return root
+
+
+## War hammer: handle along +Y, the head across the top (striking face towards +Z).
+static func hammer() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Hammer"
+	var wood := _material(Color(0.42, 0.27, 0.14), 0.0, 0.8)
+	var iron := _material(Color(0.38, 0.39, 0.44), 0.7, 0.45)
+	_box(root, Vector3(0.04, 0.95, 0.04), Vector3(0, 0.3, 0), wood)
+	_box(root, Vector3(0.14, 0.16, 0.3), Vector3(0, 0.8, 0.0), iron)
+	_box(root, Vector3(0.05, 0.06, 0.06), Vector3(0, -0.18, 0), iron)
+	return root
+
+
+## Axe: handle along +Y, blade at the top sticking out towards +Z.
+static func axe() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Axe"
+	var wood := _material(Color(0.45, 0.3, 0.16), 0.0, 0.8)
+	var steel := _material(Color(0.7, 0.72, 0.76), 0.75, 0.35)
+	_box(root, Vector3(0.04, 0.8, 0.04), Vector3(0, 0.25, 0), wood)
+	var blade := MeshInstance3D.new()
+	var prism := PrismMesh.new()
+	prism.size = Vector3(0.24, 0.22, 0.02)
+	blade.mesh = prism
+	blade.material_override = steel
+	blade.position = Vector3(0, 0.58, 0.12)
+	blade.rotation_degrees = Vector3(0, 90, 90)
+	root.add_child(blade)
+	return root
+
+
+## Crossbow held at the grip: stock along +Y, bow across the front (X).
+static func crossbow() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Crossbow"
+	var wood := _material(Color(0.4, 0.25, 0.13), 0.0, 0.75)
+	var iron := _material(Color(0.36, 0.37, 0.4), 0.7, 0.45)
+	var string_mat := _material(Color(0.9, 0.88, 0.8), 0.0, 1.0)
+	_box(root, Vector3(0.05, 0.62, 0.06), Vector3(0, 0.18, 0), wood)
+	_limb(root, Vector3(-0.32, 0.42, -0.05), Vector3(0.32, 0.42, -0.05), 0.02, iron)
+	_limb(root, Vector3(-0.31, 0.42, -0.05), Vector3(0, 0.25, 0.0), 0.004, string_mat)
+	_limb(root, Vector3(0.31, 0.42, -0.05), Vector3(0, 0.25, 0.0), 0.004, string_mat)
+	return root
+
+
+## Flintlock pistol: barrel along +Y from above the grip, the grip angled down and back.
+static func pistol() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Pistol"
+	var wood := _material(Color(0.38, 0.22, 0.12), 0.0, 0.75)
+	var iron := _material(Color(0.3, 0.31, 0.34), 0.75, 0.4)
+	var brass := _material(Color(0.75, 0.6, 0.3), 0.8, 0.35)
+	_box(root, Vector3(0.035, 0.32, 0.035), Vector3(0, 0.2, 0.05), iron)  # barrel
+	_box(root, Vector3(0.045, 0.2, 0.05), Vector3(0, 0.1, 0.02), wood)  # stock
+	_box(root, Vector3(0.04, 0.13, 0.05), Vector3(0, -0.02, -0.03), wood, -25.0)  # grip
+	_box(root, Vector3(0.05, 0.04, 0.06), Vector3(0, -0.09, -0.06), brass)  # butt cap
+	return root
+
+
+## Flintlock rifle: long barrel along +Y, stock behind the hand (-Y).
+static func rifle() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Rifle"
+	var wood := _material(Color(0.4, 0.24, 0.12), 0.0, 0.75)
+	var iron := _material(Color(0.3, 0.31, 0.34), 0.75, 0.4)
+	_box(root, Vector3(0.03, 0.85, 0.03), Vector3(0, 0.55, 0.04), iron)
+	_box(root, Vector3(0.045, 0.75, 0.05), Vector3(0, 0.25, 0.0), wood)
+	_box(root, Vector3(0.05, 0.3, 0.09), Vector3(0, -0.22, -0.02), wood)
 	return root
 
 

@@ -244,7 +244,7 @@ func _send_player_state() -> void:
 	var combat := player.get_node_or_null("PlayerCombat")
 	var drawn := 0
 	if combat and combat.get("in_combat"):
-		drawn = 1 + int(combat.get("mode"))  # 1 melee, 2 ranged, 3 magic
+		drawn = 1 if combat.call("active_slot") == "primary" else 2
 	var p := player.global_position
 	var model := player.get_node("Model") as Node3D
 	_player_state.rpc([p.x, p.y, p.z, model.rotation.y, anim, _anim_seq, pos, character.get_speed(),

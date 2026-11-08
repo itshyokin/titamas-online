@@ -9,7 +9,8 @@ extends Node
 signal changed(which: String)
 
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
-	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "npcs": DataFiles.NPCS}
+	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "npcs": DataFiles.NPCS,
+	"weapon_types": DataFiles.WEAPON_TYPES}
 
 const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
@@ -31,6 +32,7 @@ var items := {}  # id -> Dictionary (data/items.json entries)
 var appearance := {}
 var classes: Array = []  # data/classes.json entries, in order
 var npcs := {}  # id -> Dictionary (data/npcs.json entries)
+var weapon_types := {}  # id -> Dictionary (data/weapon_types.json entries)
 
 var _times := {}
 var _watch := 0.0
@@ -84,6 +86,10 @@ func _load(which: String) -> void:
 			appearance = data
 		"classes":
 			classes = data.get("classes", [])
+		"weapon_types":
+			weapon_types.clear()
+			for d in data.get("types", []):
+				weapon_types[String(d.get("id", ""))] = d
 		"npcs":
 			npcs.clear()
 			for d in data.get("npcs", []):
@@ -105,6 +111,11 @@ func abilities_for(ids: Array) -> Array[Ability]:
 		if ab:
 			out.append(ab)
 	return out
+
+
+## A weapon family (sword, bow, pistol...) from data/weapon_types.json ({} if unknown).
+func weapon_type(id: String) -> Dictionary:
+	return weapon_types.get(id, {})
 
 
 ## An NPC's data ({} if unknown).
@@ -222,4 +233,4 @@ func apply_player(controller: Node, stats: Stats, combat: Node) -> void:
 	if l.has("ranged_attack"):
 		combat.set("ranged_attack", ability(String(l.ranged_attack)))
 	if l.has("spells"):
-		combat.set("spells", abilities_for(l.spells.slice(0, 4)))
+		combat.set("spells", abilities_for(l.spells))

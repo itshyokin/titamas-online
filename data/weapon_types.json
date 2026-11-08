@@ -1,0 +1,158 @@
+{
+	"types": [
+		{
+			"id": "dagger",
+			"name": "Dagger",
+			"category": "melee",
+			"hands": 1,
+			"combo": [
+				"slash_1",
+				"slash_2",
+				"slash_3"
+			],
+			"heavy": "heavy_strike",
+			"shot": "",
+			"speed": 1.35,
+			"power": 0.7,
+			"draw": false,
+			"reload": 0.0,
+			"swap_sound": "res://assets/audio/weapons/swap_dagger.ogg",
+			"fire_sound": ""
+		},
+		{
+			"id": "sword",
+			"name": "Sword",
+			"category": "melee",
+			"hands": 1,
+			"combo": [
+				"slash_1",
+				"slash_2",
+				"slash_3"
+			],
+			"heavy": "heavy_strike",
+			"shot": "",
+			"speed": 1.0,
+			"power": 1.0,
+			"draw": false,
+			"reload": 0.0,
+			"swap_sound": "res://assets/audio/weapons/swap_sword.ogg",
+			"fire_sound": ""
+		},
+		{
+			"id": "greatsword",
+			"name": "Greatsword",
+			"category": "melee",
+			"hands": 2,
+			"combo": [
+				"slash_1",
+				"slash_2",
+				"slash_3"
+			],
+			"heavy": "heavy_strike",
+			"shot": "",
+			"speed": 0.75,
+			"power": 1.55,
+			"draw": false,
+			"reload": 0.0,
+			"swap_sound": "res://assets/audio/weapons/swap_heavy.ogg",
+			"fire_sound": ""
+		},
+		{
+			"id": "hammer",
+			"name": "Hammer",
+			"category": "melee",
+			"hands": 2,
+			"combo": [
+				"slash_1",
+				"slash_3"
+			],
+			"heavy": "heavy_strike",
+			"shot": "",
+			"speed": 0.7,
+			"power": 1.65,
+			"draw": false,
+			"reload": 0.0,
+			"swap_sound": "res://assets/audio/weapons/swap_heavy.ogg",
+			"fire_sound": ""
+		},
+		{
+			"id": "axe",
+			"name": "Axe",
+			"category": "melee",
+			"hands": 1,
+			"combo": [
+				"slash_1",
+				"slash_2",
+				"slash_3"
+			],
+			"heavy": "heavy_strike",
+			"shot": "",
+			"speed": 0.9,
+			"power": 1.2,
+			"draw": false,
+			"reload": 0.0,
+			"swap_sound": "res://assets/audio/weapons/swap_heavy.ogg",
+			"fire_sound": ""
+		},
+		{
+			"id": "bow",
+			"name": "Bow",
+			"category": "ranged",
+			"hands": 2,
+			"combo": [],
+			"heavy": "",
+			"shot": "arrow_shot",
+			"speed": 1.0,
+			"power": 1.0,
+			"draw": true,
+			"reload": 0.0,
+			"swap_sound": "res://assets/audio/weapons/swap_bow.ogg",
+			"fire_sound": "res://assets/audio/combat/arrow_fire.ogg"
+		},
+		{
+			"id": "crossbow",
+			"name": "Crossbow",
+			"category": "ranged",
+			"hands": 2,
+			"combo": [],
+			"heavy": "",
+			"shot": "crossbow_shot",
+			"speed": 1.0,
+			"power": 1.0,
+			"draw": false,
+			"reload": 1.4,
+			"swap_sound": "res://assets/audio/weapons/swap_crossbow.ogg",
+			"fire_sound": "res://assets/audio/weapons/crossbow_fire.ogg"
+		},
+		{
+			"id": "pistol",
+			"name": "Flintlock pistol",
+			"category": "ranged",
+			"hands": 1,
+			"combo": [],
+			"heavy": "",
+			"shot": "pistol_shot",
+			"speed": 1.0,
+			"power": 1.0,
+			"draw": false,
+			"reload": 2.0,
+			"swap_sound": "res://assets/audio/weapons/swap_pistol.ogg",
+			"fire_sound": "res://assets/audio/weapons/pistol_shot.ogg"
+		},
+		{
+			"id": "rifle",
+			"name": "Flintlock rifle",
+			"category": "ranged",
+			"hands": 2,
+			"combo": [],
+			"heavy": "",
+			"shot": "rifle_shot",
+			"speed": 1.0,
+			"power": 1.0,
+			"draw": false,
+			"reload": 2.8,
+			"swap_sound": "res://assets/audio/weapons/swap_rifle.ogg",
+			"fire_sound": "res://assets/audio/weapons/rifle_shot.ogg"
+		}
+	]
+}

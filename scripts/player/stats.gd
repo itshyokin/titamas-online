@@ -11,11 +11,16 @@ signal died
 ## A hit landed: `source` is the attacker (may be null).
 signal damaged(amount: float, source: Node, crit: bool)
 signal healed(amount: float)
+signal level_changed(level: int)
 
 enum Team { PLAYERS, ENEMIES }
 
 @export var display_name := ""
-@export var level := 1
+@export var level := 1:
+	set(v):
+		if v != level:
+			level = v
+			level_changed.emit(level)
 @export var team := Team.PLAYERS
 ## Can't drop below 1 health (training dummies).
 @export var immortal := false

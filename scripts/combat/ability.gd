@@ -15,8 +15,10 @@ enum Delivery {
 @export var display_name := ""
 @export_multiline var description := ""
 @export var delivery := Delivery.MELEE
-## Colour of its action bar button (until there are icons).
+## Colour of its action bar button.
 @export var color := Color(0.6, 0.6, 0.6)
+## Hotbar icon drawn for it: slash, heavy, arrow, bullet, fire, heal, frost, shield (or "" for its initial).
+@export var icon := ""
 
 @export_group("Numbers")
 ## Damage per hit (MELEE, PROJECTILE) or healing per tick (HEAL_OVER_TIME), at level 1.
@@ -52,7 +54,7 @@ enum Delivery {
 @export_group("Projectile")
 @export var projectile_speed := 18.0
 @export var projectile_color := Color(1.0, 0.5, 0.15)
-enum ProjectileStyle { BOLT, ARROW }
+enum ProjectileStyle { BOLT, ARROW, BULLET }
 @export var projectile_style := ProjectileStyle.BOLT
 
 @export_group("Animation")

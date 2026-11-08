@@ -1,7 +1,7 @@
 class_name ItemIcon
 extends Control
 ## A simple drawn icon for an item, by its "icon" type and colour (until there's icon art):
-## sword, bow, shield, helm, shoulders, chest, legs, boots, gloves, potion, bandage, coin,
+## sword, dagger, axe, hammer, bow, crossbow, gun, shield, helm, shoulders, chest, legs, boots, gloves, potion, bandage, coin,
 ## cloth, bag. A stack count shows in the corner.
 
 const RARITY_COLORS := {
@@ -41,6 +41,25 @@ func _draw() -> void:
 			draw_colored_polygon(PackedVector2Array([p.call(0.72, 0.12), p.call(0.82, 0.18), p.call(0.4, 0.62), p.call(0.34, 0.56)]), light)
 			draw_line(p.call(0.27, 0.5), p.call(0.5, 0.73), Color(0.75, 0.6, 0.3), s * 0.06)
 			draw_line(p.call(0.37, 0.63), p.call(0.2, 0.8), Color(0.35, 0.22, 0.12), s * 0.07)
+		"dagger":
+			draw_colored_polygon(PackedVector2Array([p.call(0.62, 0.22), p.call(0.7, 0.27), p.call(0.44, 0.58), p.call(0.38, 0.52)]), light)
+			draw_line(p.call(0.33, 0.48), p.call(0.5, 0.65), Color(0.75, 0.6, 0.3), s * 0.05)
+			draw_line(p.call(0.41, 0.57), p.call(0.28, 0.72), Color(0.35, 0.22, 0.12), s * 0.07)
+		"axe":
+			draw_line(p.call(0.3, 0.85), p.call(0.62, 0.2), Color(0.5, 0.33, 0.18), s * 0.07)
+			draw_colored_polygon(PackedVector2Array([p.call(0.55, 0.2), p.call(0.82, 0.12), p.call(0.88, 0.42), p.call(0.66, 0.38)]), light)
+		"hammer":
+			draw_line(p.call(0.3, 0.85), p.call(0.58, 0.3), Color(0.5, 0.33, 0.18), s * 0.07)
+			draw_colored_polygon(PackedVector2Array([p.call(0.4, 0.2), p.call(0.66, 0.08), p.call(0.82, 0.38), p.call(0.56, 0.5)]), color)
+			draw_line(p.call(0.53, 0.14), p.call(0.69, 0.44), dark, s * 0.03)
+		"crossbow":
+			draw_line(p.call(0.5, 0.2), p.call(0.5, 0.88), Color(0.5, 0.33, 0.18), s * 0.09)
+			draw_arc(p.call(0.5, 0.62), s * 0.36, -2.6, -0.54, 16, color, s * 0.07)
+			draw_line(p.call(0.2, 0.42), p.call(0.8, 0.42), Color(0.9, 0.9, 0.85), s * 0.02)
+		"gun":
+			draw_colored_polygon(PackedVector2Array([p.call(0.12, 0.36), p.call(0.82, 0.36), p.call(0.82, 0.46), p.call(0.12, 0.46)]), color.darkened(0.2))
+			draw_colored_polygon(PackedVector2Array([p.call(0.6, 0.42), p.call(0.86, 0.42), p.call(0.9, 0.78), p.call(0.72, 0.8)]), Color(0.5, 0.33, 0.18))
+			draw_line(p.call(0.66, 0.3), p.call(0.72, 0.38), dark, s * 0.04)
 		"bow":
 			draw_arc(p.call(0.3, 0.5), s * 0.42, -1.1, 1.1, 16, color, s * 0.07)
 			draw_line(p.call(0.49, 0.13), p.call(0.49, 0.87), Color(0.9, 0.9, 0.85), s * 0.02)

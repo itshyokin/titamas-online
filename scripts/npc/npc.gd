@@ -124,7 +124,7 @@ func _dress() -> void:
 	if _weapon and is_instance_valid(_weapon):
 		_weapon.queue_free()
 	_weapon = null
-	var main := Database.item(String(eq.get("main_hand", "")))
+	var main := Database.item(String(eq.get("primary", eq.get("main_hand", ""))))
 	armed = not main.is_empty()
 	if armed:
 		var fits: Array = main.get("fit", {}).get(character.body_key(), [])

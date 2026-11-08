@@ -17,6 +17,11 @@ extends Node3D
 @export var stick_speed := 150.0
 ## How quickly the camera swings round to frame a locked target.
 @export var lock_follow := 5.0
+@export_group("Aiming")
+## Aiming a ranged weapon (block held): over the right shoulder, closer, narrower view.
+@export var aim_distance := 2.2
+@export var aim_shoulder := 0.6
+@export var aim_fov := 50.0
 
 @onready var spring_arm: SpringArm3D = $SpringArm3D
 
@@ -25,12 +30,18 @@ var _pitch := -15.0
 var _target_distance := 5.0
 var _trauma := 0.0  # 0..1, from hits; decays
 var _shake_time := 0.0
+var _aiming := false
+var _aim_k := 0.0  # 0..1 blend towards the aiming view
+var _base_fov := 70.0
+@onready var _camera: Camera3D = $SpringArm3D/Camera3D
 
 
 func _ready() -> void:
 	add_to_group("player_camera")
 	top_level = true  # don't inherit the character's rotation
 	_target_distance = spring_arm.spring_length
+	if _camera:
+		_base_fov = _camera.fov
 	spring_arm.add_excluded_object(get_parent().get_rid())
 
 
@@ -56,7 +67,7 @@ func _process(delta: float) -> void:
 	var owner_body := get_parent() as Node3D
 	global_position = owner_body.global_position + Vector3(0, 1.6, 0)
 	var lock: Node3D = owner_body.get("lock_target")
-	if lock and is_instance_valid(lock):
+	if lock and is_instance_valid(lock) and not _aiming:
 		# Look from behind the player towards the target, a little from above.
 		var to := lock.global_position - owner_body.global_position
 		to.y = 0.0
@@ -80,7 +91,18 @@ func _process(delta: float) -> void:
 		var k := _trauma * _trauma * 2.5 * GameSettings.screen_shake
 		rotation_degrees += Vector3(sin(_shake_time * 1.3) * k, sin(_shake_time * 0.9 + 2.0) * k, sin(_shake_time * 1.1 + 4.0) * k * 0.5)
 		_trauma = maxf(_trauma - delta * 2.2, 0.0)
-	spring_arm.spring_length = lerpf(spring_arm.spring_length, _target_distance, zoom_smoothing * delta)
+	_aim_k = move_toward(_aim_k, 1.0 if _aiming else 0.0, delta * 6.0)
+	var k := smoothstep(0.0, 1.0, _aim_k)
+	var distance := lerpf(_target_distance, minf(aim_distance, _target_distance), k)
+	spring_arm.spring_length = lerpf(spring_arm.spring_length, distance, zoom_smoothing * delta)
+	spring_arm.position = Vector3(aim_shoulder * k, 0.0, 0.0)
+	if _camera:
+		_camera.fov = lerpf(_base_fov, aim_fov, k)
+
+
+## Aiming a ranged weapon: over-the-shoulder zoom.
+func set_aiming(on: bool) -> void:
+	_aiming = on
 
 
 ## Shakes the view; strength 0..1 adds up (Settings → Graphics → Screen shake scales it).

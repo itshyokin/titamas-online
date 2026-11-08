@@ -1065,16 +1065,17 @@ func _select_class(id: String) -> void:
 		text += "\n[b]Strengths[/b]\n"
 		for s in strengths:
 			text += "  •  %s\n" % s
-	var loadout: Dictionary = Database.player.get("loadout", {})
 	var names := []
-	for key in ["light_combo", "heavy_attack", "ranged_attack", "spells"]:
-		var ids = loadout.get(key, [])
-		for ab_id in (ids if ids is Array else [ids]):
-			var ab := Database.ability(String(ab_id))
-			if ab and not ab.display_name in names:
-				names.append(ab.display_name)
+	for ab_id in Database.player.get("loadout", {}).get("spells", []):
+		var ab := Database.ability(String(ab_id))
+		if ab and not ab.display_name in names:
+			names.append(ab.display_name)
 	if not names.is_empty():
-		text += "\n[b]Starting abilities[/b]\n  %s\n" % ", ".join(names)
+		text += "\n[b]Starting spells[/b]\n  %s\n" % ", ".join(names)
+	var proficient: Array = c.get("proficient", [])
+	if not proficient.is_empty():
+		var types := proficient.map(func(t: Variant) -> String: return String(Database.weapon_type(String(t)).get("name", t)))
+		text += "\n[b]Weapon proficiency[/b]\n  %s\n" % ", ".join(types)
 	_class_info.text = text
 	# Show the class's starting gear on the character.
 	_model.take_off_all()

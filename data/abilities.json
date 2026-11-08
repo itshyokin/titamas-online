@@ -32,7 +32,8 @@
 			"tick_interval": 2.0,
 			"ticks": 4.0,
 			"knockback": 2.5,
-			"cast_time": 0.0
+			"cast_time": 0.0,
+			"icon": "slash"
 		},
 		{
 			"animation": "attack_light_2",
@@ -66,7 +67,8 @@
 			"tick_interval": 2.0,
 			"ticks": 4.0,
 			"knockback": 3.0,
-			"cast_time": 0.0
+			"cast_time": 0.0,
+			"icon": "slash"
 		},
 		{
 			"animation": "attack_heavy",
@@ -99,7 +101,8 @@
 			"tick_interval": 2.0,
 			"ticks": 4.0,
 			"knockback": 6.0,
-			"cast_time": 0.0
+			"cast_time": 0.0,
+			"icon": "slash"
 		},
 		{
 			"animation": "attack_heavy",
@@ -132,7 +135,8 @@
 			"tick_interval": 2.0,
 			"ticks": 4.0,
 			"knockback": 7.0,
-			"cast_time": 0.0
+			"cast_time": 0.0,
+			"icon": "heavy"
 		},
 		{
 			"animation": "bow_release",
@@ -163,7 +167,8 @@
 			"tick_interval": 2.0,
 			"ticks": 4.0,
 			"knockback": 1.5,
-			"cast_time": 0.0
+			"cast_time": 0.0,
+			"icon": "arrow"
 		},
 		{
 			"animation": "cast_release",
@@ -174,7 +179,7 @@
 			"color": "#ff8026",
 			"cooldown": 0.0,
 			"delivery": "projectile",
-			"description": "Hurls a bolt of fire at your target. Hold to charge it up to level 3 (more damage, more mana).",
+			"description": "Hurls a bolt of fire at your target.",
 			"display_name": "Firebolt",
 			"hit_sound": "",
 			"hit_time": 0.12,
@@ -196,7 +201,8 @@
 			"tick_interval": 2.0,
 			"ticks": 4.0,
 			"knockback": 3.5,
-			"cast_time": 1.1
+			"cast_time": 1.1,
+			"icon": "fire"
 		},
 		{
 			"animation": "cast_heal",
@@ -207,7 +213,7 @@
 			"color": "#59d966",
 			"cooldown": 3.0,
 			"delivery": "heal_over_time",
-			"description": "Heals 4 times over 8 seconds. Hold to charge for stronger healing. Heals you until co-op lets you target allies.",
+			"description": "Heals 4 times over 8 seconds.",
 			"display_name": "Mend",
 			"hit_sound": "",
 			"hit_time": 0.4,
@@ -229,7 +235,104 @@
 			"tick_interval": 2.0,
 			"ticks": 4.0,
 			"knockback": 0.0,
-			"cast_time": 1.4
+			"cast_time": 1.4,
+			"icon": "heal"
+		},
+		{
+			"animation": "bow_release",
+			"animation_speed": 1.0,
+			"arc": 120.0,
+			"charge_power": 0.9,
+			"charge_time": 1.0,
+			"color": "#9a7a4a",
+			"cooldown": 0.0,
+			"delivery": "projectile",
+			"description": "A heavy bolt, faster and harder-hitting than an arrow.",
+			"display_name": "Crossbow bolt",
+			"hit_sound": "",
+			"hit_time": 0.03,
+			"id": "crossbow_shot",
+			"mana_cost": 0.0,
+			"max_charge_level": 1.0,
+			"move_scale": 0.3,
+			"power": 24.0,
+			"projectile_color": "#e6d9b3",
+			"projectile_speed": 42.0,
+			"projectile_style": "arrow",
+			"reach": 40.0,
+			"recovery_time": 0.3,
+			"sounds": [],
+			"staggers": false,
+			"stamina_cost": 0.0,
+			"tick_interval": 2.0,
+			"ticks": 4.0,
+			"knockback": 2.5,
+			"cast_time": 0.0,
+			"icon": "arrow"
+		},
+		{
+			"animation": "bow_release",
+			"animation_speed": 1.0,
+			"arc": 120.0,
+			"charge_power": 0.9,
+			"charge_time": 1.0,
+			"color": "#8a8a90",
+			"cooldown": 0.0,
+			"delivery": "projectile",
+			"description": "A lead ball from a flintlock pistol.",
+			"display_name": "Pistol shot",
+			"hit_sound": "",
+			"hit_time": 0.03,
+			"id": "pistol_shot",
+			"mana_cost": 0.0,
+			"max_charge_level": 1.0,
+			"move_scale": 0.3,
+			"power": 30.0,
+			"projectile_color": "#e6d9b3",
+			"projectile_speed": 120.0,
+			"projectile_style": "bullet",
+			"reach": 30.0,
+			"recovery_time": 0.3,
+			"sounds": [],
+			"staggers": false,
+			"stamina_cost": 0.0,
+			"tick_interval": 2.0,
+			"ticks": 4.0,
+			"knockback": 3.5,
+			"cast_time": 0.0,
+			"icon": "bullet"
+		},
+		{
+			"animation": "bow_release",
+			"animation_speed": 1.0,
+			"arc": 120.0,
+			"charge_power": 0.9,
+			"charge_time": 1.0,
+			"color": "#70707a",
+			"cooldown": 0.0,
+			"delivery": "projectile",
+			"description": "A long shot from a flintlock rifle.",
+			"display_name": "Rifle shot",
+			"hit_sound": "",
+			"hit_time": 0.03,
+			"id": "rifle_shot",
+			"mana_cost": 0.0,
+			"max_charge_level": 1.0,
+			"move_scale": 0.3,
+			"power": 44.0,
+			"projectile_color": "#e6d9b3",
+			"projectile_speed": 160.0,
+			"projectile_style": "bullet",
+			"reach": 70.0,
+			"recovery_time": 0.3,
+			"sounds": [],
+			"staggers": false,
+			"stamina_cost": 0.0,
+			"tick_interval": 2.0,
+			"ticks": 4.0,
+			"knockback": 3.5,
+			"cast_time": 0.0,
+			"icon": "bullet"
 		}
 	]
 }

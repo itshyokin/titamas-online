@@ -235,6 +235,7 @@ const TABS = {
 				{ key: "display_name", label: "Name", type: "text" },
 				{ key: "delivery", label: "Type", type: "select", options: [["melee", "Melee swing"], ["projectile", "Projectile (bolt / arrow)"], ["heal_over_time", "Heal over time"]] },
 				{ key: "color", label: "Button colour", type: "color" },
+				{ key: "icon", label: "Hotbar icon", type: "select", options: [["", "(first letter)"], ["slash", "Slash"], ["heavy", "Heavy blow"], ["arrow", "Arrow"], ["bullet", "Bullet"], ["fire", "Fire"], ["heal", "Heal"], ["frost", "Frost"], ["shield", "Shield"], ["lightning", "Lightning"]] },
 				{ key: "description", label: "Description", type: "textarea", wide: true },
 			]],
 			["Numbers", [
@@ -257,7 +258,7 @@ const TABS = {
 				{ key: "tick_interval", label: "Seconds between heals", type: "number" },
 			], isHeal],
 			["Projectile", [
-				{ key: "projectile_style", label: "Looks like", type: "select", options: [["bolt", "Glowing bolt"], ["arrow", "Arrow"]] },
+				{ key: "projectile_style", label: "Looks like", type: "select", options: [["bolt", "Glowing bolt"], ["arrow", "Arrow / bolt (sticks)"], ["bullet", "Bullet (fast, leaves holes)"]] },
 				{ key: "projectile_speed", label: "Speed (m/s)", type: "number" },
 				{ key: "projectile_color", label: "Colour", type: "color" },
 			], isProjectile],
@@ -285,12 +286,12 @@ const TABS = {
 			["General", [
 				{ key: "id", label: "ID", type: "text", help: "Used by loot tables and the starting kit." },
 				{ key: "name", label: "Name", type: "text" },
-				{ key: "kind", label: "Kind", type: "select", options: [["weapon", "Weapon"], ["armor", "Armour"], ["consumable", "Consumable (usable)"], ["material", "Material"], ["junk", "Junk (sell)"], ["quest", "Quest item"]] },
-				{ key: "slot", label: "Equips to", type: "select", options: [["", "(not equippable)"], ["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["main_hand", "Main hand"], ["off_hand", "Off hand"], ["ranged", "Ranged"]] },
+				{ key: "kind", label: "Kind", type: "select", options: [["weapon", "Weapon"], ["armor", "Armour"], ["consumable", "Consumable (usable)"], ["material", "Material"], ["junk", "Junk (sell)"], ["quest", "Quest item"], ["key", "Key item"]] },
+				{ key: "slot", label: "Equips to", type: "select", options: [["", "(not equippable)"], ["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["weapon", "Weapon (primary or secondary)"], ["off_hand", "Off hand (shield)"]] },
 				{ key: "rarity", label: "Rarity", type: "select", options: [["common", "Common (white)"], ["uncommon", "Uncommon (green)"], ["rare", "Rare (blue)"], ["epic", "Epic (purple)"], ["legendary", "Legendary (orange)"]] },
 				{ key: "value", label: "Worth (gold)", type: "int" },
 				{ key: "stack_max", label: "Stacks to", type: "int", help: "0 = automatic (gear 1, everything else 64)." },
-				{ key: "icon", label: "Icon", type: "select", options: ["sword", "bow", "shield", "helm", "shoulders", "chest", "legs", "boots", "gloves", "potion", "bandage", "coin", "cloth", "bag"] },
+				{ key: "icon", label: "Icon", type: "select", options: ["sword", "dagger", "axe", "hammer", "bow", "crossbow", "gun", "shield", "helm", "shoulders", "chest", "legs", "boots", "gloves", "potion", "bandage", "coin", "cloth", "bag"] },
 				{ key: "icon_color", label: "Icon colour", type: "color" },
 				{ key: "description", label: "Description", type: "textarea", wide: true },
 			]],
@@ -302,6 +303,11 @@ const TABS = {
 				{ key: "bonus_health", label: "Extra health", type: "number" },
 				{ key: "bonus_mana", label: "Extra mana", type: "number" },
 			], e => e.slot !== ""],
+			["Weapon", [
+				{ key: "weapon_type", label: "Weapon type", type: "weapontype", help: "Its family (Weapon Types tab): speed, damage, moves, reload, sounds." },
+				{ key: "speed", label: "Speed", type: "number", help: "1 = the family's normal speed; 1.1 = 10% faster." },
+				{ key: "auto_aim", label: "Auto-aim", type: "bool", help: "Ranged: shots home in on the target. Off = aimed by hand with the crosshair." },
+			], e => e.slot === "weapon"],
 			["When used", [
 				{ key: "use_heal", label: "Heals at once", type: "number" },
 				{ key: "use_hot_per_tick", label: "Heals per tick", type: "number" },
@@ -404,16 +410,16 @@ const TABS = {
 				{ key: "combat.move_cancels_cast", label: "Moving cancels casting", type: "bool" },
 			]],
 			["Loadout", [
-				{ key: "loadout.light_combo", label: "Melee combo (in order)", type: "abilities", wide: true },
-				{ key: "loadout.heavy_attack", label: "Heavy attack (hold)", type: "ability" },
-				{ key: "loadout.ranged_attack", label: "Ranged attack", type: "ability" },
-				{ key: "loadout.spells", label: "Spells (up to 4)", type: "abilities", max: 4, wide: true },
+				{ key: "loadout.light_combo", label: "Bare-hands combo (in order)", type: "abilities", wide: true, help: "Weapons bring their own moves (Weapon Types tab)." },
+				{ key: "loadout.heavy_attack", label: "Bare-hands heavy (hold)", type: "ability" },
+				{ key: "loadout.ranged_attack", label: "Fallback ranged shot", type: "ability" },
+				{ key: "loadout.spells", label: "Spellbook (known spells)", type: "abilities", wide: true },
+				{ key: "hotbar", label: "Hotbar (boxes 3–10)", type: "hotbar", wide: true, help: "New characters start with this bar." },
 			]],
 			["Starting kit (new characters)", [
 				{ key: "starting_kit.gold", label: "Gold", type: "int" },
 				{ key: "starting_kit.equipment", label: "Equipped", type: "kitgear", wide: true },
 				{ key: "starting_kit.backpack", label: "In the backpack", type: "kitbag", wide: true },
-				{ key: "starting_kit.quick", label: "Quick items", type: "itemlist", max: 2, wide: true },
 			]],
 		],
 	},
@@ -443,7 +449,7 @@ const TABS = {
 				{ key: "leash_distance", label: "Stops chasing beyond (m from home)", type: "number" },
 			]],
 			["Fighting", [
-				{ key: "can_fight", label: "Fights enemies", type: "bool", help: "Needs a main-hand weapon too. NPCs that don't fight run away instead." },
+				{ key: "can_fight", label: "Fights enemies", type: "bool", help: "Needs a primary weapon too. NPCs that don't fight run away instead." },
 				{ key: "attack_power", label: "Damage", type: "number" },
 				{ key: "attack_range", label: "Range (m)", type: "number" },
 				{ key: "attack_cooldown", label: "Time between attacks (s)", type: "number" },
@@ -465,13 +471,43 @@ const TABS = {
 				{ key: "look.build", label: "Build", type: "lookopt", list: "builds" },
 			]],
 			["Gear", [
-				{ key: "equipment", label: "Wearing", type: "kitgear", wide: true, help: "Main hand = the weapon it fights with." },
+				{ key: "equipment", label: "Wearing", type: "kitgear", wide: true, help: "Primary = the weapon it fights with." },
 			]],
 			["Talking", [
 				{ key: "can_follow", label: "Can follow the player", type: "bool", help: "Talking to it offers Follow me / Wait here." },
 				{ key: "follow_line", label: "Says when asked to follow", type: "text" },
 				{ key: "wait_line", label: "Says when asked to wait", type: "text" },
 				{ key: "dialogue", label: "Lines", type: "lines", wide: true, help: "One line per paragraph (leave an empty line between them). {player} = the player's name; {they} {them} {their} use the player's pronouns." },
+			]],
+		],
+	},
+	weapon_types: {
+		title: "Weapon Types", file: "weapon_types", listKey: "types", idKey: "id", nameKey: "name",
+		blank: () => ({
+			id: "new_type", name: "New Type", category: "melee", hands: 1, combo: ["slash_1", "slash_2", "slash_3"], heavy: "heavy_strike",
+			shot: "", speed: 1, power: 1, draw: false, reload: 0, swap_sound: "", fire_sound: "",
+		}),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Items name it in their Weapon type. Classes list it under Proficient with." },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "category", label: "Kind", type: "select", options: [["melee", "Melee"], ["ranged", "Ranged"]] },
+				{ key: "hands", label: "Hands", type: "int", help: "2 = no shield with it." },
+				{ key: "speed", label: "Speed", type: "number", help: "Swings, shots and reloads: 1 = normal, 1.35 = 35% faster." },
+				{ key: "power", label: "Damage", type: "number", help: "Multiplies its hits: 1.5 = 50% harder." },
+			]],
+			["Melee", [
+				{ key: "combo", label: "Combo (tap, in order)", type: "abilities", wide: true },
+				{ key: "heavy", label: "Heavy (hold)", type: "ability" },
+			], e => e.category === "melee"],
+			["Ranged", [
+				{ key: "shot", label: "Shot", type: "ability" },
+				{ key: "draw", label: "Hold to draw (bows)", type: "bool", help: "Tap = quick shot, hold = draw harder. Off = fires on the press." },
+				{ key: "reload", label: "Reload (s)", type: "number", help: "0 = no reloading. Crossbows and guns reload after every shot." },
+			], e => e.category === "ranged"],
+			["Sound", [
+				{ key: "swap_sound", label: "Swap to it", type: "sound" },
+				{ key: "fire_sound", label: "Firing", type: "sound" },
 			]],
 		],
 	},
@@ -489,12 +525,12 @@ const TABS = {
 				{ key: "role", label: "Role line", type: "text", help: "Short line under the name, e.g. Melee · Versatile." },
 				{ key: "color", label: "Colour", type: "color" },
 				{ key: "description", label: "Description", type: "textarea", wide: true },
+				{ key: "proficient", label: "Proficient with", type: "weapontypes", wide: true, help: "These weapon types hit 15% harder and swing, shoot and reload 10% faster." },
 			]],
 			["Starting kit (leave empty to use the Player tab's)", [
 				{ key: "starting_kit.gold", label: "Gold", type: "int" },
 				{ key: "starting_kit.equipment", label: "Equipped", type: "kitgear", wide: true },
 				{ key: "starting_kit.backpack", label: "In the backpack", type: "kitbag", wide: true },
-				{ key: "starting_kit.quick", label: "Quick items", type: "itemlist", max: 2, wide: true },
 			]],
 		],
 	},
@@ -997,11 +1033,12 @@ function fieldControl(t, entry, f) {
 		}
 		case "kitgear": {
 			const eq = Object.assign({}, value || {});
-			const slots = [["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["main_hand", "Main hand"], ["off_hand", "Off hand"], ["ranged", "Ranged"]];
+			const slots = [["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["primary", "Primary"], ["secondary", "Secondary"], ["off_hand", "Off hand"]];
 			const grid = el("div", { className: "grid" });
 			for (const [slot, name] of slots) {
 				const cell = el("div", { className: "field" });
-				const opts = data.items.items.filter(it => it.slot === slot).map(it => [it.id, it.name]);
+				const want = slot === "primary" || slot === "secondary" ? "weapon" : slot;
+				const opts = data.items.items.filter(it => it.slot === want).map(it => [it.id, it.name]);
 				const s = selectOf(opts, eq[slot] || "", true);
 				s.onchange = () => { if (s.value) eq[slot] = s.value; else delete eq[slot]; set(Object.assign({}, eq)); };
 				cell.append(el("label", { textContent: name }), s);
@@ -1029,6 +1066,42 @@ function fieldControl(t, entry, f) {
 			const add = el("button", { textContent: "+ Add" });
 			add.onclick = () => { const o = itemOptions(); if (o.length) { list.push([o[0][0], 1]); set(list, true); } };
 			wrap.appendChild(add);
+			break;
+		}
+		case "weapontype": {
+			const opts = ((data.weapon_types && data.weapon_types.types) || []).map(t => [t.id, t.name]);
+			const s = selectOf(opts, value, true);
+			s.onchange = () => set(s.value);
+			wrap.append(label, s);
+			break;
+		}
+		case "weapontypes": {
+			const on = new Set(Array.isArray(value) ? value : []);
+			const box = el("div", { className: "parts" });
+			for (const t of ((data.weapon_types && data.weapon_types.types) || [])) {
+				const lab = el("label", { className: "part" });
+				const c = el("input", { type: "checkbox", checked: on.has(t.id) });
+				c.onchange = () => { if (c.checked) on.add(t.id); else on.delete(t.id); set([...on]); };
+				lab.append(c, document.createTextNode(" " + t.name));
+				box.appendChild(lab);
+			}
+			wrap.append(label, box);
+			break;
+		}
+		case "hotbar": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const list = Array.isArray(value) ? value.slice() : [];
+			while (list.length < 8) list.push("");
+			const opts = abilityOptions().map(([id, n]) => ["ability:" + id, "Spell: " + n])
+				.concat(itemOptions().map(([id, n]) => ["item:" + id, "Item: " + n]));
+			list.slice(0, 8).forEach((v, i) => {
+				const row = el("div", { className: "row" });
+				const s = selectOf(opts, v, true);
+				s.onchange = () => { list[i] = s.value; set(list.slice(0, 8)); };
+				row.append(el("span", { textContent: String(i + 3) }), s);
+				wrap.appendChild(row);
+			});
 			break;
 		}
 		case "itemlist": {

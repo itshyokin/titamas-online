@@ -13,7 +13,16 @@
 				"Uses every weapon type",
 				"Easy to learn"
 			],
-			"starting_kit": {}
+			"starting_kit": {},
+			"proficient": [
+				"dagger",
+				"sword",
+				"greatsword",
+				"hammer",
+				"axe",
+				"bow",
+				"crossbow"
+			]
 		},
 		{
 			"id": "rogue",
@@ -24,7 +33,14 @@
 			"icon": "dagger",
 			"description": "Coming in a later update.",
 			"strengths": [],
-			"starting_kit": {}
+			"starting_kit": {},
+			"proficient": [
+				"dagger",
+				"sword",
+				"bow",
+				"crossbow",
+				"pistol"
+			]
 		},
 		{
 			"id": "mage",
@@ -35,7 +51,10 @@
 			"icon": "staff",
 			"description": "Coming in a later update.",
 			"strengths": [],
-			"starting_kit": {}
+			"starting_kit": {},
+			"proficient": [
+				"dagger"
+			]
 		},
 		{
 			"id": "druid",
@@ -46,7 +65,12 @@
 			"icon": "leaf",
 			"description": "Coming in a later update.",
 			"strengths": [],
-			"starting_kit": {}
+			"starting_kit": {},
+			"proficient": [
+				"dagger",
+				"hammer",
+				"bow"
+			]
 		}
 	]
 }

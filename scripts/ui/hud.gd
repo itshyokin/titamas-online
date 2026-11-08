@@ -1,7 +1,8 @@
 extends CanvasLayer
-## HUD: health, mana and stamina bars bound to a Stats node, the fatigue bar,
-## short centre-screen messages, and the combat parts: target frame, cast bar and
-## action bar (built in code below).
+## HUD: the player frame (name, level, health, mana and stamina), the fatigue bar,
+## short centre-screen messages, and the combat parts: target frame, cast bar, crosshair
+## and the hotbar with the experience bar (built in code below). Also builds the
+## character window, spellbook, ability wheel and settings menu.
 
 @export var stats_path: NodePath
 
@@ -10,7 +11,6 @@ extends CanvasLayer
 @onready var stamina_bar: ProgressBar = %StaminaBar
 @onready var fatigue_bar: ProgressBar = %FatigueBar
 @onready var message: Label = %Message
-@onready var controls_label: Label = $Controls
 
 const RESPAWN_MESSAGES := {
 	"drowned": "You were overcome by fatigue.",
@@ -23,17 +23,20 @@ var _message_tween: Tween
 # Combat HUD (built in _build_combat_hud).
 var _combat: PlayerCombat
 var _targeting: Targeting
+var _stats: Stats
 var _target_frame: PanelContainer
 var _target_name: Label
 var _target_bar: ProgressBar
 var _target_stats: Stats
-var _charge_bar: ProgressBar
-var _charge_label: Label
-var _mode_slots: Array = []   # [Slot] for melee, ranged, magic
-var _spell_slots: Array = []  # [Slot] x4
-var _item_slots: Array = []   # [Slot] x2
-var _hint_labels := {}        # Label -> action name (button hints that follow rebinding)
-
+var _cast_bar: ProgressBar
+var _cast_label: Label
+var _cast_flash := 0.0  # seconds "Interrupted" stays up
+var _crosshair: Crosshair
+var _hotbar: Hotbar
+var _wheel: AbilityWheel
+var _spellbook: Spellbook
+var _name_label: Label
+var _bar_values := {}  # ProgressBar -> Label with "85 / 100"
 
 var _settings: SettingsMenu
 var _clock: Label
@@ -41,7 +44,6 @@ var _inventory: Inventory
 var _character_window: CharacterWindow
 var _gold: Label
 var _pickups: VBoxContainer
-var _item_icons: Array = []  # ItemIcon per quick slot on the bar
 
 
 func _ready() -> void:
@@ -61,6 +63,8 @@ func _ready() -> void:
 	if stats == null:
 		push_warning("HUD: no Stats node at %s" % stats_path)
 		return
+	_stats = stats
+	_style_player_frame()
 	stats.health_changed.connect(_set_bar.bind(health_bar))
 	stats.mana_changed.connect(_set_bar.bind(mana_bar))
 	stats.stamina_changed.connect(_set_bar.bind(stamina_bar))
@@ -79,13 +83,8 @@ func _ready() -> void:
 		_inventory = player.get_node_or_null("Inventory") as Inventory
 		if _inventory:
 			_build_inventory_hud(stats)
-	# Control hints sit under the bars, out of the way of the bottom bar.
-	controls_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	controls_label.position = Vector2(24, 100)
-	controls_label.size = Vector2(380, 0)
-	controls_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	controls_label.add_theme_font_size_override("font_size", 13)
-	controls_label.modulate = Color(1, 1, 1, 0.75)
+			if _combat:
+				_build_hotbar()
 
 
 func show_message(text: String, seconds := 3.0) -> void:
@@ -109,22 +108,63 @@ func _on_fatigue_changed(current: float, maximum: float) -> void:
 func _set_bar(current: float, maximum: float, bar: ProgressBar) -> void:
 	bar.max_value = maximum
 	bar.value = current
+	var l: Label = _bar_values.get(bar)
+	if l:
+		l.text = "%d / %d" % [ceili(current), roundi(maximum)]
 
 
+## Top left: name and level over rounded, framed health / mana / stamina bars with values.
+func _style_player_frame() -> void:
+	var bars := health_bar.get_parent() as VBoxContainer
+	bars.add_theme_constant_override("separation", 4)
+	_name_label = _label("", 17)
+	bars.add_child(_name_label)
+	bars.move_child(_name_label, 0)
+	_refresh_name()
+	_stats.level_changed.connect(func(_l: int) -> void: _refresh_name())
+	var looks := [[health_bar, Color(0.86, 0.2, 0.18), 22.0], [mana_bar, Color(0.25, 0.45, 0.95), 16.0],
+		[stamina_bar, Color(0.92, 0.72, 0.18), 12.0]]
+	for entry in looks:
+		var bar := entry[0] as ProgressBar
+		var col := entry[1] as Color
+		bar.custom_minimum_size = Vector2(280, entry[2])
+		var bg := StyleBoxFlat.new()
+		bg.bg_color = Color(0.05, 0.045, 0.06, 0.82)
+		bg.border_color = Color(0.0, 0.0, 0.0, 0.9)
+		bg.set_border_width_all(2)
+		bg.set_corner_radius_all(6)
+		bg.shadow_color = Color(0, 0, 0, 0.35)
+		bg.shadow_size = 3
+		var fill := StyleBoxFlat.new()
+		fill.bg_color = col
+		fill.set_corner_radius_all(5)
+		fill.border_color = col.lightened(0.45)
+		fill.border_width_top = 2
+		fill.border_width_bottom = 2
+		fill.border_color = col.lightened(0.4)
+		fill.expand_margin_top = -1
+		fill.expand_margin_bottom = -1
+		bar.add_theme_stylebox_override("background", bg)
+		bar.add_theme_stylebox_override("fill", fill)
+		if bar != stamina_bar:
+			var value := _label("", 12 if bar == health_bar else 11)
+			value.set_anchors_preset(Control.PRESET_FULL_RECT)
+			value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			bar.add_child(value)
+			_bar_values[bar] = value
 
-# --- Combat HUD -----------------------------------------------------------------
-# Bottom bar, WoW look with Fable controls: the three attack modes (melee, ranged,
-# magic), four spell slots and two quick-item slots. Button hints follow the device in
-# use and any rebinding.
 
-const SPELL_SLOTS := 4
-const ITEM_SLOTS := 2
+func _refresh_name() -> void:
+	var char_name := String(GameSession.data.get("name", _stats.display_name)) if GameSession.active() else _stats.display_name
+	_name_label.text = "%s   [Level %d]" % [char_name, _stats.level]
+
 
 
 # --- Inventory HUD ----------------------------------------------------------------
 
 func _build_inventory_hud(stats: Stats) -> void:
-	_character_window = CharacterWindow.new(_inventory, stats)
+	_character_window = CharacterWindow.new(_inventory, stats, _combat)
 	add_child(_character_window)
 	# Gold, under the clock.
 	_gold = _label("", 16)
@@ -140,36 +180,13 @@ func _build_inventory_hud(stats: Stats) -> void:
 	_pickups.position = Vector2(-300, 40)
 	_pickups.custom_minimum_size = Vector2(280, 0)
 	_pickups.alignment = BoxContainer.ALIGNMENT_END
+	_pickups.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_pickups)
 	_inventory.gold_changed.connect(func(g: int) -> void: _gold.text = "%d gold" % g)
-	_inventory.changed.connect(_refresh_quick_items)
 	_inventory.item_added.connect(func(id: String, count: int) -> void:
 		var d := Database.item(id)
 		_log_pickup("+ %s%s" % [d.get("name", id), (" x%d" % count) if count > 1 else ""], ItemIcon.rarity_color(d)))
 	_gold.text = "%d gold" % _inventory.gold
-	# Item icons in the bar's quick slots.
-	for slot: Slot in _item_slots:
-		var icon := ItemIcon.new()
-		icon.set_anchors_preset(Control.PRESET_FULL_RECT)
-		icon.offset_left = 6
-		icon.offset_top = 6
-		icon.offset_right = -6
-		icon.offset_bottom = -6
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		slot.panel.add_child(icon)
-		_item_icons.append(icon)
-	_refresh_quick_items()
-
-
-func _refresh_quick_items() -> void:
-	for i in mini(_item_slots.size(), Inventory.QUICK_SLOTS):
-		var id: String = _inventory.quick[i]
-		var d := Database.item(id)
-		var count := _inventory.count_of(id)
-		(_item_icons[i] as ItemIcon).show_item(d, count)
-		(_item_icons[i] as ItemIcon).modulate = Color(1, 1, 1, 0.4) if count == 0 else Color.WHITE
-		var slot: Slot = _item_slots[i]
-		slot.panel.tooltip_text = ("%s (%d)\n%s" % [d.get("name", ""), count, d.get("description", "")]) if not d.is_empty() else "Empty quick slot: set one in the character window (%s)." % GameSettings.binding_label("inventory")
 
 
 func _log_pickup(text: String, color: Color) -> void:
@@ -183,28 +200,23 @@ func _log_pickup(text: String, color: Color) -> void:
 	t.tween_callback(l.queue_free)
 
 
-class Slot:
-	var panel: Panel
-	var style: StyleBoxFlat
-	var title: Label
-	var cover: ColorRect
-	var timer: Label
-	var ability: Ability
-	var color := Color(0.55, 0.6, 0.7)
-
-
-func _bar_style(color: Color) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = color
-	return sb
-
-
 func _progress(color: Color, size: Vector2) -> ProgressBar:
 	var bar := ProgressBar.new()
 	bar.custom_minimum_size = size
 	bar.show_percentage = false
-	bar.add_theme_stylebox_override("background", _bar_style(Color(0, 0, 0, 0.55)))
-	bar.add_theme_stylebox_override("fill", _bar_style(color))
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.05, 0.045, 0.06, 0.82)
+	bg.border_color = Color(0, 0, 0, 0.9)
+	bg.set_border_width_all(2)
+	bg.set_corner_radius_all(5)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = color
+	fill.set_corner_radius_all(4)
+	fill.border_color = color.lightened(0.4)
+	fill.border_width_top = 2
+	bar.add_theme_stylebox_override("background", bg)
+	bar.add_theme_stylebox_override("fill", fill)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return bar
 
 
@@ -218,28 +230,26 @@ func _label(text: String, size := 16) -> Label:
 	return l
 
 
-func _hint(action: String, size := 11) -> Label:
-	var l := _label("", size)
-	l.add_theme_color_override("font_color", Color(1, 0.88, 0.55))
-	_hint_labels[l] = action
-	return l
-
+# --- Combat HUD -----------------------------------------------------------------
 
 func _build_combat_hud() -> void:
 	# Target frame, top centre.
 	_target_frame = PanelContainer.new()
 	var panel := StyleBoxFlat.new()
-	panel.bg_color = Color(0, 0, 0, 0.45)
+	panel.bg_color = Color(0.05, 0.045, 0.06, 0.7)
+	panel.border_color = Color(0, 0, 0, 0.9)
+	panel.set_border_width_all(2)
 	panel.set_content_margin_all(8)
-	panel.set_corner_radius_all(4)
+	panel.set_corner_radius_all(6)
 	_target_frame.add_theme_stylebox_override("panel", panel)
 	_target_frame.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_target_frame.position = Vector2(-150, 50)
 	_target_frame.custom_minimum_size = Vector2(300, 0)
+	_target_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box := VBoxContainer.new()
-	_target_name = _label("", 18)
+	_target_name = _label("", 17)
 	_target_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_target_bar = _progress(Color(0.75, 0.15, 0.15), Vector2(284, 14))
+	_target_bar = _progress(Color(0.8, 0.18, 0.16), Vector2(284, 16))
 	box.add_child(_target_name)
 	box.add_child(_target_bar)
 	_target_frame.add_child(box)
@@ -248,165 +258,46 @@ func _build_combat_hud() -> void:
 	_targeting.target_changed.connect(func(_t: Node3D) -> void: _refresh_target())
 	_targeting.lock_changed.connect(func(_l: bool) -> void: _refresh_target())
 
-	# Bottom bar.
-	var bar := HBoxContainer.new()
-	bar.add_theme_constant_override("separation", 6)
-	bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	bar.position = Vector2(0, -24)
-	var modes := [["Melee", Color(0.75, 0.75, 0.8), _combat.light_combo[0] if not _combat.light_combo.is_empty() else null],
-		["Ranged", Color(0.55, 0.75, 0.4), _combat.ranged_attack], ["Magic", Color(0.6, 0.45, 0.95), null]]
-	var mode_box := _group("cycle_mode")
-	for m in modes:
-		var slot := _make_slot(m[0], m[1], 78.0)
-		slot.ability = m[2]
-		mode_box.get_child(1).add_child(slot.panel)
-		_mode_slots.append(slot)
-	bar.add_child(mode_box)
-	bar.add_child(_spacer())
-	var spell_box := _group("spell_prev", "spell_next")
-	for i in SPELL_SLOTS:
-		var ab: Ability = _combat.spells[i] if i < _combat.spells.size() else null
-		var slot := _make_slot(ab.display_name if ab else "", ab.color if ab else Color(0.35, 0.35, 0.4), 64.0)
-		slot.ability = ab
-		spell_box.get_child(1).add_child(slot.panel)
-		_spell_slots.append(slot)
-	bar.add_child(spell_box)
-	bar.add_child(_spacer())
-	var item_box := _group("item_prev", "item_next")
-	item_box.get_child(0).add_child(_label("  ·  ", 11))
-	item_box.get_child(0).add_child(_hint("inventory"))
-	for i in ITEM_SLOTS:
-		var slot := _make_slot("", Color(0.35, 0.35, 0.4), 56.0)
-		slot.panel.tooltip_text = ""
-		item_box.get_child(1).add_child(slot.panel)
-		_item_slots.append(slot)
-	bar.add_child(item_box)
-	add_child(bar)
-	# Centre the bar once its size is known.
-	bar.resized.connect(func() -> void: bar.position.x = -bar.size.x * 0.5)
+	# Cast bar, above the hotbar.
+	_cast_bar = _progress(Color(0.55, 0.6, 1.0), Vector2(300, 18))
+	_cast_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_cast_bar.position = Vector2(-150, -170)
+	_cast_bar.visible = false
+	_cast_label = _label("", 13)
+	_cast_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_cast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_cast_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_cast_bar.add_child(_cast_label)
+	add_child(_cast_bar)
 
-	# Charge bar, above the bottom bar.
-	_charge_bar = _progress(Color(0.95, 0.7, 0.2), Vector2(300, 16))
-	_charge_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_charge_bar.position = Vector2(-150, -150)
-	_charge_bar.visible = false
-	_charge_label = _label("", 14)
-	_charge_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_charge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_charge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_charge_bar.add_child(_charge_label)
-	add_child(_charge_bar)
+	_crosshair = Crosshair.new()
+	add_child(_crosshair)
 
-	_combat.charge_started.connect(_on_charge_started)
-	_combat.charge_progress.connect(_on_charge_progress)
-	_combat.charge_ended.connect(func() -> void: _charge_bar.visible = false)
 	_combat.cast_interrupted.connect(_on_cast_interrupted)
 	_combat.notice.connect(func(text: String) -> void: show_message(text, 1.0))
-	_combat.mode_changed.connect(func(_m: int) -> void: _refresh_slots())
-	_combat.spell_changed.connect(func(_i: int) -> void: _refresh_slots())
-	_combat.loadout_changed.connect(_refresh_slots)
-	GameSettings.device_changed.connect(func(_g: bool) -> void: _refresh_hints())
-	GameSettings.bindings_changed.connect(_refresh_hints)
-	_refresh_slots()
-	_refresh_hints()
 
 
-## A titled group of slots: hint label(s) on top, the slots underneath.
-func _group(action: String, action2 := "") -> VBoxContainer:
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 2)
-	var top := HBoxContainer.new()
-	top.alignment = BoxContainer.ALIGNMENT_CENTER
-	top.add_child(_hint(action))
-	if not action2.is_empty():
-		top.add_child(_label("/", 11))
-		top.add_child(_hint(action2))
-	v.add_child(top)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	v.add_child(row)
-	return v
+func _build_hotbar() -> void:
+	_hotbar = Hotbar.new(_inventory, _combat)
+	_hotbar.anchor_left = 0.5
+	_hotbar.anchor_right = 0.5
+	_hotbar.anchor_top = 1.0
+	_hotbar.anchor_bottom = 1.0
+	add_child(_hotbar)
+	# Bottom centre once its size is known.
+	_hotbar.resized.connect(func() -> void: _hotbar.position = Vector2(get_viewport().get_visible_rect().size.x * 0.5 - _hotbar.size.x * 0.5,
+		get_viewport().get_visible_rect().size.y - _hotbar.size.y - 16))
+	get_viewport().size_changed.connect(func() -> void: _hotbar.resized.emit())
+	_wheel = AbilityWheel.new(_hotbar)
+	add_child(_wheel)
+	_spellbook = Spellbook.new(_combat, _inventory)
+	add_child(_spellbook)
 
 
-func _spacer() -> Control:
-	var c := Control.new()
-	c.custom_minimum_size = Vector2(14, 0)
-	return c
-
-
-func _make_slot(title: String, color: Color, w: float) -> Slot:
-	var slot := Slot.new()
-	slot.color = color
-	slot.panel = Panel.new()
-	slot.panel.custom_minimum_size = Vector2(w, 56)
-	slot.style = StyleBoxFlat.new()
-	slot.style.set_border_width_all(2)
-	slot.style.set_corner_radius_all(4)
-	slot.panel.add_theme_stylebox_override("panel", slot.style)
-	slot.title = _label(title, 13)
-	slot.title.set_anchors_preset(Control.PRESET_FULL_RECT)
-	slot.title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	slot.title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	slot.title.autowrap_mode = TextServer.AUTOWRAP_WORD
-	slot.panel.add_child(slot.title)
-	slot.cover = ColorRect.new()
-	slot.cover.color = Color(0, 0, 0, 0.6)
-	slot.cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slot.cover.visible = false
-	slot.panel.add_child(slot.cover)
-	slot.timer = _label("", 18)
-	slot.timer.set_anchors_preset(Control.PRESET_FULL_RECT)
-	slot.timer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	slot.timer.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	slot.panel.add_child(slot.timer)
-	return slot
-
-
-func _paint_slot(slot: Slot, active: bool) -> void:
-	slot.style.bg_color = slot.color.darkened(0.35 if active else 0.65)
-	slot.style.border_color = Color(1.0, 0.85, 0.4) if active else slot.color.darkened(0.2)
-	slot.style.set_border_width_all(3 if active else 2)
-	slot.panel.modulate = Color.WHITE if active else Color(0.8, 0.8, 0.8)
-
-
-func _refresh_slots() -> void:
-	for i in _mode_slots.size():
-		_paint_slot(_mode_slots[i], i == _combat.mode)
-	var spell_tip := "Magic: press attack to cast (the bar has to fill; moving or a hard hit stops it). Keep holding to charge it higher."
-	_mode_slots[0].panel.tooltip_text = "Melee: tap attack to swing (tap again to combo), hold to charge a heavy blow."
-	_mode_slots[1].panel.tooltip_text = "Ranged: tap attack for a quick shot, hold to draw and release to fire."
-	_mode_slots[2].panel.tooltip_text = "Magic: " + spell_tip
-	var spell := _combat.selected_spell()
-	_mode_slots[2].title.text = spell.display_name if spell else "Magic"
-	_mode_slots[2].ability = spell
-	_mode_slots[0].ability = _combat.mode_ability(PlayerCombat.Mode.MELEE)
-	_mode_slots[1].ability = _combat.ranged_attack
-	for i in _spell_slots.size():
-		var slot: Slot = _spell_slots[i]
-		slot.ability = _combat.spells[i] if i < _combat.spells.size() else null
-		slot.color = slot.ability.color if slot.ability else Color(0.35, 0.35, 0.4)
-		slot.title.text = slot.ability.display_name if slot.ability else ""
-		slot.panel.tooltip_text = ""
-		_paint_slot(slot, i == _combat.spell_index and _combat.mode == PlayerCombat.Mode.MAGIC)
-		if slot.ability:
-			var ab := slot.ability
-			var tip := "%s\n%s" % [ab.display_name, ab.description]
-			if ab.mana_cost > 0.0:
-				tip += "\nMana: %d per level" % ab.mana_cost if ab.max_charge_level > 1 else "\nMana: %d" % ab.mana_cost
-			slot.panel.tooltip_text = tip
-	for slot: Slot in _item_slots:
-		_paint_slot(slot, false)
-
-
-func _refresh_hints() -> void:
-	for l: Label in _hint_labels:
-		l.text = GameSettings.binding_label(_hint_labels[l])
-	var g := GameSettings
-	controls_label.text = "%s attack (hold to charge) · %s block · %s melee/ranged/magic · %s dodge · %s jump · %s sprint · %s lock on · %s next target · gear/Esc: settings" % [
-		g.binding_label("attack"), g.binding_label("block"), g.binding_label("cycle_mode"), g.binding_label("dodge"),
-		g.binding_label("jump"), g.binding_label("sprint"), g.binding_label("lock_on"), g.binding_label("target_next")]
+## The hotbar's experience bar (set by the levelling code).
+func set_xp(current: int, needed: int, level: int, max_level: bool) -> void:
+	if _hotbar:
+		_hotbar.set_xp(current, needed, level, max_level)
 
 
 func _process(delta: float) -> void:
@@ -417,22 +308,30 @@ func _process(delta: float) -> void:
 		_clock.text = cycle.clock_text()
 	if _combat == null:
 		return
-	for slot: Slot in _mode_slots + _spell_slots:
-		var ab := slot.ability
-		if ab == null:
-			continue
-		var left := _combat.cooldown_left(ab)
-		slot.cover.visible = left > 0.0
-		if slot.cover.visible:
-			var k := clampf(left / maxf(ab.cooldown, 0.01), 0.0, 1.0)
-			slot.cover.position = Vector2(0, slot.panel.size.y * (1.0 - k))
-			slot.cover.size = Vector2(slot.panel.size.x, slot.panel.size.y * k)
-		slot.timer.text = ("%.1f" % left) if left > 0.0 else ""
-		if not _combat.can_afford(ab):
-			slot.panel.modulate = Color(0.55, 0.55, 0.85)
 	if _target_stats:
 		_target_bar.max_value = _target_stats.max_health
 		_target_bar.value = _target_stats.health
+	# Cast / charge / reload bar.
+	if _cast_flash > 0.0:
+		_cast_flash -= delta
+		if _cast_flash <= 0.0:
+			_cast_bar.visible = false
+	else:
+		var b := _combat.bar_state()
+		_cast_bar.visible = not b.is_empty()
+		if not b.is_empty():
+			_cast_bar.value = float(b.fraction) * 100.0
+			match String(b.kind):
+				"cast":
+					_tint_bar(Color(0.55, 0.6, 1.0))
+					_cast_label.text = String(b.name)
+				"reload":
+					_tint_bar(Color(0.7, 0.7, 0.72))
+					_cast_label.text = String(b.name)
+				_:
+					_tint_bar(Color(0.95, 0.7, 0.2))
+					_cast_label.text = "Full power!" if float(b.fraction) >= 1.0 else String(b.name)
+	_crosshair.state = _combat.crosshair()
 
 
 func _refresh_target() -> void:
@@ -446,41 +345,47 @@ func _refresh_target() -> void:
 		_target_name.add_theme_color_override("font_color", Color(1.0, 0.55, 0.5) if hostile else Color(0.6, 0.9, 1.0))
 
 
-func _on_charge_started(ab: Ability) -> void:
-	_charge_label.text = ab.display_name
-	_charge_bar.value = 0.0
-	_charge_bar.visible = true
-
-
-func _on_charge_progress(fraction: float, level: int) -> void:
-	_charge_bar.value = fraction * 100.0
-	var ab := _combat.selected_spell() if _combat.mode == PlayerCombat.Mode.MAGIC else null
-	_tint_bar(Color(0.55, 0.6, 1.0) if _combat.is_casting() else Color(0.95, 0.7, 0.2))
-	if _combat.is_casting():
-		_charge_label.text = "Casting %s" % _combat.casting_name()
-	elif ab and ab.max_charge_level > 1:
-		_charge_label.text = "%s  —  level %d" % [ab.display_name, level]
-	elif fraction >= 1.0:
-		_charge_label.text = "Full power!"
-
-
 ## Shows "Interrupted" / "Cancelled" on the cast bar for a moment.
 func _on_cast_interrupted(reason: String) -> void:
-	_charge_bar.visible = true
+	_cast_bar.visible = true
+	_cast_bar.value = 100.0
 	_tint_bar(Color(0.9, 0.3, 0.25))
-	_charge_label.text = reason
-	var shown := _charge_label.text
-	get_tree().create_timer(0.7).timeout.connect(func() -> void:
-		if _charge_label.text == shown and not _combat.is_casting():
-			_charge_bar.visible = false)
+	_cast_label.text = reason
+	_cast_flash = 0.7
 
 
 func _tint_bar(color: Color) -> void:
-	var fill := _charge_bar.get_theme_stylebox("fill")
+	var fill := _cast_bar.get_theme_stylebox("fill")
 	if fill is StyleBoxFlat and (fill as StyleBoxFlat).bg_color != color:
 		var sb := (fill as StyleBoxFlat).duplicate() as StyleBoxFlat
 		sb.bg_color = color
-		_charge_bar.add_theme_stylebox_override("fill", sb)
+		sb.border_color = color.lightened(0.4)
+		_cast_bar.add_theme_stylebox_override("fill", sb)
+
+
+## Screen-centre aim mark for hand-aimed ranged weapons: white, red on an enemy in range,
+## tighter while aiming.
+class Crosshair extends Control:
+	var state := {}:
+		set(v):
+			if v != state:
+				state = v
+				queue_redraw()
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		if not state.get("visible", false):
+			return
+		var c := get_viewport_rect().size * 0.5 - global_position
+		var col := Color(1.0, 0.3, 0.25) if state.get("red", false) else Color(1, 1, 1, 0.9)
+		var gap := 5.0 if state.get("aiming", false) else 9.0
+		var length := 8.0
+		for d: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
+			draw_line(c + d * gap, c + d * (gap + length), Color(0, 0, 0, 0.7), 4.0)
+			draw_line(c + d * gap, c + d * (gap + length), col, 2.0)
+		draw_circle(c, 2.0, col)
 
 
 # --- Party (followers now; other players in co-op later) ------------------------------

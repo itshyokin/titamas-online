@@ -1,33 +1,45 @@
 class_name Inventory
 extends Node
 ## The player's backpack (24 slots; consumables and materials stack to 64, gear to 1),
-## equipped gear, gold and the two quick-item slots. Lives under Player. Item details come
-## from data/items.json (Database → Items). Saved with the character (GameSession) whenever
+## equipped gear, gold and the hotbar. Lives under Player. Item details come from
+## data/items.json (Database → Items). Saved with the character (GameSession) whenever
 ## it changes; a new character starts with its class's (or the player data's) starting kit.
+##
+## Weapons (item slot "weapon") go in the primary or secondary slot; one of them is in use
+## (`active_weapon`, swapped by PlayerCombat). Only the weapon in use adds its stats.
+## The hotbar: 8 entries after the two weapon boxes, each "ability:<id>", "item:<id>" or "".
 
 signal changed
 signal equipment_changed
 signal gold_changed(gold: int)
 ## Something new went into the backpack (for pickup messages).
 signal item_added(id: String, count: int)
+signal hotbar_changed
+## The weapon in use changed (primary/secondary).
+signal weapon_swapped(slot: String)
 
 const SIZE := 24
 ## Equipment slots, in the order the character window shows them.
-const SLOTS := ["head", "shoulders", "chest", "hands", "legs", "feet", "main_hand", "off_hand", "ranged"]
+const SLOTS := ["head", "shoulders", "chest", "hands", "legs", "feet", "primary", "secondary", "off_hand"]
 const SLOT_NAMES := {
 	"head": "Head", "shoulders": "Shoulders", "chest": "Chest", "hands": "Hands", "legs": "Legs",
-	"feet": "Feet", "main_hand": "Main hand", "off_hand": "Off hand", "ranged": "Ranged",
+	"feet": "Feet", "primary": "Primary", "secondary": "Secondary", "off_hand": "Off hand",
 }
+const WEAPON_SLOTS := ["primary", "secondary"]
 const STAT_KEYS := ["attack", "spell_power", "armor", "block", "bonus_health", "bonus_mana"]
-const QUICK_SLOTS := 2
+const HOTBAR_SIZE := 8
+## Older saves' slot names.
+const OLD_SLOTS := {"main_hand": "primary", "ranged": "secondary"}
 
 ## Backpack: SIZE entries, each null or {"id": String, "count": int}.
 var bag: Array = []
 ## slot -> item id
 var equipped := {}
 var gold := 0
-## Item ids assigned to the quick slots ("" = empty).
-var quick: Array = ["", ""]
+## "primary" or "secondary": the weapon in use.
+var active_weapon := "primary"
+## HOTBAR_SIZE entries: "ability:<id>", "item:<id>" or "".
+var hotbar: Array = []
 
 @onready var stats: Stats = get_node("../Stats")
 
@@ -37,6 +49,8 @@ var _save_queued := false
 func _ready() -> void:
 	add_to_group("player_inventory")
 	bag.resize(SIZE)
+	hotbar.resize(HOTBAR_SIZE)
+	hotbar.fill("")
 	if not load_character():
 		_starting_kit()
 	# Everyone has a hearthstone (older saves get one too).
@@ -48,25 +62,6 @@ func _ready() -> void:
 			_apply_bonuses()
 			changed.emit()
 			equipment_changed.emit())
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if GameSettings.menu_open:
-		return
-	if event.is_action_pressed("item_prev"):
-		_use_quick_with_feedback(0)
-	elif event.is_action_pressed("item_next"):
-		_use_quick_with_feedback(1)
-
-
-func _use_quick_with_feedback(i: int) -> void:
-	var id: String = quick[i]
-	if id.is_empty():
-		return
-	if count_of(id) == 0:
-		FloatingText.spawn(get_parent(), "No %s left" % item(id).get("name", id), Color(1, 0.8, 0.6), 0.7)
-		return
-	use_quick(i)
 
 
 static func item(id: String) -> Dictionary:
@@ -165,13 +160,38 @@ func slot_of(id: String) -> String:
 	return String(item(id).get("slot", ""))
 
 
+func is_weapon(id: String) -> bool:
+	return slot_of(id) == "weapon"
+
+
+## Can this item go in this equipment slot?
+func fits(id: String, slot: String) -> bool:
+	if id.is_empty():
+		return false
+	var own := slot_of(id)
+	return own == slot or (own == "weapon" and slot in WEAPON_SLOTS)
+
+
+## The equipment slot an item would go to: weapons fill an empty weapon slot first, then
+## replace the one in use.
+func target_slot(id: String) -> String:
+	var own := slot_of(id)
+	if own != "weapon":
+		return own
+	for slot: String in WEAPON_SLOTS:
+		if not equipped.has(slot):
+			return slot
+	return active_weapon
+
+
 ## Equips the item in a backpack slot (swapping out whatever was in its equipment slot).
-func equip_from(index: int) -> bool:
+func equip_from(index: int, slot := "") -> bool:
 	var s = bag[index]
 	if s == null:
 		return false
-	var slot := slot_of(s.id)
 	if slot.is_empty():
+		slot = target_slot(s.id)
+	if slot.is_empty() or not fits(s.id, slot):
 		return false
 	var old: String = equipped.get(slot, "")
 	equipped[slot] = s.id
@@ -188,7 +208,7 @@ func unequip(slot: String, to := -1) -> bool:
 	if to >= 0 and to < SIZE and bag[to] != null:
 		# Dropped onto an occupied slot: swap if that item fits this equipment slot.
 		var other: String = bag[to].id
-		if slot_of(other) != slot:
+		if not fits(other, slot):
 			return false
 		equipped[slot] = other
 		bag[to] = {"id": id, "count": 1}
@@ -204,6 +224,35 @@ func unequip(slot: String, to := -1) -> bool:
 	return true
 
 
+## Swaps the primary and secondary weapons.
+func swap_weapon_slots() -> void:
+	var a: String = equipped.get("primary", "")
+	var b: String = equipped.get("secondary", "")
+	equipped.erase("primary")
+	equipped.erase("secondary")
+	if not b.is_empty():
+		equipped["primary"] = b
+	if not a.is_empty():
+		equipped["secondary"] = a
+	_equipment_changed()
+
+
+## Changes the weapon in use.
+func set_active_weapon(slot: String) -> void:
+	if not slot in WEAPON_SLOTS or slot == active_weapon:
+		return
+	active_weapon = slot
+	_apply_bonuses()
+	weapon_swapped.emit(slot)
+	equipment_changed.emit()
+	_queue_save()
+
+
+## The weapon in use ({} if that slot is empty: fists).
+func active_weapon_item() -> Dictionary:
+	return equipped_item(active_weapon)
+
+
 func equipped_item(slot: String) -> Dictionary:
 	var id: String = equipped.get(slot, "")
 	return item(id) if not id.is_empty() else {}
@@ -214,7 +263,13 @@ func bonuses() -> Dictionary:
 	var out := {}
 	for key: String in STAT_KEYS:
 		out[key] = 0.0
+	var weapon := active_weapon_item()
+	var two_handed := int(Database.weapon_type(String(weapon.get("weapon_type", ""))).get("hands", 1)) >= 2
 	for slot: String in equipped:
+		if slot in WEAPON_SLOTS and slot != active_weapon:
+			continue  # only the weapon in use counts
+		if slot == "off_hand" and two_handed:
+			continue  # no shield with a two-handed weapon
 		var d := item(equipped[slot])
 		for key: String in STAT_KEYS:
 			out[key] += float(d.get(key, 0.0))
@@ -280,22 +335,54 @@ func _use_hearthstone(d: Dictionary) -> bool:
 		GameSession.travel_home())
 
 
-## Uses the item assigned to quick slot `i` (from the first stack of it in the backpack).
-func use_quick(i: int) -> bool:
-	var id: String = quick[i] if i < quick.size() else ""
-	if id.is_empty():
-		return false
+## Uses an item by id (from its first stack in the backpack), as the hotbar does.
+func use_item(id: String) -> bool:
 	for index in SIZE:
 		if bag[index] and bag[index].id == id:
 			return use_at(index)
+	FloatingText.spawn(get_parent(), "No %s left" % item(id).get("name", id), Color(1, 0.8, 0.6), 0.7)
 	return false
 
 
-func set_quick(i: int, id: String) -> void:
-	if i < 0 or i >= QUICK_SLOTS:
+# --- Hotbar --------------------------------------------------------------------
+
+func set_hotbar(i: int, entry: String) -> void:
+	if i < 0 or i >= HOTBAR_SIZE:
 		return
-	quick[i] = id
-	_changed()
+	# An ability or item sits in one box only.
+	if not entry.is_empty():
+		var already := hotbar.find(entry)
+		if already >= 0 and already != i:
+			hotbar[already] = hotbar[i]
+	hotbar[i] = entry
+	hotbar_changed.emit()
+	_queue_save()
+
+
+func move_hotbar(from: int, to: int) -> void:
+	if from == to or from < 0 or to < 0 or from >= HOTBAR_SIZE or to >= HOTBAR_SIZE:
+		return
+	var a: String = hotbar[from]
+	hotbar[from] = hotbar[to]
+	hotbar[to] = a
+	hotbar_changed.emit()
+	_queue_save()
+
+
+## Puts an entry in the first empty box (if it isn't on the bar already).
+func add_to_hotbar(entry: String) -> void:
+	if hotbar.has(entry):
+		return
+	var i := hotbar.find("")
+	if i >= 0:
+		set_hotbar(i, entry)
+
+
+func _default_hotbar() -> void:
+	hotbar.fill("")
+	var d: Array = Database.player.get("hotbar", [])
+	for i in mini(d.size(), HOTBAR_SIZE):
+		hotbar[i] = String(d[i])
 
 
 # --- Gold ----------------------------------------------------------------------
@@ -330,7 +417,8 @@ func _queue_save() -> void:
 
 
 func to_dict() -> Dictionary:
-	return {"bag": bag.duplicate(true), "equipped": equipped.duplicate(), "gold": gold, "quick": quick.duplicate()}
+	return {"bag": bag.duplicate(true), "equipped": equipped.duplicate(), "gold": gold, "hotbar": hotbar.duplicate(),
+		"active_weapon": active_weapon}
 
 
 ## Saves the character (GameSession writes the save file; nothing when there's none).
@@ -352,14 +440,24 @@ func load_character() -> bool:
 			bag[i] = {"id": String(s.id), "count": int(s.get("count", 1))}
 	equipped = {}
 	var eq: Dictionary = data.get("equipped", {})
-	for slot: String in eq:
-		if slot in SLOTS and not item(String(eq[slot])).is_empty():
-			equipped[slot] = String(eq[slot])
+	for saved_slot: String in eq:
+		var slot: String = OLD_SLOTS.get(saved_slot, saved_slot)
+		if slot in SLOTS and fits(String(eq[saved_slot]), slot):
+			equipped[slot] = String(eq[saved_slot])
 	gold = int(data.get("gold", 0))
-	quick = ["", ""]
-	var q: Array = data.get("quick", [])
-	for i in mini(q.size(), QUICK_SLOTS):
-		quick[i] = String(q[i])
+	active_weapon = String(data.get("active_weapon", "primary"))
+	if not active_weapon in WEAPON_SLOTS:
+		active_weapon = "primary"
+	var hb = data.get("hotbar")
+	if hb is Array:
+		for i in mini(hb.size(), HOTBAR_SIZE):
+			hotbar[i] = String(hb[i])
+	else:
+		# Older save: the default bar, plus whatever was in the old quick slots.
+		_default_hotbar()
+		for id in data.get("quick", []):
+			if not String(id).is_empty():
+				add_to_hotbar("item:" + String(id))
 	return true
 
 
@@ -369,7 +467,7 @@ func reset_character() -> void:
 	bag.resize(SIZE)
 	equipped = {}
 	gold = 0
-	quick = ["", ""]
+	active_weapon = "primary"
 	_starting_kit()
 	_equipment_changed()
 	gold_changed.emit(gold)
@@ -384,11 +482,11 @@ func _starting_kit() -> void:
 			kit = class_kit
 	gold = int(kit.get("gold", 0))
 	var eq: Dictionary = kit.get("equipment", {})
-	for slot: String in eq:
-		if not item(String(eq[slot])).is_empty():
-			equipped[slot] = String(eq[slot])
+	for kit_slot: String in eq:
+		var slot: String = OLD_SLOTS.get(kit_slot, kit_slot)
+		if fits(String(eq[kit_slot]), slot):
+			equipped[slot] = String(eq[kit_slot])
 	for entry in kit.get("backpack", []):
 		add_item(String(entry[0]), int(entry[1]))
-	var q: Array = kit.get("quick", [])
-	for i in mini(q.size(), QUICK_SLOTS):
-		quick[i] = String(q[i])
+	_default_hotbar()
+	hotbar_changed.emit()

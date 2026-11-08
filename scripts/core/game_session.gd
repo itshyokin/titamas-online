@@ -3,7 +3,7 @@ extends Node
 ##
 ## Saves live in user://saves/<name>_<time>.json, one file per character:
 ##   {version, name, pronouns, class, look (see data/appearance.json "default"), level,
-##    inventory {bag, equipped, gold, quick}, scene, position [x,y,z], play_time,
+##    inventory {bag, equipped, gold, hotbar, active_weapon}, opened_chests, home, scene, position [x,y,z], play_time,
 ##    created, saved}
 ## The title screen makes or loads one, then start_game() opens its level with the
 ## player where they left off. While playing it saves on changes to the backpack,

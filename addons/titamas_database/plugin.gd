@@ -18,6 +18,7 @@ const FILES := {
 	"items": "res://data/items.json",
 	"classes": "res://data/classes.json",
 	"npcs": "res://data/npcs.json",
+	"weapon_types": "res://data/weapon_types.json",
 	"appearance": "res://data/appearance.json",
 }
 const MAX_BODY := 4 * 1024 * 1024

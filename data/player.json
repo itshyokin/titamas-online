@@ -45,10 +45,10 @@
 	"starting_kit": {
 		"gold": 10,
 		"equipment": {
-			"main_hand": "rusty_sword",
-			"ranged": "hunting_bow",
 			"legs": "travelers_trousers",
-			"feet": "worn_boots"
+			"feet": "worn_boots",
+			"primary": "rusty_sword",
+			"secondary": "hunting_bow"
 		},
 		"backpack": [
 			[
@@ -87,10 +87,16 @@
 				"mana_draught",
 				2
 			]
-		],
-		"quick": [
-			"minor_healing_potion",
-			"bandage"
 		]
-	}
+	},
+	"hotbar": [
+		"ability:firebolt",
+		"ability:mend",
+		"item:minor_healing_potion",
+		"item:bandage",
+		"item:hearthstone",
+		"",
+		"",
+		""
+	]
 }

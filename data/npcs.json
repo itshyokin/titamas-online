@@ -34,12 +34,12 @@
 				"build": "heavy"
 			},
 			"equipment": {
-				"main_hand": "iron_longsword",
 				"head": "iron_helm",
 				"chest": "leather_jerkin",
 				"legs": "travelers_trousers",
 				"feet": "worn_boots",
-				"off_hand": "wooden_shield"
+				"off_hand": "wooden_shield",
+				"primary": "iron_longsword"
 			},
 			"dialogue": [
 				"Stay sharp, {player}. Bandits have been creeping up from the shore.",
@@ -80,10 +80,10 @@
 				"build": "thin"
 			},
 			"equipment": {
-				"main_hand": "rusty_sword",
 				"chest": "leather_jerkin",
 				"legs": "travelers_trousers",
-				"feet": "worn_boots"
+				"feet": "worn_boots",
+				"primary": "rusty_sword"
 			},
 			"dialogue": [
 				"Oh, hello! Placeholder Katrina here. Write my real lines in the Database whenever you're ready."

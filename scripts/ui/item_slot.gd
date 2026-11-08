@@ -1,6 +1,6 @@
 class_name ItemSlot
 extends Panel
-## One slot in the character window (backpack, equipment or quick item). Shows the item's
+## One slot in the character window (backpack or equipment). Shows the item's
 ## icon and stack size, and handles dragging, right/double-click and controller buttons
 ## (see CharacterWindow).
 
@@ -51,9 +51,18 @@ func refresh() -> void:
 		border = CharacterWindow.ACCENT
 	_style.border_color = border
 	_style.bg_color = Color(0.16, 0.15, 0.2) if not d.is_empty() else Color(0.11, 0.1, 0.14)
-	# Quick slots show greyed out when none are left.
-	_icon.modulate = Color(1, 1, 1, 0.4) if where == "quick" and int(c[1]) == 0 else Color.WHITE
-	tooltip_text = ""
+	if where == "equip" and d.is_empty():
+		# A faint outline of what goes here.
+		var hint_icon := {"head": "helm", "shoulders": "shoulders", "chest": "chest", "hands": "gloves", "legs": "legs",
+			"feet": "boots", "primary": "sword", "secondary": "bow", "off_hand": "shield"}
+		_icon.show_item({"icon": hint_icon.get(key, ""), "icon_color": "#ffffff"})
+		_icon.modulate = Color(1, 1, 1, 0.12)
+	else:
+		_icon.modulate = Color.WHITE
+	if where == "equip":
+		tooltip_text = Inventory.SLOT_NAMES.get(key, "") if d.is_empty() else ""
+	else:
+		tooltip_text = ""
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -68,7 +77,7 @@ func _gui_input(event: InputEvent) -> void:
 		window.pick_or_place(self)
 		accept_event()
 	elif event.is_action_pressed("sprint") and GameSettings.is_gamepad_event(event):
-		window.assign_quick(self)
+		window.add_to_hotbar(self)
 		accept_event()
 
 

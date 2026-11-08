@@ -26,9 +26,12 @@ const REBINDABLE := [
 	["move_forward", "Move forward"], ["move_back", "Move back"], ["move_left", "Move left"], ["move_right", "Move right"],
 	["camera_left", "Camera left"], ["camera_right", "Camera right"], ["camera_up", "Camera up"], ["camera_down", "Camera down"],
 	["jump", "Jump / talk"], ["sprint", "Sprint"], ["walk", "Walk"], ["dodge", "Dodge"],
-	["attack", "Attack (hold to charge)"], ["block", "Block"], ["cycle_mode", "Melee / ranged / magic"],
-	["spell_prev", "Previous spell"], ["spell_next", "Next spell"], ["item_prev", "Use quick item 1"], ["item_next", "Use quick item 2"],
-	["inventory", "Character / backpack"], ["target_prev", "Previous target"], ["target_next", "Next target"], ["lock_on", "Lock on"], ["target_clear", "Clear target"],
+	["attack", "Attack (hold to charge)"], ["block", "Block"], ["cycle_mode", "Swap weapons"],
+	["hotbar_1", "Primary weapon"], ["hotbar_2", "Secondary weapon"], ["hotbar_3", "Hotbar 3"], ["hotbar_4", "Hotbar 4"],
+	["hotbar_5", "Hotbar 5"], ["hotbar_6", "Hotbar 6"], ["hotbar_7", "Hotbar 7"], ["hotbar_8", "Hotbar 8"],
+	["hotbar_9", "Hotbar 9"], ["hotbar_10", "Hotbar 10"], ["ability_wheel", "Ability wheel (hold)"],
+	["inventory", "Character / backpack"], ["spellbook", "Spellbook"], ["chat", "Chat"],
+	["target_prev", "Cycle targets"], ["target_next", "Target + lock / clear"], ["lock_on", "Lock on"], ["target_clear", "Clear target"],
 	["camera_look", "Hold to look (mouse)"], ["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["menu", "Settings menu"],
 ]
 

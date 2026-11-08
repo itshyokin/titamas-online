@@ -13,20 +13,26 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 
 | Action | Controller | Keyboard and mouse |
 | --- | --- | --- |
-| Attack: tap = quick, hold = charge, release to let go | RT | Left mouse |
-| Switch melee / ranged / magic | Y | R |
-| Block (hold) | LT | F |
-| Jump | A | Space |
+| Attack: tap = quick, hold = charge (heavy blow, bow draw) | RT | Left mouse |
+| Block (melee) / aim (ranged), hold | LT | F |
+| Swap primary / secondary weapon | Y | R |
+| Primary / secondary weapon | (Y) | 1 / 2 |
+| Hotbar boxes 3–10 (spells, potions…) | Hold D-pad up: ability wheel | 3–9, 0 |
+| Jump / talk | A | Space |
 | Dodge (with a direction; none = back-hop) | B | Alt |
 | Sprint (controller: tap to toggle) | X | Shift (hold) |
-| Previous / next spell (switches to magic) | D-pad left / right | Q / E |
-| Use quick item 1 / 2 | D-pad up / down | Z / C |
 | Character and backpack | Back | I or B |
-| Previous / next target | LB / RB | Tab |
+| Spellbook | | P |
+| Target + lock on / clear target | RB | Tab |
+| Cycle targets | LB | Shift+Tab |
 | Lock on (toggle) | R3 | Middle mouse |
 | Camera | Right stick | Hold right mouse, wheel zoom |
 
-Melee: rapid taps chain a three-hit combo (Slash, Backslash, then a staggering Finishing Blow), hold for a heavy blow. Ranged: tap for a quick shot, hold to draw (harder the longer). Magic: press attack to start casting; the cast bar has to fill before the spell goes off (tap and it goes off when full; keep holding to charge it up to level 3). Moving cancels a cast, light hits knock the bar back, and heavy hits interrupt it. Locked on, the camera keeps the target in view and moving sideways circles it. Stamina is only used by sprinting. The test level and the overworld each have a training dummy and two bandits.
+Settings → **How to play** lists the controls as currently bound.
+
+**Weapons:** you carry a primary and a secondary weapon (hotbar boxes 1 and 2; the one in use has the gold frame) and swap between them. Each weapon type plays differently (data/weapon_types.json, Database → **Weapon Types**): daggers are fast and light, greatswords, hammers and axes slow and heavy, bows draw (tap = quick shot, hold = harder), crossbows and flintlock pistols/rifles fire on the press and then reload (a "Reloading" bar). Melee: rapid taps chain the type's combo, hold for a heavy blow; swings turn to any enemy within 2.5 m. Ranged weapons are aimed by hand: hold block to aim over the shoulder with a crosshair (red = an enemy in range). Arrows and bolts drop over distance and stick in the ground and in enemies; bullets fly fast and straight and leave holes in the ground and walls. Locked on and not aiming, shots go for the target (arrows arc onto it). An item with **Auto-aim** ticked homes in on the target instead. Every class can use every weapon; the class's **proficient** types hit 15% harder and swing, shoot and reload 10% faster. A chest by the road near the start holds one of each weapon to try (once per character).
+
+**Spells and the hotbar:** spells are cast from the hotbar (boxes 3–10, keys 3–0): the cast bar fills, then it goes off. Moving cancels a cast, light hits knock the bar back, heavy hits interrupt it. Potions and other usable items go on the hotbar too (drag them from the backpack); drag spells from the spellbook (P). Drag boxes to rearrange them, or off the bar to clear them. On a controller, hold D-pad up for the ability wheel: point the left stick at a box and let go. Locked on, the camera keeps the target in view and moving sideways circles it. Stamina is only used by sprinting. The test level and the overworld each have a training dummy and two bandits.
 
 **Traversal:** jump at a ledge to grab it (A/D shimmy, W or Space pull up, S or Ctrl drop) · jump at a climbable wall, or walk into a ladder, then W/S to climb (Space jumps off, Ctrl lets go) · swim in deep water, Space at an edge climbs out. The gray-box level (`scenes/levels/test_level.tscn`) has a test spot for each. · hold right mouse to look · mouse wheel zoom.
 
@@ -139,7 +145,7 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 
 ## Hearthstone and homes
 
-- **Hearthstone:** every character carries one (older saves get one too) and it can't be thrown away. Use it from the backpack or a quick slot: an 8-second cast (moving, dodging or being hit stops it), then you're back home. It then needs 10 minutes to recharge, and the recharge is saved. Cast time and recharge are on the item in the Database's Items tab ("use_hearth" items).
+- **Hearthstone:** every character carries one (older saves get one too) and it can't be thrown away. Use it from the backpack or the hotbar: an 8-second cast (moving, dodging or being hit stops it), then you're back home. It then needs 10 minutes to recharge, and the recharge is saved. Cast time and recharge are on the item in the Database's Items tab ("use_hearth" items).
 - **Home:** starts as the spot the level first put the character. Walk up to a **home point** (an inn bed) and press **Jump / talk** → **Make this my home**. The hearthstone's description names your current home.
 - **Placing home points:** drag `scenes/world/home_point.tscn` into a level and set **Home Name** (e.g. "the Riverside Inn") and the greeting. It builds a simple bed; turn **Build Bed** off and add your own model under it instead. Add a `Marker3D` named `Spawn` under it to choose exactly where players appear. The overworld has one by the spawn ("the village inn").
 
@@ -163,15 +169,14 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 - **Placing one:** drag `scenes/npcs/npc.tscn` into a level and set **Npc Id** to an entry in the Database's **NPCs** tab. The overworld and the test level have a village guard, Katrina and a villager near the spawn.
 - **The NPCs tab:** name and title, level and health, "can't die", behaviour (stand, wander or patrol), whether it fights, its attack, its look (the creator's options), what it wears and wields, and its lines.
 - **Patrols:** add a `Node3D` named `Patrol` under the NPC with `Marker3D` children; it walks them in order.
-- **Fighting:** NPCs that fight and hold a weapon (main hand) take on enemies that come within their notice range, and enemies fight back. The rest shout "Help!" and run, then come home when it's safe. They ignore training dummies.
+- **Fighting:** NPCs that fight and hold a weapon (primary) take on enemies that come within their notice range, and enemies fight back. The rest shout "Help!" and run, then come home when it's safe. They ignore training dummies.
 - **Followers:** NPCs with **Can follow the player** (Katrina) offer **Follow me** / **Wait here** after their lines. A follower stays beside you, runs to catch up, fights whatever is fighting you (or what you attack), waits at the edge while you swim or climb, and turns up behind you if you get far ahead or it gets stuck. Its health shows under yours. Out of a fight, NPCs heal back up. Followers are saved with your character.
 - **Talking:** walk up to an NPC and press **Jump / talk** (Space, A). Each paragraph of its lines is one page; the same button shows the whole line, then the next. Esc or B closes. Lines can use `{player}` and the player's pronouns: `{they}`, `{them}`, `{their}`, `{theirs}`, `{themself}`.
 
 ## Equipment and backpack
 
-- **Character window** (I, B or Back on a controller): equipment slots on the left, stats and gold in the middle, a 24-slot backpack on the right. Click an item to see it. Right-click or double-click equips or uses it; drag between slots to move or equip; drag out of the window to throw it away (it asks first). On a controller: A equips/uses, Y picks up and places, X sets the item as a quick item.
-- **Quick items:** two slots, used with D-pad up/down (Z/C). Set them from the window.
-- **Gear shows on the body**, on both masc and femme. Armour adds armour (less damage taken), health and mana; weapons add attack or spell power; a shield adds block. The bow only works with a bow equipped in the Ranged slot.
+- **Character window** (I, B or Back on a controller), bottom right so the hotbar and cast bar stay in view: armour slots, primary / secondary / off-hand, stats, then the 24-slot backpack in tabs (Weapons, Armour, Potions, Items, Keys). Point at an item to see it, compared with what it would replace: weapons show damage per second, armour the stat changes, green when better and red when worse. Right-click or double-click equips or uses it; drag between slots to move or equip (or onto the hotbar); drag out of the window to throw it away (it asks first). On a controller: A equips/uses, Y picks up and places, X puts it on the hotbar, LB/RB switch tabs.
+- **Gear shows on the body**, on both masc and femme. Armour adds armour (less damage taken), health and mana; weapons add attack or spell power (only the weapon in use counts); a shield adds block (not with a two-handed or ranged weapon).
 - **Loot:** bandits drop a sack with gold and items. Walk over it to pick it up; anything that doesn't fit stays in the sack for a few minutes.
 - **Items** are in the Database's **Items** tab: name, kind, slot, rarity, stats, what using it does, and its look. The Player tab has the **Starting kit**. Each character keeps its own backpack and gear in its save.
 - **Fit Armor** (toolbar button) opens the armour-fitting editor with both bodies side by side. Pick an item and a body, then move, turn and scale each piece on its bone (arrow keys and Page Up/Down nudge, Shift for bigger steps, right-drag orbits the camera). **Save** writes `data/items.json`. "Copy to other body" gives you a starting point for the other body.
