@@ -27,11 +27,15 @@ const IN_PLACE := LOOPING
 ## One-shot animations that travel: their horizontal hip movement is stripped from the
 ## pose and stored as metadata "root_motion" (PackedVector3Array, one offset per frame at
 ## FPS, in the character's local space, facing -Z) so the game can move the body itself.
-const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back", "hanging_hop_left", "hanging_hop_right",
+const ROOT_MOTION := ["dodge_left", "dodge_right", "dodge_back", "hanging_hop_left", "hanging_hop_right", "hanging_shimmy_left",
 	# Attacks and draws: the game moves the body (lunges), so the clips stay in place.
 	"attack_light_1_full", "attack_light_2", "attack_light_3", "attack_heavy", "greatsword_slash_1_full", "greatsword_slash_2",
 	"greatsword_heavy", "draw_sword", "draw_greatsword", "draw_rifle", "draw_pistol", "hit_react", "gun_reload",
-	"cast_release_full", "cast_heal", "casting_spell", "shooting", "gunplay", "bow_shot_full"]
+	"cast_release_full", "cast_heal_full", "casting_spell", "shooting", "gunplay", "bow_shot_full",
+	"cast_area_full", "cast_1h_a_full", "cast_1h_b_full"]
+## Clips made by playing another backwards (with its root motion reversed): a shimmy left
+## played in reverse is a shimmy right.
+const REVERSED := {"hanging_shimmy_right": "hanging_shimmy_left"}
 ## Clips cut out of longer ones: name -> [source clip, start s, end s]. Lets one Mixamo
 ## download (e.g. a full draw-and-shoot) feed several game clips, and trims wind-ups.
 ## A cut replaces a stand-in of the same name. Loops if the name is in LOOPING.
@@ -41,8 +45,11 @@ const SUBCLIPS := {
 	"cast_release": ["cast_release_full", 0.75, 2.2],
 	"bow_aim": ["bow_shot_full", 1.0, 2.6],
 	"bow_release": ["bow_shot_full", 3.85, 4.8],
-	"cast_channel": ["casting_spell", 1.5, 3.6],
 	"pistol_aim": ["shooting", 0.15, 0.3],
+	"cast_heal": ["cast_heal_full", 0.4, 2.2],
+	"cast_area": ["cast_area_full", 1.2, 3.0],
+	"cast_1h_a": ["cast_1h_a_full", 0.4, 1.9],
+	"cast_1h_b": ["cast_1h_b_full", 0.35, 1.9],
 	"pistol_fire": ["shooting", 0.22, 1.17],
 	"rifle_aim": ["gunplay", 0.0, 0.4],
 }
@@ -230,6 +237,10 @@ func _init() -> void:
 					lib.remove_animation(cut_name)
 				lib.add_animation(cut_name, _cut(lib.get_animation(c[0]), float(c[1]), float(c[2]), cut_name in LOOPING))
 				print("  %-20s %5.2fs  cut from %s" % [cut_name, float(c[2]) - float(c[1]), c[0]])
+		for rev_name in REVERSED:
+			if lib.has_animation(REVERSED[rev_name]) and not lib.has_animation(rev_name):
+				lib.add_animation(rev_name, _reversed(lib.get_animation(REVERSED[rev_name])))
+				print("  %-20s reversed from %s" % [rev_name, REVERSED[rev_name]])
 		_add_placeholders(lib, target)
 		for anim_name in HEIGHT_MATCH:
 			if lib.has_animation(anim_name) and lib.has_animation(HEIGHT_MATCH[anim_name]):
@@ -282,6 +293,36 @@ func _cut(src: Animation, start: float, end: float, loop: bool) -> Animation:
 					out.scale_track_insert_key(nt, at - start, src.scale_track_interpolate(t, at))
 			time += 1.0 / FPS
 	return out
+
+
+## A clip played backwards (root motion too: offsets from the new start).
+func _reversed(src: Animation) -> Animation:
+	var out := _cut(src, 0.0, src.length, src.loop_mode != Animation.LOOP_NONE)
+	var flipped := Animation.new()
+	flipped.length = out.length
+	flipped.loop_mode = out.loop_mode
+	for t in out.get_track_count():
+		var type := out.track_get_type(t)
+		var nt := flipped.add_track(type)
+		flipped.track_set_path(nt, out.track_get_path(t))
+		for k in range(out.track_get_key_count(t) - 1, -1, -1):
+			var time := out.length - out.track_get_key_time(t, k)
+			match type:
+				Animation.TYPE_POSITION_3D:
+					flipped.position_track_insert_key(nt, time, out.track_get_key_value(t, k))
+				Animation.TYPE_ROTATION_3D:
+					flipped.rotation_track_insert_key(nt, time, out.track_get_key_value(t, k))
+				Animation.TYPE_SCALE_3D:
+					flipped.scale_track_insert_key(nt, time, out.track_get_key_value(t, k))
+	if src.has_meta("root_motion"):
+		var m: PackedVector3Array = src.get_meta("root_motion")
+		var r := PackedVector3Array()
+		if not m.is_empty():
+			var last := m[m.size() - 1]
+			for i in range(m.size() - 1, -1, -1):
+				r.append(m[i] - last)
+		flipped.set_meta("root_motion", r)
+	return flipped
 
 
 ## Transform of a node relative to the scene root (includes import scale).

@@ -216,7 +216,7 @@
 			"description": "Heals 4 times over 8 seconds.",
 			"display_name": "Mend",
 			"hit_sound": "",
-			"hit_time": 0.4,
+			"hit_time": 0.45,
 			"id": "mend",
 			"mana_cost": 10.0,
 			"max_charge_level": 3.0,
@@ -226,7 +226,7 @@
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
 			"reach": 30.0,
-			"recovery_time": 0.7,
+			"recovery_time": 0.9,
 			"sounds": [
 				"res://assets/audio/combat/heal_chime.ogg"
 			],

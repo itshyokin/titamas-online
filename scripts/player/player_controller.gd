@@ -545,7 +545,10 @@ func _hang_movement(delta: float) -> void:
 
 
 func _try_hop(dir: float) -> void:
-	var anim := "hanging_hop_right" if dir > 0.0 else "hanging_hop_left"
+	# A smooth shimmy if there's a clip for it; otherwise the bigger hop.
+	var anim := "hanging_shimmy_right" if dir > 0.0 else "hanging_shimmy_left"
+	if character.get_root_motion(anim).is_empty():
+		anim = "hanging_hop_right" if dir > 0.0 else "hanging_hop_left"
 	var motion := character.get_root_motion(anim)
 	if motion.is_empty():
 		return
