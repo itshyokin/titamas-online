@@ -146,6 +146,9 @@ func _build_stage() -> void:
 	env.fog_density = 0.007
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.15
+	env.ssao_enabled = GameSettings.ssao
+	env.ssao_radius = 1.2
+	env.ssao_intensity = 1.6
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)

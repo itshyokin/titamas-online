@@ -203,6 +203,10 @@ zoom_out={
 
 [shader_globals]
 
+cloud_offset={
+"type": "vec2",
+"value": Vector2(0, 0)
+}
 water_reflections={
 "type": "float",
 "value": 1.0

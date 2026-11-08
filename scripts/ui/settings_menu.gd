@@ -240,6 +240,11 @@ func _graphics_tab() -> Control:
 	rays.button_pressed = GameSettings.god_rays
 	rays.toggled.connect(func(on: bool) -> void: GameSettings.set_god_rays(on))
 	page.add_child(rays)
+	var ao := CheckBox.new()
+	ao.text = "Ambient occlusion (soft shadows in corners and under things)"
+	ao.button_pressed = GameSettings.ssao
+	ao.toggled.connect(func(on: bool) -> void: GameSettings.set_ssao(on))
+	page.add_child(ao)
 	var reflect := CheckBox.new()
 	reflect.text = "Water reflections (trees and cliffs mirrored in water)"
 	reflect.button_pressed = GameSettings.water_reflections

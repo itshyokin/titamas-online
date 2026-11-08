@@ -40,6 +40,9 @@ var night_brightness := 0.3
 
 var _sun: DirectionalLight3D
 var _moon: DirectionalLight3D
+## How fast clouds drift (sky units per second at wind 1).
+@export var cloud_speed := 0.01
+var _cloud_offset := Vector2.ZERO
 var _wind_time := 0.0
 var _file_time := -1
 var _file_check := 0.0
@@ -127,6 +130,11 @@ func _update(delta: float) -> void:
 	var quick := 0.12 * sin(_wind_time * 0.9) * sin(_wind_time * 0.37 + 2.0)
 	wind = clampf(lerpf(wind_min, wind_max, slow) + quick, 0.0, 2.5)
 	RenderingServer.global_shader_parameter_set("wind_strength", wind)
+	# Clouds drift one way; wind only changes how fast.
+	if not Engine.is_editor_hint():
+		_cloud_offset += Vector2(1.0, 0.4) * cloud_speed * maxf(wind, 0.2) * delta
+		_cloud_offset = _cloud_offset.posmod(1000.0)
+	RenderingServer.global_shader_parameter_set("cloud_offset", _cloud_offset)
 
 
 func _aim(light: DirectionalLight3D, towards: Vector3) -> void:

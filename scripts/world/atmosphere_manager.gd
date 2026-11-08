@@ -70,6 +70,8 @@ func _ready() -> void:
 	_target = get_node_or_null(target_path) as Node3D
 	if Engine.is_editor_hint():
 		return
+	_apply_ssao()
+	GameSettings.graphics_changed.connect(_apply_ssao)
 	_build_label()
 	_build_audio()
 	current = _region_at_target()
@@ -293,3 +295,16 @@ func _update_wind(delta: float) -> void:
 	if cycle:
 		goal += 9.0 * (cycle.wind - 1.0)
 	_wind.volume_db = lerpf(_wind.volume_db, goal, 1.0 - exp(-delta * 1.5))
+
+
+## Ambient occlusion (Settings → Graphics): soft contact shadows, tuned for the
+## stylised look (gentle, not dark).
+func _apply_ssao() -> void:
+	if _env == null:
+		return
+	_env.ssao_enabled = GameSettings.ssao
+	_env.ssao_radius = 1.2
+	_env.ssao_intensity = 1.6
+	_env.ssao_power = 1.4
+	_env.ssao_detail = 0.5
+	_env.ssao_light_affect = 0.15

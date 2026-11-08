@@ -13,6 +13,7 @@ uniform vec3 cloud_shade : source_color = vec3(0.70, 0.74, 0.82);
 uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.45;
 uniform float cloud_scale = 0.6;
 uniform float cloud_speed = 0.01;
+global uniform vec2 cloud_offset;
 
 // Set by WorldCycle (day/night). Without one, the sun comes from the scene's light.
 uniform bool use_cycle = false;
@@ -88,8 +89,9 @@ void sky() {
 
 	// Clouds on a flat layer above, fading out towards the horizon.
 	if (dir.y > 0.0 && !AT_CUBEMAP_PASS) {
-		float speed = cloud_speed * (use_cycle ? max(wind_strength, 0.2) : 1.0);
-		vec2 drift = mod(vec2(TIME * speed, TIME * speed * 0.4), 1000.0);
+		// With the day cycle, WorldCycle moves the clouds (always the same way, faster
+		// in stronger wind); otherwise they drift at a fixed speed.
+		vec2 drift = use_cycle ? cloud_offset : mod(vec2(TIME * cloud_speed, TIME * cloud_speed * 0.4), 1000.0);
 		vec2 uv = dir.xz / (dir.y + 0.15) * cloud_scale + drift;
 		float n = fbm(uv * 2.0);
 		float c = smoothstep(1.0 - cloud_coverage, 1.0 - cloud_coverage + 0.25, n);
