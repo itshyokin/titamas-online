@@ -354,3 +354,7 @@ func _apply_ssao() -> void:
 	_env.ssao_horizon = float(ao.get("horizon", 0.06))
 	# Share of the darkening that also applies in direct sunlight (otherwise only shade gets it).
 	_env.ssao_light_affect = float(ao.get("light_affect", 0.45))
+	# The terrain is mostly sunlit: its own share (the shared chunk material).
+	var terrain := load("res://assets/materials/terrain/terrain.tres") as ShaderMaterial
+	if terrain:
+		terrain.set_shader_parameter("ao_light_affect", float(ao.get("terrain_light_affect", 0.85)))

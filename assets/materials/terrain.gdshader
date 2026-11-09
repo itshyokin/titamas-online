@@ -25,6 +25,10 @@ uniform float noise_scale = 0.35;
 uniform float auto_cliff : hint_range(0.0, 1.0) = 1.0;
 uniform float cliff_slope_start : hint_range(0.0, 1.0) = 0.35;
 uniform float cliff_slope_end : hint_range(0.0, 1.0) = 0.55;
+// How much ambient occlusion also darkens sunlit ground (the ground is mostly lit by the
+// sun, so without this the contact shading only shows in shade). Set from data/world.json
+// "ambient_occlusion" "terrain_light_affect" by AtmosphereManager.
+uniform float ao_light_affect : hint_range(0.0, 1.0) = 0.85;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -83,4 +87,6 @@ void fragment() {
 
 	ALBEDO = col_r * w.r + col_g * w.g + col_b * w.b;
 	ROUGHNESS = 1.0;
+	AO = 1.0;
+	AO_LIGHT_AFFECT = ao_light_affect;
 }
