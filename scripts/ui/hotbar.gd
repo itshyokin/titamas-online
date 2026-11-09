@@ -210,7 +210,7 @@ func can_drop(data: Variant, target: HotbarSlot) -> bool:
 		"hotbar", "spellbook":
 			return true
 		"bag", "equip":
-			return inventory.is_usable(id) or inventory.is_weapon(id)
+			return inventory.is_usable(id) and not inventory.is_weapon(id)
 	return false
 
 

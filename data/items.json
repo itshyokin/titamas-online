@@ -422,7 +422,8 @@
 			"fitted_femme": "res://assets/items/skinned/leather_jerkin_femme.scn",
 			"fitted_masc": "res://assets/characters/lowpoly/leather_tunic_masc.scn",
 			"hides": [
-				"torso"
+				"torso",
+				"underwear_top"
 			],
 			"icon": "chest",
 			"icon_color": "#8a5a32",
@@ -554,7 +555,8 @@
 			"fitted_femme": "res://assets/items/skinned/leather_jerkin_femme.scn",
 			"fitted_masc": "res://assets/characters/lowpoly/chainmail_shirt_masc.scn",
 			"hides": [
-				"torso"
+				"torso",
+				"underwear_top"
 			],
 			"icon": "chest",
 			"icon_color": "#9aa0aa",

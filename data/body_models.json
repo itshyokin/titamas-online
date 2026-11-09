@@ -2,7 +2,15 @@
 	"body_extra": [
 		{
 			"material": "leather",
-			"part": "underwear"
+			"part": "underwear",
+			"min_y": -1,
+			"max_y": 1.14
+		},
+		{
+			"material": "leather",
+			"part": "underwear_top",
+			"min_y": 1.14,
+			"max_y": -1
 		}
 	],
 	"body_meshes": [

@@ -113,13 +113,13 @@
 		]
 	},
 	"hotbar": [
-		"item:rusty_sword",
-		"item:hunting_bow",
 		"ability:firebolt",
 		"ability:mend",
 		"item:minor_healing_potion",
 		"item:bandage",
 		"item:hearthstone",
+		"",
+		"",
 		"",
 		"",
 		""
