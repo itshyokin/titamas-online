@@ -203,5 +203,58 @@
 		"friendly": "#3fbf4a",
 		"opacity": 0.75,
 		"size": 1.0
+	},
+	"attributes": {
+		"base": 10,
+		"creation_points": 5,
+		"max_creation_per_attribute": 3,
+		"list": [
+			{
+				"id": "strength",
+				"name": "Strength",
+				"description": "Hits harder with weapons and blocks better.",
+				"effects": {
+					"attack": 1.0,
+					"block": 0.5
+				}
+			},
+			{
+				"id": "agility",
+				"name": "Agility",
+				"description": "Critical hits and stamina for sprinting.",
+				"effects": {
+					"crit_chance": 0.5,
+					"stamina": 4
+				}
+			},
+			{
+				"id": "intellect",
+				"name": "Intellect",
+				"description": "Spell power and mana.",
+				"effects": {
+					"spell_power": 1.0,
+					"bonus_mana": 6
+				}
+			},
+			{
+				"id": "vitality",
+				"name": "Vitality",
+				"description": "Health and a little armour.",
+				"effects": {
+					"bonus_health": 8,
+					"armor": 0.5
+				}
+			},
+			{
+				"id": "spirit",
+				"name": "Spirit",
+				"description": "Mana and healing.",
+				"effects": {
+					"bonus_mana": 4,
+					"spell_power": 0.5,
+					"mana_regen": 0.2
+				}
+			}
+		]
 	}
 }

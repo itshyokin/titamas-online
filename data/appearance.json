@@ -1,11 +1,4 @@
 {
-	"species": [
-		{
-			"id": "human",
-			"name": "Human",
-			"description": "Adaptable and stubborn, humans are found in every corner of Titamas."
-		}
-	],
 	"pronouns": [
 		{
 			"id": "he",

@@ -594,7 +594,16 @@ func _start(ab: Ability, power: float, anim_start := 0.0) -> bool:
 
 ## Extra power from equipment: weapon attack for swings and shots, spell power for spells
 ## (a quarter of it per heal tick).
+## Racial abilities' extra power by ability id (grows with level; PlayerProgress).
+var racial_power := {}
+
+
 func _gear_power(ab: Ability) -> float:
+	var racial := float(racial_power.get(ab.id, 0.0))
+	return _base_gear_power(ab) + racial
+
+
+func _base_gear_power(ab: Ability) -> float:
 	if _is_weapon_move(ab):
 		# Skill passive "ranged_attack": +2 attack per rank with bows, crossbows and guns.
 		var extra := 2.0 * _passive("ranged_attack") if ab.delivery == Ability.Delivery.PROJECTILE else 0.0

@@ -51,6 +51,10 @@ var _base_health := -1.0
 var _base_mana := -1.0
 var _bonus := {}
 var _base_stamina := -1.0
+## Attribute values (strength, agility...) for display; their stat effects arrive in the
+## skill bonus (PlayerProgress._apply_skills).
+var attributes := {}
+var _base_mana_regen := -1.0
 var _skill_bonus := {}  # from skills (PlayerProgress): attack, armor, crit_chance (%), stamina...
 ## Extra chance to land a critical hit (0.05 = 5 points more), from skills.
 var crit_bonus := 0.0
@@ -176,6 +180,7 @@ func drain_stamina(amount: float) -> bool:
 func set_base(base_health: float, base_mana: float) -> void:
 	_base_health = base_health
 	_base_mana = base_mana
+	_base_mana_regen = mana_regen
 	set_bonuses(_bonus)
 
 
@@ -196,6 +201,9 @@ func set_bonuses(bonus: Dictionary) -> void:
 	if _base_stamina < 0.0:
 		_base_stamina = max_stamina
 	max_stamina = _base_stamina + float(sk.get("stamina", 0.0))
+	if _base_mana_regen < 0.0:
+		_base_mana_regen = mana_regen
+	mana_regen = _base_mana_regen + float(sk.get("mana_regen", 0.0))
 	stamina = minf(stamina, max_stamina)
 	health = minf(health, max_health)
 	mana = minf(mana, max_mana)

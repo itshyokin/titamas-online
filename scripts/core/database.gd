@@ -11,7 +11,7 @@ signal changed(which: String)
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
 	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "skill_trees": DataFiles.SKILL_TREES, "quests": DataFiles.QUESTS, "npcs": DataFiles.NPCS,
 	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS, "events": DataFiles.EVENTS,
-	"achievements": DataFiles.ACHIEVEMENTS, "body_models": DataFiles.BODY_MODELS, "lore": DataFiles.LORE}
+	"achievements": DataFiles.ACHIEVEMENTS, "body_models": DataFiles.BODY_MODELS, "lore": DataFiles.LORE, "species": DataFiles.SPECIES}
 
 ## Appearance lists filled from Body Models pieces by their "use" (see _merge_pieces).
 const PIECE_LISTS := {"hair": "hair_styles", "facial_hair": "facial_hair", "head": "heads", "face": "faces"}
@@ -37,6 +37,10 @@ var player := {}
 var items := {}  # id -> Dictionary (data/items.json entries)
 ## data/appearance.json: the character creator's choices (styles, colours, sizes).
 var appearance := {}
+## data/species.json "species": {id, name, description, head, build (-1 thin .. 1 heavy),
+## height (scale), attributes {id: +n}, stats {stat: +n}, movement {run_speed... jump:
+## multipliers}, racial [{ability, power_per_level}], traits}.
+var species_list: Array = []
 ## Codex lore entries (data/lore.json): {id, title, category, text, conditions}.
 var lore: Array = []
 ## data/body_models.json (pieces built from the body .glb).
@@ -115,6 +119,8 @@ func _load(which: String) -> void:
 			_merge_pieces()
 		"lore":
 			lore = data.get("entries", [])
+		"species":
+			species_list = data.get("species", [])
 		"body_models":
 			body_models = data
 			_merge_pieces()
@@ -263,10 +269,15 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 	if not body in (appearance.get("bodies", ["masc"]) as Array):
 		body = "masc"
 	var placement: Dictionary = appearance.get("eye_placement", {})
+	# The species sets the head, height and build (the look's own choices are kept only
+	# for species that leave them out).
+	# (NPC looks without a species keep their own height / build / head.)
+	var sp := species_data(String(look.species)) if look.has("species") and not species_list.is_empty() else {}
+	var head_id: String = String(sp.get("head", "")) if String(sp.get("head", "")) != "" else get.call("head")
 	return {
 		"body": body,
 		"skin": Color.html(get.call("skin")) if Color.html_is_valid(get.call("skin")) else Color(0.8, 0.6, 0.45),
-		"head": appearance_option("heads", get.call("head")),
+		"head": appearance_option("heads", head_id),
 		"face": appearance_option("faces", get.call("face")),
 		"hair": _hair_option(get.call("hair"), String(d.get("hair", ""))),
 		"hair_color": Color.html(get.call("hair_color")) if Color.html_is_valid(get.call("hair_color")) else Color(0.25, 0.15, 0.1),
@@ -276,8 +287,8 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 		"eye_color": Color.html(get.call("eye_color")) if Color.html_is_valid(get.call("eye_color")) else Color(0.3, 0.5, 0.8),
 		"eye_placement": placement.get(body, {}),
 		"underwear": appearance.get("underwear", {}),
-		"height_scale": float(appearance_option("heights", get.call("height")).get("scale", 1.0)),
-		"weight": float(appearance_option("builds", get.call("build")).get("weight", 0.0)),
+		"height_scale": float(sp.get("height", appearance_option("heights", get.call("height")).get("scale", 1.0))),
+		"weight": float(sp.get("build", appearance_option("builds", get.call("build")).get("weight", 0.0))),
 	}
 
 
@@ -287,6 +298,50 @@ func _hair_option(id: String, fallback: String) -> Dictionary:
 	if o.is_empty() and id != "" and id != "bald":
 		o = appearance_option("hair_styles", fallback)
 	return o
+
+
+## A species by id (the first one if unknown, {} if there are none).
+func species_data(id: String) -> Dictionary:
+	for sp: Dictionary in species_list:
+		if String(sp.get("id", "")) == id:
+			return sp
+	return species_list[0] if not species_list.is_empty() else {}
+
+
+## The species of a saved character (its look's "species").
+func species_of(save: Dictionary) -> Dictionary:
+	return species_data(String((save.get("look", {}) as Dictionary).get("species", "human")))
+
+
+## Attributes from player.json: [[id, name, description, effects]].
+func attribute_list() -> Array:
+	var out := []
+	for a: Dictionary in player.get("attributes", {}).get("list", []):
+		out.append([String(a.get("id", "")), String(a.get("name", "")), String(a.get("description", "")), a.get("effects", {})])
+	return out
+
+
+## A character's attribute values: base + species + points spent at creation.
+func attributes_for(save: Dictionary) -> Dictionary:
+	var cfg: Dictionary = player.get("attributes", {})
+	var base := int(cfg.get("base", 10))
+	var sp: Dictionary = species_of(save).get("attributes", {})
+	var spent: Dictionary = save.get("attribute_points", {})
+	var out := {}
+	for a: Array in attribute_list():
+		out[a[0]] = base + int(sp.get(a[0], 0)) + int(spent.get(a[0], 0))
+	return out
+
+
+## Stat bonuses from attributes (each point above the base gives the attribute's effects).
+func attribute_bonus(values: Dictionary) -> Dictionary:
+	var base := int(player.get("attributes", {}).get("base", 10))
+	var out := {}
+	for a: Array in attribute_list():
+		var n := int(values.get(a[0], base)) - base
+		for stat: String in (a[3] as Dictionary):
+			out[stat] = float(out.get(stat, 0.0)) + float(a[3][stat]) * n
+	return out
 
 
 ## A class's skill trees, by their order.
@@ -354,9 +409,15 @@ func apply_player(controller: Node, stats: Stats, combat: Node) -> void:
 	stats.set_base(stats.max_health if not s.has("max_health") else float(s.max_health),
 		stats.max_mana if not s.has("max_mana") else float(s.max_mana))
 	var m: Dictionary = player.get("movement", {})
+	# The species' movement multipliers (walk / run / sprint / swim speeds, jump).
+	var session := get_tree().root.get_node_or_null("GameSession")
+	var sp_move: Dictionary = species_of(session.get("data")).get("movement", {}) if session and session.call("active") else {}
 	for field: String in PLAYER_MOVEMENT:
 		if m.has(field):
-			controller.set(field, float(m[field]))
+			var k := float(sp_move.get(field, 1.0))
+			if field == "jump_velocity":
+				k = sqrt(float(sp_move.get("jump", 1.0)))  # jump height scales with velocity squared
+			controller.set(field, float(m[field]) * k)
 	var c: Dictionary = player.get("combat", {})
 	for field: String in PLAYER_COMBAT:
 		if c.has(field):

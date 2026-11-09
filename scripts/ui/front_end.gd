@@ -45,6 +45,12 @@ var _steppers := {}  # look key -> [list name, value Label]
 var _choices := {}  # key -> [[id, Button]]
 var _class_buttons := []  # [[id, Button]]
 var _class_info: RichTextLabel
+var _species_buttons := []  # [[id, Button]]
+var _species_info: RichTextLabel
+var _points := {}  # attribute id -> points spent at creation
+var _attr_rows := {}  # attribute id -> [value Label, minus Button, plus Button]
+var _points_label: Label
+var _derived: Label
 
 # Load page state.
 var _saves: Array[Dictionary] = []
@@ -284,6 +290,7 @@ func _build_ui() -> void:
 	_pages["load"] = _load_page()
 	_pages["credits"] = _credits_page()
 	_pages["achievements"] = _achievements_page()
+	_pages["species"] = _species_page()
 	_pages["creator"] = _creator_page()
 	_pages["class"] = _class_page()
 	for key: String in _pages:
@@ -435,6 +442,11 @@ func _show(page: String) -> void:
 			_model.visible = not _saves.is_empty()
 			if page == "achievements":
 				_fill_achievements()
+		"species":
+			_shot = "full"
+			_model.visible = true
+			_model.take_off_all()
+			_select_species(String(_look.get("species", "human")))
 		"creator":
 			_shot = "full"
 			_model.visible = true
@@ -443,6 +455,7 @@ func _show(page: String) -> void:
 		"class":
 			_shot = "full"
 			_select_class(_class_id)
+			_refresh_attributes()
 	if GameSettings.gamepad:
 		_focus_first(_pages[page])
 
@@ -513,7 +526,10 @@ func _new_game() -> void:
 	_name_edit.text = ""
 	_name_error.text = ""
 	_turntable.rotation.y = 0.0
-	_show("creator")
+	_points = {}
+	if not Database.species_list.is_empty() and not _look.has("species"):
+		_look["species"] = String(Database.species_list[0].get("id", "human"))
+	_show("species")
 
 
 # --- Load game (character select) ----------------------------------------------------------
@@ -598,7 +614,7 @@ func _refresh_saves() -> void:
 	for i in _saves.size():
 		var s := _saves[i]
 		var cls := String(Database.class_data(String(s.get("class", ""))).get("name", "Adventurer"))
-		var species := String(Database.appearance_option("species", String(s.get("look", {}).get("species", "human"))).get("name", "Human"))
+		var species := String(Database.species_of(s).get("name", "Human"))
 		var b := Button.new()
 		b.toggle_mode = true
 		b.button_group = group
@@ -824,16 +840,10 @@ func _creator_page() -> Control:
 	page.add_child(left)
 	var lv := _scrolling(left, 10)
 	lv.add_child(_heading("Create your character", 24))
-	lv.add_child(_section("Species"))
-	lv.add_child(_choice_row("species", _options(a.get("species", []))))
 	lv.add_child(_section("Pronouns"))
 	lv.add_child(_choice_row("pronouns", _options(a.get("pronouns", []))))
 	lv.add_child(_section("Skin colour"))
 	lv.add_child(_swatch_grid("skin", a.get("skin_colors", []), 5))
-	lv.add_child(_section("Height"))
-	lv.add_child(_choice_row("height", _options(a.get("heights", []))))
-	lv.add_child(_section("Build"))
-	lv.add_child(_choice_row("build", _options(a.get("builds", []))))
 	lv.add_child(_note("Drag to turn your character · mouse wheel to zoom"))
 
 	# Right: hair, facial hair, eyes.
@@ -841,7 +851,6 @@ func _creator_page() -> Control:
 	page.add_child(right)
 	var rv := _scrolling(right, 10)
 	rv.add_child(_heading("Appearance", 24))
-	rv.add_child(_stepper("Head", "head", "heads"))
 	rv.add_child(_stepper("Face", "face", "faces"))
 	rv.add_child(_stepper("Hair style", "hair", "hair_styles"))
 	rv.add_child(_swatch_grid("hair_color", a.get("hair_colors", []), 7))
@@ -875,7 +884,7 @@ func _creator_page() -> Control:
 	bv.add_child(_name_error)
 	var nav := HBoxContainer.new()
 	nav.add_theme_constant_override("separation", 10)
-	var back := _button("Back", func() -> void: _show("title"))
+	var back := _button("‹  Species", func() -> void: _show("species"))
 	back.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	nav.add_child(back)
 	var next := _button("Next: choose a class  ›", _to_class)
@@ -999,7 +1008,6 @@ func _randomize() -> void:
 		var o: Array = a.get(list, [])
 		return String(o[randi() % o.size()]) if not o.is_empty() else ""
 	_look["skin"] = pick_color.call("skin_colors")
-	_look["head"] = pick.call("heads")
 	_look["face"] = "painted"
 	_look["hair"] = pick.call("hair_styles")
 	# Natural hair colours most of the time.
@@ -1009,8 +1017,6 @@ func _randomize() -> void:
 	_look["facial_hair"] = pick.call("facial_hair") if randf() < 0.5 else "none"
 	_look["eyes"] = pick.call("eyes")
 	_look["eye_color"] = pick_color.call("eye_colors")
-	_look["height"] = pick.call("heights")
-	_look["build"] = pick.call("builds")
 	_shot = "full"
 	_apply_look()
 
@@ -1064,15 +1070,201 @@ func _to_class() -> void:
 	_show("class")
 
 
+# --- Species -------------------------------------------------------------------------------
+
+func _species_page() -> Control:
+	var page := _page_root()
+	var left := _panel(Control.PRESET_TOP_LEFT, Vector2(30, 40), Vector2(280, 0))
+	page.add_child(left)
+	var lv := _scrolling(left, 10)
+	lv.add_child(_heading("Choose a species", 24))
+	var group := ButtonGroup.new()
+	for sp: Dictionary in Database.species_list:
+		var id := String(sp.get("id", ""))
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = group
+		b.custom_minimum_size = Vector2(0, 48)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.text = String(sp.get("name", id))
+		b.add_theme_font_size_override("font_size", 18)
+		b.pressed.connect(func() -> void: _select_species(id))
+		lv.add_child(b)
+		_species_buttons.append([id, b])
+	lv.add_child(_note("Drag to turn your character"))
+
+	var right := _panel(Control.PRESET_TOP_RIGHT, Vector2(-410, 30), Vector2(380, 0))
+	page.add_child(right)
+	var rv := _scrolling(right, 10)
+	_species_info = RichTextLabel.new()
+	_species_info.bbcode_enabled = true
+	_species_info.fit_content = true
+	_species_info.scroll_active = false
+	_species_info.add_theme_font_size_override("normal_font_size", 17)
+	_species_info.add_theme_font_size_override("bold_font_size", 17)
+	rv.add_child(_species_info)
+
+	var bottom := _panel(Control.PRESET_CENTER_BOTTOM, Vector2(-210, -24), Vector2(420, 0))
+	page.add_child(bottom)
+	var nav := HBoxContainer.new()
+	nav.add_theme_constant_override("separation", 10)
+	bottom.add_child(nav)
+	var back := _button("‹  Back", func() -> void: _show("title"))
+	back.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	nav.add_child(back)
+	var go := _button("Next: appearance  ›", func() -> void: _show("creator"))
+	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	nav.add_child(go)
+	return page
+
+
+func _select_species(id: String) -> void:
+	var sp := Database.species_data(id)
+	if sp.is_empty():
+		return
+	_look["species"] = String(sp.get("id", id))
+	for e: Array in _species_buttons:
+		(e[1] as Button).set_pressed_no_signal(e[0] == _look.species)
+	var t := "[font_size=28][color=#%s]%s[/color][/font_size]\n%s\n" % [ACCENT.to_html(false), sp.get("name", id), sp.get("description", "")]
+	if String(sp.get("traits", "")) != "":
+		t += "\n[color=#bfb7aa]%s[/color]\n" % sp.traits
+	var mods: Dictionary = sp.get("attributes", {})
+	if not mods.is_empty():
+		t += "\n[b]Attributes[/b]\n"
+		for a: Array in Database.attribute_list():
+			var n := int(mods.get(a[0], 0))
+			if n != 0:
+				t += "  %s  [color=#%s]%+d[/color]\n" % [a[1], "7fe07f" if n > 0 else "ff7a6a", n]
+	var stats_mod: Dictionary = sp.get("stats", {})
+	if not stats_mod.is_empty():
+		t += "\n[b]Bonuses[/b]\n"
+		for k: String in stats_mod:
+			t += "  %s  [color=#7fe07f]%s%s[/color]\n" % [_stat_name(k), _signed(float(stats_mod[k])), "%" if k == "crit_chance" else ""]
+	var mv: Dictionary = sp.get("movement", {})
+	var moves: Array[String] = []
+	for k: Array in [["run_speed", "Running"], ["sprint_speed", "Sprinting"], ["swim_speed", "Swimming"], ["jump", "Jumping"]]:
+		var f := float(mv.get(k[0], 1.0))
+		if absf(f - 1.0) > 0.001:
+			moves.append("%s [color=#%s]%+d%%[/color]" % [k[1], "7fe07f" if f > 1.0 else "ff7a6a", roundi((f - 1.0) * 100.0)])
+	if not moves.is_empty():
+		t += "\n[b]Movement[/b]\n  %s\n" % "   ".join(moves)
+	for r in sp.get("racial", []):
+		var ab := Database.ability(String((r as Dictionary).get("ability", "")))
+		if ab:
+			t += "\n[b]Racial ability: %s[/b]\n[color=#bfb7aa]%s[/color]\n" % [ab.display_name, ab.description]
+	_species_info.text = t
+	_shot = "full"
+	_apply_look()
+
+
+## "+3", "-1", "+0.5".
+static func _signed(v: float) -> String:
+	var t := str(int(v)) if is_equal_approx(v, roundf(v)) else str(snappedf(v, 0.1))
+	return ("+" if v >= 0.0 else "") + t
+
+
+static func _stat_name(key: String) -> String:
+	return {"attack": "Attack", "spell_power": "Spell power", "armor": "Armour", "block": "Block", "bonus_health": "Health",
+		"bonus_mana": "Mana", "crit_chance": "Critical chance", "stamina": "Stamina", "mana_regen": "Mana per second",
+		"move_speed": "Move speed"}.get(key, key.capitalize())
+
+
+# --- Attributes (class page) -----------------------------------------------------------------
+
+func _attributes_box() -> Control:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 4)
+	v.add_child(_section("Attributes"))
+	_points_label = _note("")
+	v.add_child(_points_label)
+	for a: Array in Database.attribute_list():
+		var id: String = a[0]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		var name_l := Label.new()
+		name_l.text = a[1]
+		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_l.tooltip_text = "%s\n%s" % [a[2], _effects_text(a[3])]
+		name_l.mouse_filter = Control.MOUSE_FILTER_PASS
+		row.add_child(name_l)
+		var minus := _button("−", func() -> void: _spend(id, -1))
+		minus.custom_minimum_size = Vector2(34, 30)
+		row.add_child(minus)
+		var value := Label.new()
+		value.custom_minimum_size = Vector2(34, 0)
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		row.add_child(value)
+		var plus := _button("+", func() -> void: _spend(id, 1))
+		plus.custom_minimum_size = Vector2(34, 30)
+		row.add_child(plus)
+		v.add_child(row)
+		_attr_rows[id] = [value, minus, plus]
+	_derived = _note("")
+	_derived.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(_derived)
+	return v
+
+
+func _effects_text(effects: Dictionary) -> String:
+	var parts: Array[String] = []
+	for k: String in effects:
+		parts.append("%s %s" % [_signed(float(effects[k])), _stat_name(k)])
+	return "Each point: " + ", ".join(parts)
+
+
+func _spend(id: String, dir: int) -> void:
+	var cfg: Dictionary = Database.player.get("attributes", {})
+	var total := int(cfg.get("creation_points", 5))
+	var cap := int(cfg.get("max_creation_per_attribute", 3))
+	var used := 0
+	for k in _points:
+		used += int(_points[k])
+	var have := int(_points.get(id, 0))
+	if dir > 0 and (used >= total or have >= cap):
+		return
+	if dir < 0 and have <= 0:
+		return
+	_points[id] = have + dir
+	_refresh_attributes()
+
+
+func _refresh_attributes() -> void:
+	if _points_label == null:
+		return
+	var cfg: Dictionary = Database.player.get("attributes", {})
+	var total := int(cfg.get("creation_points", 5))
+	var cap := int(cfg.get("max_creation_per_attribute", 3))
+	var used := 0
+	for k in _points:
+		used += int(_points[k])
+	_points_label.text = "%d of %d points left (up to %d in one)" % [total - used, total, cap]
+	var vals := Database.attributes_for({"look": _look, "attribute_points": _points})
+	var base := int(cfg.get("base", 10))
+	for id: String in _attr_rows:
+		var row: Array = _attr_rows[id]
+		var n := int(vals.get(id, base))
+		(row[0] as Label).text = str(n)
+		(row[0] as Label).add_theme_color_override("font_color", Color(0.5, 0.88, 0.5) if n > base else (Color(1.0, 0.5, 0.45) if n < base else Color(0.95, 0.93, 0.9)))
+		(row[1] as Button).disabled = int(_points.get(id, 0)) <= 0
+		(row[2] as Button).disabled = used >= total or int(_points.get(id, 0)) >= cap
+	var bonus := Database.attribute_bonus(vals)
+	var sp_stats: Dictionary = Database.species_data(String(_look.get("species", ""))).get("stats", {})
+	for k: String in sp_stats:
+		bonus[k] = float(bonus.get(k, 0.0)) + float(sp_stats[k])
+	var parts: Array[String] = []
+	for k: String in ["bonus_health", "bonus_mana", "attack", "spell_power", "armor", "crit_chance", "stamina"]:
+		if absf(float(bonus.get(k, 0.0))) >= 0.05:
+			parts.append("%s %s%s" % [_stat_name(k), _signed(snappedf(float(bonus[k]), 0.1)), "%" if k == "crit_chance" else ""])
+	_derived.text = "From species and attributes: " + (", ".join(parts) if not parts.is_empty() else "nothing yet")
+
+
 # --- Class select ----------------------------------------------------------------------------
 
 func _class_page() -> Control:
 	var page := _page_root()
-	var left := _panel(Control.PRESET_TOP_LEFT, Vector2(30, 40), Vector2(280, 0))
+	var left := _panel(Control.PRESET_TOP_LEFT, Vector2(30, 40), Vector2(300, 0))
 	page.add_child(left)
-	var lv := VBoxContainer.new()
-	lv.add_theme_constant_override("separation", 10)
-	left.add_child(lv)
+	var lv := _scrolling(left, 10)
 	lv.add_child(_heading("Choose a class", 24))
 	var group := ButtonGroup.new()
 	for c: Dictionary in Database.classes:
@@ -1096,6 +1288,8 @@ func _class_page() -> Control:
 		b.pressed.connect(func() -> void: _select_class(id))
 		lv.add_child(b)
 		_class_buttons.append([id, b])
+	lv.add_child(HSeparator.new())
+	lv.add_child(_attributes_box())
 
 	var right := _panel(Control.PRESET_TOP_RIGHT, Vector2(-410, 30), Vector2(380, 0))
 	page.add_child(right)
@@ -1205,4 +1399,6 @@ func _select_class(id: String) -> void:
 func _begin() -> void:
 	var look := _look.duplicate()
 	GameSession.new_character(_name_edit.text.strip_edges(), _pronouns, look, _class_id)
+	GameSession.data["attribute_points"] = _points.duplicate()
+	GameSession.save_game()
 	_start()

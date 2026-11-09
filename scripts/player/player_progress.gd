@@ -56,7 +56,7 @@ func _ready() -> void:
 	Database.changed.connect(func(which: String) -> void:
 		if which == "player":
 			_apply_level()
-		if which in ["player", "skill_trees", "abilities"]:
+		if which in ["player", "skill_trees", "abilities", "species"]:
 			_apply_skills.call_deferred())
 	_emit.call_deferred()
 
@@ -145,6 +145,7 @@ func add_xp(amount: int, from := "") -> void:
 
 func _on_level_up() -> void:
 	_apply_level()
+	_apply_skills()  # racial abilities grow with the level
 	stats.restore()
 	Effects.burst(Combat.world_root(player), player.global_position + Vector3.UP, Color(1.0, 0.85, 0.35), 1.6)
 	Combat.play_sound(player, LEVEL_SOUND, -2.0, 1.3)
@@ -333,6 +334,21 @@ func passive(key: String) -> int:
 func _apply_skills() -> void:
 	var bonus := {}
 	var learn: Array[Ability] = []
+	# Species and attributes (base + species + points spent at creation) add to the same
+	# bonuses as skills; the species' racial abilities are learned, stronger each level.
+	var save: Dictionary = GameSession.data if GameSession.active() else {}
+	var sp := Database.species_of(save)
+	var attrs := Database.attributes_for(save)
+	stats.set("attributes", attrs)
+	for src: Dictionary in [Database.attribute_bonus(attrs), sp.get("stats", {})]:
+		for key: String in src:
+			bonus[key] = float(bonus.get(key, 0.0)) + float(src[key])
+	var racial := {}
+	for r in sp.get("racial", []):
+		var ab := Database.ability(String((r as Dictionary).get("ability", "")))
+		if ab:
+			learn.append(ab)
+			racial[ab.id] = float(r.get("power_per_level", 1.0)) * (level - 1)
 	for id: String in skill_ranks:
 		var n := skill(id)
 		var r := int(skill_ranks[id])
@@ -351,6 +367,7 @@ func _apply_skills() -> void:
 		player.set("skill_speed", 1.0 + float(bonus.get("move_speed", 0.0)) / 100.0)
 	var combat := player.get_node_or_null("PlayerCombat") as PlayerCombat
 	if combat:
+		combat.set("racial_power", racial)
 		for ab in _skill_spells:
 			if not ab in learn:
 				combat.spells.erase(ab)

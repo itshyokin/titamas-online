@@ -1,0 +1,159 @@
+{
+	"species": [
+		{
+			"id": "human",
+			"name": "Human",
+			"description": "Adaptable and driven, humans are found in every corner of Titamas.",
+			"head": "human",
+			"build": 0.0,
+			"height": 1.0,
+			"attributes": {
+				"strength": 1,
+				"agility": 1,
+				"intellect": 1,
+				"vitality": 1,
+				"spirit": 1
+			},
+			"stats": {},
+			"movement": {
+				"run_speed": 1.0,
+				"walk_speed": 1.0,
+				"sprint_speed": 1.0,
+				"swim_speed": 1.0,
+				"swim_sprint_speed": 1.0,
+				"jump": 1.0
+			},
+			"racial": [
+				{
+					"ability": "second_wind",
+					"power_per_level": 1.0
+				}
+			],
+			"traits": "Versatile: +1 to every attribute."
+		},
+		{
+			"id": "elf",
+			"name": "Elf",
+			"description": "Long-lived and light on their feet, elves are attuned to magic and the old forests.",
+			"head": "elf",
+			"build": -1.0,
+			"height": 1.04,
+			"attributes": {
+				"agility": 2,
+				"intellect": 2,
+				"vitality": -1
+			},
+			"stats": {
+				"bonus_mana": 15
+			},
+			"movement": {
+				"run_speed": 1.05,
+				"walk_speed": 1.0,
+				"sprint_speed": 1.06,
+				"swim_speed": 1.1,
+				"swim_sprint_speed": 1.1,
+				"jump": 1.12
+			},
+			"racial": [
+				{
+					"ability": "starlight_bolt",
+					"power_per_level": 1.5
+				}
+			],
+			"traits": "Graceful: faster on foot and in water, jumps higher."
+		},
+		{
+			"id": "dwarf",
+			"name": "Dwarf",
+			"description": "Stout mountain folk, as stubborn and enduring as the stone they carve.",
+			"head": "human",
+			"build": 1.0,
+			"height": 0.86,
+			"attributes": {
+				"strength": 2,
+				"vitality": 2,
+				"agility": -1
+			},
+			"stats": {
+				"armor": 3
+			},
+			"movement": {
+				"run_speed": 0.94,
+				"walk_speed": 1.0,
+				"sprint_speed": 0.95,
+				"swim_speed": 0.85,
+				"swim_sprint_speed": 0.85,
+				"jump": 0.88
+			},
+			"racial": [
+				{
+					"ability": "stone_heart",
+					"power_per_level": 1.5
+				}
+			],
+			"traits": "Sturdy: extra armour; slower runners and poor swimmers."
+		},
+		{
+			"id": "halfling",
+			"name": "Halfling (placeholder)",
+			"description": "Placeholder species: small, quick and remarkably lucky. Rename or remove in the Database.",
+			"head": "human",
+			"build": 0.2,
+			"height": 0.72,
+			"attributes": {
+				"agility": 3,
+				"spirit": 1,
+				"strength": -2
+			},
+			"stats": {
+				"crit_chance": 3
+			},
+			"movement": {
+				"run_speed": 1.0,
+				"walk_speed": 1.0,
+				"sprint_speed": 1.02,
+				"swim_speed": 0.95,
+				"swim_sprint_speed": 0.95,
+				"jump": 0.95
+			},
+			"racial": [
+				{
+					"ability": "lucky_stone",
+					"power_per_level": 1.0
+				}
+			],
+			"traits": "Lucky: +3% critical chance."
+		},
+		{
+			"id": "orc",
+			"name": "Orc (placeholder)",
+			"description": "Placeholder species: big, fierce and hard to put down. Rename or remove in the Database.",
+			"head": "human",
+			"build": 0.6,
+			"height": 1.08,
+			"attributes": {
+				"strength": 3,
+				"vitality": 1,
+				"intellect": -2
+			},
+			"stats": {
+				"bonus_health": 15
+			},
+			"movement": {
+				"run_speed": 1.0,
+				"walk_speed": 1.0,
+				"sprint_speed": 1.0,
+				"swim_speed": 0.95,
+				"swim_sprint_speed": 0.95,
+				"jump": 0.95
+			},
+			"racial": [
+				{
+					"ability": "savage_blow",
+					"power_per_level": 2.0
+				}
+			],
+			"traits": "Brutal: +15 health."
+		}
+	]
+}

@@ -517,6 +517,12 @@ const TABS = {
 				{ key: "discs.opacity", label: "Opacity (0–1)", type: "number" },
 				{ key: "discs.size", label: "Size", type: "number", help: "Hostile = would fight the player now (enemies, angry NPCs, danger mode). Otherwise an NPC's Disposition (NPCs tab; villagers default to neutral, others friendly)." },
 			]],
+			["Attributes", [
+				{ key: "attributes.base", label: "Base value (everyone starts here)", type: "int" },
+				{ key: "attributes.creation_points", label: "Points to spend at character creation", type: "int" },
+				{ key: "attributes.max_creation_per_attribute", label: "Most points in one attribute", type: "int" },
+				{ key: "attributes.list", label: "Attributes and what each point above the base gives", type: "attrlist", wide: true, help: "Stats: attack, spell_power, armor, block, bonus_health, bonus_mana, crit_chance (%), stamina, mana_regen, move_speed (%). Species add to these (Species tab)." },
+			]],
 			["Dialogue", [
 				{ key: "dialogue.chars_per_second", label: "Text speed (letters / second)", type: "number" },
 				{ key: "dialogue.tick_sound", label: "Typing tick", type: "sound", help: "Played every few letters while a line types out; each speaker gets their own pitch." },
@@ -609,6 +615,7 @@ const TABS = {
 			]],
 			["Look", [
 				{ key: "look.skin", label: "Skin colour", type: "color" },
+				{ key: "look.species", label: "Species (sets head, height, build)", type: "select", empty: true, options: () => (((data.species || {}).species) || []).map(x => [x.id, x.name]) },
 				{ key: "look.head", label: "Head", type: "lookopt", list: "heads" },
 				{ key: "look.face", label: "Face", type: "lookopt", list: "faces" },
 				{ key: "look.hair", label: "Hair style", type: "lookopt", list: "hair_styles" },
@@ -816,6 +823,52 @@ const TABS = {
 			]],
 			["Variables (numbers, saved with the character)", [
 				{ key: "variables", label: "", type: "namelist", prefix: "var_", wide: true },
+			]],
+		],
+	},
+	species: {
+		title: "Species", file: "species", listKey: "species", idKey: "id", nameKey: "name",
+		blank: () => ({ id: "new_species", name: "New Species", description: "", head: "human", build: 0, height: 1, attributes: {}, stats: {}, movement: { run_speed: 1, walk_speed: 1, sprint_speed: 1, swim_speed: 1, swim_sprint_speed: 1, jump: 1 }, racial: [], traits: "" }),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text" },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "description", label: "Description", type: "textarea", wide: true, help: "Shown on the species page, the first page of character creation." },
+				{ key: "traits", label: "Traits (one line)", type: "text", wide: true },
+			]],
+			["Body", [
+				{ key: "head", label: "Head", type: "lookopt", list: "heads", help: "Body Models pieces used as Head appear here too." },
+				{ key: "height", label: "Height (scale, 1 = 1.86 m)", type: "number" },
+				{ key: "build", label: "Build (−1 thin … 0 … 1 heavy)", type: "number", help: "Uses the body's thin / heavy shapes. Players no longer pick height or build; the species sets them." },
+			]],
+			["Attributes (added to the base)", [
+				{ key: "attributes.strength", label: "Strength", type: "int" },
+				{ key: "attributes.agility", label: "Agility", type: "int" },
+				{ key: "attributes.intellect", label: "Intellect", type: "int" },
+				{ key: "attributes.vitality", label: "Vitality", type: "int" },
+				{ key: "attributes.spirit", label: "Spirit", type: "int" },
+			]],
+			["Bonuses", [
+				{ key: "stats.bonus_health", label: "Health", type: "number" },
+				{ key: "stats.bonus_mana", label: "Mana", type: "number" },
+				{ key: "stats.attack", label: "Attack", type: "number" },
+				{ key: "stats.spell_power", label: "Spell power", type: "number" },
+				{ key: "stats.armor", label: "Armour", type: "number" },
+				{ key: "stats.block", label: "Block", type: "number" },
+				{ key: "stats.crit_chance", label: "Critical chance (%)", type: "number" },
+				{ key: "stats.stamina", label: "Stamina", type: "number" },
+				{ key: "stats.mana_regen", label: "Mana per second", type: "number", help: "Negative numbers are drawbacks." },
+			]],
+			["Movement (× normal)", [
+				{ key: "movement.walk_speed", label: "Walk", type: "number" },
+				{ key: "movement.run_speed", label: "Run", type: "number" },
+				{ key: "movement.sprint_speed", label: "Sprint", type: "number" },
+				{ key: "movement.swim_speed", label: "Swim", type: "number" },
+				{ key: "movement.swim_sprint_speed", label: "Fast swim", type: "number" },
+				{ key: "movement.jump", label: "Jump height", type: "number", help: "1 = the Player tab's speeds; 1.1 = 10% more." },
+			]],
+			["Racial abilities", [
+				{ key: "racial", label: "Abilities (stronger every level)", type: "racials", wide: true, help: "Learned automatically (they go in the spellbook). Power per level is added to the ability's power at each level after the first." },
 			]],
 		],
 	},
@@ -1606,6 +1659,59 @@ function fieldControl(t, entry, f) {
 				row.append(el("span", { textContent: String((i + 1) % 10) }), s);
 				wrap.appendChild(row);
 			});
+			break;
+		}
+		case "racials": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
+			const abOpts = () => (((data.abilities || {}).abilities) || []).map(a => [a.id, a.display_name || a.id]);
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const s = selectOf(abOpts(), r.ability, false);
+				s.onchange = () => { list[i].ability = s.value; set(list.map(x => Object.assign({}, x))); };
+				const n = el("input", { type: "number", step: 0.5, value: r.power_per_level ?? 1, title: "Extra power per level" });
+				n.style.width = "70px";
+				n.oninput = () => { const v = parseFloat(n.value); if (!Number.isNaN(v)) { list[i].power_per_level = v; set(list.map(x => Object.assign({}, x))); } };
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); set(list.map(x => Object.assign({}, x)), true); };
+				row.append(s, el("span", { textContent: "+ power / level" }), n, rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Add ability" });
+			add.onclick = () => { const o = abOpts(); if (o.length) { list.push({ ability: o[0][0], power_per_level: 1 }); set(list, true); } };
+			wrap.appendChild(add);
+			break;
+		}
+		case "attrlist": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const list = Array.isArray(value) ? value.map(r => JSON.parse(JSON.stringify(r))) : [];
+			const save = (redraw) => set(list.map(x => JSON.parse(JSON.stringify(x))), redraw);
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const id = el("input", { type: "text", value: r.id || "", placeholder: "id" }); id.style.width = "90px";
+				id.oninput = () => { list[i].id = id.value; save(); };
+				const nm = el("input", { type: "text", value: r.name || "", placeholder: "Name" }); nm.style.width = "100px";
+				nm.oninput = () => { list[i].name = nm.value; save(); };
+				const ds = el("input", { type: "text", value: r.description || "", placeholder: "What it does" }); ds.style.width = "200px";
+				ds.oninput = () => { list[i].description = ds.value; save(); };
+				const fx = el("input", { type: "text", value: Object.entries(r.effects || {}).map(([k, v]) => k + "=" + v).join(", "), placeholder: "attack=1, block=0.5" });
+				fx.style.width = "220px";
+				fx.title = "Per point above the base: stat=amount, separated by commas";
+				fx.onchange = () => {
+					const e = {};
+					for (const part of fx.value.split(",")) { const [k, v] = part.split("=").map(x => (x || "").trim()); if (k && !Number.isNaN(parseFloat(v))) e[k] = parseFloat(v); }
+					list[i].effects = e; save();
+				};
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); save(true); };
+				row.append(id, nm, ds, fx, rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Add attribute" });
+			add.onclick = () => { list.push({ id: "new", name: "New", description: "", effects: {} }); save(true); };
+			wrap.appendChild(add);
 			break;
 		}
 		case "itemcounts": {
