@@ -249,6 +249,7 @@ func save_settings() -> void:
 			if not d.is_empty():
 				list.append(d)
 		cfg.set_value("bindings", entry[0], list)
+	cfg.set_value("controls", "bindings_version", 2)
 	cfg.save(PATH)
 
 
@@ -266,10 +267,14 @@ func load_settings() -> void:
 	ssao = bool(cfg.get_value("graphics", "ssao", true))
 	camera_sensitivity = float(cfg.get_value("controls", "camera_sensitivity", 1.0))
 	invert_camera_y = bool(cfg.get_value("controls", "invert_camera_y", false))
+	# Bindings saved before a default changed keep the new default for those actions.
+	var version := int(cfg.get_value("controls", "bindings_version", 1))
 	if cfg.has_section("bindings"):
 		for action in cfg.get_section_keys("bindings"):
 			if not InputMap.has_action(action):
 				continue
+			if version < 2 and action in ["block", "camera_look", "lock_on"]:
+				continue  # block moved to the right mouse button, looking around to the middle one, lock-on to Q
 			InputMap.action_erase_events(action)
 			for d in cfg.get_value("bindings", action, []):
 				var e := _from_dict(d)

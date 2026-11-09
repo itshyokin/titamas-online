@@ -7,5 +7,13 @@
 		"calm": 0.4,
 		"gusty": 1.5,
 		"gust_seconds": 25.0
+	},
+	"ambient_occlusion": {
+		"radius": 2.0,
+		"intensity": 3.0,
+		"power": 1.6,
+		"detail": 0.6,
+		"horizon": 0.06,
+		"light_affect": 0.45
 	}
 }

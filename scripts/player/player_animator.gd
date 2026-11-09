@@ -40,7 +40,9 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	var h_speed := Vector2(player.velocity.x, player.velocity.z).length()
 	var on_floor := player.is_on_floor()
-	if player.state != PlayerController.State.NORMAL:
+	# Actions on the upper body (bow draw, aiming, a held wind-up): the legs still walk.
+	var layered := player.state == PlayerController.State.ACTION and character.upper_role() != ""
+	if player.state != PlayerController.State.NORMAL and not layered:
 		# Special moves play their own animations (started by signals).
 		_was_on_floor = on_floor
 		_air_time = 0.0

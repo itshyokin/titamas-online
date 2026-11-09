@@ -37,6 +37,10 @@ extends Resource
 @export var grass_density := 6.0
 @export var grass_base := Color(0.16, 0.36, 0.12)
 @export var grass_tip := Color(0.55, 0.78, 0.3)
+## Height of the grass clumps (m).
+@export var grass_height := 0.8
+## 0 = grass takes the colours above; 1 = it takes the colour of the ground under it.
+@export var grass_ground_match := 0.85
 
 @export_group("Colour")
 ## 1 = unchanged. Above 1 = more saturated, punchier colours.

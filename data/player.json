@@ -15,7 +15,9 @@
 		"sprint_stamina_cost": 25.0,
 		"swim_speed": 2.2,
 		"swim_sprint_speed": 3.8,
-		"swim_sprint_stamina_cost": 18.0
+		"swim_sprint_stamina_cost": 18.0,
+		"double_tap_time": 0.3,
+		"lock_on_hops": 0.0
 	},
 	"combat": {
 		"tap_time": 0.22,
@@ -133,5 +135,11 @@
 		"weakened_seconds": 120,
 		"weakened_damage": 0.8,
 		"weakened_health": 0.8
+	},
+	"hud": {
+		"health_full": "#3fbf4a",
+		"health_half": "#e6d23a",
+		"health_low": "#ee8a2a",
+		"health_critical": "#d8332a"
 	}
 }

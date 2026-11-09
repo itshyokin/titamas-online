@@ -46,7 +46,7 @@ var _grass := {}  # Vector2i -> GrassField
 ## Grass grows on chunks this many cells from the player's.
 @export var grass_radius := 1
 ## Fallback grass density (clumps per m²) when no AtmosphereManager is found.
-@export var grass_density := 3.0
+@export var grass_density := 1.0
 ## Grass tiles (16 m squares) grown per frame.
 @export var grass_tiles_per_frame := 2
 var _available := {}  # Vector2i -> path

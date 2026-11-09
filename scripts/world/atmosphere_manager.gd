@@ -54,7 +54,7 @@ const FIELDS := [
 	"fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
 	"shadow_strength", "saturation", "contrast", "brightness", "god_rays",
-	"grass_base", "grass_tip", "grass_density",
+	"grass_base", "grass_tip", "grass_density", "grass_height", "grass_ground_match",
 ]
 
 
@@ -213,6 +213,8 @@ func _apply() -> void:
 	# Grass colours and density for GrassField.
 	RenderingServer.global_shader_parameter_set("grass_base", v.grass_base)
 	RenderingServer.global_shader_parameter_set("grass_tip", v.grass_tip)
+	RenderingServer.global_shader_parameter_set("grass_height", v.grass_height)
+	RenderingServer.global_shader_parameter_set("grass_ground_match", v.grass_ground_match)
 	grass_density = v.grass_density
 
 
@@ -297,14 +299,19 @@ func _update_wind(delta: float) -> void:
 	_wind.volume_db = lerpf(_wind.volume_db, goal, 1.0 - exp(-delta * 1.5))
 
 
-## Ambient occlusion (Settings → Graphics): soft contact shadows, tuned for the
-## stylised look (gentle, not dark).
+## Ambient occlusion (Settings → Graphics): contact shadows where things meet (grass
+## roots, rocks on the ground, corners). Strength in data/world.json "ambient_occlusion"
+## (Database → World). Forward+ only (the Compatibility renderer has none).
 func _apply_ssao() -> void:
 	if _env == null:
 		return
+	var world = DataFiles.read(DataFiles.WORLD)
+	var ao: Dictionary = world.get("ambient_occlusion", {}) if world is Dictionary else {}
 	_env.ssao_enabled = GameSettings.ssao
-	_env.ssao_radius = 1.2
-	_env.ssao_intensity = 1.6
-	_env.ssao_power = 1.4
-	_env.ssao_detail = 0.5
-	_env.ssao_light_affect = 0.15
+	_env.ssao_radius = float(ao.get("radius", 2.0))
+	_env.ssao_intensity = float(ao.get("intensity", 3.0))
+	_env.ssao_power = float(ao.get("power", 1.6))
+	_env.ssao_detail = float(ao.get("detail", 0.6))
+	_env.ssao_horizon = float(ao.get("horizon", 0.06))
+	# Share of the darkening that also applies in direct sunlight (otherwise only shade gets it).
+	_env.ssao_light_affect = float(ao.get("light_affect", 0.45))

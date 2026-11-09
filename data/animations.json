@@ -1029,6 +1029,20 @@
 			"yaw_fix": 0.0,
 			"height_match": "",
 			"note": "Drinking a potion (Mixamo 'Drinking'). Held on its first frame while the cast bar fills, then played to end with it."
+		},
+		{
+			"name": "strafing_right",
+			"kind": "mirrored",
+			"from": "strafing_left",
+			"start": 0,
+			"end": 0,
+			"loop": true,
+			"in_place": true,
+			"root_motion": false,
+			"no_hip_rise": false,
+			"yaw_fix": 0.0,
+			"height_match": "",
+			"note": "Sidestep right: the left sidestep mirrored."
 		}
 	],
 	"roles": {
@@ -1039,7 +1053,7 @@
 		"jumping": "jumping",
 		"falling_loop": "falling_loop",
 		"falling_land": "falling_land",
-		"strafing": "strafing",
+		"strafing": "strafing_right",
 		"strafing_left": "strafing_left",
 		"dodge_roll": "dodge_roll",
 		"dodge_left": "dodge_left",
@@ -1076,7 +1090,7 @@
 		"neck_share": 0.35
 	},
 	"strafe": {
-		"right_speed": 0.86,
+		"right_speed": 1.6,
 		"left_speed": 1.6
 	},
 	"loot": {

@@ -1,12 +1,14 @@
 class_name GrassField
 extends Node3D
-## Grass for one terrain chunk: low-poly blade clumps scattered where the ground is
+## Grass for one terrain chunk: clumps of tall grass (crossed picture cards) scattered where the ground is
 ## painted grass (thicker where the paint is stronger), never on cliffs, steep slopes or
 ## under water. Split into 16 m tiles so distant tiles are culled. Built by ChunkStreamer
 ## for the chunks around the player.
 
 const TILE := 16.0
 const MATERIAL := preload("res://assets/materials/grass.gdshader")
+const CLUMP_TEXTURE := preload("res://assets/textures/grass_clump.png")
+const TERRAIN_MATERIAL := "res://assets/materials/terrain/terrain.tres"
 
 static var _mesh: ArrayMesh
 static var _material: ShaderMaterial
@@ -144,37 +146,47 @@ static func _shared_material() -> ShaderMaterial:
 	if _material == null:
 		_material = ShaderMaterial.new()
 		_material.shader = MATERIAL
+		_material.set_shader_parameter("clump_tex", CLUMP_TEXTURE)
+		# The ground colour comes from the terrain's own grass texture.
+		if ResourceLoader.exists(TERRAIN_MATERIAL):
+			var terrain := load(TERRAIN_MATERIAL) as ShaderMaterial
+			if terrain:
+				_material.set_shader_parameter("ground_tex", terrain.get_shader_parameter("tex_r"))
+				var tile = terrain.get_shader_parameter("tile_size")
+				_material.set_shader_parameter("ground_tile_size", float(tile) if tile != null else 4.0)
 	return _material
 
 
-## Five tapered blades leaning outwards (about 0.45 m tall). UV.y = 0 at the root, 1 at the tip.
+## A clump: three rows of card pairs crossing in shallow V's (Saturn's "thicket"), so it
+## looks full from every side. 1 m tall (the shader scales it to the region's grass
+## height). UV.y = 0 at the top of the picture.
 static func _clump_mesh() -> ArrayMesh:
 	if _mesh:
 		return _mesh
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 7
-	for b in 5:
-		var a := TAU * b / 5.0 + rng.randf_range(-0.3, 0.3)
-		var out := Vector3(cos(a), 0, sin(a))
-		var side := Vector3(-out.z, 0, out.x)
-		var root := out * rng.randf_range(0.02, 0.1)
-		var height := rng.randf_range(0.32, 0.55)
-		var lean := out * rng.randf_range(0.08, 0.2)
-		var w := rng.randf_range(0.035, 0.05)
-		var mid := root + lean * 0.4 + Vector3.UP * height * 0.55
-		var top := root + lean + Vector3.UP * height
-		# Two triangles: wide base to narrower middle, then to the tip.
-		_tri(st, root - side * w, root + side * w, mid + side * w * 0.6, 0.0, 0.0, 0.55)
-		_tri(st, root - side * w, mid + side * w * 0.6, mid - side * w * 0.6, 0.0, 0.55, 0.55)
-		_tri(st, mid - side * w * 0.6, mid + side * w * 0.6, top, 0.55, 0.55, 1.0)
+	var w := 0.9
+	var d := 0.6
+	var rows := [[-0.33, -0.06, 0.9], [0.0, 0.05, 1.0], [0.33, -0.02, 0.84]]
+	for i in rows.size():
+		var r: Array = rows[i]
+		for yaw: float in [0.44, -0.44]:
+			var k: float = r[2] * (1.0 if yaw > 0.0 else 0.94)
+			var mirror := (i + (0 if yaw > 0.0 else 1)) % 2 == 1
+			_card(st, Vector3(r[1] * w, 0.0, r[0] * d), yaw, w * k, k, mirror)
 	st.generate_normals()
 	_mesh = st.commit()
 	return _mesh
 
 
-static func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, ua: float, ub: float, uc: float) -> void:
-	for v in [[a, ua], [b, ub], [c, uc]]:
-		st.set_uv(Vector2(0.5, v[1]))
+static func _card(st: SurfaceTool, center: Vector3, yaw: float, width: float, height: float, mirror: bool) -> void:
+	var side := Vector3(cos(yaw), 0.0, -sin(yaw)) * width * 0.5
+	var bl := center - side
+	var br := center + side
+	var tl := bl + Vector3.UP * height
+	var tr := br + Vector3.UP * height
+	var u0 := 1.0 if mirror else 0.0
+	var u1 := 1.0 - u0
+	for v in [[bl, Vector2(u0, 1)], [br, Vector2(u1, 1)], [tr, Vector2(u1, 0)], [bl, Vector2(u0, 1)], [tr, Vector2(u1, 0)], [tl, Vector2(u0, 0)]]:
+		st.set_uv(v[1])
 		st.add_vertex(v[0])

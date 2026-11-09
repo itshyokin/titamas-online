@@ -36,6 +36,7 @@ const LIBRARIES := {
 ## whose clip is missing, plays the clip of the same name.
 static var roles := {}
 
+var _upper_role := ""
 var _current_role := ""
 var _skin_material := StandardMaterial3D.new()
 var _animator: AnimationPlayer
@@ -416,6 +417,49 @@ func get_skeleton() -> Skeleton3D:
 
 ## The head-turning modifier on the current body's skeleton (made on first use; only
 ## in-game, so nothing is saved into scenes). Null in the editor.
+## Plays `role` on the upper body only, over whatever the legs are doing (walking while
+## drawing a bow, holding a wind-up). Holds at `hold_at` (-1 = the clip's end).
+func play_upper(role: String, from := 0.0, speed := 1.0, hold_at := -1.0, blend := 0.12) -> void:
+	var layer := _upper_layer()
+	var anim := clip_for(role)
+	if layer == null or _animator == null or not _animator.has_animation(anim):
+		return
+	_upper_role = role
+	layer.play(_animator.get_animation(anim), from, speed, hold_at, blend)
+
+
+## Lets the upper body follow the legs' animation again.
+func stop_upper(blend := 0.15) -> void:
+	_upper_role = ""
+	var skel := get_skeleton()
+	var layer := skel.get_node_or_null("UpperBodyLayer") as UpperBodyLayer if skel else null
+	if layer:
+		layer.stop(blend)
+
+
+## The role playing on the upper body ("" if none).
+func upper_role() -> String:
+	return _upper_role
+
+
+func _upper_layer() -> UpperBodyLayer:
+	if Engine.is_editor_hint():
+		return null
+	var skel := get_skeleton()
+	if skel == null:
+		return null
+	var layer := skel.get_node_or_null("UpperBodyLayer") as UpperBodyLayer
+	if layer == null:
+		layer = UpperBodyLayer.new()
+		layer.name = "UpperBodyLayer"
+		skel.add_child(layer)
+		# Before HeadLook, so the head still turns on top of it.
+		var look := skel.get_node_or_null("HeadLook")
+		if look:
+			skel.move_child(layer, look.get_index())
+	return layer
+
+
 func head_look() -> HeadLook:
 	if Engine.is_editor_hint():
 		return null

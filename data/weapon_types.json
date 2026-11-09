@@ -23,7 +23,8 @@
 			"aim": "",
 			"reload_anim": "",
 			"draw_anim": "draw_sword",
-			"hold": ""
+			"hold": "",
+			"target_range": 10
 		},
 		{
 			"id": "sword",
@@ -48,7 +49,8 @@
 			"aim": "",
 			"reload_anim": "",
 			"draw_anim": "draw_sword",
-			"hold": ""
+			"hold": "",
+			"target_range": 12
 		},
 		{
 			"id": "greatsword",
@@ -72,7 +74,8 @@
 			"aim": "",
 			"reload_anim": "",
 			"draw_anim": "draw_greatsword",
-			"hold": ""
+			"hold": "",
+			"target_range": 12
 		},
 		{
 			"id": "hammer",
@@ -96,7 +99,8 @@
 			"aim": "",
 			"reload_anim": "",
 			"draw_anim": "draw_greatsword",
-			"hold": ""
+			"hold": "",
+			"target_range": 12
 		},
 		{
 			"id": "axe",
@@ -121,7 +125,8 @@
 			"aim": "",
 			"reload_anim": "",
 			"draw_anim": "draw_sword",
-			"hold": ""
+			"hold": "",
+			"target_range": 12
 		},
 		{
 			"id": "bow",
@@ -142,7 +147,8 @@
 			"aim": "bow_aim",
 			"reload_anim": "",
 			"draw_anim": "",
-			"hold": ""
+			"hold": "",
+			"target_range": 35
 		},
 		{
 			"id": "crossbow",
@@ -163,7 +169,8 @@
 			"aim": "rifle_aim",
 			"reload_anim": "gun_reload",
 			"draw_anim": "draw_rifle",
-			"hold": "gun"
+			"hold": "gun",
+			"target_range": 30
 		},
 		{
 			"id": "pistol",
@@ -184,7 +191,8 @@
 			"aim": "pistol_aim",
 			"reload_anim": "gun_reload",
 			"draw_anim": "draw_pistol",
-			"hold": "gun"
+			"hold": "gun",
+			"target_range": 20
 		},
 		{
 			"id": "rifle",
@@ -205,7 +213,8 @@
 			"aim": "rifle_aim",
 			"reload_anim": "gun_reload",
 			"draw_anim": "draw_rifle",
-			"hold": "gun"
+			"hold": "gun",
+			"target_range": 40
 		}
 	]
 }

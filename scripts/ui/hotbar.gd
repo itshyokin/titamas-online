@@ -21,6 +21,9 @@ var _row: HBoxContainer
 var _frame: Panel
 var _arrow: Control
 var _frame_tween: Tween
+var _level_now: Label
+var _level_next: Label
+var stamina_box: StaminaSlot
 
 
 func _init(inv: Inventory, player_combat: PlayerCombat) -> void:
@@ -31,7 +34,8 @@ func _init(inv: Inventory, player_combat: PlayerCombat) -> void:
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
+	# Room between the experience bar and the boxes for the weapon frame's arrow.
+	box.add_theme_constant_override("separation", 20)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(box)
 	# Experience.
@@ -51,7 +55,18 @@ func _ready() -> void:
 	xp_bar.add_theme_stylebox_override("background", bg)
 	xp_bar.add_theme_stylebox_override("fill", fill)
 	xp_bar.mouse_filter = Control.MOUSE_FILTER_PASS
-	box.add_child(xp_bar)
+	xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	xp_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	# Current level on the left, the next one on the right.
+	var xp_row := HBoxContainer.new()
+	xp_row.add_theme_constant_override("separation", 6)
+	xp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_level_now = _level_label()
+	_level_next = _level_label()
+	xp_row.add_child(_level_now)
+	xp_row.add_child(xp_bar)
+	xp_row.add_child(_level_next)
+	box.add_child(xp_row)
 	xp_label = Label.new()
 	xp_label.add_theme_font_size_override("font_size", 11)
 	xp_label.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -77,6 +92,13 @@ func _ready() -> void:
 			gap.custom_minimum_size = Vector2(WEAPON_GAP - GAP, 0)
 			gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			_row.add_child(gap)
+	# Box 11: stamina (the sprint key); drains while sprinting and fills back up.
+	var gap2 := Control.new()
+	gap2.custom_minimum_size = Vector2(WEAPON_GAP - GAP, 0)
+	gap2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_row.add_child(gap2)
+	stamina_box = StaminaSlot.new(combat.get_parent().get_node("Stats") as Stats)
+	_row.add_child(stamina_box)
 	# Gold frame + arrow over the weapon in use.
 	_frame = Panel.new()
 	var fs := StyleBoxFlat.new()
@@ -154,7 +176,21 @@ func use(i: int) -> void:
 		combat.use_hotbar(i - 2)
 
 
+func _level_label() -> Label:
+	var l := Label.new()
+	l.add_theme_font_size_override("font_size", 13)
+	l.add_theme_color_override("font_color", Color(0.85, 0.72, 1.0))
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.add_theme_constant_override("outline_size", 4)
+	l.custom_minimum_size = Vector2(18, 0)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return l
+
+
 func set_xp(current: int, needed: int, level: int, max_level: bool) -> void:
+	_level_now.text = str(level)
+	_level_next.text = "" if max_level else str(level + 1)
 	xp_bar.max_value = maxf(needed, 1)
 	xp_bar.value = xp_bar.max_value if max_level else current
 	xp_label.text = "Level %d · max level" % level if max_level else "Level %d · %d / %d XP" % [level, current, needed]

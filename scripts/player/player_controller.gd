@@ -39,6 +39,10 @@ const WATER_MASK := 8  # layer 4
 @export_group("Dodge")
 @export var dodge_stamina_cost := 0.0
 @export var dodge_cooldown := 0.25
+## Double-tapping a movement key within this time (s) rolls that way. 0 = off.
+@export var double_tap_time := 0.3
+## Locked on: dodge with the side/back hops instead of rolling (1 = on).
+@export var lock_on_hops := 0.0
 @export var roll_distance := 4.0
 ## Seconds the forward roll lasts before control returns.
 @export var roll_duration := 0.7
@@ -241,7 +245,39 @@ func _pressed(action: String) -> bool:
 	return Input.is_action_just_pressed(action) and not GameSettings.menu_open
 
 
+## Double-tap a movement key: roll that way (keyboard; controllers use the dodge button).
+const _TAP_DIRS := {"move_forward": Vector3(0, 0, -1), "move_back": Vector3(0, 0, 1), "move_left": Vector3(-1, 0, 0), "move_right": Vector3(1, 0, 0)}
+var _last_tap := {}
+var _tap_dodge := Vector3.ZERO
+
+
+func _check_double_tap(event: InputEvent) -> void:
+	if not event is InputEventKey or event.is_echo() or not event.is_pressed() or double_tap_time <= 0.0 or GameSettings.menu_open:
+		return
+	for action: String in _TAP_DIRS:
+		if event.is_action_pressed(action):
+			var now := Time.get_ticks_msec()
+			if now - int(_last_tap.get(action, -100000)) <= double_tap_time * 1000.0:
+				_tap_dodge = camera_rig.get_flat_basis() * _TAP_DIRS[action]
+				_last_tap.erase(action)
+			else:
+				_last_tap.clear()
+				_last_tap[action] = now
+
+
+## A dodge asked for this frame: the dodge button (towards the movement) or a double-tap.
+func _dodge_requested(direction: Vector3) -> Vector3:
+	if _tap_dodge != Vector3.ZERO:
+		var d := _tap_dodge.normalized()
+		_tap_dodge = Vector3.ZERO
+		return d
+	if _pressed("dodge"):
+		return direction if direction != Vector3.ZERO else Vector3(0, 0.001, 0)
+	return Vector3.INF
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	_check_double_tap(event)
 	# Controller sprint is a toggle (the thumb is needed on the camera stick).
 	if event.is_action_pressed("sprint") and GameSettings.is_gamepad_event(event) and not GameSettings.menu_open:
 		_sprint_toggle = not _sprint_toggle
@@ -265,7 +301,8 @@ func _normal_movement(delta: float) -> void:
 	var direction := _input_direction()
 	_update_sprint(direction != Vector3.ZERO, delta)
 
-	if is_on_floor() and _pressed("dodge") and _try_dodge(direction):
+	var dodge_dir := _dodge_requested(direction)
+	if is_on_floor() and dodge_dir != Vector3.INF and _try_dodge(Vector3(dodge_dir.x, 0.0, dodge_dir.z)):
 		return
 	if _try_start_swim():
 		return
@@ -386,7 +423,8 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 
 func _action_movement(delta: float) -> void:
 	var direction := _input_direction()
-	if is_on_floor() and _pressed("dodge") and _try_dodge(direction):
+	var dodge_dir := _dodge_requested(direction)
+	if is_on_floor() and dodge_dir != Vector3.INF and _try_dodge(Vector3(dodge_dir.x, 0.0, dodge_dir.z)):
 		action_interrupted.emit()
 		return
 	if _try_start_swim():
@@ -423,7 +461,7 @@ func _try_dodge(direction: Vector3) -> bool:
 		return false
 
 	var anim := "dodge_back"
-	if lock_facing:
+	if lock_facing and lock_on_hops > 0.5:
 		# Pick a hop relative to where the character faces.
 		var local := model.global_transform.basis.inverse() * direction
 		if direction == Vector3.ZERO or local.z > 0.5:

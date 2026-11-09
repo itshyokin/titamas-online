@@ -21,6 +21,10 @@ signal lock_changed(locked: bool)
 ## Swings turn to enemies this close even if they're behind you.
 @export var snap_range := 2.5
 
+## Picking a target only reaches this far: set from the weapon in use (Weapon Types →
+## Targeting range); tab_range when the weapon doesn't say.
+var weapon_range := 0.0
+
 @onready var player: PlayerController = get_parent()
 
 var target: Node3D = null
@@ -109,17 +113,39 @@ func toggle_target() -> void:
 		set_locked(true)
 
 
-## The enemy closest to where the camera looks (within tab_range), weighing distance a
-## little; with none on screen, the nearest one.
+## How far targets can be picked.
+func pick_range() -> float:
+	return weapon_range if weapon_range > 0.0 else tab_range
+
+
+## Can be picked as a target: on screen and in front of the player (never behind them).
+func selectable(n: Node3D) -> bool:
+	var cam := get_viewport().get_camera_3d()
+	var aim := Combat.aim_point(n)
+	if cam == null:
+		return true
+	if not cam.is_position_in_frustum(aim) or cam.is_position_behind(aim):
+		return false
+	var to := aim - player.global_position
+	to.y = 0.0
+	var look := -cam.global_basis.z
+	look.y = 0.0
+	return to.length() < 1.0 or look.normalized().dot(to.normalized()) > 0.0
+
+
+## The enemy closest to where the camera looks (within the weapon's range, on screen and
+## in front of the player), weighing distance a little.
 func best_in_view() -> Node3D:
 	var cam := get_viewport().get_camera_3d()
 	var best: Node3D = null
 	var best_score := INF
-	for n in Combat.enemies_near(player, player.global_position, tab_range):
+	for n in Combat.enemies_near(player, player.global_position, pick_range()):
+		if not selectable(n):
+			continue
 		var aim := Combat.aim_point(n)
 		var dist := aim.distance_to(player.global_position)
-		var score := 1000.0 + dist  # off screen: nearest wins, after anything on screen
-		if cam and cam.is_position_in_frustum(aim) and not cam.is_position_behind(aim):
+		var score := dist
+		if cam:
 			var screen := cam.unproject_position(aim)
 			var size := get_viewport().get_visible_rect().size
 			var off := (screen - size * 0.5).length() / size.y  # 0 = centre, ~0.9 = corner
@@ -147,7 +173,7 @@ func has_target() -> bool:
 ## Picks the next (or previous) enemy in view. Repeated presses walk through them in order.
 func cycle(step := 1) -> void:
 	var cam := get_viewport().get_camera_3d()
-	var candidates := Combat.enemies_near(player, player.global_position, tab_range)
+	var candidates := Combat.enemies_near(player, player.global_position, pick_range()).filter(selectable)
 	if candidates.is_empty():
 		set_target(null)
 		return
@@ -186,7 +212,8 @@ func pick_for_attack(max_distance: float, select := true) -> Node3D:
 		if s < best_score:
 			best_score = s
 			best = n
-	if best and select and not has_target():
+	# A swing may snap to someone behind you, but they don't become the target.
+	if best and select and not has_target() and selectable(best):
 		set_target(best)
 	return best
 
@@ -237,9 +264,9 @@ func _process(_delta: float) -> void:
 	# No longer an enemy (danger mode switched off): let go.
 	if target and Combat.is_alive(target) and not Combat.is_enemy_of(player, target):
 		set_target(null)
-	if target and target.global_position.distance_to(player.global_position) > lose_range:
+	if target and target.global_position.distance_to(player.global_position) > maxf(lose_range, pick_range() + 15.0):
 		set_target(null)
-	if locked and (not has_target() or target.global_position.distance_to(player.global_position) > lock_range):
+	if locked and (not has_target() or target.global_position.distance_to(player.global_position) > maxf(lock_range, pick_range() + 5.0)):
 		set_locked(false)
 	_ring.visible = has_target()
 	if _ring.visible:

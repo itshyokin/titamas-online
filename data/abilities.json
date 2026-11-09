@@ -140,7 +140,7 @@
 			"knockback": 7.0,
 			"cast_time": 0.0,
 			"icon": "heavy",
-			"windup_time": 0.5
+			"windup_time": 0.0
 		},
 		{
 			"animation": "bow_release",
@@ -449,7 +449,7 @@
 			"knockback": 7.0,
 			"cast_time": 0.0,
 			"icon": "heavy",
-			"windup_time": 0.3
+			"windup_time": 0.0
 		}
 	]
 }

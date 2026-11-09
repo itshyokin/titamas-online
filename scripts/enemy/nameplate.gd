@@ -72,6 +72,9 @@ func _on_health(current: float, maximum: float) -> void:
 	var k := clampf(current / maxf(maximum, 1.0), 0.0, 1.0)
 	_fill.scale.x = width * k
 	_fill.position.x = -width * (1.0 - k) * 0.5
+	# Allies and other players: green to red as they get hurt. Enemies stay red.
+	if stats and stats.team != Stats.Team.ENEMIES:
+		((_fill.mesh as QuadMesh).material as StandardMaterial3D).albedo_color = HealthColors.of(k)
 
 
 func _process(_delta: float) -> void:

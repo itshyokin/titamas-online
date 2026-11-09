@@ -29,6 +29,8 @@ var IN_PLACE: Array = []
 var ROOT_MOTION: Array = []
 ## Clips made by playing another backwards (with its root motion reversed).
 var REVERSED := {}
+## Clips mirrored left/right from another clip: name -> source clip.
+var MIRRORED := {}
 ## Clips cut out of longer ones: name -> [source clip, start s, end s].
 var SUBCLIPS := {}
 ## Animations whose hips may dip but not rise; the physics jump provides the height.
@@ -72,6 +74,8 @@ func _load_settings() -> void:
 				SUBCLIPS[clip_name] = [String(c.get("from", "")), float(c.get("start", 0.0)), float(c.get("end", 0.0))]
 			"reversed":
 				REVERSED[clip_name] = String(c.get("from", ""))
+			"mirrored":
+				MIRRORED[clip_name] = String(c.get("from", ""))
 
 
 ## Stand-in combat clips, posed from the idle clip by rotating bones. Any of these is
@@ -249,6 +253,10 @@ func _init() -> void:
 			if lib.has_animation(REVERSED[rev_name]) and not lib.has_animation(rev_name):
 				lib.add_animation(rev_name, _reversed(lib.get_animation(REVERSED[rev_name])))
 				print("  %-20s reversed from %s" % [rev_name, REVERSED[rev_name]])
+		for mir_name in MIRRORED:
+			if lib.has_animation(MIRRORED[mir_name]) and not lib.has_animation(mir_name):
+				lib.add_animation(mir_name, _mirrored(lib.get_animation(MIRRORED[mir_name]), target, mir_name in LOOPING))
+				print("  %-20s mirrored from %s" % [mir_name, MIRRORED[mir_name]])
 		_add_placeholders(lib, target)
 		for anim_name in HEIGHT_MATCH:
 			if lib.has_animation(anim_name) and lib.has_animation(HEIGHT_MATCH[anim_name]):
@@ -331,6 +339,89 @@ func _reversed(src: Animation) -> Animation:
 				r.append(m[i] - last)
 		flipped.set_meta("root_motion", r)
 	return flipped
+
+
+## A clip mirrored left to right (a sidestep left becomes one to the right): every frame
+## is posed in the skeleton's space, reflected across its middle, left and right bones
+## swapped, and turned back into bone rotations. Needs a symmetric skeleton.
+func _mirrored(src: Animation, skel: Skeleton3D, loop: bool) -> Animation:
+	var n := skel.get_bone_count()
+	var rest := _rest_globals(skel)
+	# The side-to-side axis: from the left hip to the right hip.
+	var l := skel.find_bone("mixamorig_LeftUpLeg")
+	var r := skel.find_bone("mixamorig_RightUpLeg")
+	var side := (rest[r].origin - rest[l].origin).normalized() if l >= 0 and r >= 0 else Vector3.RIGHT
+	var m := Basis(Vector3.RIGHT - 2.0 * side.x * side, Vector3.UP - 2.0 * side.y * side, Vector3.BACK - 2.0 * side.z * side)
+	var swap := PackedInt32Array()
+	swap.resize(n)
+	for b in n:
+		var bone_name := skel.get_bone_name(b)
+		var other := bone_name.replace("Left", "#").replace("Right", "Left").replace("#", "Right")
+		var o := skel.find_bone(other)
+		swap[b] = o if o >= 0 else b
+	var fix: Array[Basis] = []
+	fix.resize(n)
+	for b in n:
+		fix[b] = (m * rest[b].basis).inverse() * rest[swap[b]].basis
+	# Which bones the clip moves.
+	var rot_track := {}
+	var pos_track := {}
+	for t in src.get_track_count():
+		var bone := skel.find_bone(String(src.track_get_path(t).get_concatenated_subnames()))
+		if bone < 0:
+			continue
+		match src.track_get_type(t):
+			Animation.TYPE_ROTATION_3D:
+				rot_track[bone] = t
+			Animation.TYPE_POSITION_3D:
+				pos_track[bone] = t
+	var out := Animation.new()
+	out.length = src.length
+	out.loop_mode = Animation.LOOP_LINEAR if loop else Animation.LOOP_NONE
+	var new_rot := {}
+	var new_pos := {}
+	for b in rot_track:
+		var nt := out.add_track(Animation.TYPE_ROTATION_3D)
+		out.track_set_path(nt, NodePath("%s:%s" % [src.track_get_path(rot_track[b]).get_concatenated_names(), skel.get_bone_name(swap[b])]))
+		new_rot[swap[b]] = nt
+	for b in pos_track:
+		var nt := out.add_track(Animation.TYPE_POSITION_3D)
+		out.track_set_path(nt, NodePath("%s:%s" % [src.track_get_path(pos_track[b]).get_concatenated_names(), skel.get_bone_name(swap[b])]))
+		new_pos[swap[b]] = nt
+	var time := 0.0
+	while time <= src.length + 0.0001:
+		var at := minf(time, src.length)
+		var globals: Array[Transform3D] = []
+		globals.resize(n)
+		for b in n:
+			var local := skel.get_bone_rest(b)
+			if rot_track.has(b):
+				local.basis = Basis(src.rotation_track_interpolate(rot_track[b], at)).scaled(local.basis.get_scale())
+			if pos_track.has(b):
+				local.origin = src.position_track_interpolate(pos_track[b], at)
+			var p := skel.get_bone_parent(b)
+			globals[b] = local if p < 0 else globals[p] * local
+		var mirrored: Array[Transform3D] = []
+		mirrored.resize(n)
+		for b in n:
+			# Reflected, then each bone's own axes put back the way the opposite bone's are.
+			mirrored[swap[b]] = Transform3D(m * globals[b].basis * fix[b], m * globals[b].origin)
+		for b in n:
+			if not new_rot.has(b) and not new_pos.has(b):
+				continue
+			var p := skel.get_bone_parent(b)
+			var local := mirrored[b] if p < 0 else mirrored[p].affine_inverse() * mirrored[b]
+			if new_rot.has(b):
+				out.rotation_track_insert_key(new_rot[b], at, local.basis.get_rotation_quaternion())
+			if new_pos.has(b):
+				out.position_track_insert_key(new_pos[b], at, local.origin)
+		time += 1.0 / FPS
+	if src.has_meta("root_motion"):
+		var mo := PackedVector3Array()
+		for v: Vector3 in src.get_meta("root_motion"):
+			mo.append(Vector3(-v.x, v.y, v.z))
+		out.set_meta("root_motion", mo)
+	return out
 
 
 ## Transform of a node relative to the scene root (includes import scale).

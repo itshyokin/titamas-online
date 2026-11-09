@@ -173,6 +173,8 @@ func _refresh_weapon() -> void:
 	if String(weapon.get("id", "")) != before:
 		_reload_left = 0.0  # a different weapon in hand
 	weapon_type = Database.weapon_type(String(weapon.get("weapon_type", "")))
+	if targeting:
+		targeting.weapon_range = float(weapon_type.get("target_range", 0.0))
 	combo = []
 	heavy = null
 	shot = null
@@ -389,6 +391,16 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 
 
+## Block / aim held (right mouse button by default), but not while clicking the HUD
+## (right-clicking an item in the backpack).
+func _block_held() -> bool:
+	if not Input.is_action_pressed("block"):
+		return false
+	if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and not _aiming and not _blocking and get_viewport().gui_get_hovered_control() != null:
+		return false
+	return true
+
+
 ## Danger mode: friendly NPCs that can fight become targets (and fight back when hit).
 func set_danger_mode(on: bool) -> void:
 	Combat.danger_mode = on
@@ -420,6 +432,10 @@ func _physics_process(delta: float) -> void:
 			_set_combat(false)
 	_update_reload(delta)
 	_update_aim_point()
+	# The upper body goes back to following the legs once nothing holds it.
+	if character.upper_role() != "" and _charging == null and not _aim_pose \
+			and (_current == null or player.state != PlayerController.State.ACTION):
+		character.stop_upper()
 
 	var released := _attack_down and not Input.is_action_pressed("attack")
 	if _attack_down:
@@ -479,7 +495,7 @@ func _physics_process(delta: float) -> void:
 			_begin_charge()
 
 	# Block (melee weapons; ranged ones aim instead).
-	if not is_ranged() and not GameSettings.menu_open and Input.is_action_pressed("block") and not busy \
+	if not is_ranged() and not GameSettings.menu_open and _block_held() and not busy \
 			and not _blocking and _charging == null:
 		_start_block()
 
@@ -625,7 +641,12 @@ func _begin_release(ab: Ability, power: float, anim_start := 0.0) -> void:
 		if gap > 0.0 and to.length() < lunge_range + ab.reach:
 			_lunge = to.normalized() * minf(gap / until_hit, 10.0)
 	player.action_move_scale = ab.move_scale
-	player.action_animation.emit(ab.animation, anim_start, 0.08, speed)
+	if is_ranged() and _is_weapon_move(ab):
+		# Shots play on the upper body, so the legs can keep walking.
+		character.play_upper(ab.animation, anim_start, speed, -1.0, 0.08)
+	else:
+		character.stop_upper(0.08)
+		player.action_animation.emit(ab.animation, anim_start, 0.08, speed)
 
 
 func _update_action(delta: float) -> void:
@@ -803,11 +824,12 @@ func _begin_charge() -> void:
 	_charging = ab
 	_charge = 0.0
 	_enter_combat()
+	# On the upper body: the legs keep walking (or standing) underneath.
 	if is_ranged():
-		player.action_animation.emit(_aim_animation(), 0.0, 0.12, 1.0)
+		character.play_upper(_aim_animation(), 0.0, 1.0, -1.0, 0.12)
 		Combat.play_sound(player, DRAW_SOUND, -6.0)
 	else:
-		player.action_animation.emit(heavy.animation, 0.0, 0.1, 1.0)
+		character.play_upper(heavy.animation, 0.0, 1.0, ab.windup_time, 0.1)
 
 
 func _update_charge(delta: float) -> void:
@@ -817,8 +839,6 @@ func _update_charge(delta: float) -> void:
 		player.face_toward(aim_point, delta)
 	elif targeting.has_target():
 		player.face_toward(targeting.target.global_position, delta)
-	if not is_ranged() and character.current_animation() == ab.animation and character.animation_position() >= ab.windup_time:
-		character.set_speed(0.0)  # hold the wind-up
 
 
 func _charge_fraction() -> float:
@@ -831,6 +851,8 @@ func _release_charge() -> void:
 	var ab := _charging
 	var k := _charge_fraction()
 	character.set_speed(1.0)
+	if not is_ranged():
+		character.stop_upper(0.06)  # the swing plays on the whole body
 	_charging = null
 	player.end_action()
 	if is_ranged():
@@ -844,6 +866,7 @@ func _cancel_charge() -> void:
 		return
 	_charging = null
 	character.set_speed(1.0)
+	character.stop_upper()
 	player.end_action()
 
 
@@ -1032,7 +1055,7 @@ func is_loaded() -> bool:
 # --- Aiming (block with a ranged weapon) --------------------------------------------
 
 func _update_aim(delta: float) -> void:
-	var want := is_ranged() and not GameSettings.menu_open and Input.is_action_pressed("block")
+	var want := is_ranged() and not GameSettings.menu_open and _block_held()
 	if want != _aiming:
 		_set_aiming(want)
 	if not _aiming:
@@ -1045,7 +1068,7 @@ func _update_aim(delta: float) -> void:
 	# Between shots, hold the aiming pose (walking slowly).
 	if not _aim_pose and _current == null and _charging == null and player.start_action(0.45):
 		_aim_pose = true
-		player.action_animation.emit(_aim_animation(), 0.0, 0.12, 1.0)
+		character.play_upper(_aim_animation(), 0.0, 1.0, -1.0, 0.12)
 
 
 func _set_aiming(on: bool) -> void:
@@ -1116,7 +1139,7 @@ func _start_block() -> void:
 
 
 func _update_block(delta: float) -> void:
-	if not Input.is_action_pressed("block") or GameSettings.menu_open or is_ranged():
+	if not _block_held() or GameSettings.menu_open or is_ranged():
 		_end_block()
 		return
 	_enter_combat()

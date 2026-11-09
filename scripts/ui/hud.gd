@@ -111,9 +111,24 @@ func _on_fatigue_changed(current: float, maximum: float) -> void:
 func _set_bar(current: float, maximum: float, bar: ProgressBar) -> void:
 	bar.max_value = maximum
 	bar.value = current
+	if bar == health_bar:
+		_tint_fill(bar, HealthColors.of(current / maxf(maximum, 1.0)))
 	var l: Label = _bar_values.get(bar)
 	if l:
 		l.text = "%d / %d" % [ceili(current), roundi(maximum)]
+
+
+## Recolours a bar's fill (and its lighter rim).
+func _tint_fill(bar: ProgressBar, col: Color) -> void:
+	var fill := bar.get_theme_stylebox("fill") as StyleBoxFlat
+	if fill == null:
+		return
+	if not bar.has_meta("own_fill"):
+		fill = fill.duplicate()
+		bar.add_theme_stylebox_override("fill", fill)
+		bar.set_meta("own_fill", true)
+	fill.bg_color = col
+	fill.border_color = col.lightened(0.4)
 
 
 ## Top left: name and level over rounded, framed health / mana / stamina bars with values.
@@ -295,6 +310,7 @@ func _build_combat_hud() -> void:
 func _build_hotbar() -> void:
 	add_child(GameLog.new())
 	_hotbar = Hotbar.new(_inventory, _combat)
+	stamina_bar.visible = false  # stamina is box 11 on the hotbar
 	_hotbar.anchor_left = 0.5
 	_hotbar.anchor_right = 0.5
 	_hotbar.anchor_top = 1.0
@@ -479,4 +495,5 @@ func _process_party(delta: float) -> void:
 			_party_rows[node] = [name_label, bar]
 		var bar := _party_rows[node][1] as ProgressBar
 		bar.value = s.health / maxf(s.max_health, 1.0) * 100.0
+		_tint_fill(bar, HealthColors.of(s.health / maxf(s.max_health, 1.0)))
 		(_party_rows[node][0] as Label).text = s.display_name + ("  (down)" if s.is_dead() else "")

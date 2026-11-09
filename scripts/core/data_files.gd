@@ -36,7 +36,7 @@ const REGION_FIELDS := [
 	"region_name", "fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
 	"shadow_strength", "saturation", "contrast", "brightness", "god_rays", "grass_density", "grass_base",
-	"grass_tip", "ambient_loop", "ambient_volume_db", "wind_volume_db",
+	"grass_tip", "grass_height", "grass_ground_match", "ambient_loop", "ambient_volume_db", "wind_volume_db",
 ]
 
 

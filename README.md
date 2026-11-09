@@ -14,20 +14,20 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 | Action | Controller | Keyboard and mouse |
 | --- | --- | --- |
 | Attack: tap = quick, hold = charge (heavy blow, bow draw) | RT | Left mouse |
-| Block (melee) / aim (ranged), hold | LT | F |
+| Block (melee) / aim (ranged), hold | LT | Right mouse |
 | Swap primary / secondary weapon | Y | R |
 | Primary / secondary weapon | (Y) | 1 / 2 |
 | Hotbar boxes 3–10 (spells, potions…) | Hold D-pad up: ability wheel | 3–9, 0 (or keypad) |
 | Jump / talk | A | Space |
-| Dodge (with a direction; none = back-hop) | B | Alt |
-| Sprint (controller: tap to toggle) | X | Shift (hold) |
+| Dodge / roll (with a direction; none = back-hop) | B | Double-tap W/A/S/D (or Alt + direction) |
+| Sprint (controller: tap to toggle); stamina is hotbar box 11 | X | Shift (hold) |
 | Character and backpack | Back | I or B |
 | Spellbook | | P |
 | Danger mode (lets you attack friendly NPCs) | | K |
 | Target + lock on (the enemy nearest the middle of the screen) / clear | RB | Tab |
 | Cycle targets | LB | Shift+Tab |
-| Lock on (toggle) | R3 | Middle mouse |
-| Camera | Right stick | Hold right mouse, wheel zoom |
+| Lock on (toggle) | R3 | Q |
+| Camera | Right stick | Hold middle mouse, wheel zoom |
 
 Settings → **How to play** lists the controls as currently bound.
 
@@ -45,9 +45,11 @@ Settings → **How to play** lists the controls as currently bound.
 
 **Game log and chat:** bottom left. Experience, levels, loot, gold, deaths and who joined show there and fade after a while. Press Enter to chat (to everyone in co-op), Enter again to send, Esc to cancel.
 
-**Spells and the hotbar:** spells are cast from the hotbar (boxes 3–10, keys 3–0): the cast bar fills, then it goes off. Moving cancels a cast, light hits knock the bar back, heavy hits interrupt it. Potions and other usable items go on the hotbar too (drag them from the backpack); drag spells from the spellbook (P). Drag boxes to rearrange them, or off the bar to clear them. On a controller, hold D-pad up for the ability wheel: point the right stick at a box and let go (you can keep walking). Locked on, the camera keeps the target in view and moving sideways circles it. Stamina is only used by sprinting. The test level and the overworld each have a training dummy and two bandits.
+**Spells and the hotbar:** spells are cast from the hotbar (boxes 3–10, keys 3–0): the cast bar fills, then it goes off. Moving cancels a cast, light hits knock the bar back, heavy hits interrupt it. Potions and other usable items go on the hotbar too (drag them from the backpack); drag spells from the spellbook (P). Drag boxes to rearrange them, or off the bar to clear them. On a controller, hold D-pad up for the ability wheel: point the right stick at a box and let go (you can keep walking). Locked on, the camera keeps the target in view and moving sideways circles it. Stamina is only used by sprinting; it's box 11 at the end of the hotbar (labelled with the sprint key), which empties while you sprint and fills back up. The experience bar above shows your level on the left and the next on the right. Health bars for you and your allies go from green through yellow and orange to red. The test level and the overworld each have a training dummy and two bandits.
 
-**Traversal:** jump at a ledge to grab it (A/D shimmy, W or Space pull up, S or Ctrl drop) · jump at a climbable wall, or walk into a ladder, then W/S to climb (Space jumps off, Ctrl lets go) · swim in deep water, Space at an edge climbs out. The gray-box level (`scenes/levels/test_level.tscn`) has a test spot for each. · hold right mouse to look · mouse wheel zoom.
+**Moving while fighting:** drawing a bow, aiming, firing ranged weapons and holding a heavy blow play on the upper body only, so the legs keep walking (or sidestepping when locked on) underneath. A held heavy blow waits on the first frame of its swing (**Wind-up hold** on the ability). Sidestepping right is the left sidestep mirrored (Clips → "Another clip, mirrored left to right"). Double-tap a movement key to roll that way (Player tab → **Double-tap to roll within**; locked on you roll too, unless **Locked on: hop instead of roll** is 1). Targeting only picks enemies on screen and in front of you, within the weapon's **Targeting range** (Weapon Types tab; e.g. 12 m for swords, 35 m for bows).
+
+**Traversal:** jump at a ledge to grab it (A/D shimmy, W or Space pull up, S or Ctrl drop) · jump at a climbable wall, or walk into a ladder, then W/S to climb (Space jumps off, Ctrl lets go) · swim in deep water, Space at an edge climbs out. The gray-box level (`scenes/levels/test_level.tscn`) has a test spot for each. · hold the middle mouse button to look · mouse wheel zoom.
 
 ## Folder layout
 
@@ -117,6 +119,10 @@ Sounds live in `assets/audio/` (sources and licences in `assets/audio/CREDITS.md
 - **Grass** grows by itself wherever the terrain is painted grass (thicker where the paint is stronger), never on cliffs, steep slopes or under water. Each region sets how thick it is and its root/tip colours (Database → Regions → Grass). Players can lower it in Settings → Graphics. It moves with the wind and parts around the player.
 - **God rays:** light shafts through the air, strength per region (Database → Regions → Light and colour); Settings → Graphics can turn them off.
 - **Water:** darker near the shore with a foam edge; ripples around you when wading or swimming, and a splash when you land in it.
+
+## Grass
+
+Grass is tall clumps (crossed picture cards in the style of Saturn's tall grass) grown where the terrain is painted grass. Each clump takes its colour from the ground texture under it and is lit and shadowed like the ground. The picture is `assets/textures/grass_clump.png` (grey, light at the tips; `tools/art/make_grass.py` makes it, or paint your own). Per region (Database → Regions → Grass): clumps per m², height, how much it takes the ground's colour, and the root/tip colours.
 
 ## Database editor
 

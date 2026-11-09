@@ -272,7 +272,7 @@ const TABS = {
 				{ key: "cast_time", label: "Cast time (s)", type: "number", help: "Spells: the cast bar has to fill before it goes off. 0 = instant." },
 			]],
 			["Charging (hold the attack button)", [
-				{ key: "windup_time", label: "Wind-up hold (s)", type: "number", help: "Heavy blows: where the clip pauses while the button is held." },
+				{ key: "windup_time", label: "Wind-up hold (s)", type: "number", help: "Heavy blows: where the clip holds (upper body only; the legs keep walking) while the button is held, and where the swing starts. 0 = the first frame." },
 				{ key: "charge_time", label: "Charge time (s)", type: "number", help: "Melee / bow: to full charge. Spells: per level." },
 				{ key: "charge_power", label: "Extra power at full charge", type: "number", help: "1 = double damage fully charged." },
 				{ key: "max_charge_level", label: "Highest spell level", type: "int", help: "Spells only. Skill trees will raise this." },
@@ -415,6 +415,12 @@ const TABS = {
 				{ key: "stats.stamina_regen", label: "Stamina per second", type: "number" },
 				{ key: "stats.stamina_regen_delay", label: "Stamina regen delay (s)", type: "number" },
 			]],
+			["HUD: health bar colours (players and allies)", [
+				{ key: "hud.health_full", label: "Healthy (above 60%)", type: "color" },
+				{ key: "hud.health_half", label: "Hurt (35%)", type: "color" },
+				{ key: "hud.health_low", label: "Badly hurt (15%)", type: "color" },
+				{ key: "hud.health_critical", label: "Nearly dead", type: "color" },
+			]],
 			["Movement", [
 				{ key: "movement.walk_speed", label: "Walk speed (m/s)", type: "number" },
 				{ key: "movement.run_speed", label: "Run speed (m/s)", type: "number" },
@@ -424,6 +430,8 @@ const TABS = {
 				{ key: "movement.swim_speed", label: "Swim speed (m/s)", type: "number" },
 				{ key: "movement.swim_sprint_speed", label: "Sprint-swim speed (m/s)", type: "number" },
 				{ key: "movement.swim_sprint_stamina_cost", label: "Sprint-swim stamina per second", type: "number" },
+				{ key: "movement.double_tap_time", label: "Double-tap to roll within (s)", type: "number", help: "Tap a movement key twice this quickly to roll that way. 0 = off (the dodge key still works)." },
+				{ key: "movement.lock_on_hops", label: "Locked on: hop instead of roll (1 = yes)", type: "number", help: "0 = always roll in the direction pressed; 1 = side/back hops while locked on." },
 			]],
 			["Combat feel", [
 				{ key: "combat.tap_time", label: "Tap vs hold (s)", type: "number", help: "Holding attack longer than this starts charging." },
@@ -612,7 +620,7 @@ const TABS = {
 		groups: [
 			["Clip", [
 				{ key: "name", label: "Name", type: "text", help: "For a file: the FBX's name (e.g. running for running.fbx). FBX files without an entry here still come in, playing once." },
-				{ key: "kind", label: "Made from", type: "select", options: [["file", "Its own FBX file"], ["cut", "A piece of another clip"], ["reversed", "Another clip, backwards"]] },
+				{ key: "kind", label: "Made from", type: "select", options: [["file", "Its own FBX file"], ["cut", "A piece of another clip"], ["reversed", "Another clip, backwards"], ["mirrored", "Another clip, mirrored left to right"]] },
 				{ key: "note", label: "Note", type: "text", wide: true },
 			]],
 			["Piece of another clip", [
@@ -623,6 +631,9 @@ const TABS = {
 			["Backwards", [
 				{ key: "from", label: "From clip", type: "anim" },
 			], e => e.kind === "reversed"],
+			["Mirrored", [
+				{ key: "from", label: "From clip", type: "anim", help: "Left and right swapped (a sidestep left becomes one to the right)." },
+			], e => e.kind === "mirrored"],
 			["Playback", [
 				{ key: "loop", label: "Loops", type: "bool" },
 				{ key: "in_place", label: "In place (looping moves: hips don't drift)", type: "bool" },
@@ -637,7 +648,7 @@ const TABS = {
 		title: "Weapon Types", file: "weapon_types", listKey: "types", idKey: "id", nameKey: "name",
 		blank: () => ({
 			id: "new_type", name: "New Type", category: "melee", hands: 1, combo: ["slash_1", "slash_2", "slash_3"], heavy: "heavy_strike",
-			shot: "", speed: 1, power: 1, draw: false, reload: 0, swap_sound: "", fire_sound: "",
+			shot: "", speed: 1, power: 1, draw: false, reload: 0, target_range: 12, swap_sound: "", fire_sound: "",
 		}),
 		groups: [
 			["General", [
@@ -646,6 +657,7 @@ const TABS = {
 				{ key: "category", label: "Kind", type: "select", options: [["melee", "Melee"], ["ranged", "Ranged"]] },
 				{ key: "hands", label: "Hands", type: "int", help: "2 = no shield with it." },
 				{ key: "speed", label: "Speed", type: "number", help: "Swings, shots and reloads: 1 = normal, 1.35 = 35% faster." },
+				{ key: "target_range", label: "Targeting range (m)", type: "number", help: "Target / lock-on only picks enemies this close (and only ones on screen, in front of you)." },
 				{ key: "power", label: "Damage", type: "number", help: "Multiplies its hits: 1.5 = 50% harder." },
 			]],
 			["Melee", [
@@ -728,6 +740,14 @@ const TABS = {
 				{ key: "sun_height", label: "Sun height at noon (°)", type: "number" },
 				{ key: "night_brightness", label: "Night brightness (0–1)", type: "number", help: "How much ambient light is left at night." },
 			]],
+			["Ambient occlusion (Settings → Graphics turns it on/off)", [
+				{ key: "ambient_occlusion.intensity", label: "Strength", type: "number", help: "How dark the contact shadows get (Godot default 2)." },
+				{ key: "ambient_occlusion.radius", label: "Reach (m)", type: "number", help: "How far from a surface it darkens." },
+				{ key: "ambient_occlusion.power", label: "Contrast", type: "number" },
+				{ key: "ambient_occlusion.detail", label: "Small detail (0–5)", type: "number" },
+				{ key: "ambient_occlusion.horizon", label: "Horizon", type: "number" },
+				{ key: "ambient_occlusion.light_affect", label: "In sunlight too (0–1)", type: "number", help: "0 = only shaded areas darken; 1 = sunlit ones as much." },
+			]],
 			["Wind", [
 				{ key: "wind.calm", label: "Calmest", type: "number", help: "0 = still, 1 = normal breeze." },
 				{ key: "wind.gusty", label: "Windiest", type: "number", help: "2 = very windy." },
@@ -742,7 +762,7 @@ const TABS = {
 			fog_color: "#b8c7d9", fog_density: 0.004, fog_sky_affect: 0.5, sky_top: "#3d73c7", sky_horizon: "#b3cce6",
 			sky_ground: "#525c66", cloud_color: "#ffffff", cloud_shade: "#b3bdd1", cloud_coverage: 0.45,
 			sun_color: "#fff2d9", sun_energy: 1.1, ambient_energy: 0.6, shadow_strength: 0.6, saturation: 1.2,
-			contrast: 1.05, brightness: 1, god_rays: 0.35, grass_density: 6, grass_base: "#2a5c1f", grass_tip: "#8cc74d",
+			contrast: 1.05, brightness: 1, god_rays: 0.35, grass_density: 1.6, grass_height: 0.8, grass_ground_match: 0.85, grass_base: "#2a5c1f", grass_tip: "#8cc74d",
 			ambient_loop: "", ambient_volume_db: -8, wind_volume_db: -20,
 		}),
 		groups: [
@@ -776,7 +796,9 @@ const TABS = {
 				{ key: "god_rays", label: "God rays (0–1)", type: "number", help: "Light shafts through the air." },
 			]],
 			["Grass", [
-				{ key: "grass_density", label: "Clumps per m²", type: "number", help: "Where the ground is painted grass. 0 = none." },
+				{ key: "grass_density", label: "Clumps per m²", type: "number", help: "Where the ground is painted grass. 0 = none. Each clump is about 0.9 m across." },
+				{ key: "grass_height", label: "Grass height (m)", type: "number", help: "Before each clump's own random size (0.7–1.3×)." },
+				{ key: "grass_ground_match", label: "Takes the ground's colour (0–1)", type: "number", help: "1 = the colour of the ground texture under each clump; 0 = the colours below." },
 				{ key: "grass_base", label: "Colour at the roots", type: "color" },
 				{ key: "grass_tip", label: "Colour at the tips", type: "color" },
 			]],
