@@ -43,6 +43,8 @@ const WATER_MASK := 8  # layer 4
 @export var double_tap_time := 0.3
 ## Locked on: dodge with the side/back hops instead of rolling (1 = on).
 @export var lock_on_hops := 0.0
+## 1 = any wall edge can be grabbed by jumping at it; 0 = only marked ones (see _marked).
+@export var grab_any_ledge := 0.0
 @export var roll_distance := 4.0
 ## Seconds the forward roll lasts before control returns.
 @export var roll_duration := 0.7
@@ -69,7 +71,10 @@ const WATER_MASK := 8  # layer 4
 
 @export_group("Climbing")
 ## Surfaces are climbable when their node is in the "climbable" group (jump onto them)
-## or the "ladder" group (walk into them).
+## or the "ladder" group (walk into them), or when the node (or a parent) is named with
+## _climb (wall climbing) / _ladder. Ledges can be hung from and shimmied along when the
+## node is in "grabbable"/"climbable" or named with _grab, _shimmy or _climb (Blender
+## object names, e.g. "cliff_grab-col"), unless grab_any_ledge is on.
 @export var wall_climb_speed := 1.0
 @export var ladder_speed := 1.2
 ## Distance from the feet origin to the wall while climbing. Ladders are measured from
@@ -117,6 +122,7 @@ var is_sprinting := false
 var speed_scale := 1.0
 var _dying := false
 var _going_home := false
+var _stuck_air := 0.0
 ## True when the character should keep facing a target (combat lock-on). Dodges
 ## then become left/right/back hops relative to the facing instead of turning to roll.
 var lock_facing := false
@@ -314,7 +320,16 @@ func _normal_movement(delta: float) -> void:
 	if _grab_cooldown <= 0.0 and direction.dot(_forward()) > 0.5 and _try_attach_surface(is_on_floor()):
 		return
 
-	if not is_on_floor():
+	# Wedged on steep rock (falling but not moving): jump still works, pushing off it.
+	_stuck_air = _stuck_air + delta if not is_on_floor() and get_real_velocity().length() < 0.3 else 0.0
+	if _stuck_air > 0.3 and _pressed("jump"):
+		var col := get_last_slide_collision()
+		var away := Vector3(col.get_normal().x, 0.0, col.get_normal().z) if col else -_forward()
+		velocity = away.normalized() * 3.0 + Vector3.UP * jump_velocity
+		_stuck_air = 0.0
+		_grab_cooldown = 0.5
+		jumped.emit()
+	elif not is_on_floor():
 		velocity.y -= gravity * delta
 		if velocity.y < 2.0 and _grab_cooldown <= 0.0:
 			var ledge := _probe_ledge(global_position, _forward())
@@ -542,11 +557,13 @@ func _dodge_offset(t: float) -> Vector3:
 
 ## Looks for a grabbable ledge in front of a body standing at `feet`. Returns
 ## {"edge": top edge point at the wall face, "normal": horizontal wall normal} or {}.
-func _probe_ledge(feet: Vector3, forward: Vector3) -> Dictionary:
+func _probe_ledge(feet: Vector3, forward: Vector3, any_edge := false) -> Dictionary:
 	var space := get_world_3d().direct_space_state
 	var chest := feet + Vector3.UP * 1.4
 	var wall := _ray(space, chest, chest + forward * 0.8)
 	if wall.is_empty() or absf(wall.normal.y) > 0.3:
+		return {}
+	if not any_edge and grab_any_ledge < 0.5 and not _marked(wall.collider as Node, "ledge"):
 		return {}
 	var normal: Vector3 = wall.normal
 	normal.y = 0.0
@@ -565,6 +582,26 @@ func _probe_ledge(feet: Vector3, forward: Vector3) -> Dictionary:
 	if not _ray(space, edge + normal * 0.1 + Vector3.UP * 0.05, edge + normal * 0.1 + Vector3.UP * 0.5).is_empty():
 		return {}
 	return {"edge": edge, "normal": normal}
+
+
+## Whether a surface is marked for a kind of climbing: "ledge" (hang / shimmy), "wall"
+## (climb up and down) or "ladder". By group or by name (the node or up to 3 parents).
+static func _marked(node: Node, kind: String) -> bool:
+	var groups: Array = {"ledge": ["grabbable", "climbable"], "wall": ["climbable"], "ladder": ["ladder"]}[kind]
+	var words: Array = {"ledge": ["_grab", "_shimmy", "_climb"], "wall": ["_climb"], "ladder": ["_ladder"]}[kind]
+	var walk := node
+	for i in 4:
+		if walk == null:
+			break
+		for g: String in groups:
+			if walk.is_in_group(g):
+				return true
+		var n := String(walk.name).to_lower()
+		for w: String in words:
+			if n.contains(w):
+				return true
+		walk = walk.get_parent()
+	return false
 
 
 func _ray(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3) -> Dictionary:
@@ -713,8 +750,8 @@ func _try_attach_surface(on_ground: bool) -> bool:
 	if hit.is_empty() or absf(hit.normal.y) > 0.3:
 		return false
 	var node := hit.collider as Node
-	var ladder := node.is_in_group("ladder")
-	if not ladder and not node.is_in_group("climbable"):
+	var ladder := _marked(node, "ladder")
+	if not ladder and not _marked(node, "wall"):
 		return false
 	if on_ground and not ladder:
 		return false  # walls need a jump; ladders you just walk into
@@ -768,7 +805,7 @@ func _climb_movement(delta: float) -> void:
 	# Stay stuck to the surface; let go if it ends.
 	var chest := global_position + Vector3.UP * (feet + 0.8)
 	var hit := _ray(space, chest, chest - _surface_normal * 1.2)
-	if hit.is_empty() or not ((hit.collider as Node).is_in_group("ladder" if ladder else "climbable")):
+	if hit.is_empty() or not _marked(hit.collider as Node, "ladder" if ladder else "wall"):
 		_let_go()
 		return
 	_surface_normal = Vector3(hit.normal.x, 0, hit.normal.z).normalized()
@@ -884,7 +921,7 @@ func _swim_movement(delta: float) -> void:
 	# Climb out at an edge.
 	if _pressed("jump"):
 		var feet := Vector3(global_position.x, _water.surface_height() - tread_depth, global_position.z)
-		var ledge := _probe_ledge(feet, _forward())
+		var ledge := _probe_ledge(feet, _forward(), true)
 		if not ledge.is_empty():
 			global_position = feet
 			_start_hang(ledge)

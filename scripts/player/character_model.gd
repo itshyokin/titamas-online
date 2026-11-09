@@ -309,12 +309,27 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 				nodes.append(node)
 	if item.has("tint"):
 		_tint(nodes, item.tint)
-	var hides: Array = item.get("hides", [])
+	var hides: Array = _hides_of(item)
 	for part in hides:
 		_hidden_parts[part] = int(_hidden_parts.get(part, 0)) + 1
 	_worn[tag] = {"nodes": nodes, "hides": hides, "item": item, "with_rigid": with_rigid}
 	_update_hidden_parts()
 	return nodes
+
+
+## What an item hides: its "hides" list plus its head clipping ("head_clip"):
+##   "none"  nothing extra (hats that sit clear of the hair)
+##   "hat"   the hair's hat-clip parts (meshes with "hat_clip" in their name, from faces
+##           given a "hat_clip" material in Blender); hair without any is hidden whole
+##   "total" the whole head: head, face, eyes, hair and facial hair (masked helmets)
+static func _hides_of(item: Dictionary) -> Array:
+	var hides: Array = (item.get("hides", []) as Array).duplicate()
+	match String(item.get("head_clip", "")):
+		"hat":
+			hides.append("hat_clip")
+		"total":
+			hides.append_array(["head", "face", "eyes", "hair", "facial_hair"])
+	return hides
 
 
 func take_off(tag: String) -> void:
@@ -374,11 +389,26 @@ func _update_hidden_parts() -> void:
 		if child is MeshInstance3D and child.owner != null:  # the body's own parts
 			var part := String(child.name).trim_prefix(prefix)
 			(child as MeshInstance3D).visible = int(_hidden_parts.get(part, 0)) <= 0
-	# Helmets can hide the hair (its "hides" lists "hair").
-	if _worn.has("hair"):
-		for node in _worn.hair.nodes:
-			if is_instance_valid(node):
-				(node as Node3D).visible = int(_hidden_parts.get("hair", 0)) <= 0
+	# Helmets can hide the hair, its hat-clip parts, or the whole head (see _hides_of).
+	for tag: String in ["hair", "facial_hair", "face", "head"]:
+		if not _worn.has(tag):
+			continue
+		var nodes: Array = _worn[tag].nodes
+		# A head variant hides the body's own head itself: only something else hides it.
+		var own := 1 if tag == "head" and "head" in (_worn.head.hides as Array) else 0
+		var whole := int(_hidden_parts.get(tag, 0)) > own
+		var has_clip := nodes.any(func(n: Variant) -> bool: return is_instance_valid(n) and String((n as Node).name).contains("hat_clip"))
+		var clip := tag == "hair" and int(_hidden_parts.get("hat_clip", 0)) > 0
+		for node in nodes:
+			if not is_instance_valid(node):
+				continue
+			var hide := whole
+			if clip:
+				hide = hide or not has_clip or String((node as Node).name).contains("hat_clip")
+			(node as Node3D).visible = not hide
+	for eye in _eye_nodes:
+		if is_instance_valid(eye):
+			(eye as Node3D).visible = int(_hidden_parts.get("eyes", 0)) <= 0
 
 
 ## Where a bone sits in the rest pose, in this model's space.
@@ -638,6 +668,7 @@ func _build_eyes() -> void:
 		if attach:
 			attach.name = "Eye%s" % ("L" if side > 0.0 else "R")
 			_eye_nodes.append(attach)
+	_update_hidden_parts()
 
 
 ## Front of the face (smallest z) at (x, y): where a line along z meets the head mesh's

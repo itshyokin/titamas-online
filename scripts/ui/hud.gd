@@ -1,6 +1,7 @@
+class_name HUD
 extends CanvasLayer
 ## HUD: the player frame (name, level, health, mana and stamina), the fatigue bar,
-## short centre-screen messages, and the combat parts: target frame, cast bar, crosshair
+## short messages above the hotbar (HUD.notify), and the combat parts: target frame, cast bar, crosshair
 ## and the hotbar with the experience bar (built in code below). Also builds the
 ## character window, spellbook, ability wheel and settings menu.
 
@@ -50,6 +51,16 @@ var _pickups: VBoxContainer
 
 
 func _ready() -> void:
+	add_to_group("hud")
+	# Messages (not dialogue): bottom centre, just above the hotbar.
+	message.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	message.offset_left = -360.0
+	message.offset_right = 360.0
+	message.offset_top = -200.0
+	message.offset_bottom = -166.0
+	message.add_theme_font_size_override("font_size", 21)
+	message.add_theme_constant_override("outline_size", 6)
+	message.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	_settings = SettingsMenu.new()
 	add_child(_settings)
 	# Time of day, top right beside the settings gear (only when the world has a day cycle).
@@ -90,10 +101,19 @@ func _ready() -> void:
 				_build_hotbar()
 
 
-func show_message(text: String, seconds := 3.0) -> void:
+## A short message for the player (not dialogue), shown above the hotbar. Static so
+## anything can call it: HUD.notify(node, "Backpack full").
+static func notify(from: Node, text: String, color := Color(1, 0.95, 0.85), seconds := 2.0) -> void:
+	var hud := from.get_tree().get_first_node_in_group("hud") if from and from.is_inside_tree() else null
+	if hud:
+		hud.call("show_message", text, seconds, color)
+
+
+func show_message(text: String, seconds := 3.0, color := Color(1, 0.95, 0.85)) -> void:
 	if text.is_empty():
 		return
 	message.text = text
+	message.add_theme_color_override("font_color", color)
 	if _message_tween:
 		_message_tween.kill()
 	_message_tween = create_tween()

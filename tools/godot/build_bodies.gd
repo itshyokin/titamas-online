@@ -348,7 +348,9 @@ func _save_piece(file: String, specs: Array) -> void:
 			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, builder.surface())
 			mesh.surface_set_material(0, _material(s.material))
 			var part := MeshInstance3D.new()
-			part.name = "%s_%d" % [file, count]
+			# Faces given a "hat_clip" material in Blender (hair under a hat): their own
+			# mesh, hidden by hats with Head clipping = Hat clip.
+			part.name = "%s_%d%s" % [file, count, "_hat_clip" if s.material_name.contains("hat_clip") else ""]
 			part.mesh = mesh
 			part.skin = _skin
 			root.add_child(part)

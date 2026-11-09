@@ -273,9 +273,7 @@
 			"model": "builtin:helm",
 			"fitted_masc": "",
 			"fitted_femme": "",
-			"hides": [
-				"hair"
-			],
+			"hides": [],
 			"fit": {
 				"femme": [
 					{
@@ -315,7 +313,8 @@
 			"kind": "armor",
 			"slot": "head",
 			"icon": "helm",
-			"icon_color": "#9aa0aa"
+			"icon_color": "#9aa0aa",
+			"head_clip": "hat"
 		},
 		{
 			"description": "",
@@ -650,7 +649,8 @@
 			"kind": "armor",
 			"slot": "head",
 			"icon": "helm",
-			"icon_color": "#7a7f88"
+			"icon_color": "#7a7f88",
+			"head_clip": "hat"
 		},
 		{
 			"description": "Restores 40 health at once.",

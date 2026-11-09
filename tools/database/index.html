@@ -360,6 +360,7 @@ const TABS = {
 				{ key: "fitted_masc", label: "Fitted model (masc)", type: "text", help: "Skinned to the body rig in Blender (res://….glb or .scn)." },
 				{ key: "fitted_femme", label: "Fitted model (femme)", type: "text" },
 				{ key: "hides", label: "Hides these body parts", type: "parts", wide: true },
+				{ key: "head_clip", label: "Head clipping (hats / helmets)", type: "select", options: [["", "None (sits clear of the hair)"], ["hat", "Hat clip: hide the hair's hat-clip parts"], ["total", "Total clip: hide the whole head (masked helmets)"]], help: "Hat clip hides the parts of a hair style given a \"hat_clip\" material in Blender (hair without one is hidden whole). Total clip hides head, face, eyes, hair and beard." },
 				{ key: "fit", label: "Fit", type: "fitnote", wide: true },
 			], e => e.slot !== ""],
 		],
@@ -450,6 +451,7 @@ const TABS = {
 				{ key: "movement.swim_sprint_speed", label: "Sprint-swim speed (m/s)", type: "number" },
 				{ key: "movement.swim_sprint_stamina_cost", label: "Sprint-swim stamina per second", type: "number" },
 				{ key: "movement.double_tap_time", label: "Double-tap to roll within (s)", type: "number", help: "Tap a movement key twice this quickly to roll that way. 0 = off (the dodge key still works)." },
+				{ key: "movement.grab_any_ledge", label: "Grab any ledge (1 = yes)", type: "number", help: "0 = only edges marked in the level: Blender objects named with _grab, _shimmy or _climb (or in group grabbable/climbable). Climbing out of water works on any edge." },
 				{ key: "movement.lock_on_hops", label: "Locked on: hop instead of roll (1 = yes)", type: "number", help: "0 = always roll in the direction pressed; 1 = side/back hops while locked on." },
 			]],
 			["Combat feel", [

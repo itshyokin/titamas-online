@@ -515,7 +515,7 @@ func activate(slot: ItemSlot) -> void:
 				inventory.use_at(slot.key)
 		"equip":
 			if not inventory.unequip(slot.key):
-				FloatingText.spawn(inventory.get_parent(), "Backpack full", Color(1, 0.7, 0.6), 0.8)
+				HUD.notify(self, "Backpack full", Color(1, 0.7, 0.6))
 	refresh()
 
 
@@ -525,10 +525,10 @@ func add_to_hotbar(slot: ItemSlot) -> void:
 	if id.is_empty() or not inventory.is_usable(id):
 		return
 	if inventory.hotbar.has("item:" + id):
-		FloatingText.spawn(inventory.get_parent(), "Already on the hotbar", Color(1, 0.9, 0.7), 0.7)
+		HUD.notify(self, "Already on the hotbar", Color(1, 0.9, 0.7))
 		return
 	if not inventory.hotbar.has(""):
-		FloatingText.spawn(inventory.get_parent(), "Hotbar full", Color(1, 0.7, 0.6), 0.7)
+		HUD.notify(self, "Hotbar full", Color(1, 0.7, 0.6))
 		return
 	inventory.add_to_hotbar("item:" + id)
 

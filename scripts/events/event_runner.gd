@@ -294,8 +294,7 @@ func _item_text(id: String, count: int) -> String:
 
 func _announce(text: String, color: Color) -> void:
 	GameLog.post(text, color)
-	if player:
-		FloatingText.spawn(player, text, color, 0.8)
+	HUD.notify(self, text, color, 2.5)
 
 
 func _format(text: String) -> String:

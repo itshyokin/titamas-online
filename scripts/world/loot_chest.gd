@@ -112,7 +112,7 @@ func talk(player: Node3D) -> void:
 		if left < count:
 			names.append(String(Database.item(id).get("name", id)) + ((" x%d" % (count - left)) if count - left > 1 else ""))
 		if left > 0:
-			FloatingText.spawn(player, "Backpack full", Color(1, 0.7, 0.6), 0.8)
+			HUD.notify(self, "Backpack full", Color(1, 0.7, 0.6))
 	if gold > 0:
 		inventory.add_gold(gold)
 		names.append("%d gold" % gold)

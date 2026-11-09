@@ -176,13 +176,34 @@ static func play_sound(at: Node3D, stream: AudioStream, volume_db := 0.0, pitch 
 	p.play()
 
 
-## Floating damage/heal numbers above a combatant, driven by its Stats signals.
+## Floating damage/heal numbers above a combatant, driven by its Stats signals. Hits of a
+## point or more show at once; trickles (fatigue, regeneration, heal-over-time per frame)
+## are added up and shown as one number about once a second, never as "0"s.
 static func show_numbers(node: Node3D) -> void:
 	var s := stats_of(node)
 	if s == null:
 		return
 	s.damaged.connect(func(amount: float, _source: Node, crit: bool) -> void:
 		var color := Color(1.0, 0.85, 0.3) if s.team == Stats.Team.ENEMIES else Color(1.0, 0.3, 0.25)
-		FloatingText.spawn(node, ("%d!" % amount) if crit else str(int(amount)), color, 1.4 if crit else 1.0))
+		if amount >= 1.0:
+			FloatingText.spawn(node, ("%d!" % amount) if crit else str(int(round(amount))), color, 1.4 if crit else 1.0)
+		else:
+			_trickle(node, "dmg", amount, color, "%d"))
 	s.healed.connect(func(amount: float) -> void:
-		FloatingText.spawn(node, "+%d" % int(round(amount)), Color(0.45, 1.0, 0.45), 0.9))
+		if amount >= 1.0:
+			FloatingText.spawn(node, "+%d" % int(round(amount)), Color(0.45, 1.0, 0.45), 0.9)
+		else:
+			_trickle(node, "heal", amount, Color(0.45, 1.0, 0.45), "+%d"))
+
+
+## Adds a small amount to a running total on the node; shows it once it's at least 1 and
+## a second has passed since the last one.
+static func _trickle(node: Node3D, kind: String, amount: float, color: Color, fmt: String) -> void:
+	var key := "_trickle_" + kind
+	var total := float(node.get_meta(key, 0.0)) + amount
+	var now := Time.get_ticks_msec()
+	if total >= 1.0 and now - int(node.get_meta(key + "_at", 0)) >= 1000:
+		FloatingText.spawn(node, fmt % int(total), color, 0.85)
+		total -= floorf(total)
+		node.set_meta(key + "_at", now)
+	node.set_meta(key, total)

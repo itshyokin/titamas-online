@@ -17,7 +17,8 @@
 		"swim_sprint_speed": 3.8,
 		"swim_sprint_stamina_cost": 18.0,
 		"double_tap_time": 0.3,
-		"lock_on_hops": 0.0
+		"lock_on_hops": 0.0,
+		"grab_any_ledge": 0.0
 	},
 	"combat": {
 		"tap_time": 0.22,

@@ -188,7 +188,7 @@ func take_item(inv: Inventory, i: int) -> bool:
 	var entry: Array = items[i]
 	var rest := inv.add_item(entry[0], entry[1])
 	if rest >= int(entry[1]):
-		FloatingText.spawn(inv.get_parent(), "Backpack full", Color(1.0, 0.6, 0.5), 0.8)
+		HUD.notify(inv, "Backpack full", Color(1.0, 0.6, 0.5))
 		return false
 	Combat.play_sound(self, PICKUP_SOUND, -6.0)
 	if rest > 0:

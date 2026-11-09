@@ -1,6 +1,11 @@
 class_name DialogueBox
 extends CanvasLayer
 ## The talk window: speaker's name and title, then their lines one at a time, typed out.
+## Where it shows:
+##   - someone (or something) speaking: a speech bubble over their head, following them;
+##   - narration (no speaker): at the bottom, just above the hotbar;
+##   - choices (accept / decline a quest...): the question and its buttons move to the
+##     upper left of the screen.
 ## Interact, Jump, Attack, Enter or a click shows the whole line, then the next; Esc or
 ## B closes. Gameplay input is paused while it's open.
 ##
@@ -12,6 +17,11 @@ extends CanvasLayer
 ## {they} {them} {their} {theirs} {themself} (he/him/his..., she/her/hers..., they/them...).
 
 const CHARS_PER_SECOND := 45.0
+const BUBBLE_WIDTH := 460.0
+## Narration sits this far above the bottom of the screen (clear of the hotbar).
+const NARRATION_BOTTOM := 150.0
+## Choices go to the upper left, below the player frame.
+const CHOICES_AT := Vector2(18, 110)
 
 ## When the last conversation closed (msec), so the button press that closed it doesn't
 ## start a new one or make the player jump.
@@ -30,6 +40,9 @@ var _choice_row: HBoxContainer
 var _choosing := false
 var _replying := false
 var _from: Node
+var _panel: PanelContainer
+var _tail: Polygon2D
+var _anchor: Node3D  # the speaker the bubble floats over (null = narration)
 
 
 static func open(from: Node, speaker: String, title: String, lines: Array, on_done: Callable, choices: Array = []) -> DialogueBox:
@@ -41,6 +54,7 @@ static func open(from: Node, speaker: String, title: String, lines: Array, on_do
 	from.get_tree().root.add_child(box)
 	box._name.text = speaker + ("  —  " + title if title != "" else "")
 	box._name.visible = speaker != ""
+	box._anchor = DialogueBox._anchor_of(from) if speaker != "" else null
 	if box._lines.is_empty():
 		# Just choices (an event's choice with no text before it).
 		box._lines = [""]
@@ -50,6 +64,17 @@ static func open(from: Node, speaker: String, title: String, lines: Array, on_do
 	else:
 		box._show_line()
 	return box
+
+
+## The node a speech bubble should float over: the speaking NPC / object, or for an
+## event, its model (or the event itself).
+static func _anchor_of(from: Node) -> Node3D:
+	var node := from
+	if not node is Node3D and "source" in node:
+		node = node.get("source")
+	if node != null and "_visual" in node and node.get("_visual") is Node3D:
+		node = node.get("_visual")
+	return node as Node3D
 
 
 ## Swaps in the player's name and pronouns.
@@ -71,18 +96,21 @@ func _init() -> void:
 	layer = 18
 	var panel := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.08, 0.07, 0.11, 0.9)
+	sb.bg_color = Color(0.08, 0.07, 0.11, 0.92)
 	sb.border_color = Color(1.0, 0.82, 0.42).darkened(0.35)
 	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(6)
-	sb.set_content_margin_all(16)
+	sb.set_corner_radius_all(10)
+	sb.set_content_margin_all(14)
 	panel.add_theme_stylebox_override("panel", sb)
-	panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	panel.offset_left = -360
-	panel.offset_right = 360
-	panel.offset_top = -210
-	panel.offset_bottom = -60
+	panel.custom_minimum_size = Vector2(BUBBLE_WIDTH, 0)
+	panel.size = Vector2(BUBBLE_WIDTH, 0)
 	add_child(panel)
+	_panel = panel
+	# The bubble's tail, pointing down at the speaker.
+	_tail = Polygon2D.new()
+	_tail.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(12, 0), Vector2(0, 18)])
+	_tail.color = sb.bg_color
+	add_child(_tail)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	panel.add_child(v)
@@ -128,6 +156,7 @@ func _show_line() -> void:
 
 
 func _process(delta: float) -> void:
+	_place()
 	if _text.visible_characters >= 0:
 		_shown += delta * CHARS_PER_SECOND
 		_text.visible_characters = int(_shown)
@@ -156,6 +185,42 @@ func _input(event: InputEvent) -> void:
 		_show_choices()
 	else:
 		_finish()
+
+
+## Bubble over the speaker, narration above the hotbar, choices in the upper left.
+func _place() -> void:
+	var view := get_viewport().get_visible_rect().size
+	_panel.size = Vector2(BUBBLE_WIDTH, 0)  # shrink to fit the text
+	var size := _panel.get_combined_minimum_size()
+	size.x = BUBBLE_WIDTH
+	_tail.visible = false
+	if _choosing or _choice_row.visible:
+		_panel.position = CHOICES_AT
+		return
+	var cam := get_viewport().get_camera_3d()
+	if _anchor and is_instance_valid(_anchor) and cam:
+		var top := _head_top(_anchor)
+		if not cam.is_position_behind(top):
+			var at := cam.unproject_position(top)
+			var pos := Vector2(at.x - size.x * 0.5, at.y - size.y - 22.0)
+			pos.x = clampf(pos.x, 12.0, view.x - size.x - 12.0)
+			pos.y = clampf(pos.y, 12.0, view.y - NARRATION_BOTTOM - size.y)
+			_panel.position = pos
+			_tail.visible = true
+			_tail.position = Vector2(clampf(at.x, pos.x + 24.0, pos.x + size.x - 24.0), pos.y + size.y - 2.0)
+			return
+	_panel.position = Vector2((view.x - size.x) * 0.5, view.y - NARRATION_BOTTOM - size.y)
+
+
+## Just above the speaker's head (its head bone if it has a character model).
+static func _head_top(node: Node3D) -> Vector3:
+	var model := node.find_child("Character", true, false) as CharacterModel if not node is CharacterModel else node as CharacterModel
+	if model:
+		var skel := model.get_skeleton()
+		var bone := skel.find_bone("mixamorig_HeadTop_End") if skel else -1
+		if bone >= 0:
+			return (skel.global_transform * skel.get_bone_global_pose(bone)).origin + Vector3.UP * 0.25
+	return node.global_position + Vector3.UP * 1.6
 
 
 func _show_choices() -> void:

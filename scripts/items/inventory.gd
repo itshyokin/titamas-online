@@ -426,7 +426,7 @@ func use_item(id: String) -> bool:
 	for index in SIZE:
 		if bag[index] and bag[index].id == id:
 			return use_at(index)
-	FloatingText.spawn(get_parent(), "No %s left" % item(id).get("name", id), Color(1, 0.8, 0.6), 0.7)
+	HUD.notify(self, "No %s left" % item(id).get("name", id), Color(1, 0.8, 0.6))
 	return false
 
 

@@ -70,6 +70,8 @@ Settings → **How to play** lists the controls as currently bound.
 - **Export:** File → Export → glTF 2.0, format **glTF Binary (.glb)**, +Y Up on.
 - **Characters:** Mixamo skeleton (`mixamorig:` bones), same names on masc and femme bodies.
 - **Body file:** the masc body and its variants live in one .blend under one armature: `bare_body` (skin + a `leather` underwear surface), `head_human`, plus variants (`head_elf`, `face_default`, `hair_*`, `chainmail`, `leatherarmor`, `hat_tin`). Export the whole scene to `assets/models/characters/src/lowpoly_guy.glb` (Apply Modifiers on, Animation off), then run `tools/godot/build_bodies.gd`, `retarget_mixamo.gd`, `make_appearance.gd`. New variant meshes get a line in `PIECES` at the top of build_bodies.gd, then an item or appearance entry pointing at `assets/characters/lowpoly/<piece>_masc.scn`.
+- **Climbing marks (object names):** only marked surfaces can be grabbed or climbed. Put `_grab` or `_shimmy` in a name for ledges you can hang from and shimmy along, `_climb` for walls you can climb (also grabbable at the top), `_ladder` for ladders, e.g. `cliff_grab-col`. (Database → Player → "Grab any ledge" turns the restriction off.)
+- **Hair under hats:** give the faces of a hair style that should disappear under a hat a material named `hat_clip` (glTF doesn't export vertex groups). Hats then choose Head clipping: none, hat clip, or total (hides the whole head).
 - **Collision via name suffixes** (Godot reads these on import):
   - `-col` → visible mesh with matching collision
   - `-colonly` → invisible collision only (blockers, simplified terrain)

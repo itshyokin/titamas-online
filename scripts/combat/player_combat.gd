@@ -1269,7 +1269,7 @@ func _interrupt(reason: String, flinch := true) -> void:
 	if ab and not _is_weapon_move(ab):
 		_cooldowns[ab] = maxf(cooldown_left(ab), 0.5)  # a short lockout
 	cast_interrupted.emit(reason)
-	FloatingText.spawn(player, reason, Color(1.0, 0.45, 0.4), 0.9)
+	HUD.notify(player, reason, Color(1.0, 0.45, 0.4), 1.2)
 	if flinch:
 		player.action_animation.emit("hit_react", 0.0, 0.05, 1.0)
 
