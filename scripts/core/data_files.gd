@@ -16,6 +16,7 @@ const APPEARANCE := "res://data/appearance.json"
 const BODY_MODELS := "res://data/body_models.json"
 const LORE := "res://data/lore.json"
 const SPECIES := "res://data/species.json"
+const STATUSES := "res://data/statuses.json"
 const CLASSES := "res://data/classes.json"
 const SKILL_TREES := "res://data/skill_trees.json"
 const QUESTS := "res://data/quests.json"
@@ -111,6 +112,7 @@ static func ability_to_dict(ab: Ability) -> Dictionary:
 
 ## Fills an Ability from its JSON entry (fields missing from the entry keep their defaults).
 static func apply_ability(ab: Ability, d: Dictionary) -> void:
+	ab.set_meta("data", d)  # (extras without their own field: applies, enchant, area...)
 	for field: String in d:
 		if not field in ABILITY_FIELDS:
 			continue

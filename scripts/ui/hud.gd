@@ -378,11 +378,9 @@ func _build_hotbar() -> void:
 		var skills := SkillWindow.new(progress)
 		add_child(skills)
 		_codex.skill_window = skills
-		_weakened = _label("", 13)
-		_weakened.add_theme_color_override("font_color", Color(1.0, 0.5, 0.45))
-		_weakened.tooltip_text = "Weakened: you deal less damage and have less health until it wears off."
-		_weakened.mouse_filter = Control.MOUSE_FILTER_PASS
-		health_bar.get_parent().add_child(_weakened)
+		# Round status icons (ailments, buffs, healing, Weakened) under the bars.
+		var icons := StatusIcons.new(_stats, progress)
+		health_bar.get_parent().add_child(icons)
 
 
 ## The hotbar's experience bar (set by the levelling code).

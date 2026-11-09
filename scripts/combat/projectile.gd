@@ -192,7 +192,7 @@ func _combatant(node: Node) -> Node3D:
 
 func _hit(who: Node3D) -> void:
 	if who and Combat.is_alive(who) and is_instance_valid(source):
-		Combat.hit(source, who, power, ability.staggers, ability.knockback)
+		Combat.hit(source, who, power, ability.staggers, ability.knockback, Ability.applies_of(ability))
 	match _style:
 		Ability.ProjectileStyle.ARROW:
 			Combat.play_sound(self, ARROW_HIT_SOUND, -6.0)

@@ -13,6 +13,10 @@ var _label: Label3D
 var _fill: MeshInstance3D
 var _back: MeshInstance3D
 var _bar_holder: Node3D
+var _chunk: MeshInstance3D  # recent damage, yellow, catching up after a moment
+var _shown := 1.0
+var _target_k := 1.0
+var _hold := 0.0
 
 
 static func attach(to: Node3D, height := 2.15) -> Nameplate:
@@ -36,7 +40,8 @@ func _ready() -> void:
 	_bar_holder = Node3D.new()
 	add_child(_bar_holder)
 	_back = _bar(Color(0, 0, 0, 0.6), 0.09, 0)
-	_fill = _bar(Color(0.85, 0.15, 0.12), 0.06, 1)
+	_chunk = _bar(Color(1.0, 0.85, 0.3), 0.06, 1)
+	_fill = _bar(Color(0.85, 0.15, 0.12), 0.06, 2)
 	if stats:
 		stats.health_changed.connect(_on_health)
 		_on_health(stats.health, stats.max_health)
@@ -70,14 +75,28 @@ func _refresh_label() -> void:
 
 func _on_health(current: float, maximum: float) -> void:
 	var k := clampf(current / maxf(maximum, 1.0), 0.0, 1.0)
-	_fill.scale.x = width * k
-	_fill.position.x = -width * (1.0 - k) * 0.5
+	if k < _target_k:
+		_hold = 0.5  # just hurt: the yellow chunk waits, then drains
+	_target_k = k
+	_shown = maxf(_shown, k)
+	_set_bar(_fill, k)
+	_set_bar(_chunk, _shown)
 	# Allies and other players: green to red as they get hurt. Enemies stay red.
 	if stats and stats.team != Stats.Team.ENEMIES:
 		((_fill.mesh as QuadMesh).material as StandardMaterial3D).albedo_color = HealthColors.of(k)
 
 
-func _process(_delta: float) -> void:
+func _set_bar(bar: MeshInstance3D, k: float) -> void:
+	bar.scale.x = maxf(width * k, 0.0001)
+	bar.position.x = -width * (1.0 - k) * 0.5
+
+
+func _process(delta: float) -> void:
+	if _shown > _target_k:
+		_hold -= delta
+		if _hold <= 0.0:
+			_shown = maxf(_target_k, _shown - delta * 0.6)
+			_set_bar(_chunk, _shown)
 	var cam := get_viewport().get_camera_3d()
 	if cam == null or stats == null:
 		return

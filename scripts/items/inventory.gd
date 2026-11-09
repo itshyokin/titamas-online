@@ -381,7 +381,7 @@ func _apply_bonuses() -> void:
 func is_usable(id: String) -> bool:
 	var d := item(id)
 	return bool(d.get("use_hearth", false)) or float(d.get("use_heal", 0.0)) > 0.0 or float(d.get("use_hot_per_tick", 0.0)) > 0.0 \
-		or float(d.get("use_mana", 0.0)) > 0.0
+		or float(d.get("use_mana", 0.0)) > 0.0 or not (d.get("use_cures", []) as Array).is_empty()
 
 
 ## Uses (drinks, applies) the item in a backpack slot; equips gear instead.
@@ -431,6 +431,8 @@ func _apply_use(id: String) -> bool:
 		Effects.heal_glow(get_parent(), int(d.get("use_hot_ticks", 1)) * 2.0)
 	if float(d.get("use_mana", 0.0)) > 0.0:
 		stats.restore_mana(float(d.use_mana))
+	for st in d.get("use_cures", []):
+		stats.remove_status(String(st))
 	remove_at(index, 1)
 	return true
 

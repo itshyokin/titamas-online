@@ -1,0 +1,59 @@
+{
+	"statuses": [
+		{
+			"id": "poison",
+			"name": "Poisoned",
+			"description": "Losing health every second. You limp and move slower.",
+			"kind": "ailment",
+			"icon": "poison",
+			"color": "#6ad04a",
+			"damage_per_second": 3,
+			"injured": true
+		},
+		{
+			"id": "blind",
+			"name": "Blinded",
+			"description": "Half of your attacks miss.",
+			"kind": "ailment",
+			"icon": "blind",
+			"color": "#a6a6b4",
+			"miss_chance": 0.5
+		},
+		{
+			"id": "silence",
+			"name": "Silenced",
+			"description": "You can't cast spells.",
+			"kind": "ailment",
+			"icon": "silence",
+			"color": "#a070e0",
+			"no_spells": true
+		},
+		{
+			"id": "confuse",
+			"name": "Confused",
+			"description": "Your feet don't go where you tell them.",
+			"kind": "ailment",
+			"icon": "confuse",
+			"color": "#e0b040",
+			"confused": true
+		},
+		{
+			"id": "regen",
+			"name": "Regenerating",
+			"description": "Recovering health.",
+			"kind": "buff",
+			"icon": "heal",
+			"color": "#ffd873",
+			"damage_per_second": -2
+		},
+		{
+			"id": "knockdown",
+			"name": "Knocked down",
+			"description": "Thrown off their feet (heavy blows). Seconds = how long they lie there.",
+			"kind": "debuff",
+			"icon": "sword",
+			"color": "#e0a050",
+			"special": true
+		}
+	]
+}

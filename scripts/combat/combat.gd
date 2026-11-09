@@ -86,7 +86,8 @@ static func scaled_power(power: float, attacker_level: int, defender_level: int)
 ## (dodging, blocking) by having `modify_incoming_damage(amount, source) -> float`.
 ## `knockback` pushes the target away (m/s) if it has `apply_knockback(velocity)`.
 ## Returns the damage dealt.
-static func hit(source: Node3D, target: Node3D, power: float, stagger := false, knockback := 0.0) -> float:
+## `applies`: statuses the blow may give, [{status, chance (0–1), seconds}].
+static func hit(source: Node3D, target: Node3D, power: float, stagger := false, knockback := 0.0, applies: Array = []) -> float:
 	var ts := stats_of(target)
 	if ts == null or ts.is_dead():
 		return 0.0
@@ -97,6 +98,10 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 			impact(source, target, stagger, false, 0.0)  # the feel stays local
 		return 0.0
 	var ss := stats_of(source)
+	# Blinded: some blows miss.
+	if ss and randf() < ss.status_value("miss_chance"):
+		FloatingText.spawn(target, "Miss", Color(0.8, 0.8, 0.85), 0.9)
+		return 0.0
 	var amount := scaled_power(power, ss.level if ss else 1, ts.level)
 	if ss:
 		amount *= ss.damage_scale  # Weakened
@@ -123,6 +128,16 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 	if stagger and not blocked and target.has_method("stagger"):
 		target.stagger()
 	impact(source, target, stagger or crit, blocked, knockback)
+	for a in applies:
+		if a is Dictionary and randf() < float(a.get("chance", 1.0)) and not blocked:
+			if String(a.get("status", "")) == "knockdown":
+				# Thrown off their feet (enemies that can be).
+				if target.has_method("knock_down") and source:
+					var away := target.global_position - source.global_position
+					away.y = 0.0
+					target.call("knock_down", away.normalized() * maxf(knockback, 3.0) * 1.5, float(a.get("seconds", 1.8)))
+			else:
+				ts.add_status(String(a.get("status", "")), float(a.get("seconds", 8.0)), source)
 	return amount
 
 

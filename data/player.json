@@ -18,7 +18,9 @@
 		"swim_sprint_stamina_cost": 18.0,
 		"double_tap_time": 0.3,
 		"lock_on_hops": 0.0,
-		"grab_any_ledge": 0.0
+		"grab_any_ledge": 0.0,
+		"injured_speed": 2.2,
+		"injured_health": 0.2
 	},
 	"combat": {
 		"tap_time": 0.22,
@@ -256,5 +258,12 @@
 				}
 			}
 		]
+	},
+	"rarity_colors": {
+		"common": "#a8a8a8",
+		"uncommon": "#59e659",
+		"rare": "#5999ff",
+		"epic": "#bf73ff",
+		"legendary": "#ff9926"
 	}
 }

@@ -268,6 +268,7 @@ const TABS = {
 				{ key: "reach", label: "Reach / range (m)", type: "number" },
 				{ key: "arc", label: "Swing width (°)", type: "number", show: isMelee },
 				{ key: "staggers", label: "Staggers enemies", type: "bool", help: "Heavy hit: interrupts attacks and spells." },
+				{ key: "applies", label: "Gives statuses on hit", type: "applies", wide: true, help: "Each with a chance (0–1) and how long. Statuses are in the Statuses tab." },
 				{ key: "knockback", label: "Knockback (m/s)", type: "number", help: "How hard a hit pushes the target back." },
 				{ key: "cast_time", label: "Cast time (s)", type: "number", help: "Spells: the cast bar has to fill before it goes off. 0 = instant." },
 			]],
@@ -314,7 +315,7 @@ const TABS = {
 				{ key: "name", label: "Name", type: "text" },
 				{ key: "kind", label: "Kind", type: "select", options: [["weapon", "Weapon"], ["armor", "Armour"], ["consumable", "Consumable (usable)"], ["material", "Material"], ["junk", "Junk (sell)"], ["quest", "Quest item"], ["key", "Key item"]] },
 				{ key: "slot", label: "Equips to", type: "select", options: [["", "(not equippable)"], ["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["weapon", "Weapon (primary or secondary)"], ["off_hand", "Off hand (shield)"]] },
-				{ key: "rarity", label: "Rarity", type: "select", options: [["common", "Common (white)"], ["uncommon", "Uncommon (green)"], ["rare", "Rare (blue)"], ["epic", "Epic (purple)"], ["legendary", "Legendary (orange)"]] },
+				{ key: "rarity", label: "Rarity", type: "select", options: [["common", "Common (grey)"], ["uncommon", "Uncommon (green)"], ["rare", "Rare (blue)"], ["epic", "Epic (purple)"], ["legendary", "Legendary (orange)"]] },
 				{ key: "value", label: "Worth (gold)", type: "int" },
 				{ key: "stack_max", label: "Stacks to", type: "int", help: "0 = automatic (gear 1, everything else 64)." },
 				{ key: "icon", label: "Icon", type: "select", options: ["sword", "dagger", "axe", "hammer", "bow", "crossbow", "gun", "shield", "helm", "shoulders", "chest", "legs", "boots", "gloves", "potion", "bandage", "coin", "cloth", "bag"] },
@@ -336,6 +337,7 @@ const TABS = {
 			], e => e.slot === "weapon"],
 			["When used", [
 				{ key: "use_heal", label: "Heals at once", type: "number" },
+				{ key: "use_cures", label: "Cures statuses", type: "statuslist", wide: true },
 				{ key: "use_hot_per_tick", label: "Heals per tick", type: "number" },
 				{ key: "use_hot_ticks", label: "Ticks (2 s apart)", type: "int" },
 				{ key: "use_mana", label: "Restores mana", type: "number" },
@@ -394,6 +396,7 @@ const TABS = {
 			]],
 			["Attack", [
 				{ key: "attack_power", label: "Damage", type: "number" },
+				{ key: "applies", label: "Its attacks give statuses", type: "applies", wide: true, help: "E.g. a spider: poison, 30% chance, 8 s." },
 				{ key: "attack_range", label: "Range (m)", type: "number" },
 				{ key: "attack_cooldown", label: "Time between attacks (s)", type: "number" },
 				{ key: "attack_arc", label: "Swing width (°)", type: "number" },
@@ -461,6 +464,8 @@ const TABS = {
 			]],
 			["Movement", [
 				{ key: "movement.walk_speed", label: "Walk speed (m/s)", type: "number" },
+				{ key: "movement.injured_speed", label: "Injured: limping speed (m/s)", type: "number", help: "Below the injured health share, poisoned (or any status marked injured) or weakened: the injured walk (role injured_walk; a slow walk until that clip exists)." },
+				{ key: "movement.injured_health", label: "Injured below this share of health (0–1)", type: "number" },
 				{ key: "movement.run_speed", label: "Run speed (m/s)", type: "number" },
 				{ key: "movement.sprint_speed", label: "Sprint speed (m/s)", type: "number" },
 				{ key: "movement.sprint_stamina_cost", label: "Sprint stamina per second", type: "number" },
@@ -528,6 +533,13 @@ const TABS = {
 				{ key: "dialogue.tick_sound", label: "Typing tick", type: "sound", help: "Played every few letters while a line types out; each speaker gets their own pitch." },
 				{ key: "dialogue.tick_every", label: "Tick every N letters", type: "int" },
 				{ key: "dialogue.tick_db", label: "Tick volume (dB)", type: "number" },
+			]],
+			["Item rarity colours", [
+				{ key: "rarity_colors.common", label: "Common", type: "color" },
+				{ key: "rarity_colors.uncommon", label: "Uncommon", type: "color" },
+				{ key: "rarity_colors.rare", label: "Rare", type: "color" },
+				{ key: "rarity_colors.epic", label: "Epic", type: "color" },
+				{ key: "rarity_colors.legendary", label: "Legendary", type: "color", help: "Item names, slot borders, loot and pickup messages use these." },
 			]],
 			["Equip sounds", [
 				{ key: "equip_sounds.cloth", label: "Cloth", type: "sound" },
@@ -953,6 +965,28 @@ const TABS = {
 				{ key: "falling_leaves.knock.leaves", label: "Leaves knocked off by a hit", type: "int" },
 				{ key: "falling_leaves.knock.sticks", label: "Twigs knocked off", type: "int" },
 				{ key: "falling_leaves.knock.seeds", label: "Seeds / acorns knocked off", type: "int" },
+			]],
+		],
+	},
+	statuses: {
+		title: "Statuses", file: "statuses", listKey: "statuses", idKey: "id", nameKey: "name",
+		blank: () => ({ id: "new_status", name: "New Status", description: "", kind: "ailment", icon: "poison", color: "#6ad04a" }),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text" },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "description", label: "What it does (tooltip)", type: "textarea", wide: true },
+				{ key: "kind", label: "Kind", type: "select", options: [["ailment", "Ailment"], ["debuff", "Debuff"], ["buff", "Buff"]] },
+				{ key: "icon", label: "Icon", type: "select", options: [["poison", "Drop (poison)"], ["blind", "Eye (blind)"], ["silence", "Mouth (silence)"], ["confuse", "Swirl (confuse)"], ["heal", "Cross (heal)"], ["frost", "Snowflake (frost)"], ["fire", "Flame"], ["shield", "Shield"], ["sword", "Sword"], ["stealth", "Hood (stealth)"]] },
+				{ key: "color", label: "Colour", type: "color" },
+			]],
+			["Effects", [
+				{ key: "damage_per_second", label: "Damage per second (negative heals)", type: "number" },
+				{ key: "miss_chance", label: "Chance attacks miss (0–1)", type: "number" },
+				{ key: "no_spells", label: "Can't cast spells", type: "bool" },
+				{ key: "confused", label: "Confused (controls reversed; enemies wander)", type: "bool" },
+				{ key: "injured", label: "Limps (injured walk, slower)", type: "bool" },
+				{ key: "move_scale", label: "Movement speed × (1 = normal)", type: "number" },
 			]],
 		],
 	},
@@ -1768,6 +1802,39 @@ function fieldControl(t, entry, f) {
 			add.onclick = () => { if (pick.value) { obj[pick.value] = /tree|log|stump/.test(pick.value) ? "chop" : "smash"; set(Object.assign({}, obj), true); } };
 			addRow.append(pick, add);
 			wrap.appendChild(addRow);
+			break;
+		}
+		case "applies": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
+			const opts = (((data.statuses || {}).statuses) || []).map(x => [x.id, x.name || x.id]);
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const st = selectOf(opts, r.status, false);
+				st.onchange = () => { list[i].status = st.value; set(list.map(x => Object.assign({}, x))); };
+				const num = (k, w, title, step) => { const n = el("input", { type: "number", step, value: r[k] ?? "", title }); n.style.width = w; n.oninput = () => { const v = parseFloat(n.value); if (!Number.isNaN(v)) { list[i][k] = v; set(list.map(x => Object.assign({}, x))); } }; return n; };
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); set(list.map(x => Object.assign({}, x)), true); };
+				row.append(st, el("span", { textContent: "chance" }), num("chance", "55px", "0–1", 0.05), el("span", { textContent: "for" }), num("seconds", "55px", "seconds", 1), el("span", { textContent: "s" }), rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Add status" });
+			add.onclick = () => { if (opts.length) { list.push({ status: opts[0][0], chance: 0.3, seconds: 8 }); set(list, true); } };
+			wrap.appendChild(add);
+			break;
+		}
+		case "statuslist": {
+			const on = new Set(Array.isArray(value) ? value : []);
+			const box = el("div", { className: "parts" });
+			for (const t of (((data.statuses || {}).statuses) || [])) {
+				const lab = el("label", { className: "part" });
+				const c = el("input", { type: "checkbox", checked: on.has(t.id) });
+				c.onchange = () => { if (c.checked) on.add(t.id); else on.delete(t.id); set([...on]); };
+				lab.append(c, document.createTextNode(" " + (t.name || t.id)));
+				box.appendChild(lab);
+			}
+			wrap.append(label, box);
 			break;
 		}
 		case "colormap": {

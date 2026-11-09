@@ -140,7 +140,14 @@
 			"knockback": 7.0,
 			"cast_time": 0.0,
 			"icon": "heavy",
-			"windup_time": 0.0
+			"windup_time": 0.0,
+			"applies": [
+				{
+					"status": "knockdown",
+					"chance": 0.35,
+					"seconds": 1.8
+				}
+			]
 		},
 		{
 			"animation": "bow_release",
@@ -453,7 +460,14 @@
 			"knockback": 7.0,
 			"cast_time": 0.0,
 			"icon": "heavy",
-			"windup_time": 0.0
+			"windup_time": 0.0,
+			"applies": [
+				{
+					"status": "knockdown",
+					"chance": 0.35,
+					"seconds": 1.8
+				}
+			]
 		},
 		{
 			"animation": "cast_heal",
@@ -637,7 +651,14 @@
 			"cast_time": 0.0,
 			"icon": "heavy",
 			"windup_time": 0.0,
-			"racial": true
+			"racial": true,
+			"applies": [
+				{
+					"status": "knockdown",
+					"chance": 0.35,
+					"seconds": 1.8
+				}
+			]
 		}
 	]
 }

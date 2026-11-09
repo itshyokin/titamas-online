@@ -449,7 +449,7 @@ func _spell_goes_off(ab: Ability) -> void:
 				Projectile.launch(from, self, target, ab, power, Combat.aim_point(target) - from)
 		Ability.Delivery.MELEE:
 			if _target_valid() and target.global_position.distance_to(global_position) <= ab.reach + 0.6:
-				Combat.hit(self, target, power, ab.staggers, ab.knockback)
+				Combat.hit(self, target, power, ab.staggers, ab.knockback, Ability.applies_of(ab))
 
 
 func _attacking(delta: float) -> void:

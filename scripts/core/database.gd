@@ -11,7 +11,7 @@ signal changed(which: String)
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
 	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "skill_trees": DataFiles.SKILL_TREES, "quests": DataFiles.QUESTS, "npcs": DataFiles.NPCS,
 	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS, "events": DataFiles.EVENTS,
-	"achievements": DataFiles.ACHIEVEMENTS, "body_models": DataFiles.BODY_MODELS, "lore": DataFiles.LORE, "species": DataFiles.SPECIES}
+	"achievements": DataFiles.ACHIEVEMENTS, "body_models": DataFiles.BODY_MODELS, "lore": DataFiles.LORE, "species": DataFiles.SPECIES, "statuses": DataFiles.STATUSES}
 
 ## Appearance lists filled from Body Models pieces by their "use" (see _merge_pieces).
 const PIECE_LISTS := {"hair": "hair_styles", "facial_hair": "facial_hair", "head": "heads", "face": "faces"}
@@ -24,7 +24,7 @@ const ENEMY_FIELDS := [
 	"heavy_animation", "heavy_animation_speed", "heavy_hit_time", "ragdoll", "death_push", "fade_time",
 ]
 const PLAYER_STATS := ["max_health", "max_mana", "max_stamina", "stamina_regen", "stamina_regen_delay", "mana_regen"]
-const PLAYER_MOVEMENT := ["run_speed", "walk_speed", "sprint_speed", "jump_velocity", "sprint_stamina_cost", "swim_speed",
+const PLAYER_MOVEMENT := ["injured_speed", "injured_health", "run_speed", "walk_speed", "sprint_speed", "jump_velocity", "sprint_stamina_cost", "swim_speed",
 	"swim_sprint_speed", "swim_sprint_stamina_cost", "double_tap_time", "lock_on_hops", "grab_any_ledge"]
 const PLAYER_COMBAT := ["tap_time", "quick_shot_power", "block_reduction", "lunge_range", "parry_window",
 	"counter_window", "perfect_dodge_window", "cast_pushback", "interrupt_share", "proficiency_damage", "proficiency_speed",
@@ -41,6 +41,8 @@ var appearance := {}
 ## height (scale), attributes {id: +n}, stats {stat: +n}, movement {run_speed... jump:
 ## multipliers}, racial [{ability, power_per_level}], traits}.
 var species_list: Array = []
+## data/statuses.json: status ailments, buffs and debuffs by id (see Stats.add_status).
+var statuses := {}
 ## Codex lore entries (data/lore.json): {id, title, category, text, conditions}.
 var lore: Array = []
 ## data/body_models.json (pieces built from the body .glb).
@@ -121,6 +123,10 @@ func _load(which: String) -> void:
 			lore = data.get("entries", [])
 		"species":
 			species_list = data.get("species", [])
+		"statuses":
+			statuses.clear()
+			for d in data.get("statuses", []):
+				statuses[String(d.get("id", ""))] = d
 		"body_models":
 			body_models = data
 			_merge_pieces()

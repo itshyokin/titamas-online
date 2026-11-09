@@ -1094,7 +1094,8 @@
 		"talk_3": "talk_3",
 		"talk_4": "talk_4",
 		"loot": "loot_kneel",
-		"drink": "drinking"
+		"drink": "drinking",
+		"injured_walk": "injured_walk"
 	},
 	"look": {
 		"range": 6.0,
@@ -1113,5 +1114,8 @@
 	"drink": {
 		"hold_at": 0.0,
 		"speed": 1.0
+	},
+	"injured": {
+		"speed": 1.6
 	}
 }

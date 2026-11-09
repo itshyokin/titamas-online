@@ -499,6 +499,7 @@ static func compare_text(d: Dictionary, inventory: Inventory, combat: PlayerComb
 static func describe(d: Dictionary, compare := "") -> String:
 	var rarity: Color = ItemIcon.rarity_color(d)
 	var t := "[font_size=16][color=#%s]%s[/color][/font_size]\n" % [rarity.to_html(false), d.get("name", "?")]
+	t += "[color=#%s]%s[/color]\n" % [rarity.darkened(0.15).to_html(false), String(d.get("rarity", "common")).capitalize()]
 	var slot := String(d.get("slot", ""))
 	var kind := String(d.get("kind", "")).capitalize()
 	if slot == "weapon":

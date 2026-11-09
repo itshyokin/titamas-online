@@ -25,6 +25,10 @@ const WATER_MASK := 8  # layer 4
 @export_group("Movement")
 @export var run_speed := 4.5
 @export var walk_speed := 1.8
+## Hurt (health under injured_health of max, poisoned, or weakened): a limp no faster than
+## injured_speed (player.json movement).
+@export var injured_speed := 2.2
+@export var injured_health := 0.2
 @export var sprint_speed := 8.0
 @export var acceleration := 12.0
 @export var air_control := 0.3
@@ -307,10 +311,23 @@ func _unhandled_input(event: InputEvent) -> void:
 		_sprint_toggle = not _sprint_toggle
 
 
+## Badly hurt, poisoned or weakened: limps (slower, injured walk).
+func is_injured() -> bool:
+	if stats.is_dead():
+		return false
+	if stats.health < stats.max_health * injured_health or stats.status_flag("injured"):
+		return true
+	var progress := get_node_or_null("Progress")
+	return progress != null and progress.has_method("is_weakened") and bool(progress.call("is_weakened"))
+
+
 func _input_direction() -> Vector3:
 	if GameSettings.menu_open:
 		return Vector3.ZERO
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if stats.status_flag("confused") and input != Vector2.ZERO:
+		# Confused: the controls are reversed and drift.
+		input = (-input).rotated(sin(Time.get_ticks_msec() / 700.0) * 0.9)
 	var direction := camera_rig.get_flat_basis() * Vector3(input.x, 0, input.y)
 	return direction.normalized() if direction.length() > 0.01 else Vector3.ZERO
 
@@ -364,7 +381,9 @@ func _normal_movement(delta: float) -> void:
 		speed = sprint_speed
 	elif Input.is_action_pressed("walk"):
 		speed = walk_speed
-	var target := direction * speed * speed_scale * skill_speed
+	if is_injured():
+		speed = minf(speed, injured_speed)
+	var target := direction * speed * speed_scale * skill_speed * stats.status_product("move_scale")
 	var accel := acceleration if is_on_floor() else acceleration * air_control
 	velocity.x = lerpf(velocity.x, target.x, accel * delta)
 	velocity.z = lerpf(velocity.z, target.z, accel * delta)

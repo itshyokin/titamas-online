@@ -714,6 +714,7 @@ func _land(ab: Ability) -> void:
 			# Skill passive "cleave": heavy blows sweep everything in front.
 			if _passive("cleave") > 0 and ab.id == String(Database.weapon_type(String(weapon.get("weapon_type", ""))).get("heavy", "")):
 				arc = maxf(arc, 200.0)
+			var in_reach: Array[Node3D] = []
 			for n in Combat.enemies_near(player, player.global_position, ab.reach + 0.6):
 				var to := n.global_position - player.global_position
 				if absf(to.y) > 2.0:
@@ -721,7 +722,18 @@ func _land(ab: Ability) -> void:
 				to.y = 0.0
 				if to.length() > 0.5 and rad_to_deg(fwd.angle_to(to.normalized())) > arc * 0.5:
 					continue
-				if Combat.hit(player, n, power, staggers, push) > 0.0:
+				in_reach.append(n)
+			# One enemy per swing (the target, else the closest); the "cleave" skill
+			# passive (or an ability marked "cleaves") hits everyone in reach.
+			var cleaves := _passive("cleave") > 0 or bool(Ability.data_of(ab).get("cleaves", false))
+			if not cleaves and in_reach.size() > 1:
+				var one: Node3D = _target if _target in in_reach else null
+				if one == null:
+					in_reach.sort_custom(func(a: Node3D, b: Node3D) -> bool: return a.global_position.distance_to(player.global_position) < b.global_position.distance_to(player.global_position))
+					one = in_reach[0]
+				in_reach = [one]
+			for n in in_reach:
+				if Combat.hit(player, n, power, staggers, push, Ability.applies_of(ab)) > 0.0:
 					landed = true
 					if countering:
 						FloatingText.spawn(n, "Counter!", Color(1.0, 0.85, 0.3), 1.2)
@@ -926,6 +938,9 @@ func cast(ab: Ability) -> bool:
 	if _casting or _channel or _charging:
 		return false
 	if _current and _time < _current.recovery_time:
+		return false
+	if stats.status_flag("no_spells") and not _is_weapon_move(ab):
+		notice.emit("You're silenced")
 		return false
 	var left := cooldown_left(ab)
 	if left > 0.0:

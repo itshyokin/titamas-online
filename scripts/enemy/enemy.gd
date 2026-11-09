@@ -5,7 +5,7 @@ extends CharacterBody3D
 ## walks home if dragged too far (healing to full); dies, then respawns later.
 ## The Stats child holds its name, level and health.
 
-enum AI { IDLE, CHASE, ATTACK, STAGGER, RETURN, DEAD }
+enum AI { IDLE, CHASE, ATTACK, STAGGER, RETURN, DEAD, DOWN }
 
 ## Which entry in data/enemies.json this is (name, level, health, speeds, attack...).
 ## Edit those with the Database editor; the values below are only fallbacks.
@@ -151,7 +151,31 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y = -0.5
 	var move := Vector3.ZERO
+	if stats.status_flag("confused") and ai in [AI.CHASE, AI.ATTACK]:
+		# Confused: stumbles about instead of fighting.
+		var t := Time.get_ticks_msec() / 900.0 + float(get_instance_id() % 100)
+		move = Vector3(cos(t), 0, sin(t * 1.3)) * walk_speed
+		ai = AI.CHASE
+	else:
+		move = _ai_move(delta)
+	_walk.x = lerpf(_walk.x, move.x, 10.0 * delta)
+	_walk.z = lerpf(_walk.z, move.z, 10.0 * delta)
+	velocity.x = _walk.x + _push.x
+	velocity.z = _walk.z + _push.z
+	_push = _push.move_toward(Vector3.ZERO, 16.0 * delta)
+	if move.length() > 0.1:
+		_face(global_position + move, delta)
+	move_and_slide()
+	_animate()
+
+
+func _ai_move(delta: float) -> Vector3:
+	var move := Vector3.ZERO
 	match ai:
+		AI.DOWN:
+			_down_left -= delta
+			if _down_left <= 0.0:
+				_get_up()
 		AI.IDLE:
 			move = _idle(delta)
 		AI.CHASE:
@@ -166,15 +190,7 @@ func _physics_process(delta: float) -> void:
 			move = _return_home(delta)
 		AI.DEAD:
 			pass
-	_walk.x = lerpf(_walk.x, move.x, 10.0 * delta)
-	_walk.z = lerpf(_walk.z, move.z, 10.0 * delta)
-	velocity.x = _walk.x + _push.x
-	velocity.z = _walk.z + _push.z
-	_push = _push.move_toward(Vector3.ZERO, 16.0 * delta)
-	if move.length() > 0.1:
-		_face(global_position + move, delta)
-	move_and_slide()
-	_animate()
+	return move
 
 
 # --- States -------------------------------------------------------------------
@@ -245,7 +261,7 @@ func _attacking(delta: float) -> void:
 			var fwd := -model.global_basis.z
 			to.y = 0.0
 			if to.length() <= attack_range + 0.6 and rad_to_deg(fwd.angle_to(to.normalized())) <= attack_arc * 0.5:
-				Combat.hit(self, target, attack_power * (heavy_power if _heavy else 1.0), _heavy, knockback * (2.0 if _heavy else 1.0))
+				Combat.hit(self, target, attack_power * (heavy_power if _heavy else 1.0), _heavy, knockback * (2.0 if _heavy else 1.0), Database.enemy(enemy_id).get("applies", []))
 	if _attack_time >= character.get_animation_length(_anim):
 		_cooldown = attack_cooldown * randf_range(0.8, 1.2)
 		ai = AI.CHASE
@@ -264,13 +280,46 @@ func _return_home(delta: float) -> Vector3:
 
 ## Pushed by a hit (m/s, flat).
 func apply_knockback(push: Vector3) -> void:
-	if ai != AI.DEAD:
+	if ai != AI.DEAD and ai != AI.DOWN:
 		_push = push
+
+
+var _down_left := 0.0
+
+
+## Knocked off its feet (heavy hits with a "knockdown" chance): goes limp, thrown along
+## `push`, lies there a moment, then gets up (role "getting_up" if there's a clip).
+func knock_down(push: Vector3, seconds := 1.8) -> void:
+	if ai == AI.DEAD or ai == AI.DOWN or _is_puppet():
+		return
+	var rag := Ragdoll.start(character, push + Vector3.UP * 2.5)
+	if rag == null:
+		stagger(1.2)
+		return
+	ai = AI.DOWN
+	_down_left = seconds
+	_walk = Vector3.ZERO
+	FloatingText.spawn(self, "Knocked down", Color(1.0, 0.75, 0.35), 0.9)
+
+
+func _get_up() -> void:
+	var hips = Ragdoll.hips_of(character)
+	if hips is Vector3:
+		global_position = Vector3(hips.x, global_position.y, hips.z)
+	Ragdoll.stop(character)
+	if character.has_animation("getting_up"):
+		character.play_from("getting_up", 0.0, 0.05, 1.0)
+		ai = AI.STAGGER
+		_stagger = character.get_animation_length("getting_up") * 0.9
+	else:
+		ai = AI.STAGGER
+		_stagger = 0.5
+		character.play_from("hit_react", 0.0, 0.1, 0.8)
 
 
 ## Interrupts the wind-up of an attack (heavy hits; a parry staggers for longer).
 func stagger(seconds := 0.7) -> void:
-	if ai == AI.DEAD:
+	if ai == AI.DEAD or ai == AI.DOWN:
 		return
 	ai = AI.STAGGER
 	_stagger = seconds
@@ -466,7 +515,7 @@ func _face(point: Vector3, delta: float) -> void:
 
 
 func _animate() -> void:
-	if ai == AI.ATTACK or ai == AI.DEAD or ai == AI.STAGGER:
+	if ai == AI.ATTACK or ai == AI.DEAD or ai == AI.STAGGER or ai == AI.DOWN:
 		return
 	var current := character.current_animation()
 	if current == "hit_react" and character.animation_position() < 0.4:

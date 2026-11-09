@@ -77,3 +77,17 @@ enum ProjectileStyle { BOLT, ARROW, BULLET }
 @export var cast_loop_sound: AudioStream
 ## Spells: plays when it goes off (instead of the first of `sounds`).
 @export var release_sound: AudioStream
+
+
+## Statuses a hit with this ability may give (abilities.json "applies": [{status, chance,
+## seconds}]).
+static func applies_of(ab: Ability) -> Array:
+	if ab == null or not ab.has_meta("data"):
+		return []
+	var a = (ab.get_meta("data") as Dictionary).get("applies", [])
+	return a if a is Array else []
+
+
+## The ability's abilities.json entry (for extras without their own field).
+static func data_of(ab: Ability) -> Dictionary:
+	return ab.get_meta("data") if ab and ab.has_meta("data") else {}

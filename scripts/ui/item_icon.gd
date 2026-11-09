@@ -5,7 +5,7 @@ extends Control
 ## cloth, bag. A stack count shows in the corner.
 
 const RARITY_COLORS := {
-	"common": Color(0.85, 0.85, 0.85),
+	"common": Color(0.66, 0.66, 0.66),
 	"uncommon": Color(0.35, 0.9, 0.35),
 	"rare": Color(0.35, 0.6, 1.0),
 	"epic": Color(0.75, 0.45, 1.0),
@@ -17,8 +17,16 @@ var color := Color.WHITE
 var count := 0
 
 
+## Grey, green, blue, purple, orange (player.json "rarity_colors" overrides; Database →
+## Player → Item rarity).
 static func rarity_color(item: Dictionary) -> Color:
-	return RARITY_COLORS.get(String(item.get("rarity", "common")), Color.WHITE)
+	var r := String(item.get("rarity", "common"))
+	var loop := Engine.get_main_loop() as SceneTree
+	var db := loop.root.get_node_or_null("Database") if loop else null
+	var custom = (db.get("player") as Dictionary).get("rarity_colors", {}) if db else {}
+	if custom is Dictionary and Color.html_is_valid(String(custom.get(r, ""))):
+		return Color.html(String(custom[r]))
+	return RARITY_COLORS.get(r, Color.WHITE)
 
 
 func show_item(item: Dictionary, stack := 0) -> void:

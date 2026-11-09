@@ -21,6 +21,7 @@ const FILES := {
 	"quests": "res://data/quests.json",
 	"lore": "res://data/lore.json",
 	"species": "res://data/species.json",
+	"statuses": "res://data/statuses.json",
 	"weather": "res://data/weather.json",
 	"harvest": "res://data/harvest.json",
 	"wildlife": "res://data/wildlife.json",

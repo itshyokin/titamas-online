@@ -63,6 +63,9 @@ var _max_health_scale := 1.0
 
 var _stamina_idle_time := 0.0
 var _hots: Array[Dictionary] = []  # {per_tick, ticks_left, interval, timer, source}
+## Status ailments / buffs / debuffs (data/statuses.json): id -> {left, duration, source}.
+var statuses := {}
+signal statuses_changed
 
 
 func _ready() -> void:
@@ -74,6 +77,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_update_hots(delta)
+	_update_statuses(delta)
 	_stamina_idle_time += delta
 	if _stamina_idle_time >= stamina_regen_delay and stamina < max_stamina:
 		stamina = minf(stamina + stamina_regen * delta, max_stamina)
@@ -81,6 +85,84 @@ func _process(delta: float) -> void:
 	if mana < max_mana:
 		mana = minf(mana + mana_regen * delta, max_mana)
 		mana_changed.emit(mana, max_mana)
+
+
+## Gives a status (data/statuses.json id) for `seconds` (renews it if it's already on).
+func add_status(id: String, seconds: float, source: Node = null) -> void:
+	if is_dead() or seconds <= 0.0:
+		return
+	var d := status_data(id)
+	if d.is_empty():
+		push_warning("Stats: no status '%s' in data/statuses.json" % id)
+		return
+	var had := statuses.has(id)
+	var e: Dictionary = statuses.get(id, {"left": 0.0, "duration": 0.0})
+	e.left = maxf(float(e.left), seconds)
+	e.duration = maxf(float(e.duration), seconds) if had else seconds
+	e.source = source
+	statuses[id] = e
+	statuses_changed.emit()
+	if not had and is_inside_tree():
+		FloatingText.spawn(get_parent() as Node3D, String(d.get("name", id)), Color.html(String(d.get("color", "#ffffff"))), 1.0)
+
+
+func remove_status(id: String) -> void:
+	if statuses.erase(id):
+		statuses_changed.emit()
+
+
+func has_status(id: String) -> bool:
+	return statuses.has(id)
+
+
+## True if any active status has this flag (no_spells, confused, injured).
+func status_flag(flag: String) -> bool:
+	for id: String in statuses:
+		if bool(status_data(id).get(flag, false)):
+			return true
+	return false
+
+
+## The biggest value of a number field among active statuses (miss_chance...).
+func status_value(field: String) -> float:
+	var best := 0.0
+	for id: String in statuses:
+		best = maxf(best, float(status_data(id).get(field, 0.0)))
+	return best
+
+
+## Active statuses' number field multiplied together (move_scale...), 1 with none.
+func status_product(field: String) -> float:
+	var k := 1.0
+	for id: String in statuses:
+		k *= float(status_data(id).get(field, 1.0))
+	return k
+
+
+static func status_data(id: String) -> Dictionary:
+	var loop := Engine.get_main_loop() as SceneTree
+	var db := loop.root.get_node_or_null("Database") if loop else null
+	var all = db.get("statuses") if db else null
+	return all.get(id, {}) if all is Dictionary else {}
+
+
+func _update_statuses(delta: float) -> void:
+	if statuses.is_empty():
+		return
+	var gone := false
+	for id: String in statuses.keys():
+		var e: Dictionary = statuses[id]
+		e.left = float(e.left) - delta
+		var dps := float(status_data(id).get("damage_per_second", 0.0))
+		if dps > 0.0 and not is_dead():
+			take_damage(dps * delta, e.get("source") if is_instance_valid(e.get("source")) else null)
+		elif dps < 0.0:
+			heal(-dps * delta)
+		if float(e.left) <= 0.0:
+			statuses.erase(id)
+			gone = true
+	if gone:
+		statuses_changed.emit()
 
 
 func is_dead() -> bool:
@@ -95,6 +177,8 @@ func take_damage(amount: float, source: Node = null, crit := false) -> void:
 	damaged.emit(amount, source, crit)
 	if health <= 0.0:
 		_hots.clear()
+		statuses.clear()
+		statuses_changed.emit()
 		died.emit()
 
 
