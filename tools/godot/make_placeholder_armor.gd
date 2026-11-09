@@ -6,7 +6,7 @@ extends SceneTree
 ## Real armour made in Blender (weight-painted to the same rig) replaces these: point the
 ## item's "Fitted model (masc/femme)" at the new file in the Database.
 
-const BODIES := "res://assets/models/characters/base_bodies.glb"
+const BODIES := "res://assets/models/characters/base_bodies.scn"
 const OUT := "res://assets/items/skinned"
 
 ## piece id -> {parts, thickness (m), colour, below/above (optional height limits, m)}

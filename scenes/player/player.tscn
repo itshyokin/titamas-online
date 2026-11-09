@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_0owmy"]
-[ext_resource type="PackedScene" path="res://assets/models/characters/base_bodies.glb" id="2_qek5x"]
+[ext_resource type="PackedScene" path="res://assets/models/characters/base_bodies.scn" id="2_qek5x"]
 [ext_resource type="Script" path="res://scripts/player/character_model.gd" id="3_5gtgg"]
 [ext_resource type="Script" path="res://scripts/player/stats.gd" id="4_h17s1"]
 [ext_resource type="Script" path="res://scripts/player/player_animator.gd" id="5_je7p5"]

@@ -69,6 +69,7 @@ Settings → **How to play** lists the controls as currently bound.
 - **Scale:** 1 unit = 1 metre. Characters about 1.8 m tall.
 - **Export:** File → Export → glTF 2.0, format **glTF Binary (.glb)**, +Y Up on.
 - **Characters:** Mixamo skeleton (`mixamorig:` bones), same names on masc and femme bodies.
+- **Body file:** the masc body and its variants live in one .blend under one armature: `bare_body` (skin + a `leather` underwear surface), `head_human`, plus variants (`head_elf`, `face_default`, `hair_*`, `chainmail`, `leatherarmor`, `hat_tin`). Export the whole scene to `assets/models/characters/src/lowpoly_guy.glb` (Apply Modifiers on, Animation off), then run `tools/godot/build_bodies.gd`, `retarget_mixamo.gd`, `make_appearance.gd`. New variant meshes get a line in `PIECES` at the top of build_bodies.gd, then an item or appearance entry pointing at `assets/characters/lowpoly/<piece>_masc.scn`.
 - **Collision via name suffixes** (Godot reads these on import):
   - `-col` → visible mesh with matching collision
   - `-colonly` → invisible collision only (blockers, simplified terrain)

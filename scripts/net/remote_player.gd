@@ -35,7 +35,7 @@ static func create(id: int, info: Dictionary) -> RemotePlayer:
 	r.model = Node3D.new()
 	r.model.name = "Model"
 	r.add_child(r.model)
-	var body := (load("res://assets/models/characters/base_bodies.glb") as PackedScene).instantiate()
+	var body := (load("res://assets/models/characters/base_bodies.scn") as PackedScene).instantiate()
 	body.name = "Character"
 	body.set_script(load("res://scripts/player/character_model.gd"))
 	r.model.add_child(body)

@@ -5,9 +5,13 @@ extends SceneTree
 ## T-pose vs an A-pose), helmets follow the head's size. A starting point after changing
 ## the bodies; fine-tune with Fit Armor.
 ##   godot --headless --path . --script res://tools/godot/refit_rigid.gd -- <old bodies scene>
+##   python3 tools/godot/apply_refit.py
+## Also moves the rigid hair / facial hair fits in data/appearance.json.
 
 const NEW := "res://assets/models/characters/base_bodies.scn"
 const ITEMS := "res://data/items.json"
+const APPEARANCE := "res://data/appearance.json"
+const OUT := "res://tools/godot/refit_out.json"
 const CHILD := {
 	"Arm": "ForeArm", "ForeArm": "Hand", "Hand": "HandIndex1", "Shoulder": "Arm",
 	"UpLeg": "Leg", "Leg": "Foot", "Foot": "ToeBase",
@@ -16,12 +20,16 @@ const CHILD := {
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
-	var old_path := args[0] if not args.is_empty() else "res://assets/models/characters/base_bodies.glb"
+	var old_path := args[0] if not args.is_empty() else "res://assets/models/characters/base_bodies.scn"
 	var old_scene: Node = (load(old_path) as PackedScene).instantiate()
 	var new_scene: Node = (load(NEW) as PackedScene).instantiate()
 	var data = JSON.parse_string(FileAccess.get_file_as_string(ITEMS))
+	var looks = JSON.parse_string(FileAccess.get_file_as_string(APPEARANCE))
 	var moved := 0
-	for item: Dictionary in data.items:
+	var entries: Array = data.items.duplicate()
+	entries.append_array(looks.get("hair_styles", []))
+	entries.append_array(looks.get("facial_hair", []))
+	for item: Dictionary in entries:
 		var fit = item.get("fit")
 		if not fit is Dictionary:
 			continue
@@ -63,13 +71,14 @@ func _initialize() -> void:
 				e.scale = snappedf(sc, 0.01)
 				moved += 1
 				print("%s %s %s -> %s" % [item.id, body, bone, e.position])
-	# Written back with only the fits changed (the rest of the file as it was).
-	var text := FileAccess.get_file_as_string(ITEMS)
-	var original = JSON.parse_string(text)
-	for i in data.items.size():
-		original.items[i]["fit"] = data.items[i].get("fit")
-	var f := FileAccess.open(ITEMS, FileAccess.WRITE)
-	f.store_string(JSON.stringify(original, "\t", false))
+	# Only the fits are written, to OUT ({id: fit}); tools/godot/apply_refit.py merges them
+	# into items.json / appearance.json keeping those files' formatting.
+	var fits := {}
+	for item: Dictionary in entries:
+		if item.get("fit") is Dictionary:
+			fits[String(item.id)] = item.fit
+	var f := FileAccess.open(OUT, FileAccess.WRITE)
+	f.store_string(JSON.stringify(fits, "\t"))
 	f.close()
 	print("moved %d fits" % moved)
 	old_scene.free()

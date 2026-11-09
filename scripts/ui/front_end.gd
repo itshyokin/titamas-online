@@ -222,7 +222,7 @@ func _build_stage() -> void:
 	_turntable = Node3D.new()
 	_turntable.position.y = DAIS_TOP
 	add_child(_turntable)
-	var body := (load("res://assets/models/characters/base_bodies.glb") as PackedScene).instantiate()
+	var body := (load("res://assets/models/characters/base_bodies.scn") as PackedScene).instantiate()
 	body.set_script(load("res://scripts/player/character_model.gd"))
 	_turntable.add_child(body)
 	_model = body as CharacterModel
@@ -832,6 +832,8 @@ func _creator_page() -> Control:
 	rv.add_theme_constant_override("separation", 10)
 	right.add_child(rv)
 	rv.add_child(_heading("Appearance", 24))
+	rv.add_child(_stepper("Head", "head", "heads"))
+	rv.add_child(_stepper("Face", "face", "faces"))
 	rv.add_child(_stepper("Hair style", "hair", "hair_styles"))
 	rv.add_child(_swatch_grid("hair_color", a.get("hair_colors", []), 7))
 	rv.add_child(_stepper("Facial hair", "facial_hair", "facial_hair"))
@@ -988,6 +990,8 @@ func _randomize() -> void:
 		var o: Array = a.get(list, [])
 		return String(o[randi() % o.size()]) if not o.is_empty() else ""
 	_look["skin"] = pick_color.call("skin_colors")
+	_look["head"] = pick.call("heads")
+	_look["face"] = "painted"
 	_look["hair"] = pick.call("hair_styles")
 	# Natural hair colours most of the time.
 	var hair_colors: Array = a.get("hair_colors", [])

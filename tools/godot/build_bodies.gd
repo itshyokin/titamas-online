@@ -1,25 +1,53 @@
 extends SceneTree
-## Builds assets/models/characters/base_bodies.scn from the two rigged Mixamo base models
-## (assets/models/characters/new/masc_tpose.fbx and fem_tpose.fbx), in the layout the game
-## expects (the same as the old base_bodies.glb):
+## Builds assets/models/characters/base_bodies.scn, the bodies every character uses:
 ##   base_bodies
-##     Armature_masc / Skeleton3D / head, torso, left_arm, left_hand, left_leg, left_foot, right_...
-##     Armature_femme / Skeleton3D / f_head, f_torso, ...
-## Each body is turned to face -Z, scaled to its height in metres and baked into that space
-## (skeleton rests, mesh vertices and bind poses), so the eyes, builds (weight), armour
-## fitting and hair placement all work in metres with the feet at 0. The single body mesh
-## is cut into parts by the bone each triangle mostly follows, so gear can hide parts.
+##     Armature_masc / Skeleton3D / head, torso, left_arm, left_hand, left_leg, left_foot,
+##                                  right_..., underwear
+##     Armature_femme / Skeleton3D / f_head, f_torso, ...   (copied as it is from the old
+##                                  base_bodies.glb until the femme version is made)
+## The masc body comes from the low-poly Blender file exported as
+## assets/models/characters/src/lowpoly_guy.glb (Mixamo rig). It is turned to face -Z,
+## scaled so the top of the head is at HEIGHT metres and baked into that space (skeleton
+## rests, vertices, bind poses), so eyes, builds (weight), armour fitting and hair work in
+## metres with the feet at 0. The body mesh is cut into parts by the bone each triangle
+## mostly follows, so gear can hide parts; its "leather" surface becomes `underwear`.
+##
+## The other meshes in the file (outfits, heads, hair, the face, hats) are saved with the
+## same bake as fitted (skinned) scenes in assets/characters/lowpoly/, cut into pieces as
+## listed in PIECES, for items and appearance options (data/items.json, appearance.json).
 ##
 ##   godot --headless --path . --script res://tools/godot/build_bodies.gd
-## Then rebuild the animations (tools/godot/retarget_mixamo.gd), the placeholder armour
-## (tools/godot/make_placeholder_armor.gd) and hair (tools/godot/make_appearance.gd).
+## Then rebuild the animations (tools/godot/retarget_mixamo.gd) and the placeholder hair
+## (tools/godot/make_appearance.gd).
 
 const OUT := "res://assets/models/characters/base_bodies.scn"
-## Source FBX, armature name, part-name prefix and height (top of the head, m).
-const BODIES := [
-	["res://assets/models/characters/new/masc_tpose.fbx", "Armature_masc", "", 1.86],
-	["res://assets/models/characters/new/fem_tpose.fbx", "Armature_femme", "f_", 1.80],
-]
+const SOURCE := "res://assets/models/characters/src/lowpoly_guy.glb"
+const OLD_BODIES := "res://assets/models/characters/base_bodies.glb"
+const GEAR_DIR := "res://assets/characters/lowpoly"
+## Top of the head (m).
+const HEIGHT := 1.86
+## Meshes that make the body.
+const BODY_MESHES := ["bare_body", "head_human"]
+## Body surfaces (by material) kept as their own part instead of skin.
+const BODY_EXTRA := {"leather": "underwear"}
+
+## Saved pieces: file -> [[mesh, material ("" = all), min height, max height (m, after the
+## bake; -1 = none)], ...]. Rigid meshes (no skin) follow BONE_OF.
+const PIECES := {
+	"chainmail_shirt": [["chainmail", "chainmail", -1, -1]],
+	"cloth_leggings": [["chainmail", "tan_cloth", -1, -1]],
+	"leather_tunic": [["leatherarmor", "tan_cloth", -1, -1]],
+	"dark_leggings": [["leatherarmor", "leggings", -1, -1]],
+	"leather_gloves": [["leatherarmor", "leather", 0.62, -1]],
+	"leather_boots": [["leatherarmor", "leather", -1, 0.62]],
+	"head_elf": [["head_elf", "", -1, -1]],
+	"face_default": [["face_default", "", -1, -1]],
+	"hair_short": [["hair_short", "", -1, -1]],
+	"hair_balding": [["hair_balding", "", -1, -1]],
+	"tin_hat": [["hat_tin", "", -1, -1]],
+}
+const BONE_OF := {"hat_tin": "mixamorig_Head"}
+
 ## Which part a bone's skin belongs to.
 const PART_OF := {
 	"Neck": "head", "Head": "head", "HeadTop_End": "head",
@@ -30,30 +58,48 @@ const PART_OF := {
 	"LeftFoot": "left_foot", "LeftToeBase": "left_foot", "LeftToe_End": "left_foot",
 	"RightFoot": "right_foot", "RightToeBase": "right_foot", "RightToe_End": "right_foot",
 }
-
-
 ## Hands and feet win a triangle only when they clearly own it.
 const PART_BIAS := {"left_hand": 0.6, "right_hand": 0.6, "left_foot": 0.75, "right_foot": 0.75}
 
+var _skel: Skeleton3D
+var _src: Node
+var _globals: Array[Transform3D] = []
+var _scale := 1.0
+var _turn := Basis(Vector3.UP, PI)
+var _skin: Skin
+var _out: Skeleton3D
+
 
 func _initialize() -> void:
+	_src = (load(SOURCE) as PackedScene).instantiate()
+	_skel = _src.find_children("*", "Skeleton3D", true, false)[0]
 	var root := Node3D.new()
 	root.name = "base_bodies"
-	for entry in BODIES:
-		var armature := _build(entry[0], entry[1], entry[2], entry[3])
-		root.add_child(armature)
-		_own(armature, root)
+	var masc := _build_skeleton("Armature_masc")
+	root.add_child(masc)
+	_build_body()
+	# The femme body, unchanged.
+	var old := (load(OLD_BODIES) as PackedScene).instantiate()
+	var femme := old.get_node("Armature_femme")
+	old.remove_child(femme)
+	femme.owner = null
+	root.add_child(femme)
+	old.free()
+	_own(root, root)
 	var packed := PackedScene.new()
 	packed.pack(root)
-	var err := ResourceSaver.save(packed, OUT)
-	print("saved %s err=%d" % [OUT, err])
+	print("saved %s err=%d" % [OUT, ResourceSaver.save(packed, OUT)])
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(GEAR_DIR))
+	for file: String in PIECES:
+		_save_piece(file, PIECES[file])
 	root.free()
+	_src.free()
 	quit()
 
 
 func _own(node: Node, owner_node: Node) -> void:
-	node.owner = owner_node
 	for c in node.get_children():
+		c.owner = owner_node
 		_own(c, owner_node)
 
 
@@ -68,164 +114,254 @@ func _part_of(bone_name: String) -> String:
 	return "torso"
 
 
-func _build(path: String, armature_name: String, prefix: String, height: float) -> Node3D:
-	var src: Node = (load(path) as PackedScene).instantiate()
-	var skel: Skeleton3D = src.find_children("*", "Skeleton3D", true, false)[0]
-	var skel_xf := _scene_xform(skel, src)
-	var n := skel.get_bone_count()
-	var globals: Array[Transform3D] = []
+## The skeleton, turned to face -Z and scaled to HEIGHT.
+func _build_skeleton(armature_name: String) -> Node3D:
+	var skel_xf := _scene_xform(_skel, _src)
+	var n := _skel.get_bone_count()
 	for b in n:
-		globals.append(skel_xf * skel.get_bone_global_rest(b))
-	# Turn to face -Z and scale so the top of the head is at `height`.
-	var top := skel.find_bone("mixamorig_HeadTop_End")
-	var feet := INF
-	for b in n:
-		feet = minf(feet, globals[b].origin.y)
-	var s := height / (globals[top].origin.y - 0.0)
-	var turn := Basis(Vector3.UP, PI)
-	var to_new := func(p: Vector3) -> Vector3: return turn * p * s
-
+		_globals.append(skel_xf * _skel.get_bone_global_rest(b))
+	var top := _skel.find_bone("mixamorig_HeadTop_End")
+	_scale = HEIGHT / _globals[top].origin.y
 	var armature := Node3D.new()
 	armature.name = armature_name
-	var out := Skeleton3D.new()
-	out.name = "Skeleton3D"
-	armature.add_child(out)
+	_out = Skeleton3D.new()
+	_out.name = "Skeleton3D"
+	armature.add_child(_out)
 	var new_globals: Array[Transform3D] = []
 	for b in n:
-		out.add_bone(skel.get_bone_name(b))
+		_out.add_bone(_skel.get_bone_name(b))
 	for b in n:
-		out.set_bone_parent(b, skel.get_bone_parent(b))
-		new_globals.append(Transform3D(turn * globals[b].basis.orthonormalized(), to_new.call(globals[b].origin)))
+		_out.set_bone_parent(b, _skel.get_bone_parent(b))
+		new_globals.append(Transform3D(_turn * _globals[b].basis.orthonormalized(), _to_new(_globals[b].origin)))
 	for b in n:
-		var p := out.get_bone_parent(b)
+		var p := _out.get_bone_parent(b)
 		var rest := new_globals[b] if p < 0 else new_globals[p].affine_inverse() * new_globals[b]
-		out.set_bone_rest(b, rest)
-		out.set_bone_pose(b, rest)
-
-	# One skin bind per bone, in the new space.
-	var skin := Skin.new()
+		_out.set_bone_rest(b, rest)
+		_out.set_bone_pose(b, rest)
+	_skin = Skin.new()
 	for b in n:
-		skin.add_named_bind(out.get_bone_name(b), new_globals[b].affine_inverse())
+		_skin.add_named_bind(_out.get_bone_name(b), new_globals[b].affine_inverse())
+	return armature
 
-	var parts := {}  # part -> {verts, normals, uvs, bones, weights, index map}
-	for mi_node in skel.find_children("*", "MeshInstance3D", true, false):
-		var mi := mi_node as MeshInstance3D
-		var src_skin := mi.skin
+
+func _to_new(p: Vector3) -> Vector3:
+	return _turn * p * _scale
+
+
+## One surface of a source mesh at rest in the new space:
+## {pos, nrm, uv, bones (4 per vertex), weights, index, parts (per-vertex part weights), material}
+func _bake_surface(mi: MeshInstance3D, surf: int) -> Dictionary:
+	var arrays := mi.mesh.surface_get_arrays(surf)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var uvs = arrays[Mesh.ARRAY_TEX_UV]
+	var index = arrays[Mesh.ARRAY_INDEX]
+	if index == null:
+		index = PackedInt32Array(range(verts.size()))
+	var pos := PackedVector3Array()
+	var nrm := PackedVector3Array()
+	var vb := PackedInt32Array()
+	var vw := PackedFloat32Array()
+	var part_weights: Array[Dictionary] = []
+	pos.resize(verts.size())
+	nrm.resize(verts.size())
+	var src_skin := mi.skin
+	if src_skin == null:
+		# A rigid mesh: everything follows one bone.
+		var bone := _skel.find_bone(String(BONE_OF.get(String(mi.name), "mixamorig_Head")))
+		var xf := _scene_xform(mi, _src)
+		for v in verts.size():
+			pos[v] = _to_new(xf * verts[v])
+			nrm[v] = (_turn * (xf.basis * normals[v])).normalized()
+			vb.append_array([bone, 0, 0, 0])
+			vw.append_array([1.0, 0.0, 0.0, 0.0])
+			part_weights.append({_part_of(_skel.get_bone_name(bone)): 1.0})
+	else:
 		var bind_bone := PackedInt32Array()
 		var bind_pose: Array[Transform3D] = []
 		for i in src_skin.get_bind_count():
 			var bname := String(src_skin.get_bind_name(i))
-			var bone := skel.find_bone(bname) if bname != "" else src_skin.get_bind_bone(i)
-			bind_bone.append(bone)
+			bind_bone.append(_skel.find_bone(bname) if bname != "" else src_skin.get_bind_bone(i))
 			bind_pose.append(src_skin.get_bind_pose(i))
-		for surf in mi.mesh.get_surface_count():
-			var arrays := mi.mesh.surface_get_arrays(surf)
-			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-			var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-			var uvs = arrays[Mesh.ARRAY_TEX_UV]
-			var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
-			var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
-			var per := bones.size() / verts.size()
-			var index = arrays[Mesh.ARRAY_INDEX]
-			if index == null:
-				index = PackedInt32Array(range(verts.size()))
-			# Rest-pose positions and normals in the new space, and the bones as bone indices.
-			var pos := PackedVector3Array()
-			var nrm := PackedVector3Array()
-			var vb := PackedInt32Array()
-			var vw := PackedFloat32Array()
-			var part_weights: Array[Dictionary] = []
-			pos.resize(verts.size())
-			nrm.resize(verts.size())
-			for v in verts.size():
-				var p := Vector3.ZERO
-				var nn := Vector3.ZERO
-				var total := 0.0
-				var slots := []
-				for k in per:
-					var w := weights[v * per + k]
-					var bi := bones[v * per + k]
-					if w <= 0.0:
-						continue
-					var bone := bind_bone[bi]
-					var m: Transform3D = globals[bone] * bind_pose[bi]
-					p += m * verts[v] * w
-					nn += (m.basis * normals[v]) * w
-					total += w
-					slots.append([bone, w])
-				if total > 0.0:
-					p /= total
-				pos[v] = to_new.call(p)
-				nrm[v] = (turn * nn).normalized()
-				slots.sort_custom(func(a: Array, c: Array) -> bool: return a[1] > c[1])
-				for k in 4:
-					if k < slots.size():
-						vb.append(slots[k][0])
-						vw.append(slots[k][1] / total)
-					else:
-						vb.append(0)
-						vw.append(0.0)
-				var pw := {}
-				for slot: Array in slots:
-					var pn := _part_of(skel.get_bone_name(slot[0]))
-					pw[pn] = float(pw.get(pn, 0.0)) + float(slot[1]) / total * float(PART_BIAS.get(pn, 1.0))
-				part_weights.append(pw)
-			# Each triangle goes to the part its corners follow most (all their weights added;
-			# hands and feet count a little less, so wrists and ankles stay with the limb).
-			for t in range(0, index.size(), 3):
-				var votes := {}
-				for c in 3:
-					var pw: Dictionary = part_weights[index[t + c]]
-					for pn in pw:
-						votes[pn] = float(votes.get(pn, 0.0)) + float(pw[pn])
-				var part := ""
-				for pn in votes:
-					if part.is_empty() or votes[pn] > votes[part]:
-						part = pn
-				if not parts.has(part):
-					parts[part] = {"map": {}, "v": PackedVector3Array(), "n": PackedVector3Array(), "uv": PackedVector2Array(), "b": PackedInt32Array(), "w": PackedFloat32Array(), "i": PackedInt32Array()}
-				var P: Dictionary = parts[part]
-				for c in 3:
-					var vi: int = index[t + c]
-					var key := "%d:%d" % [surf, vi]
-					if not P.map.has(key):
-						P.map[key] = P.v.size()
-						P.v.append(pos[vi])
-						P.n.append(nrm[vi])
-						P.uv.append(uvs[vi] if uvs != null else Vector2.ZERO)
-						for k in 4:
-							P.b.append(vb[vi * 4 + k])
-							P.w.append(vw[vi * 4 + k])
-					P.i.append(P.map[key])
-	var mat := StandardMaterial3D.new()
-	mat.resource_name = "Body"
-	mat.albedo_color = Color(1.0, 0.8, 0.72)
-	mat.roughness = 0.85
-	var names := parts.keys()
-	names.sort()
-	for part in names:
-		var P: Dictionary = parts[part]
+		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+		var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
+		var per := bones.size() / verts.size()
+		for v in verts.size():
+			var p := Vector3.ZERO
+			var nn := Vector3.ZERO
+			var total := 0.0
+			var slots := []
+			for k in per:
+				var w := weights[v * per + k]
+				if w <= 0.0:
+					continue
+				var bi := bones[v * per + k]
+				var bone := bind_bone[bi]
+				var m: Transform3D = _globals[bone] * bind_pose[bi]
+				p += m * verts[v] * w
+				nn += (m.basis * normals[v]) * w
+				total += w
+				slots.append([bone, w])
+			if total > 0.0:
+				p /= total
+			pos[v] = _to_new(p)
+			nrm[v] = (_turn * nn).normalized()
+			slots.sort_custom(func(a: Array, c: Array) -> bool: return a[1] > c[1])
+			for k in 4:
+				vb.append(slots[k][0] if k < slots.size() else 0)
+				vw.append(slots[k][1] / total if k < slots.size() else 0.0)
+			var pw := {}
+			for slot: Array in slots:
+				var pn := _part_of(_skel.get_bone_name(slot[0]))
+				pw[pn] = float(pw.get(pn, 0.0)) + float(slot[1]) / total * float(PART_BIAS.get(pn, 1.0))
+			part_weights.append(pw)
+	var mat := mi.get_active_material(surf)
+	return {"pos": pos, "nrm": nrm, "uv": uvs, "bones": vb, "weights": vw, "index": index,
+		"parts": part_weights, "material": mat, "material_name": mat.resource_name if mat else ""}
+
+
+## Collects triangles into a new mesh (keyed groups of vertices).
+class Builder:
+	var map := {}
+	var v := PackedVector3Array()
+	var n := PackedVector3Array()
+	var uv := PackedVector2Array()
+	var b := PackedInt32Array()
+	var w := PackedFloat32Array()
+	var i := PackedInt32Array()
+
+	func add_tri(s: Dictionary, t: int, key: String) -> void:
+		for c in 3:
+			var vi: int = s.index[t + c]
+			var k := "%s:%d" % [key, vi]
+			if not map.has(k):
+				map[k] = v.size()
+				v.append(s.pos[vi])
+				n.append(s.nrm[vi])
+				uv.append(s.uv[vi] if s.uv != null else Vector2.ZERO)
+				for q in 4:
+					b.append(s.bones[vi * 4 + q])
+					w.append(s.weights[vi * 4 + q])
+			i.append(map[k])
+
+	func surface() -> Array:
 		var arrays := []
 		arrays.resize(Mesh.ARRAY_MAX)
-		arrays[Mesh.ARRAY_VERTEX] = P.v
-		arrays[Mesh.ARRAY_NORMAL] = P.n
-		arrays[Mesh.ARRAY_TEX_UV] = P.uv
-		arrays[Mesh.ARRAY_BONES] = P.b
-		arrays[Mesh.ARRAY_WEIGHTS] = P.w
-		arrays[Mesh.ARRAY_INDEX] = P.i
+		arrays[Mesh.ARRAY_VERTEX] = v
+		arrays[Mesh.ARRAY_NORMAL] = n
+		arrays[Mesh.ARRAY_TEX_UV] = uv
+		arrays[Mesh.ARRAY_BONES] = b
+		arrays[Mesh.ARRAY_WEIGHTS] = w
+		arrays[Mesh.ARRAY_INDEX] = i
+		return arrays
+
+
+func _mesh_named(mesh_name: String) -> MeshInstance3D:
+	for mi in _src.find_children("*", "MeshInstance3D", true, false):
+		if String(mi.name) == mesh_name:
+			return mi
+	push_error("no mesh " + mesh_name)
+	return null
+
+
+func _build_body() -> void:
+	var parts := {}  # part -> Builder
+	var extra_mats := {}
+	for mesh_name: String in BODY_MESHES:
+		var mi := _mesh_named(mesh_name)
+		for surf in mi.mesh.get_surface_count():
+			var s := _bake_surface(mi, surf)
+			var fixed := String(BODY_EXTRA.get(s.material_name, ""))
+			if fixed != "":
+				extra_mats[fixed] = _material(s.material)
+			for t in range(0, s.index.size(), 3):
+				var part := fixed
+				if part == "":
+					# The part its corners follow most (hands and feet count a little less,
+					# so wrists and ankles stay with the limb). The head mesh is all head.
+					var votes := {}
+					for c in 3:
+						var pw: Dictionary = s.parts[s.index[t + c]]
+						for pn in pw:
+							votes[pn] = float(votes.get(pn, 0.0)) + float(pw[pn])
+					for pn in votes:
+						if part.is_empty() or votes[pn] > votes[part]:
+							part = pn
+					if mesh_name.begins_with("head"):
+						part = "head"
+					elif part == "head":
+						part = "torso"  # the body's own neck stump stays with the torso
+				if not parts.has(part):
+					parts[part] = Builder.new()
+				(parts[part] as Builder).add_tri(s, t, "%s:%d" % [mesh_name, surf])
+	var skin_mat := StandardMaterial3D.new()
+	skin_mat.resource_name = "Body"
+	skin_mat.albedo_color = Color(1.0, 0.8, 0.72)
+	skin_mat.roughness = 0.85
+	var names := parts.keys()
+	names.sort()
+	for part: String in names:
 		var mesh := ArrayMesh.new()
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		mesh.surface_set_material(0, mat)
-		var part_mi := MeshInstance3D.new()
-		part_mi.name = prefix + part
-		part_mi.mesh = mesh
-		part_mi.skin = skin
-		out.add_child(part_mi)
-		part_mi.skeleton = NodePath("..")
-		print("  %s%-10s %5d verts %5d tris" % [prefix, part, P.v.size(), P.i.size() / 3])
-	print("%s: scale %.4f, %d bones, feet at %.3f" % [armature_name, s, n, feet * s])
-	src.free()
-	return armature
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, (parts[part] as Builder).surface())
+		mesh.surface_set_material(0, extra_mats.get(part, skin_mat))
+		var mi := MeshInstance3D.new()
+		mi.name = part
+		mi.mesh = mesh
+		mi.skin = _skin
+		_out.add_child(mi)
+		mi.skeleton = NodePath("..")
+		print("  %-10s %5d verts %5d tris" % [part, (parts[part] as Builder).v.size(), (parts[part] as Builder).i.size() / 3])
+	print("masc: scale %.4f, %d bones" % [_scale, _out.get_bone_count()])
+
+
+## A copy of a source material for the game (textures kept, pixel look, no specular glare).
+func _material(src: Material) -> Material:
+	if src is BaseMaterial3D:
+		var m := (src as BaseMaterial3D).duplicate() as BaseMaterial3D
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+		m.metallic_specular = 0.3
+		return m
+	return src
+
+
+func _save_piece(file: String, specs: Array) -> void:
+	var root := Node3D.new()
+	root.name = file
+	var count := 0
+	for spec: Array in specs:
+		var mi := _mesh_named(spec[0])
+		if mi == null:
+			continue
+		for surf in mi.mesh.get_surface_count():
+			var s := _bake_surface(mi, surf)
+			if String(spec[1]) != "" and s.material_name != String(spec[1]):
+				continue
+			var builder := Builder.new()
+			for t in range(0, s.index.size(), 3):
+				var y: float = (s.pos[s.index[t]].y + s.pos[s.index[t + 1]].y + s.pos[s.index[t + 2]].y) / 3.0
+				if (float(spec[2]) >= 0.0 and y < float(spec[2])) or (float(spec[3]) >= 0.0 and y > float(spec[3])):
+					continue
+				builder.add_tri(s, t, str(surf))
+			if builder.i.is_empty():
+				continue
+			var mesh := ArrayMesh.new()
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, builder.surface())
+			mesh.surface_set_material(0, _material(s.material))
+			var part := MeshInstance3D.new()
+			part.name = "%s_%d" % [file, count]
+			part.mesh = mesh
+			part.skin = _skin
+			root.add_child(part)
+			part.owner = root
+			count += 1
+	var packed := PackedScene.new()
+	packed.pack(root)
+	var path := "%s/%s_masc.scn" % [GEAR_DIR, file]
+	var box := AABB()
+	for c in root.get_children():
+		box = (c as MeshInstance3D).get_aabb() if box.size == Vector3.ZERO else box.merge((c as MeshInstance3D).get_aabb())
+	print("  %s err=%d meshes=%d %s" % [path, ResourceSaver.save(packed, path), count, box])
+	root.free()
 
 
 func _scene_xform(node: Node, root: Node) -> Transform3D:

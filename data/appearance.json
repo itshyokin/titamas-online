@@ -60,6 +60,34 @@
 		"#e0b030",
 		"#8ad0e0"
 	],
+	"heads": [
+		{
+			"id": "human",
+			"name": "Human"
+		},
+		{
+			"id": "elf",
+			"name": "Elf (pointed ears)",
+			"fitted_masc": "res://assets/characters/lowpoly/head_elf_masc.scn",
+			"fitted_femme": "",
+			"hides": [
+				"head"
+			]
+		}
+	],
+	"faces": [
+		{
+			"id": "painted",
+			"name": "Painted (simple)",
+			"fitted_masc": "res://assets/characters/lowpoly/face_default_masc.scn",
+			"fitted_femme": "",
+			"painted": true
+		},
+		{
+			"id": "sculpted",
+			"name": "Eyes only"
+		}
+	],
 	"hair_styles": [
 		{
 			"id": "bald",
@@ -102,36 +130,36 @@
 			"fitted_femme": "res://assets/characters/hair/long_femme.scn",
 			"model": "builtin:hair_long",
 			"fit": {
-				"masc": [
-					{
-						"bone": "mixamorig_Head",
-						"position": [
-							0,
-							1.76,
-							0.014
-						],
-						"rotation": [
-							0,
-							0,
-							0
-						],
-						"scale": 1.0
-					}
-				],
 				"femme": [
 					{
 						"bone": "mixamorig_Head",
 						"position": [
-							0,
+							0.0,
 							1.745,
 							0.072
 						],
 						"rotation": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
 						],
 						"scale": 1.08
+					}
+				],
+				"masc": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0.0,
+							1.692,
+							0.012
+						],
+						"rotation": [
+							0.0,
+							0.0,
+							0.0
+						],
+						"scale": 1.48
 					}
 				]
 			}
@@ -143,36 +171,36 @@
 			"fitted_femme": "res://assets/characters/hair/ponytail_femme.scn",
 			"model": "builtin:hair_ponytail",
 			"fit": {
-				"masc": [
-					{
-						"bone": "mixamorig_Head",
-						"position": [
-							0,
-							1.78,
-							0.118
-						],
-						"rotation": [
-							0,
-							0,
-							0
-						],
-						"scale": 1.0
-					}
-				],
 				"femme": [
 					{
 						"bone": "mixamorig_Head",
 						"position": [
-							0,
+							0.0,
 							1.765,
 							0.182
 						],
 						"rotation": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
 						],
 						"scale": 1.0
+					}
+				],
+				"masc": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0.0,
+							1.722,
+							0.166
+						],
+						"rotation": [
+							0.0,
+							0.0,
+							0.0
+						],
+						"scale": 1.48
 					}
 				]
 			}
@@ -184,39 +212,51 @@
 			"fitted_femme": "res://assets/characters/hair/bun_femme.scn",
 			"model": "builtin:hair_bun",
 			"fit": {
-				"masc": [
-					{
-						"bone": "mixamorig_Head",
-						"position": [
-							0,
-							1.83,
-							0.1
-						],
-						"rotation": [
-							0,
-							0,
-							0
-						],
-						"scale": 1.0
-					}
-				],
 				"femme": [
 					{
 						"bone": "mixamorig_Head",
 						"position": [
-							0,
+							0.0,
 							1.815,
 							0.165
 						],
 						"rotation": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
 						],
 						"scale": 1.0
 					}
+				],
+				"masc": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0.0,
+							1.796,
+							0.14
+						],
+						"rotation": [
+							0.0,
+							0.0,
+							0.0
+						],
+						"scale": 1.48
+					}
 				]
 			}
+		},
+		{
+			"id": "crop",
+			"name": "Short crop",
+			"fitted_masc": "res://assets/characters/lowpoly/hair_short_masc.scn",
+			"fitted_femme": "res://assets/characters/hair/short_femme.scn"
+		},
+		{
+			"id": "balding",
+			"name": "Balding",
+			"fitted_masc": "res://assets/characters/lowpoly/hair_balding_masc.scn",
+			"fitted_femme": "res://assets/characters/hair/short_femme.scn"
 		}
 	],
 	"facial_hair": [
@@ -329,10 +369,10 @@
 	],
 	"eye_placement": {
 		"masc": {
-			"height": 1.75,
-			"apart": 0.036,
-			"width": 0.041,
-			"tall": 0.031,
+			"height": 1.725,
+			"apart": 0.03,
+			"width": 0.032,
+			"tall": 0.026,
 			"forward": 0.002
 		},
 		"femme": {
@@ -348,19 +388,21 @@
 		"body": "masc",
 		"pronouns": "he",
 		"skin": "#c99167",
-		"hair": "short",
+		"hair": "crop",
 		"hair_color": "#3b2618",
 		"facial_hair": "none",
 		"facial_color": "#3b2618",
 		"eyes": "almond",
 		"eye_color": "#3f78c8",
 		"height": "medium",
-		"build": "medium"
+		"build": "medium",
+		"head": "human",
+		"face": "painted"
 	},
 	"underwear": {
 		"id": "underwear",
 		"name": "Underclothes",
-		"fitted_masc": "res://assets/characters/underwear_masc.scn",
+		"fitted_masc": "",
 		"fitted_femme": "res://assets/characters/underwear_femme.scn",
 		"color": "#cbbd9f"
 	}

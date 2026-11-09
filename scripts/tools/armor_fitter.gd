@@ -8,7 +8,7 @@ extends Node3D
 ## Mouse: hold right button to turn the view, wheel to zoom. Keys: arrows move the part
 ## left/right and forward/back, Page Up/Down up and down (hold Shift for bigger steps).
 
-const BODIES_SCENE := "res://assets/models/characters/base_bodies.glb"
+const BODIES_SCENE := "res://assets/models/characters/base_bodies.scn"
 const CHARACTER_SCRIPT := "res://scripts/player/character_model.gd"
 const POSES := ["rest (T-pose)", "idle", "idle_armed", "walking", "running", "attack_light_1", "attack_heavy", "block", "bow_aim", "cast_channel"]
 

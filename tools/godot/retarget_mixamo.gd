@@ -13,7 +13,7 @@ extends SceneTree
 
 const SOURCE_DIR := "res://assets/animations/mixamo"
 const BODIES := {"masc": "Armature_masc", "femme": "Armature_femme"}
-const BODY_SCENE := "res://assets/models/characters/base_bodies.glb"
+const BODY_SCENE := "res://assets/models/characters/base_bodies.scn"
 const ROOT_BONE := "mixamorig_Hips"
 ## Limb bones whose rest direction is matched to Mixamo's T-pose, and the child bone
 ## (first one found) that gives each one's direction.

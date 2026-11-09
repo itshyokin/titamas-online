@@ -185,6 +185,8 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 	return {
 		"body": body,
 		"skin": Color.html(get.call("skin")) if Color.html_is_valid(get.call("skin")) else Color(0.8, 0.6, 0.45),
+		"head": appearance_option("heads", get.call("head")),
+		"face": appearance_option("faces", get.call("face")),
 		"hair": appearance_option("hair_styles", get.call("hair")),
 		"hair_color": Color.html(get.call("hair_color")) if Color.html_is_valid(get.call("hair_color")) else Color(0.25, 0.15, 0.1),
 		"facial_hair": appearance_option("facial_hair", get.call("facial_hair")),

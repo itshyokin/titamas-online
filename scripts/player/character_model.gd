@@ -371,7 +371,7 @@ func _update_hidden_parts() -> void:
 		return
 	var prefix := "f_" if body_type == BodyType.FEMME else ""
 	for child in skel.get_children():
-		if child is MeshInstance3D and child.material_override == _skin_material:
+		if child is MeshInstance3D and child.owner != null:  # the body's own parts
 			var part := String(child.name).trim_prefix(prefix)
 			(child as MeshInstance3D).visible = int(_hidden_parts.get(part, 0)) <= 0
 	# Helmets can hide the hair (its "hides" lists "hair").
@@ -493,12 +493,19 @@ func _apply() -> void:
 			continue
 		armature.visible = type == body_type
 		for mesh in armature.find_children("*", "MeshInstance3D", true, false):
-			if mesh.owner != null:  # the body's own parts, not worn gear
+			if mesh.owner != null and _is_skin(mesh as MeshInstance3D):  # the body's own skin, not worn gear
 				(mesh as MeshInstance3D).material_override = _skin_material
 	_apply_morph()
 	_setup_animator()
 	_rewear()
 	_apply_look_parts()
+
+
+## A body part drawn in skin (tinted); parts with their own textured material, like the
+## low-poly body's `underwear`, keep it.
+func _is_skin(mi: MeshInstance3D) -> bool:
+	var mat := mi.mesh.surface_get_material(0) if mi.mesh and mi.mesh.get_surface_count() > 0 else null
+	return mat == null or not (mat is BaseMaterial3D and (mat as BaseMaterial3D).albedo_texture != null)
 
 
 ## Puts everything worn back on (on the current body type).
@@ -522,7 +529,7 @@ func _rewear() -> void:
 #  eyes: entry, eye_color, eye_placement: {height, apart, width, tall, forward},
 #  height_scale, weight}. Hair and facial hair are worn like gear (tags below).
 
-const LOOK_TAGS := ["underwear", "hair", "facial_hair"]
+const LOOK_TAGS := ["underwear", "head", "face", "hair", "facial_hair"]
 const EYE_SHADER := preload("res://assets/materials/eye.gdshader")
 ## How far the "heavy" and "thin" builds push the body out / in (m, at the belly).
 const HEAVY_PUSH := 0.032
@@ -559,12 +566,20 @@ func _apply_look_parts() -> void:
 		var entry: Dictionary = _look.get(tag, {})
 		if entry.has("fitted_masc") or entry.has("model"):
 			var item := entry.duplicate()
-			if tag == "underwear":
+			if tag in ["head", "face"]:
+				pass  # their own materials (a head variant is skin: see below)
+			elif tag == "underwear":
 				item["tint"] = Color.html(String(entry.get("color", "#cbbd9f")))
 			else:
 				item["tint"] = _look.get("facial_color" if tag == "facial_hair" else "hair_color", Color(0.3, 0.2, 0.1))
-			wear(item, tag)
-	_build_eyes()
+			var nodes := wear(item, tag)
+			if tag == "head":
+				for n in nodes:
+					if n is MeshInstance3D:
+						(n as MeshInstance3D).material_override = _skin_material
+	# A painted face (its own texture) replaces the eye quads.
+	if not bool((_look.get("face", {}) as Dictionary).get("painted", false)) or not _worn.has("face"):
+		_build_eyes()
 
 
 func _tint(nodes: Array, color: Color) -> void:

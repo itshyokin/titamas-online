@@ -20,36 +20,36 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [
-					{
-						"bone": "mixamorig_RightHand",
-						"grip": true,
-						"position": [
-							0,
-							0,
-							0
-						],
-						"rotation": [
-							0,
-							0,
-							0
-						],
-						"scale": 1.0
-					}
-				],
 				"femme": [
 					{
 						"bone": "mixamorig_RightHand",
 						"grip": true,
 						"position": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
 						],
 						"rotation": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
+						],
+						"scale": 1.0
+					}
+				],
+				"masc": [
+					{
+						"bone": "mixamorig_RightHand",
+						"grip": true,
+						"position": [
+							0.0,
+							0.0,
+							0.0
+						],
+						"rotation": [
+							0.0,
+							0.0,
+							0.0
 						],
 						"scale": 1.0
 					}
@@ -85,36 +85,36 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [
-					{
-						"bone": "mixamorig_RightHand",
-						"grip": true,
-						"position": [
-							0,
-							0,
-							0
-						],
-						"rotation": [
-							0,
-							0,
-							0
-						],
-						"scale": 1.0
-					}
-				],
 				"femme": [
 					{
 						"bone": "mixamorig_RightHand",
 						"grip": true,
 						"position": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
 						],
 						"rotation": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
+						],
+						"scale": 1.0
+					}
+				],
+				"masc": [
+					{
+						"bone": "mixamorig_RightHand",
+						"grip": true,
+						"position": [
+							0.0,
+							0.0,
+							0.0
+						],
+						"rotation": [
+							0.0,
+							0.0,
+							0.0
 						],
 						"scale": 1.0
 					}
@@ -150,36 +150,36 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [
-					{
-						"bone": "mixamorig_LeftHand",
-						"grip": true,
-						"position": [
-							0,
-							0,
-							0
-						],
-						"rotation": [
-							0,
-							0,
-							0
-						],
-						"scale": 1.0
-					}
-				],
 				"femme": [
 					{
 						"bone": "mixamorig_LeftHand",
 						"grip": true,
 						"position": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
 						],
 						"rotation": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
+						],
+						"scale": 1.0
+					}
+				],
+				"masc": [
+					{
+						"bone": "mixamorig_LeftHand",
+						"grip": true,
+						"position": [
+							0.0,
+							0.0,
+							0.0
+						],
+						"rotation": [
+							0.0,
+							0.0,
+							0.0
 						],
 						"scale": 1.0
 					}
@@ -215,22 +215,6 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [
-					{
-						"bone": "mixamorig_LeftForeArm",
-						"position": [
-							-0.592,
-							1.477,
-							0.049
-						],
-						"rotation": [
-							-90,
-							0,
-							0
-						],
-						"scale": 1.0
-					}
-				],
 				"femme": [
 					{
 						"bone": "mixamorig_LeftForeArm",
@@ -240,9 +224,25 @@
 							0.069
 						],
 						"rotation": [
-							-90,
-							0,
-							0
+							-90.0,
+							0.0,
+							0.0
+						],
+						"scale": 1.0
+					}
+				],
+				"masc": [
+					{
+						"bone": "mixamorig_LeftForeArm",
+						"position": [
+							-0.475,
+							1.187,
+							0.007
+						],
+						"rotation": [
+							-52.3,
+							-109.5,
+							112.5
 						],
 						"scale": 1.0
 					}
@@ -277,22 +277,6 @@
 				"hair"
 			],
 			"fit": {
-				"masc": [
-					{
-						"bone": "mixamorig_Head",
-						"position": [
-							0.0,
-							1.768,
-							-0.001
-						],
-						"rotation": [
-							0,
-							0,
-							0
-						],
-						"scale": 1.15
-					}
-				],
 				"femme": [
 					{
 						"bone": "mixamorig_Head",
@@ -302,11 +286,27 @@
 							0.061
 						],
 						"rotation": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
 						],
 						"scale": 1.12
+					}
+				],
+				"masc": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0.0,
+							1.704,
+							-0.01
+						],
+						"rotation": [
+							0.0,
+							0.0,
+							0.0
+						],
+						"scale": 1.71
 					}
 				]
 			},
@@ -337,66 +337,66 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [
-					{
-						"model": "builtin:pauldron_left",
-						"bone": "mixamorig_LeftArm",
-						"position": [
-							-0.162,
-							1.54,
-							0.092
-						],
-						"rotation": [
-							0,
-							0,
-							0
-						],
-						"scale": 1.0
-					},
-					{
-						"model": "builtin:pauldron_right",
-						"bone": "mixamorig_RightArm",
-						"position": [
-							0.162,
-							1.54,
-							0.092
-						],
-						"rotation": [
-							0,
-							0,
-							0
-						],
-						"scale": 1.0
-					}
-				],
 				"femme": [
 					{
-						"model": "builtin:pauldron_left",
 						"bone": "mixamorig_LeftArm",
+						"model": "builtin:pauldron_left",
 						"position": [
 							-0.148,
 							1.562,
 							0.085
 						],
 						"rotation": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
 						],
 						"scale": 1.0
 					},
 					{
-						"model": "builtin:pauldron_right",
 						"bone": "mixamorig_RightArm",
+						"model": "builtin:pauldron_right",
 						"position": [
 							0.148,
 							1.562,
 							0.086
 						],
 						"rotation": [
-							0,
-							0,
-							0
+							0.0,
+							0.0,
+							0.0
+						],
+						"scale": 1.0
+					}
+				],
+				"masc": [
+					{
+						"bone": "mixamorig_LeftArm",
+						"model": "builtin:pauldron_left",
+						"position": [
+							-0.221,
+							1.502,
+							0.041
+						],
+						"rotation": [
+							-0.1,
+							0.7,
+							44.5
+						],
+						"scale": 1.0
+					},
+					{
+						"bone": "mixamorig_RightArm",
+						"model": "builtin:pauldron_right",
+						"position": [
+							0.221,
+							1.502,
+							0.042
+						],
+						"rotation": [
+							0.1,
+							-0.5,
+							-44.5
 						],
 						"scale": 1.0
 					}
@@ -425,16 +425,14 @@
 			"use_hot_ticks": 0,
 			"use_mana": 0.0,
 			"model": "",
-			"fitted_masc": "res://assets/items/skinned/leather_jerkin_masc.scn",
+			"fitted_masc": "res://assets/characters/lowpoly/leather_tunic_masc.scn",
 			"fitted_femme": "res://assets/items/skinned/leather_jerkin_femme.scn",
 			"hides": [
-				"torso",
-				"left_arm",
-				"right_arm"
+				"torso"
 			],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "leather_jerkin",
 			"name": "Leather Jerkin",
@@ -459,15 +457,16 @@
 			"use_hot_ticks": 0,
 			"use_mana": 0.0,
 			"model": "",
-			"fitted_masc": "res://assets/items/skinned/travelers_trousers_masc.scn",
+			"fitted_masc": "res://assets/characters/lowpoly/dark_leggings_masc.scn",
 			"fitted_femme": "res://assets/items/skinned/travelers_trousers_femme.scn",
 			"hides": [
 				"left_leg",
-				"right_leg"
+				"right_leg",
+				"underwear"
 			],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "travelers_trousers",
 			"name": "Traveler's Trousers",
@@ -492,15 +491,15 @@
 			"use_hot_ticks": 0,
 			"use_mana": 0.0,
 			"model": "",
-			"fitted_masc": "res://assets/items/skinned/worn_boots_masc.scn",
+			"fitted_masc": "res://assets/characters/lowpoly/leather_boots_masc.scn",
 			"fitted_femme": "res://assets/items/skinned/worn_boots_femme.scn",
 			"hides": [
 				"left_foot",
 				"right_foot"
 			],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "worn_boots",
 			"name": "Worn Boots",
@@ -525,15 +524,15 @@
 			"use_hot_ticks": 0,
 			"use_mana": 0.0,
 			"model": "",
-			"fitted_masc": "res://assets/items/skinned/leather_gloves_masc.scn",
+			"fitted_masc": "res://assets/characters/lowpoly/leather_gloves_masc.scn",
 			"fitted_femme": "res://assets/items/skinned/leather_gloves_femme.scn",
 			"hides": [
 				"left_hand",
 				"right_hand"
 			],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "leather_gloves",
 			"name": "Leather Gloves",
@@ -541,6 +540,117 @@
 			"slot": "hands",
 			"icon": "gloves",
 			"icon_color": "#6e4626"
+		},
+		{
+			"description": "Riveted rings over a padded shirt.",
+			"rarity": "uncommon",
+			"value": 40,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 14.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "res://assets/characters/lowpoly/chainmail_shirt_masc.scn",
+			"fitted_femme": "res://assets/items/skinned/leather_jerkin_femme.scn",
+			"hides": [
+				"torso"
+			],
+			"fit": {
+				"femme": [],
+				"masc": []
+			},
+			"id": "chainmail_shirt",
+			"name": "Chainmail Shirt",
+			"kind": "armor",
+			"slot": "chest",
+			"icon": "chest",
+			"icon_color": "#9aa0aa"
+		},
+		{
+			"description": "",
+			"rarity": "common",
+			"value": 6,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 3.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "",
+			"fitted_masc": "res://assets/characters/lowpoly/cloth_leggings_masc.scn",
+			"fitted_femme": "res://assets/items/skinned/travelers_trousers_femme.scn",
+			"hides": [
+				"left_leg",
+				"right_leg",
+				"underwear"
+			],
+			"fit": {
+				"femme": [],
+				"masc": []
+			},
+			"id": "linen_leggings",
+			"name": "Linen Leggings",
+			"kind": "armor",
+			"slot": "legs",
+			"icon": "legs",
+			"icon_color": "#cbbd9f"
+		},
+		{
+			"description": "A brimmed kettle hat.",
+			"rarity": "common",
+			"value": 8,
+			"stack_max": 0,
+			"attack": 0.0,
+			"spell_power": 0.0,
+			"armor": 3.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
+			"use_heal": 0.0,
+			"use_hot_per_tick": 0.0,
+			"use_hot_ticks": 0,
+			"use_mana": 0.0,
+			"model": "builtin:helm",
+			"fitted_masc": "res://assets/characters/lowpoly/tin_hat_masc.scn",
+			"fitted_femme": "",
+			"hides": [],
+			"fit": {
+				"masc": [],
+				"femme": [
+					{
+						"bone": "mixamorig_Head",
+						"position": [
+							0.0,
+							1.764,
+							0.061
+						],
+						"rotation": [
+							0.0,
+							0.0,
+							0.0
+						],
+						"scale": 1.12
+					}
+				]
+			},
+			"id": "tin_hat",
+			"name": "Tin Hat",
+			"kind": "armor",
+			"slot": "head",
+			"icon": "helm",
+			"icon_color": "#7a7f88"
 		},
 		{
 			"description": "Restores 40 health at once.",
@@ -562,8 +672,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "minor_healing_potion",
 			"name": "Minor Healing Potion",
@@ -593,8 +703,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "bandage",
 			"name": "Bandage",
@@ -624,8 +734,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "mana_draught",
 			"name": "Mana Draught",
@@ -655,8 +765,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "bandit_insignia",
 			"name": "Bandit Insignia",
@@ -684,8 +794,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "linen_cloth",
 			"name": "Linen Cloth",
@@ -713,8 +823,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "hearthstone",
 			"name": "Hearthstone",
@@ -753,8 +863,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "worn_dagger",
 			"name": "Worn Dagger",
@@ -786,8 +896,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "iron_greatsword",
 			"name": "Iron Greatsword",
@@ -819,8 +929,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "smiths_hammer",
 			"name": "Smith's Hammer",
@@ -852,8 +962,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "woodcutters_axe",
 			"name": "Woodcutter's Axe",
@@ -885,8 +995,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "light_crossbow",
 			"name": "Light Crossbow",
@@ -918,8 +1028,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "flintlock_pistol",
 			"name": "Flintlock Pistol",
@@ -951,8 +1061,8 @@
 			"fitted_femme": "",
 			"hides": [],
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"id": "flintlock_rifle",
 			"name": "Flintlock Rifle",

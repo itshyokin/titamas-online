@@ -10,7 +10,7 @@ extends SceneTree
 ## fitted_masc / fitted_femme in data/appearance.json at the new file. Long hair, ponytail
 ## and bun add a rigid piece on the head bone (WeaponModels "builtin:hair_*").
 
-const BODIES := "res://assets/models/characters/base_bodies.glb"
+const BODIES := "res://assets/models/characters/base_bodies.scn"
 
 ## Head measurements at rest, metres: top of the head, chin, front of the face, back.
 ## Measured from each body's head mesh (chin = just under the head bone).
@@ -96,7 +96,11 @@ func _save_parts(parts: Array[MeshInstance3D], bands: Dictionary, path: String) 
 func _save(head: MeshInstance3D, thickness: Callable, path: String, color: Color) -> void:
 	var mesh := _shell(head, thickness)
 	if mesh == null:
+		# Nothing of this style fits this head (too few vertices there): drop any old file
+		# so the option simply shows nothing on this body.
 		push_warning("empty: " + path)
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 		return
 	var root := Node3D.new()
 	root.name = path.get_file().get_basename()
