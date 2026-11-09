@@ -1,9 +1,9 @@
 class_name HotbarSlot
 extends Panel
-## One box on the hotbar. Boxes 1 and 2 are the primary and secondary weapons; 3-10 hold
-## spells and items (Inventory.hotbar). Click to use. Drag between boxes to rearrange,
-## off the bar to clear; drop spells from the spellbook, items from the backpack (and
-## weapons onto boxes 1 and 2).
+## One box on the hotbar (Inventory.hotbar[index]): a spell, an item or a weapon. Click
+## to use (a weapon: take it in hand). Drag between boxes to rearrange, off the bar to
+## clear; drop spells from the spellbook, items and weapons from the backpack or the
+## weapon slot.
 
 const SIZE := 54.0
 
@@ -62,19 +62,15 @@ func _make_label(fs: int) -> Label:
 	return l
 
 
-func is_weapon_box() -> bool:
-	return index < 2
-
-
-func weapon_slot() -> String:
-	return Inventory.WEAPON_SLOTS[index] if is_weapon_box() else ""
-
-
-## "ability:<id>", "item:<id>", "weapon:<slot>" or "".
+## "ability:<id>", "item:<id>" or "".
 func entry() -> String:
-	if is_weapon_box():
-		return "weapon:" + weapon_slot()
-	return String(bar.inventory.hotbar[index - 2])
+	return String(bar.inventory.hotbar[index])
+
+
+## A weapon on this box that's in hand now.
+func holds_weapon_in_hand() -> bool:
+	var e := entry()
+	return e.begins_with("item:") and String(bar.inventory.equipped.get("primary", "")) == e.substr(5)
 
 
 func refresh() -> void:
@@ -83,16 +79,7 @@ func refresh() -> void:
 	_item_icon.show_item({})
 	_item_icon.modulate = Color.WHITE
 	var tip := ""
-	if is_weapon_box():
-		var item := bar.inventory.equipped_item(weapon_slot())
-		_item_icon.show_item(item)
-		var label := "Primary" if index == 0 else "Secondary"
-		tip = "%s weapon: %s" % [label, item.get("name", "bare hands")]
-		var active := bar.inventory.active_weapon == weapon_slot()
-		_style.border_color = Color(0.32, 0.3, 0.36)
-		_style.bg_color = Color(0.07, 0.065, 0.09, 0.82)
-		modulate = Color.WHITE if active else Color(0.5, 0.5, 0.52)
-	elif e.begins_with("ability:"):
+	if e.begins_with("ability:"):
 		var ab := Database.ability(e.substr(8))
 		_ability_icon.show_ability(ab)
 		modulate = Color.WHITE
@@ -106,14 +93,19 @@ func refresh() -> void:
 		var id := e.substr(5)
 		var d := Database.item(id)
 		var n := bar.inventory.count_of(id)
-		_item_icon.show_item(d, n)
-		_item_icon.modulate = Color(1, 1, 1, 0.35) if n == 0 else Color.WHITE
+		if String(d.get("slot", "")) == "weapon":
+			var in_hand := holds_weapon_in_hand()
+			_item_icon.show_item(d)
+			_item_icon.modulate = Color.WHITE if in_hand or n > 0 else Color(1, 1, 1, 0.35)
+			tip = "%s\n%s" % [d.get("name", id), "In hand" if in_hand else ("Press to take it in hand" if n > 0 else "Not in your backpack")]
+		else:
+			_item_icon.show_item(d, n)
+			_item_icon.modulate = Color(1, 1, 1, 0.35) if n == 0 else Color.WHITE
+			tip = "%s (%d)\n%s" % [d.get("name", id), n, d.get("description", "")]
 		modulate = Color.WHITE
-		tip = "%s (%d)\n%s" % [d.get("name", id), n, d.get("description", "")]
 	else:
 		modulate = Color.WHITE
-	if not is_weapon_box():
-		_style.border_color = Color(0.32, 0.3, 0.36)
+	_style.border_color = Color(0.32, 0.3, 0.36)
 	tooltip_text = tip
 	_key.text = GameSettings.binding_label("hotbar_%d" % (index + 1))
 
@@ -144,8 +136,7 @@ func update_state(combat: PlayerCombat) -> void:
 		_timer.text = "%dm" % ceili(left / 60.0)
 	else:
 		_timer.text = ("%.1f" % left) if left < 10.0 else str(ceili(left))
-	if not is_weapon_box():
-		_ability_icon.modulate = Color(0.55, 0.55, 0.95) if dim else Color.WHITE
+	_ability_icon.modulate = Color(0.55, 0.55, 0.95) if dim else Color.WHITE
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -156,7 +147,7 @@ func _gui_input(event: InputEvent) -> void:
 
 func _get_drag_data(_at: Vector2) -> Variant:
 	var e := entry()
-	if is_weapon_box() or e.is_empty():
+	if e.is_empty():
 		return null
 	var holder := Control.new()
 	var icon := AbilityIcon.new() if e.begins_with("ability:") else null
@@ -173,7 +164,7 @@ func _get_drag_data(_at: Vector2) -> Variant:
 		it.position = -it.size * 0.5
 	set_drag_preview(holder)
 	bar.drag_from = index
-	return {"where": "hotbar", "key": index - 2}
+	return {"where": "hotbar", "key": index}
 
 
 func _can_drop_data(_at: Vector2, data: Variant) -> bool:
@@ -189,4 +180,4 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END and bar.drag_from == index:
 		bar.drag_from = -1
 		if not get_viewport().gui_is_drag_successful():
-			bar.inventory.set_hotbar(index - 2, "")
+			bar.inventory.set_hotbar(index, "")

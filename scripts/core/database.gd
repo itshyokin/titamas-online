@@ -9,7 +9,7 @@ extends Node
 signal changed(which: String)
 
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
-	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "npcs": DataFiles.NPCS,
+	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "skill_trees": DataFiles.SKILL_TREES, "npcs": DataFiles.NPCS,
 	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS, "events": DataFiles.EVENTS,
 	"achievements": DataFiles.ACHIEVEMENTS}
 
@@ -44,6 +44,8 @@ var animations := {}
 var events := {}  # id -> Dictionary
 var switches: Array = []  # [{id, name}]
 var variables: Array = []  # [{id, name}]
+## data/skill_trees.json trees, in order (see trees_for).
+var skill_trees: Array = []
 ## data/achievements.json entries, in order (the Achievements autoload uses them).
 var achievements: Array = []
 
@@ -116,6 +118,8 @@ func _load(which: String) -> void:
 				get_tree().call_group.call_deferred("map_events", "reload")
 		"achievements":
 			achievements = data.get("achievements", [])
+		"skill_trees":
+			skill_trees = data.get("trees", [])
 		"npcs":
 			npcs.clear()
 			for d in data.get("npcs", []):
@@ -180,7 +184,11 @@ func appearance_option(list: String, id: String) -> Dictionary:
 func resolve_appearance(look: Dictionary) -> Dictionary:
 	var d: Dictionary = appearance.get("default", {})
 	var get := func(key: String) -> String: return String(look.get(key, d.get(key, "")))
+	# One androgynous body for everyone (the femme body is kept only for old content;
+	# appearance.json "bodies" lists the ones characters may use).
 	var body: String = get.call("body")
+	if not body in (appearance.get("bodies", ["masc"]) as Array):
+		body = "masc"
 	var placement: Dictionary = appearance.get("eye_placement", {})
 	return {
 		"body": body,
@@ -198,6 +206,13 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 		"height_scale": float(appearance_option("heights", get.call("height")).get("scale", 1.0)),
 		"weight": float(appearance_option("builds", get.call("build")).get("weight", 0.0)),
 	}
+
+
+## A class's skill trees, by their order.
+func trees_for(class_id: String) -> Array:
+	var out := skill_trees.filter(func(t: Dictionary) -> bool: return String(t.get("class", "")) == class_id)
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.get("order", 0)) < int(b.get("order", 0)))
+	return out
 
 
 ## An item's data ({} if there's no such item).

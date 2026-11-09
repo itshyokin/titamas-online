@@ -1,8 +1,8 @@
 class_name Hotbar
 extends Control
-## The bottom bar: experience bar on top, then ten boxes. Boxes 1-2 are the primary and
-## secondary weapons (the one in use has a gold frame with a little arrow, which slides
-## across on a swap; the other is dimmed). Boxes 3-10 hold spells and items.
+## The bottom bar: experience bar on top, then ten boxes (keys 1-0) holding spells, items
+## and weapons. A weapon box whose weapon is in hand has a gold frame with a little arrow,
+## which slides across when another weapon is taken in hand. Box 11 is stamina.
 ## Built by the HUD.
 
 const GOLD := Color(1.0, 0.82, 0.35)
@@ -87,11 +87,6 @@ func _ready() -> void:
 		var s := HotbarSlot.new(self, i)
 		slots.append(s)
 		_row.add_child(s)
-		if i == 1:
-			var gap := Control.new()
-			gap.custom_minimum_size = Vector2(WEAPON_GAP - GAP, 0)
-			gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_row.add_child(gap)
 	# Box 11: stamina (the sprint key); drains while sprinting and fills back up.
 	var gap2 := Control.new()
 	gap2.custom_minimum_size = Vector2(WEAPON_GAP - GAP, 0)
@@ -154,8 +149,19 @@ func _process(_delta: float) -> void:
 func _place_frame(animate: bool) -> void:
 	if slots.is_empty():
 		return
-	var target := slots[0 if inventory.active_weapon == "primary" else 1]
+	var target: HotbarSlot = null
+	for s in slots:
+		if s.holds_weapon_in_hand():
+			target = s
+			break
+	_frame.visible = target != null
+	if target == null:
+		return
+	var was_visible := _frame.position != Vector2.ZERO
 	var to := target.position + _row.position - Vector2(2, 2)
+	if _frame.position.distance_to(to) < 0.5:
+		return
+	animate = animate or was_visible
 	if _frame_tween:
 		_frame_tween.kill()
 	if animate and is_inside_tree():
@@ -168,12 +174,9 @@ func _place_frame(animate: bool) -> void:
 		_frame.position = to
 
 
-## Click or key: use a box (weapons: switch to it).
+## Click or key: use a box (weapons: take it in hand).
 func use(i: int) -> void:
-	if i < 2:
-		combat.select_weapon(Inventory.WEAPON_SLOTS[i])
-	else:
-		combat.use_hotbar(i - 2)
+	combat.use_hotbar(i)
 
 
 func _level_label() -> Label:
@@ -204,16 +207,10 @@ func can_drop(data: Variant, target: HotbarSlot) -> bool:
 		return false
 	var id := _item_of(data)
 	match String(data.where):
-		"hotbar":
-			return not target.is_weapon_box()
-		"spellbook":
-			return not target.is_weapon_box()
-		"bag":
-			if target.is_weapon_box():
-				return inventory.is_weapon(id)
-			return inventory.is_usable(id)
-		"equip":
-			return target.is_weapon_box() and inventory.is_weapon(id)
+		"hotbar", "spellbook":
+			return true
+		"bag", "equip":
+			return inventory.is_usable(id) or inventory.is_weapon(id)
 	return false
 
 
@@ -222,17 +219,11 @@ func drop(data: Dictionary, target: HotbarSlot) -> void:
 		return
 	match String(data.where):
 		"hotbar":
-			inventory.move_hotbar(int(data.key), target.index - 2)
+			inventory.move_hotbar(int(data.key), target.index)
 		"spellbook":
-			inventory.set_hotbar(target.index - 2, "ability:" + String(data.key))
-		"bag":
-			if target.is_weapon_box():
-				inventory.equip_from(int(data.key), target.weapon_slot())
-			else:
-				inventory.set_hotbar(target.index - 2, "item:" + _item_of(data))
-		"equip":
-			if String(data.key) != target.weapon_slot() and String(data.key) in Inventory.WEAPON_SLOTS:
-				inventory.swap_weapon_slots()
+			inventory.set_hotbar(target.index, "ability:" + String(data.key))
+		"bag", "equip":
+			inventory.set_hotbar(target.index, "item:" + _item_of(data))
 	refresh()
 
 

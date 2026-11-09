@@ -21,7 +21,7 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
-	for i in 8:
+	for i in Inventory.HOTBAR_SIZE:
 		var holder := Panel.new()
 		holder.size = Vector2(BOX, BOX)
 		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -62,7 +62,7 @@ func _show() -> void:
 	# The right stick picks, so it stops turning the camera meanwhile.
 	GameSettings.wheel_open = true
 	var inv := hotbar.inventory
-	for i in 8:
+	for i in Inventory.HOTBAR_SIZE:
 		var holder := _icons[i]
 		var e := String(inv.hotbar[i])
 		var ab_icon := holder.get_child(0) as AbilityIcon
@@ -89,12 +89,12 @@ func _process(_delta: float) -> void:
 	if stick.length() > 0.5:
 		# 0 = top, going clockwise.
 		var angle := fposmod(atan2(stick.x, -stick.y), TAU)
-		_choice = int(round(angle / (TAU / 8.0))) % 8
+		_choice = int(round(angle / (TAU / float(Inventory.HOTBAR_SIZE)))) % Inventory.HOTBAR_SIZE
 	if before != _choice:
 		queue_redraw()
 	var centre := get_viewport_rect().size * 0.5
-	for i in 8:
-		var a := i * TAU / 8.0
+	for i in Inventory.HOTBAR_SIZE:
+		var a := i * TAU / float(Inventory.HOTBAR_SIZE)
 		var at := centre + Vector2(sin(a), -cos(a)) * RADIUS
 		var holder := _icons[i]
 		var big := 1.18 if i == _choice else 1.0

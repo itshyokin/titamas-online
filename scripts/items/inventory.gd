@@ -5,9 +5,9 @@ extends Node
 ## data/items.json (Database → Items). Saved with the character (GameSession) whenever
 ## it changes; a new character starts with its class's (or the player data's) starting kit.
 ##
-## Weapons (item slot "weapon") go in the primary or secondary slot; one of them is in use
-## (`active_weapon`, swapped by PlayerCombat). Only the weapon in use adds its stats.
-## The hotbar: 8 entries after the two weapon boxes, each "ability:<id>", "item:<id>" or "".
+## One weapon at a time (item slot "weapon" → equipment slot "primary"). Weapons can sit
+## on the hotbar: pressing one equips it (the one in hand goes back to the backpack).
+## The hotbar: 10 entries (keys 1-0), each "ability:<id>", "item:<id>" or "".
 
 signal changed
 signal equipment_changed
@@ -20,16 +20,20 @@ signal weapon_swapped(slot: String)
 
 const SIZE := 24
 ## Equipment slots, in the order the character window shows them.
-const SLOTS := ["head", "shoulders", "chest", "hands", "legs", "feet", "primary", "secondary", "off_hand"]
+const SLOTS := ["head", "shoulders", "chest", "hands", "legs", "feet", "primary", "off_hand"]
 const SLOT_NAMES := {
 	"head": "Head", "shoulders": "Shoulders", "chest": "Chest", "hands": "Hands", "legs": "Legs",
-	"feet": "Feet", "primary": "Primary", "secondary": "Secondary", "off_hand": "Off hand",
+	"feet": "Feet", "primary": "Weapon", "off_hand": "Off hand",
 }
-const WEAPON_SLOTS := ["primary", "secondary"]
+const WEAPON_SLOTS := ["primary"]
 const STAT_KEYS := ["attack", "spell_power", "armor", "block", "bonus_health", "bonus_mana"]
-const HOTBAR_SIZE := 8
+const HOTBAR_SIZE := 10
+## Saves from before (8 entries after two weapon boxes).
+const OLD_HOTBAR_SIZE := 8
 ## Older saves' slot names.
 const OLD_SLOTS := {"main_hand": "primary", "ranged": "secondary"}
+## Old saves' second weapon goes to the backpack (and onto the hotbar).
+const RETIRED_SLOTS := ["secondary"]
 
 ## Backpack: SIZE entries, each null or {"id": String, "count": int}.
 var bag: Array = []
@@ -423,6 +427,8 @@ func _hearth_glow(player: Node3D, combat: Node, seconds: float, color: Color, en
 
 ## Uses an item by id (from its first stack in the backpack), as the hotbar does.
 func use_item(id: String) -> bool:
+	if equipped.get("primary", "") == id:
+		return true  # that weapon is already in hand
 	for index in SIZE:
 		if bag[index] and bag[index].id == id:
 			return use_at(index)
@@ -526,16 +532,39 @@ func load_character() -> bool:
 			bag[i] = {"id": String(s.id), "count": int(s.get("count", 1))}
 	equipped = {}
 	var eq: Dictionary = data.get("equipped", {})
+	var retired: Array[String] = []
 	for saved_slot: String in eq:
 		var slot: String = OLD_SLOTS.get(saved_slot, saved_slot)
 		if slot in SLOTS and fits(String(eq[saved_slot]), slot):
 			equipped[slot] = String(eq[saved_slot])
+		elif slot in RETIRED_SLOTS:
+			retired.append(String(eq[saved_slot]))
+	# The weapon that was in use stays in hand; the other goes to the backpack.
+	if String(data.get("active_weapon", "primary")) == "secondary" and not retired.is_empty() and equipped.has("primary"):
+		var was := String(equipped.primary)
+		equipped.primary = retired[0]
+		retired[0] = was
+	for id in retired:
+		var free := bag.find(null)
+		if free >= 0:
+			bag[free] = {"id": id, "count": 1}
 	gold = int(data.get("gold", 0))
 	active_weapon = String(data.get("active_weapon", "primary"))
 	if not active_weapon in WEAPON_SLOTS:
 		active_weapon = "primary"
 	var hb = data.get("hotbar")
-	if hb is Array:
+	if hb is Array and hb.size() == OLD_HOTBAR_SIZE:
+		# Older save: boxes 1 and 2 were the two weapons. They become hotbar entries for
+		# both weapons (press to switch), and the old entries keep their keys 3-0.
+		hotbar.fill("")
+		var weapons: Array = [equipped.get("primary", "")]
+		weapons.append_array(retired)
+		for k in 2:
+			if k < weapons.size() and String(weapons[k]) != "":
+				hotbar[k] = "item:" + String(weapons[k])
+		for i in OLD_HOTBAR_SIZE:
+			hotbar[i + 2] = String(hb[i])
+	elif hb is Array:
 		for i in mini(hb.size(), HOTBAR_SIZE):
 			hotbar[i] = String(hb[i])
 	else:
@@ -568,11 +597,16 @@ func _starting_kit() -> void:
 			kit = class_kit
 	gold = int(kit.get("gold", 0))
 	var eq: Dictionary = kit.get("equipment", {})
+	var spare: Array[String] = []
 	for kit_slot: String in eq:
 		var slot: String = OLD_SLOTS.get(kit_slot, kit_slot)
 		if fits(String(eq[kit_slot]), slot):
 			equipped[slot] = String(eq[kit_slot])
+		elif slot in RETIRED_SLOTS:
+			spare.append(String(eq[kit_slot]))
 	for entry in kit.get("backpack", []):
 		add_item(String(entry[0]), int(entry[1]))
+	for id in spare:
+		add_item(id, 1)
 	_default_hotbar()
 	hotbar_changed.emit()

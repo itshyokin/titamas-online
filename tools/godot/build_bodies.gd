@@ -18,35 +18,24 @@ extends SceneTree
 ##
 ##   godot --headless --path . --script res://tools/godot/build_bodies.gd
 ## Then rebuild the animations (tools/godot/retarget_mixamo.gd) and the placeholder hair
-## (tools/godot/make_appearance.gd).
+## (tools/godot/make_appearance.gd). Database → Body Models → Rebuild runs this and
+## make_appearance from the editor.
 
 const OUT := "res://assets/models/characters/base_bodies.scn"
-const SOURCE := "res://assets/models/characters/src/lowpoly_guy.glb"
 const OLD_BODIES := "res://assets/models/characters/base_bodies.glb"
 const GEAR_DIR := "res://assets/characters/lowpoly"
-## Top of the head (m).
-const HEIGHT := 1.86
-## Meshes that make the body.
-const BODY_MESHES := ["bare_body", "head_human"]
-## Body surfaces (by material) kept as their own part instead of skin.
-const BODY_EXTRA := {"leather": "underwear"}
+## What to build: data/body_models.json (Database → Body Models): the source .glb, the
+## height, which meshes make the body, which body materials become their own parts, and the
+## pieces to save. A piece: {id, mesh, material ("" = all), min_y / max_y (m after the
+## bake, -1 = none; to split one mesh by height), bone (rigid meshes follow it)}.
+const SETTINGS := "res://data/body_models.json"
 
-## Saved pieces: file -> [[mesh, material ("" = all), min height, max height (m, after the
-## bake; -1 = none)], ...]. Rigid meshes (no skin) follow BONE_OF.
-const PIECES := {
-	"chainmail_shirt": [["chainmail", "chainmail", -1, -1]],
-	"cloth_leggings": [["chainmail", "tan_cloth", -1, -1]],
-	"leather_tunic": [["leatherarmor", "tan_cloth", -1, -1]],
-	"dark_leggings": [["leatherarmor", "leggings", -1, -1]],
-	"leather_gloves": [["leatherarmor", "leather", 0.62, -1]],
-	"leather_boots": [["leatherarmor", "leather", -1, 0.62]],
-	"head_elf": [["head_elf", "", -1, -1]],
-	"face_default": [["face_default", "", -1, -1]],
-	"hair_short": [["hair_short", "", -1, -1]],
-	"hair_balding": [["hair_balding", "", -1, -1]],
-	"tin_hat": [["hat_tin", "", -1, -1]],
-}
-const BONE_OF := {"hat_tin": "mixamorig_Head"}
+var SOURCE := "res://assets/models/characters/src/lowpoly_guy.glb"
+var HEIGHT := 1.86
+var BODY_MESHES: Array = []
+var BODY_EXTRA := {}
+var PIECES := {}
+var BONE_OF := {}
 
 ## Which part a bone's skin belongs to.
 const PART_OF := {
@@ -70,7 +59,29 @@ var _skin: Skin
 var _out: Skeleton3D
 
 
+func _load_settings() -> void:
+	var d = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS))
+	if not d is Dictionary:
+		push_error("Can't read " + SETTINGS)
+		return
+	SOURCE = String(d.get("source", SOURCE))
+	HEIGHT = float(d.get("height", HEIGHT))
+	BODY_MESHES = d.get("body_meshes", [])
+	for e: Dictionary in d.get("body_extra", []):
+		BODY_EXTRA[String(e.material)] = String(e.part)
+	for p: Dictionary in d.get("pieces", []):
+		var id := String(p.get("id", ""))
+		if id == "" or String(p.get("mesh", "")) == "":
+			continue
+		if not PIECES.has(id):
+			PIECES[id] = []
+		PIECES[id].append([String(p.mesh), String(p.get("material", "")), float(p.get("min_y", -1)), float(p.get("max_y", -1))])
+		if String(p.get("bone", "")) != "":
+			BONE_OF[String(p.mesh)] = String(p.bone)
+
+
 func _initialize() -> void:
+	_load_settings()
 	_src = (load(SOURCE) as PackedScene).instantiate()
 	_skel = _src.find_children("*", "Skeleton3D", true, false)[0]
 	var root := Node3D.new()

@@ -826,8 +826,6 @@ func _creator_page() -> Control:
 	lv.add_child(_heading("Create your character", 24))
 	lv.add_child(_section("Species"))
 	lv.add_child(_choice_row("species", _options(a.get("species", []))))
-	lv.add_child(_section("Body type"))
-	lv.add_child(_choice_row("body", [["masc", "Masc"], ["femme", "Femme"]]))
 	lv.add_child(_section("Pronouns"))
 	lv.add_child(_choice_row("pronouns", _options(a.get("pronouns", []))))
 	lv.add_child(_section("Skin colour"))
@@ -1008,7 +1006,7 @@ func _randomize() -> void:
 	var hair_colors: Array = a.get("hair_colors", [])
 	_look["hair_color"] = String(hair_colors[randi() % mini(10, hair_colors.size())]) if randf() < 0.85 and not hair_colors.is_empty() else pick_color.call("hair_colors")
 	_look["facial_color"] = _look.hair_color
-	_look["facial_hair"] = pick.call("facial_hair") if _look.get("body") == "masc" and randf() < 0.5 else "none"
+	_look["facial_hair"] = pick.call("facial_hair") if randf() < 0.5 else "none"
 	_look["eyes"] = pick.call("eyes")
 	_look["eye_color"] = pick_color.call("eye_colors")
 	_look["height"] = pick.call("heights")
@@ -1110,31 +1108,9 @@ func _class_page() -> Control:
 	_class_info.add_theme_font_size_override("bold_font_size", 17)
 	rv.add_child(_class_info)
 	rv.add_child(_section("Skill trees"))
-	var trees := HBoxContainer.new()
-	trees.add_theme_constant_override("separation", 8)
-	for tree_name in ["Tree I", "Tree II", "Tree III"]:
-		var col := PanelContainer.new()
-		col.add_theme_stylebox_override("panel", _box(Color(0.12, 0.11, 0.15, 0.9), Color(0.3, 0.27, 0.22), 1, 6))
-		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		col.custom_minimum_size.y = 84
-		var cv := VBoxContainer.new()
-		cv.alignment = BoxContainer.ALIGNMENT_CENTER
-		col.add_child(cv)
-		for k in 2:
-			var dot := Label.new()
-			dot.text = "◇"
-			dot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			dot.add_theme_color_override("font_color", Color(0.45, 0.42, 0.38))
-			cv.add_child(dot)
-		var tl := Label.new()
-		tl.text = tree_name
-		tl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		tl.add_theme_color_override("font_color", Color(0.55, 0.52, 0.48))
-		tl.add_theme_font_size_override("font_size", 14)
-		cv.add_child(tl)
-		trees.add_child(col)
-	rv.add_child(trees)
-	rv.add_child(_note("Skill trees and starting stats come in a later update; you'll be able to browse each class's trees here."))
+	_class_trees = VBoxContainer.new()
+	_class_trees.add_theme_constant_override("separation", 8)
+	rv.add_child(_class_trees)
 
 	var bottom := _panel(Control.PRESET_CENTER_BOTTOM, Vector2(-210, -24), Vector2(420, 0))
 	page.add_child(bottom)
@@ -1151,11 +1127,54 @@ func _class_page() -> Control:
 	return page
 
 
+var _class_trees: VBoxContainer
+
+
+## The class's skill trees (data/skill_trees.json, Database → Skill Trees): each tree's
+## name, description and its skills by tier.
+func _fill_trees(id: String) -> void:
+	if _class_trees == null:
+		return
+	for c in _class_trees.get_children():
+		c.queue_free()
+	var trees: Array = Database.trees_for(id)
+	if trees.is_empty():
+		_class_trees.add_child(_note("No skill trees yet (Database → Skill Trees)."))
+		return
+	for tree: Dictionary in trees:
+		var col := PanelContainer.new()
+		var accent := Color.html(String(tree.get("color", "#c9a25a"))) if Color.html_is_valid(String(tree.get("color", ""))) else Color(0.79, 0.64, 0.35)
+		col.add_theme_stylebox_override("panel", _box(Color(0.12, 0.11, 0.15, 0.9), accent.darkened(0.3), 1, 6))
+		var cv := VBoxContainer.new()
+		cv.add_theme_constant_override("separation", 4)
+		col.add_child(cv)
+		var title := Label.new()
+		title.text = String(tree.get("name", tree.get("id", "")))
+		title.add_theme_color_override("font_color", accent.lightened(0.2))
+		title.add_theme_font_size_override("font_size", 16)
+		cv.add_child(title)
+		if String(tree.get("description", "")) != "":
+			var d := _note(String(tree.description))
+			d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			cv.add_child(d)
+		var nodes: Array = (tree.get("nodes", []) as Array).duplicate()
+		nodes.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.get("row", 0)) * 100 + int(a.get("col", 0)) < int(b.get("row", 0)) * 100 + int(b.get("col", 0)))
+		var names := nodes.map(func(n: Dictionary) -> String: return "◇ %s" % String(n.get("name", n.get("id", ""))))
+		if not names.is_empty():
+			var l := _note("   ".join(names))
+			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			l.tooltip_text = "\n".join(nodes.map(func(n: Dictionary) -> String: return "%s: %s" % [n.get("name", ""), n.get("description", "")]))
+			l.mouse_filter = Control.MOUSE_FILTER_PASS
+			cv.add_child(l)
+		_class_trees.add_child(col)
+
+
 func _select_class(id: String) -> void:
 	var c := Database.class_data(id)
 	if c.is_empty() or not bool(c.get("available", false)):
 		return
 	_class_id = id
+	_fill_trees(id)
 	for e: Array in _class_buttons:
 		(e[1] as Button).set_pressed_no_signal(e[0] == id)
 	var text := "[font_size=28][color=#%s]%s[/color][/font_size]\n[color=#bfb7aa]%s[/color]\n\n%s\n" % [

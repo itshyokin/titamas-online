@@ -1,0 +1,188 @@
+{
+	"trees": [
+		{
+			"id": "fighter_blade",
+			"name": "Blade",
+			"class": "fighter",
+			"order": 1,
+			"color": "#c4533c",
+			"description": "Hit harder and keep the pressure on.",
+			"rows": 6,
+			"cols": 4,
+			"nodes": [
+				{
+					"id": "fighter_blade_edge",
+					"name": "Keen Edge",
+					"description": "+2 attack per rank.",
+					"icon": "",
+					"row": 0,
+					"col": 1,
+					"max_rank": 3,
+					"cost": 1,
+					"min_level": 1,
+					"points_above": 0,
+					"requires": [],
+					"effect": "stat",
+					"stat": "attack",
+					"per_rank": 2,
+					"ability": "",
+					"key": ""
+				},
+				{
+					"id": "fighter_blade_stance",
+					"name": "Battle Stance",
+					"description": "+3% crit chance per rank.",
+					"icon": "",
+					"row": 0,
+					"col": 2,
+					"max_rank": 3,
+					"cost": 1,
+					"min_level": 1,
+					"points_above": 0,
+					"requires": [],
+					"effect": "stat",
+					"stat": "crit_chance",
+					"per_rank": 3,
+					"ability": "",
+					"key": ""
+				},
+				{
+					"id": "fighter_blade_cleave",
+					"name": "Cleave",
+					"description": "Heavy blows hit everything in front of you.",
+					"icon": "",
+					"row": 1,
+					"col": 1,
+					"max_rank": 1,
+					"cost": 1,
+					"min_level": 3,
+					"points_above": 3,
+					"requires": [
+						"fighter_blade_edge"
+					],
+					"effect": "passive",
+					"stat": "attack",
+					"per_rank": 1,
+					"ability": "",
+					"key": "cleave"
+				}
+			]
+		},
+		{
+			"id": "fighter_bulwark",
+			"name": "Bulwark",
+			"class": "fighter",
+			"order": 2,
+			"color": "#5a7fb0",
+			"description": "Shields, armour and staying on your feet.",
+			"rows": 6,
+			"cols": 4,
+			"nodes": [
+				{
+					"id": "fighter_bulwark_hide",
+					"name": "Thick Hide",
+					"description": "+3 armour per rank.",
+					"icon": "",
+					"row": 0,
+					"col": 1,
+					"max_rank": 3,
+					"cost": 1,
+					"min_level": 1,
+					"points_above": 0,
+					"requires": [],
+					"effect": "stat",
+					"stat": "armor",
+					"per_rank": 3,
+					"ability": "",
+					"key": ""
+				},
+				{
+					"id": "fighter_bulwark_vigor",
+					"name": "Vigour",
+					"description": "+10 max health per rank.",
+					"icon": "",
+					"row": 0,
+					"col": 2,
+					"max_rank": 3,
+					"cost": 1,
+					"min_level": 1,
+					"points_above": 0,
+					"requires": [],
+					"effect": "stat",
+					"stat": "bonus_health",
+					"per_rank": 10,
+					"ability": "",
+					"key": ""
+				},
+				{
+					"id": "fighter_bulwark_parry",
+					"name": "Riposte",
+					"description": "Parries make the next hit stagger.",
+					"icon": "",
+					"row": 1,
+					"col": 1,
+					"max_rank": 1,
+					"cost": 1,
+					"min_level": 3,
+					"points_above": 3,
+					"requires": [
+						"fighter_bulwark_hide"
+					],
+					"effect": "passive",
+					"stat": "attack",
+					"per_rank": 1,
+					"ability": "",
+					"key": "riposte"
+				}
+			]
+		},
+		{
+			"id": "fighter_field",
+			"name": "Field Craft",
+			"class": "fighter",
+			"order": 3,
+			"color": "#5aa05a",
+			"description": "Bow, crossbow and a little hedge magic.",
+			"rows": 6,
+			"cols": 4,
+			"nodes": [
+				{
+					"id": "fighter_field_eye",
+					"name": "Steady Eye",
+					"description": "+2 attack with bows and crossbows per rank.",
+					"icon": "",
+					"row": 0,
+					"col": 1,
+					"max_rank": 3,
+					"cost": 1,
+					"min_level": 1,
+					"points_above": 0,
+					"requires": [],
+					"effect": "passive",
+					"stat": "attack",
+					"per_rank": 1,
+					"ability": "",
+					"key": "ranged_attack"
+				},
+				{
+					"id": "fighter_field_mend",
+					"name": "Field Mending",
+					"description": "+2 spell power per rank.",
+					"icon": "",
+					"row": 0,
+					"col": 2,
+					"max_rank": 3,
+					"cost": 1,
+					"min_level": 1,
+					"points_above": 0,
+					"requires": [],
+					"effect": "stat",
+					"stat": "spell_power",
+					"per_rank": 2,
+					"ability": "",
+					"key": ""
+				}
+			]
+		}
+	]
+}
