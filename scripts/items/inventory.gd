@@ -328,7 +328,7 @@ func use_at(index: int) -> bool:
 	var combat := get_node_or_null("../PlayerCombat")
 	if seconds > 0.0 and combat:
 		# Drinking takes a moment (a cast bar; moving or a hit stops it and the potion is kept).
-		return combat.channel(String(d.get("name", id)), seconds, _apply_use.bind(id), anim)
+		return combat.channel(String(d.get("name", id)), seconds, _apply_use.bind(id), anim, true)
 	if player and player.state == PlayerController.State.NORMAL:
 		player.action_animation.emit(anim, 0.0, 0.15, 1.0)
 	return _apply_use(id)

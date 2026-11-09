@@ -337,7 +337,7 @@ const TABS = {
 				{ key: "use_hot_per_tick", label: "Heals per tick", type: "number" },
 				{ key: "use_hot_ticks", label: "Ticks (2 s apart)", type: "int" },
 				{ key: "use_mana", label: "Restores mana", type: "number" },
-				{ key: "use_time", label: "Takes (s)", type: "number", help: "0 = at once. Otherwise a cast bar fills while drinking; the effect comes at the end. Moving, dodging or a hit stops it (the item is kept)." },
+				{ key: "use_time", label: "Takes (s)", type: "number", help: "0 = at once. Otherwise a cast bar fills while drinking (the animation holds its first pose, then plays out to end with the bar); the effect comes at the end. Moving, dodging or a hit stops it (the item is kept)." },
 				{ key: "use_anim", label: "Animation", type: "anim", help: "Empty = the Drinking animation (Animations tab)." },
 			], e => e.kind === "consumable"],
 			["Looks", [
@@ -576,6 +576,8 @@ const TABS = {
 				{ key: "roles.cast_channel", label: "Casting (while the bar fills)", type: "anim" },
 				{ key: "roles.loot", label: "Looting a body (kneel)", type: "anim" },
 				{ key: "roles.drink", label: "Drinking / using an item", type: "anim", help: "Items can pick their own (Items → When used)." },
+				{ key: "drink.hold_at", label: "Using an item: hold the pose at (s)", type: "number", help: "The clip holds here while the cast bar fills, then plays out to end with the bar. 0 = the first frame." },
+				{ key: "drink.speed", label: "Using an item: play-out speed", type: "number", help: "1 = the clip's own speed. It plays faster when the item takes less time than the clip." },
 				{ key: "loot.pause_at", label: "Looting: hold the kneel at (s)", type: "number", help: "Where the clip pauses while the loot window is open (frame 40 = 1.33 s)." },
 				{ key: "roles.bow_aim", label: "Aiming (default)", type: "anim", help: "Weapon types can pick their own." },
 			]],

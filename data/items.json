@@ -570,7 +570,7 @@
 			"kind": "consumable",
 			"icon": "potion",
 			"icon_color": "#d0302a",
-			"use_time": 1.2,
+			"use_time": 2.5,
 			"use_anim": ""
 		},
 		{
@@ -602,7 +602,7 @@
 			"icon": "bandage",
 			"icon_color": "#e8e0c8",
 			"use_time": 1.0,
-			"use_anim": ""
+			"use_anim": "cast_heal"
 		},
 		{
 			"description": "Restores 40 mana.",
@@ -632,7 +632,7 @@
 			"kind": "consumable",
 			"icon": "potion",
 			"icon_color": "#3060d8",
-			"use_time": 1.2,
+			"use_time": 2.5,
 			"use_anim": ""
 		},
 		{

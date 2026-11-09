@@ -128,6 +128,8 @@ var _buffer_until := 0  # msec: an attack tapped during a dodge (-1 while it las
 var _channel: Ability = null
 var _channel_time := 0.0
 var _channel_done: Callable
+var _channel_play_at := -1.0  # timed channels: when the held pose starts playing
+var _channel_speed := 1.0
 var _cooldowns := {}  # Ability -> seconds left
 var _combat_timer := 0.0
 
@@ -910,8 +912,10 @@ func _end_cast() -> void:
 
 ## Casts something that isn't an ability (a hearthstone): the cast bar fills over
 ## `seconds`, then `on_done` runs. Moving, dodging or being hit stops it.
-## `anim`: the animation role/clip played while the bar fills.
-func channel(display: String, seconds: float, on_done: Callable, anim := "cast_channel") -> bool:
+## `anim`: the animation role/clip played while the bar fills. `timed`: the clip holds
+## a pose (animations.json "drink" hold_at) while the bar fills, then plays out so it
+## ends with the bar (faster if the bar is shorter than the clip).
+func channel(display: String, seconds: float, on_done: Callable, anim := "cast_channel", timed := false) -> bool:
 	if _channel or _current or _charging or _blocking or _casting:
 		notice.emit("You're busy")
 		return false
@@ -925,7 +929,22 @@ func channel(display: String, seconds: float, on_done: Callable, anim := "cast_c
 	_channel.cast_time = seconds
 	_channel_time = 0.0
 	_channel_done = on_done
-	player.action_animation.emit(anim, 0.0, 0.2, 1.0)
+	_channel_play_at = -1.0
+	if timed:
+		var model := player.get_node_or_null("Model/Character") as CharacterModel
+		var settings: Dictionary = Database.animations.get("drink", {})
+		var hold := float(settings.get("hold_at", 0.0))
+		var rest := maxf((model.get_animation_length(anim) if model else 1.0) - hold, 0.01)
+		# Natural speed (times the setting), faster when the bar is shorter than the clip.
+		_channel_speed = maxf(float(settings.get("speed", 1.0)), rest / maxf(seconds, 0.01))
+		_channel_play_at = seconds - rest / _channel_speed
+		player.action_animation.emit(anim, hold, 0.2, 0.0)
+		if _channel_play_at <= 0.0:
+			_channel_play_at = -1.0
+			if model:
+				model.set_speed(_channel_speed)
+	else:
+		player.action_animation.emit(anim, 0.0, 0.2, 1.0)
 	return true
 
 
@@ -934,6 +953,12 @@ func _update_channel(delta: float) -> void:
 	if _move_input().length() > 0.5:
 		_interrupt("Cancelled", false)
 		return
+	if _channel_play_at >= 0.0 and _channel_time >= _channel_play_at:
+		# The held pose plays out, ending with the bar.
+		_channel_play_at = -1.0
+		var model := player.get_node_or_null("Model/Character") as CharacterModel
+		if model:
+			model.set_speed(_channel_speed)
 	if _channel_time >= _channel.cast_time:
 		var done := _channel_done
 		_channel = null

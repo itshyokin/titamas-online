@@ -1015,6 +1015,20 @@
 			"yaw_fix": 0.0,
 			"height_match": "",
 			"note": "Kneeling to loot a body (Mixamo 'Kneel')"
+		},
+		{
+			"name": "drinking",
+			"kind": "file",
+			"from": "",
+			"start": 0,
+			"end": 0,
+			"loop": false,
+			"in_place": true,
+			"root_motion": false,
+			"no_hip_rise": false,
+			"yaw_fix": 0.0,
+			"height_match": "",
+			"note": "Drinking a potion (Mixamo 'Drinking'). Held on its first frame while the cast bar fills, then played to end with it."
 		}
 	],
 	"roles": {
@@ -1052,7 +1066,7 @@
 		"talk_3": "talk_3",
 		"talk_4": "talk_4",
 		"loot": "loot_kneel",
-		"drink": "cast_heal"
+		"drink": "drinking"
 	},
 	"look": {
 		"range": 6.0,
@@ -1067,5 +1081,9 @@
 	},
 	"loot": {
 		"pause_at": 1.33
+	},
+	"drink": {
+		"hold_at": 0.0,
+		"speed": 1.0
 	}
 }
