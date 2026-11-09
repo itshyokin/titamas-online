@@ -76,6 +76,8 @@ var _casting: Ability = null
 func _ready() -> void:
 	add_to_group("npcs")
 	add_to_group("talkable")
+	if not Engine.is_editor_hint():
+		add_child(QuestMarker.new("", npc_id))
 	_home_yaw = model.rotation.y
 	var patrol := get_node_or_null("Patrol")
 	if patrol:

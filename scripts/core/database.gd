@@ -9,7 +9,7 @@ extends Node
 signal changed(which: String)
 
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
-	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "skill_trees": DataFiles.SKILL_TREES, "npcs": DataFiles.NPCS,
+	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "skill_trees": DataFiles.SKILL_TREES, "quests": DataFiles.QUESTS, "npcs": DataFiles.NPCS,
 	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS, "events": DataFiles.EVENTS,
 	"achievements": DataFiles.ACHIEVEMENTS}
 
@@ -46,6 +46,8 @@ var switches: Array = []  # [{id, name}]
 var variables: Array = []  # [{id, name}]
 ## data/skill_trees.json trees, in order (see trees_for).
 var skill_trees: Array = []
+## data/quests.json quests (the Quests class reads them).
+var quests: Array = []
 ## data/achievements.json entries, in order (the Achievements autoload uses them).
 var achievements: Array = []
 
@@ -120,6 +122,9 @@ func _load(which: String) -> void:
 			achievements = data.get("achievements", [])
 		"skill_trees":
 			skill_trees = data.get("trees", [])
+		"quests":
+			quests = data.get("quests", [])
+			Quests.revision += 1
 		"npcs":
 			npcs.clear()
 			for d in data.get("npcs", []):

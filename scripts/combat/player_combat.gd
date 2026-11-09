@@ -596,7 +596,9 @@ func _start(ab: Ability, power: float, anim_start := 0.0) -> bool:
 ## (a quarter of it per heal tick).
 func _gear_power(ab: Ability) -> float:
 	if _is_weapon_move(ab):
-		return stats.attack
+		# Skill passive "ranged_attack": +2 attack per rank with bows, crossbows and guns.
+		var extra := 2.0 * _passive("ranged_attack") if ab.delivery == Ability.Delivery.PROJECTILE else 0.0
+		return stats.attack + extra
 	match ab.delivery:
 		Ability.Delivery.HEAL_OVER_TIME:
 			return stats.spell_power * 0.25
@@ -699,12 +701,16 @@ func _land(ab: Ability) -> void:
 				staggers = true
 				push *= 1.5
 			var landed := false
+			var arc := ab.arc
+			# Skill passive "cleave": heavy blows sweep everything in front.
+			if _passive("cleave") > 0 and ab.id == String(Database.weapon_type(String(weapon.get("weapon_type", ""))).get("heavy", "")):
+				arc = maxf(arc, 200.0)
 			for n in Combat.enemies_near(player, player.global_position, ab.reach + 0.6):
 				var to := n.global_position - player.global_position
 				if absf(to.y) > 2.0:
 					continue
 				to.y = 0.0
-				if to.length() > 0.5 and rad_to_deg(fwd.angle_to(to.normalized())) > ab.arc * 0.5:
+				if to.length() > 0.5 and rad_to_deg(fwd.angle_to(to.normalized())) > arc * 0.5:
 					continue
 				if Combat.hit(player, n, power, staggers, push) > 0.0:
 					landed = true
@@ -1278,8 +1284,14 @@ func _parry(attacker: Node3D) -> void:
 	if cam:
 		cam.call("shake", 0.3)
 	if attacker and attacker.has_method("stagger"):
-		attacker.call("stagger", 1.4)
+		attacker.call("stagger", 1.4 * (1.0 + 0.5 * _passive("riposte")))  # skill passive "riposte"
 	grant_counter()
+
+
+## A skill passive's rank (PlayerProgress.passive), 0 without one.
+func _passive(key: String) -> int:
+	var progress := player.get_node_or_null("Progress") as PlayerProgress
+	return progress.passive(key) if progress else 0
 
 
 # --- Combat state ------------------------------------------------------------

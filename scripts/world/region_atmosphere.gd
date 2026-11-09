@@ -21,6 +21,22 @@ extends Resource
 @export var cloud_color := Color(1, 1, 1)
 @export var cloud_shade := Color(0.70, 0.74, 0.82)
 @export_range(0.0, 1.0) var cloud_coverage := 0.45
+## Night colours (the day/night cycle blends to these after dark).
+@export var night_sky_top := Color(0.02, 0.035, 0.09)
+@export var night_sky_horizon := Color(0.07, 0.09, 0.18)
+@export var night_fog := Color(0.06, 0.08, 0.14)
+## Stars at night: 0 = none, 1 = normal, 2 = a lot.
+@export_range(0.0, 2.0) var stars := 1.0
+## A sky picture (equirectangular panorama, res:// image) blended over the colours.
+@export var sky_panorama: Texture2D
+@export_range(0.0, 1.0) var sky_panorama_strength := 0.0
+
+@export_group("Weather")
+## [{type: weather id (data/weather.json), weight}]: what weather the region can have.
+@export var weather: Array = [{"type": "clear", "weight": 1.0}]
+## How long each spell of weather lasts (minutes, picked between these).
+@export var weather_minutes_min := 6.0
+@export var weather_minutes_max := 14.0
 
 @export_group("Light")
 @export var sun_color := Color(1.0, 0.95, 0.85)

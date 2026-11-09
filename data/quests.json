@@ -1,0 +1,22 @@
+{
+	"quests": [
+		{
+			"id": "bandit_insignias",
+			"name": "Bandit Insignias",
+			"giver": "Villager",
+			"giver_event": "insignia_villager",
+			"giver_npc": "",
+			"available": [],
+			"description": "Bandits took the villager's brother's cart. Bring back 3 bandit insignias from the bandits on the road.",
+			"rewards": "50 gold, 120 experience",
+			"objectives": [
+				{
+					"text": "Bandit Insignias",
+					"type": "item",
+					"item": "bandit_insignia",
+					"count": 3
+				}
+			]
+		}
+	]
+}

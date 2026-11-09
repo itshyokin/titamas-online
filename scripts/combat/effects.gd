@@ -105,6 +105,83 @@ static func sparks(parent: Node, at: Vector3, color: Color, size := 1.0, toward 
 	p.finished.connect(p.queue_free)
 
 
+## A metal-on-stone strike: bright streaking sparks thrown off the surface (stretched
+## along their flight), a few slower embers, and a quick flash of light. `size` scales
+## the count and speed (player.json combat "spark_size").
+static func strike_sparks(parent: Node, at: Vector3, normal: Vector3, size := 1.0, color := Color(1.0, 0.78, 0.35)) -> void:
+	var out := normal.normalized() if normal.length() > 0.01 else Vector3.UP
+	var burst := SparkBurst.new()
+	burst.count = int(26 * size) + 6
+	burst.speed = 6.5 * size
+	burst.out = out
+	burst.color = color
+	parent.add_child(burst)
+	burst.global_position = at + out * 0.03
+	# A brief flash.
+	var light := OmniLight3D.new()
+	light.light_color = color
+	light.light_energy = 3.5
+	light.omni_range = 2.5
+	parent.add_child(light)
+	light.global_position = at + out * 0.2
+	var t := light.create_tween()
+	t.tween_property(light, "light_energy", 0.0, 0.18)
+	t.tween_callback(light.queue_free)
+
+
+## Sparks as plain meshes moved by hand (bright streaks stretched along their flight,
+## falling and fading), so they show the same in every renderer.
+class SparkBurst:
+	extends Node3D
+	var count := 30
+	var speed := 6.5
+	var out := Vector3.UP
+	var color := Color(1.0, 0.78, 0.35)
+	var life := 0.45
+	var _age := 0.0
+	var _sparks: Array = []  # [MeshInstance3D, velocity]
+	var _mat: StandardMaterial3D
+
+	func _ready() -> void:
+		_mat = StandardMaterial3D.new()
+		_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_mat.albedo_color = Color(1.0, 0.95, 0.75)
+		_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(0.018, 0.018, 0.14)
+		mesh.material = _mat
+		var side := out.cross(Vector3.UP if absf(out.y) < 0.9 else Vector3.RIGHT).normalized()
+		var up := side.cross(out).normalized()
+		for i in count:
+			var mi := MeshInstance3D.new()
+			mi.mesh = mesh
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(mi)
+			var a := randf() * TAU
+			var spread := randf() * 1.1
+			var dir := (out + (side * cos(a) + up * sin(a)) * spread + Vector3.UP * 0.35).normalized()
+			_sparks.append([mi, dir * speed * randf_range(0.45, 1.0)])
+
+	func _process(delta: float) -> void:
+		_age += delta
+		var k := _age / life
+		if k >= 1.0:
+			queue_free()
+			return
+		_mat.albedo_color = Color(1.0, 0.95, 0.75).lerp(color, minf(k * 2.0, 1.0))
+		_mat.albedo_color.a = 1.0 - k * k
+		for s: Array in _sparks:
+			var mi: MeshInstance3D = s[0]
+			var v: Vector3 = s[1]
+			v.y -= 12.0 * delta
+			v *= 1.0 - minf(3.0 * delta, 0.5)
+			s[1] = v
+			mi.position += v * delta
+			if v.length() > 0.05:
+				mi.look_at(mi.global_position + v, Vector3.UP if absf(v.normalized().y) < 0.99 else Vector3.RIGHT)
+
+
 ## Flashes every mesh under `node` a colour for a moment (being hit, a wind-up warning).
 static func flash(node: Node, color := Color(1, 1, 1), seconds := 0.12, strength := 0.75) -> void:
 	if node == null or not node.is_inside_tree():

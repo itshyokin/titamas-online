@@ -101,7 +101,7 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 	if ss:
 		amount *= ss.damage_scale  # Weakened
 	amount *= randf_range(0.9, 1.1)
-	var crit := randf() < CRIT_CHANCE
+	var crit := randf() < CRIT_CHANCE + (ss.crit_bonus if ss else 0.0)
 	if crit:
 		amount *= CRIT_MULTIPLIER
 	# Armour: each point takes a little off (100 armour halves damage).

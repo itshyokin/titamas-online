@@ -46,7 +46,8 @@
 		"world_bounce": true,
 		"world_knockback": 4.5,
 		"world_check": 0.8,
-		"gash_time": 25.0
+		"gash_time": 25.0,
+		"spark_size": 1.0
 	},
 	"loadout": {
 		"light_combo": [
@@ -141,7 +142,9 @@
 		"attack_per_level": 1,
 		"spell_power_per_level": 1,
 		"kill_xp_base": 15,
-		"kill_xp_per_level": 10
+		"kill_xp_per_level": 10,
+		"skill_points_start": 1,
+		"skill_points_per_level": 1
 	},
 	"death": {
 		"gold_loss": 0.1,

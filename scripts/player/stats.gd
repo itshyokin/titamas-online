@@ -50,6 +50,10 @@ var damage_scale := 1.0
 var _base_health := -1.0
 var _base_mana := -1.0
 var _bonus := {}
+var _base_stamina := -1.0
+var _skill_bonus := {}  # from skills (PlayerProgress): attack, armor, crit_chance (%), stamina...
+## Extra chance to land a critical hit (0.05 = 5 points more), from skills.
+var crit_bonus := 0.0
 var _level_bonus := {}  # {health, mana, attack, spell_power} from levels (PlayerProgress)
 var _max_health_scale := 1.0
 
@@ -181,15 +185,27 @@ func set_bonuses(bonus: Dictionary) -> void:
 		_base_health = max_health
 		_base_mana = max_mana
 	_bonus = bonus
-	attack = float(bonus.get("attack", 0.0)) + float(_level_bonus.get("attack", 0.0))
-	spell_power = float(bonus.get("spell_power", 0.0)) + float(_level_bonus.get("spell_power", 0.0))
-	armor = float(bonus.get("armor", 0.0))
-	block = float(bonus.get("block", 0.0))
-	max_health = roundf((_base_health + float(bonus.get("bonus_health", 0.0)) + float(_level_bonus.get("health", 0.0))) * _max_health_scale)
-	max_mana = _base_mana + float(bonus.get("bonus_mana", 0.0)) + float(_level_bonus.get("mana", 0.0))
+	var sk := _skill_bonus
+	attack = float(bonus.get("attack", 0.0)) + float(_level_bonus.get("attack", 0.0)) + float(sk.get("attack", 0.0))
+	spell_power = float(bonus.get("spell_power", 0.0)) + float(_level_bonus.get("spell_power", 0.0)) + float(sk.get("spell_power", 0.0))
+	armor = float(bonus.get("armor", 0.0)) + float(sk.get("armor", 0.0))
+	block = float(bonus.get("block", 0.0)) + float(sk.get("block", 0.0))
+	max_health = roundf((_base_health + float(bonus.get("bonus_health", 0.0)) + float(_level_bonus.get("health", 0.0)) + float(sk.get("bonus_health", 0.0))) * _max_health_scale)
+	max_mana = _base_mana + float(bonus.get("bonus_mana", 0.0)) + float(_level_bonus.get("mana", 0.0)) + float(sk.get("bonus_mana", 0.0))
+	crit_bonus = float(sk.get("crit_chance", 0.0)) / 100.0
+	if _base_stamina < 0.0:
+		_base_stamina = max_stamina
+	max_stamina = _base_stamina + float(sk.get("stamina", 0.0))
+	stamina = minf(stamina, max_stamina)
 	health = minf(health, max_health)
 	mana = minf(mana, max_mana)
 	emit_all()
+
+
+## Bonuses from skills (see _skill_bonus).
+func set_skill_bonus(bonus: Dictionary) -> void:
+	_skill_bonus = bonus
+	set_bonuses(_bonus)
 
 
 ## Extra health, mana, attack and spell power from the character's level.

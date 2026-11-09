@@ -1,0 +1,100 @@
+{
+	"transition_seconds": 25.0,
+	"thunder": [
+		"res://assets/audio/weather/thunder_1.ogg",
+		"res://assets/audio/weather/thunder_2.ogg"
+	],
+	"cloud_shadows": {
+		"enabled": true,
+		"strength": 0.35,
+		"size": 96.0,
+		"color": "#1d2738"
+	},
+	"types": [
+		{
+			"id": "clear",
+			"name": "Clear",
+			"cloud_coverage": 0.0,
+			"cloud_darken": 0.0,
+			"sun_scale": 1.0,
+			"ambient_scale": 1.0,
+			"fog_add": 0.0,
+			"saturation_scale": 1.0,
+			"rain": 0.0,
+			"wetness": 0.0,
+			"lightning_every": 0.0,
+			"wind_add": 0.0,
+			"sound": "",
+			"sound_db": -10.0,
+			"cloud_shadows": 0.6
+		},
+		{
+			"id": "cloudy",
+			"name": "Cloudy",
+			"cloud_coverage": 0.3,
+			"cloud_darken": 0.15,
+			"sun_scale": 0.75,
+			"ambient_scale": 1.0,
+			"fog_add": 0.001,
+			"saturation_scale": 0.92,
+			"rain": 0.0,
+			"wetness": 0.0,
+			"lightning_every": 0.0,
+			"wind_add": 0.15,
+			"sound": "",
+			"sound_db": -10.0,
+			"cloud_shadows": 0.9
+		},
+		{
+			"id": "rain",
+			"name": "Rain",
+			"cloud_coverage": 0.5,
+			"cloud_darken": 0.45,
+			"sun_scale": 0.4,
+			"ambient_scale": 0.85,
+			"fog_add": 0.004,
+			"saturation_scale": 0.8,
+			"rain": 0.6,
+			"wetness": 1.0,
+			"lightning_every": 0.0,
+			"wind_add": 0.3,
+			"sound": "res://assets/audio/weather/rain_loop.ogg",
+			"sound_db": -6.0,
+			"cloud_shadows": 0.4
+		},
+		{
+			"id": "storm",
+			"name": "Storm",
+			"cloud_coverage": 0.6,
+			"cloud_darken": 0.75,
+			"sun_scale": 0.2,
+			"ambient_scale": 0.7,
+			"fog_add": 0.006,
+			"saturation_scale": 0.7,
+			"rain": 1.0,
+			"wetness": 1.0,
+			"lightning_every": 14.0,
+			"wind_add": 0.7,
+			"sound": "res://assets/audio/weather/heavy_rain_loop.ogg",
+			"sound_db": -3.0,
+			"cloud_shadows": 0.2
+		},
+		{
+			"id": "fog",
+			"name": "Fog",
+			"cloud_coverage": 0.2,
+			"cloud_darken": 0.1,
+			"sun_scale": 0.6,
+			"ambient_scale": 1.05,
+			"fog_add": 0.02,
+			"saturation_scale": 0.85,
+			"rain": 0.0,
+			"wetness": 0.3,
+			"lightning_every": 0.0,
+			"wind_add": -0.2,
+			"sound": "",
+			"sound_db": -10.0,
+			"cloud_shadows": 0.0
+		}
+	]
+}

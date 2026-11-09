@@ -15,6 +15,7 @@ const ITEMS := "res://data/items.json"
 const APPEARANCE := "res://data/appearance.json"
 const CLASSES := "res://data/classes.json"
 const SKILL_TREES := "res://data/skill_trees.json"
+const QUESTS := "res://data/quests.json"
 const NPCS := "res://data/npcs.json"
 const WEAPON_TYPES := "res://data/weapon_types.json"
 const ANIMATIONS := "res://data/animations.json"
@@ -34,13 +35,14 @@ const ABILITY_FIELDS := [
 	"animation_speed", "hit_time", "recovery_time", "move_scale", "sounds", "hit_sound", "cast_loop_sound", "release_sound",
 ]
 const ABILITY_STREAMS := ["hit_sound", "cast_loop_sound", "release_sound"]
-const REGION_COLORS := ["fog_color", "sky_top", "sky_horizon", "sky_ground", "cloud_color", "cloud_shade", "sun_color", "grass_base", "grass_tip", "shadow_color"]
+const REGION_COLORS := ["fog_color", "sky_top", "sky_horizon", "sky_ground", "cloud_color", "cloud_shade", "sun_color", "grass_base", "grass_tip", "shadow_color", "night_sky_top", "night_sky_horizon", "night_fog"]
 ## Region fields that are sounds (res:// paths in the file).
 const REGION_STREAMS := ["ambient_loop", "ambient_loop_night", "music", "music_night"]
 const REGION_FIELDS := [
 	"region_name", "fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
-	"shadow_strength", "shadow_color", "shadow_fill", "saturation", "contrast", "brightness", "god_rays", "grass_density", "grass_base",
+	"shadow_strength", "shadow_color", "shadow_fill", "night_sky_top", "night_sky_horizon", "night_fog", "stars",
+	"sky_panorama", "sky_panorama_strength", "weather", "weather_minutes_min", "weather_minutes_max", "saturation", "contrast", "brightness", "god_rays", "grass_density", "grass_base",
 	"grass_tip", "grass_height", "grass_ground_match", "ambient_loop", "ambient_loop_night", "ambient_volume_db", "wind_volume_db", "music", "music_night", "music_volume_db",
 ]
 
@@ -139,6 +141,8 @@ static func region_to_dict(r: RegionAtmosphere, id: String, is_default := false)
 			v = color_to(v)
 		elif field in REGION_STREAMS:
 			v = stream_to(v)
+		elif field == "sky_panorama":
+			v = v.resource_path if v is Texture2D else ""
 		d[field] = v
 	return d
 
@@ -156,6 +160,10 @@ static func region_from_dict(d: Dictionary) -> RegionAtmosphere:
 			r.set(field, color_from(v))
 		elif field in REGION_STREAMS:
 			r.set(field, stream_from(v))
+		elif field == "sky_panorama":
+			r.sky_panorama = load(String(v)) as Texture2D if String(v) != "" and ResourceLoader.exists(String(v)) else null
+		elif field == "weather":
+			r.weather = v if v is Array else []
 		else:
 			r.set(field, v)
 	return r

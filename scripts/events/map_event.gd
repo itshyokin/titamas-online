@@ -89,6 +89,7 @@ func _ready() -> void:
 		return
 	add_to_group("map_events")
 	add_to_group("talkable")
+	add_child(QuestMarker.new(event_id, ""))
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	_prompt = Label3D.new()

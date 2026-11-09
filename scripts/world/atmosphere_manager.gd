@@ -45,6 +45,8 @@ var _file_time := -1
 var _preview_key := ""
 var _file_check := 0.0
 var _world_time := -1
+## Rain, storms, fog and cloud shadows (Weather), made in _ready.
+var weather: Weather
 var _label_tween: Tween
 var _beds: Array[AudioStreamPlayer] = []  # two players, crossfaded between regions
 var _music: Array[AudioStreamPlayer] = []
@@ -59,7 +61,8 @@ var _wind: AudioStreamPlayer
 const FIELDS := [
 	"fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
-	"shadow_strength", "shadow_color", "shadow_fill", "saturation", "contrast", "brightness", "god_rays",
+	"shadow_strength", "shadow_color", "shadow_fill", "night_sky_top", "night_sky_horizon", "night_fog", "stars",
+	"sky_panorama_strength", "saturation", "contrast", "brightness", "god_rays",
 	"grass_base", "grass_tip", "grass_density", "grass_height", "grass_ground_match",
 ]
 
@@ -78,6 +81,9 @@ func _ready() -> void:
 		return
 	_apply_ssao()
 	GameSettings.graphics_changed.connect(_apply_ssao)
+	weather = Weather.new()
+	weather.name = "Weather"
+	add_child(weather)
 	_build_label()
 	_build_audio()
 	current = _region_at_target()
@@ -113,6 +119,8 @@ func _process(delta: float) -> void:
 			current = region
 			_show_name(region.region_name)
 			_change_ambience(region, ambience_fade)
+		if weather and current:
+			weather.set_region(current)
 	if current == null:
 		return
 	_update_wind(delta)
@@ -188,6 +196,8 @@ func _apply() -> void:
 	# Day/night: the time of day tints the region's look.
 	var cycle := get_tree().get_first_node_in_group("world_cycle") as WorldCycle if is_inside_tree() else null
 	var v: Dictionary = cycle.apply_time(_values) if cycle else _values
+	if weather:
+		v = weather.modify(v)
 	if _env:
 		_env.fog_light_color = v.fog_color
 		_env.fog_density = v.fog_density
@@ -221,6 +231,12 @@ func _apply() -> void:
 		_sky.set_shader_parameter("cloud_coverage", v.cloud_coverage)
 		_sky.set_shader_parameter("sun_color", v.sun_color)
 		_sky.set_shader_parameter("use_cycle", cycle != null)
+		_sky.set_shader_parameter("cloud_darken", float(v.get("cloud_darken", 0.0)))
+		_sky.set_shader_parameter("stars_amount", float(v.get("stars", 1.0)))
+		var region_now: RegionAtmosphere = current if current else default_atmosphere
+		var pano: Texture2D = region_now.sky_panorama if region_now else null
+		_sky.set_shader_parameter("panorama", pano)
+		_sky.set_shader_parameter("panorama_strength", float(v.get("sky_panorama_strength", 0.0)) if pano else 0.0)
 		if cycle:
 			_sky.set_shader_parameter("sun_direction", cycle.sun_direction)
 			_sky.set_shader_parameter("moon_direction", cycle.moon_direction)

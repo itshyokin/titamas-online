@@ -473,6 +473,7 @@ const TABS = {
 				{ key: "combat.world_knockback", label: "Bounce knockback (m/s)", type: "number" },
 				{ key: "combat.world_check", label: "Bounce check reach (share of weapon reach)", type: "number" },
 				{ key: "combat.gash_time", label: "Gash in wood lasts (s)", type: "number" },
+				{ key: "combat.spark_size", label: "Sparks off stone / metal (size)", type: "number", help: "1 = normal; scales how many sparks fly and how fast." },
 				{ key: "combat.tab_range", label: "Target button reach (m)", type: "number" },
 				{ key: "combat.lock_range", label: "Lock-on breaks beyond (m)", type: "number", help: "Keep it at least the target button's reach." },
 				{ key: "combat.lose_range", label: "Target dropped beyond (m)", type: "number" },
@@ -490,6 +491,8 @@ const TABS = {
 			]],
 			["Levels", [
 				{ key: "leveling.max_level", label: "Highest level", type: "int" },
+				{ key: "leveling.skill_points_start", label: "Skill points at level 1", type: "int" },
+				{ key: "leveling.skill_points_per_level", label: "Skill points per level", type: "int", help: "Spent in the Skills window (N) on the class's trees (Database → Skill Trees)." },
 				{ key: "leveling.xp_to_next", label: "Experience to the next level (from level 1)", type: "numlist", wide: true },
 				{ key: "leveling.health_per_level", label: "Health per level", type: "number" },
 				{ key: "leveling.mana_per_level", label: "Mana per level", type: "number" },
@@ -835,6 +838,67 @@ const TABS = {
 			]],
 		],
 	},
+	quests: {
+		title: "Quests", file: "quests", listKey: "quests", idKey: "id", nameKey: "name",
+		blank: () => ({ id: "new_quest", name: "New Quest", giver: "", giver_event: "", giver_npc: "", available: [], description: "", rewards: "", objectives: [] }),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Events start and complete it with the Quest command, and test it with the \"Quest is\" condition." },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "giver", label: "Given by (shown in the log)", type: "text" },
+				{ key: "giver_event", label: "Giver event (shows ! / ?)", type: "event", help: "The event (MapEvent) whose head shows ! while the quest can be taken and ? when it's ready to hand in." },
+				{ key: "giver_npc", label: "…or giver NPC", type: "select", empty: true, options: () => (((data.npcs || {}).npcs) || []).map(n => [n.id, n.name || n.id]) },
+				{ key: "description", label: "Story (quest log)", type: "textarea", wide: true },
+				{ key: "rewards", label: "Rewards (text for the log)", type: "text", wide: true, help: "Give the actual rewards with event commands when it's handed in." },
+				{ key: "available", label: "Offered only when", type: "conditions", wide: true },
+			]],
+			["Objectives", [
+				{ key: "objectives", label: "", type: "objectives", wide: true },
+			]],
+		],
+	},
+	weather: {
+		title: "Weather", file: "weather", listKey: "types", idKey: "id", nameKey: "name",
+		blank: () => ({ id: "new_weather", name: "New Weather", cloud_coverage: 0.2, cloud_darken: 0.2, sun_scale: 0.8, ambient_scale: 1, fog_add: 0, saturation_scale: 1, rain: 0, wetness: 0, lightning_every: 0, wind_add: 0, sound: "", sound_db: -8, cloud_shadows: 0.6 }),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Regions list these with weights; events set one with the Weather command." },
+				{ key: "name", label: "Name", type: "text" },
+			]],
+			["Sky and light", [
+				{ key: "cloud_coverage", label: "Extra cloud cover (0–1)", type: "number" },
+				{ key: "cloud_darken", label: "Darker clouds (0–1)", type: "number" },
+				{ key: "sun_scale", label: "Sunlight ×", type: "number" },
+				{ key: "ambient_scale", label: "Ambient light ×", type: "number" },
+				{ key: "fog_add", label: "Extra fog density", type: "number", help: "Added to the region's fog (0.004 is light haze, 0.02 thick fog)." },
+				{ key: "saturation_scale", label: "Colour saturation ×", type: "number" },
+				{ key: "cloud_shadows", label: "Cloud shadows on the ground (0–1)", type: "number", help: "How strongly drifting cloud shadows show (×the strength in Weather Settings)." },
+			]],
+			["Rain, wind and sound", [
+				{ key: "rain", label: "Rain (0–1)", type: "number" },
+				{ key: "wetness", label: "Wet ground (0–1)", type: "number", help: "Ground gets darker and shinier." },
+				{ key: "lightning_every", label: "Lightning about every (s, 0 = none)", type: "number" },
+				{ key: "wind_add", label: "Extra wind", type: "number" },
+				{ key: "sound", label: "Looping sound", type: "sound" },
+				{ key: "sound_db", label: "Sound volume (dB)", type: "number" },
+			]],
+		],
+	},
+	weather_settings: {
+		title: "Weather Settings", file: "weather", single: true,
+		groups: [
+			["Changes", [
+				{ key: "transition_seconds", label: "Weather changes over (s)", type: "number" },
+				{ key: "thunder", label: "Thunder sounds", type: "sounds", wide: true },
+			]],
+			["Cloud shadows", [
+				{ key: "cloud_shadows.enabled", label: "Cloud shadows", type: "bool" },
+				{ key: "cloud_shadows.strength", label: "Strength (0–1)", type: "number" },
+				{ key: "cloud_shadows.size", label: "Pattern size (m)", type: "number", help: "Bigger = larger cloud patches. Takes effect on the next level load." },
+				{ key: "cloud_shadows.color", label: "Shadow colour", type: "color" },
+			]],
+		],
+	},
 	world: {
 		title: "World", file: "world", single: true,
 		groups: [
@@ -867,6 +931,8 @@ const TABS = {
 			fog_color: "#b8c7d9", fog_density: 0.004, fog_sky_affect: 0.5, sky_top: "#3d73c7", sky_horizon: "#b3cce6",
 			sky_ground: "#525c66", cloud_color: "#ffffff", cloud_shade: "#b3bdd1", cloud_coverage: 0.45,
 			sun_color: "#fff2d9", sun_energy: 1.1, ambient_energy: 0.6, shadow_strength: 0.6, shadow_color: "#55637f", shadow_fill: 0.55, saturation: 1.2,
+			night_sky_top: "#050916", night_sky_horizon: "#12172e", night_fog: "#0f1424", stars: 1, sky_panorama: "", sky_panorama_strength: 0,
+			weather: [{ type: "clear", weight: 3 }, { type: "cloudy", weight: 2 }, { type: "rain", weight: 1 }], weather_minutes_min: 6, weather_minutes_max: 14,
 			contrast: 1.05, brightness: 1, god_rays: 0.35, grass_density: 1.6, grass_height: 0.8, grass_ground_match: 0.85, grass_base: "#2a5c1f", grass_tip: "#8cc74d",
 			ambient_loop: "", ambient_loop_night: "", music: "", music_night: "", music_volume_db: -12, ambient_volume_db: -8, wind_volume_db: -20,
 		}),
@@ -889,6 +955,17 @@ const TABS = {
 				{ key: "cloud_color", label: "Clouds", type: "color" },
 				{ key: "cloud_shade", label: "Cloud shadows", type: "color" },
 				{ key: "cloud_coverage", label: "Cloud cover (0–1)", type: "number" },
+				{ key: "night_sky_top", label: "Night sky (top)", type: "color" },
+				{ key: "night_sky_horizon", label: "Night sky (horizon)", type: "color" },
+				{ key: "night_fog", label: "Night fog", type: "color" },
+				{ key: "stars", label: "Stars at night (0–2)", type: "number" },
+				{ key: "sky_panorama", label: "Sky picture (res:// panorama image)", type: "text", help: "Optional equirectangular (2:1) image blended over the sky colours, e.g. a painted skybox. Leave empty for colours only." },
+				{ key: "sky_panorama_strength", label: "Sky picture strength (0–1)", type: "number" },
+			]],
+			["Weather", [
+				{ key: "weather", label: "Weather here (weights)", type: "weatherlist", wide: true, help: "One is picked by weight each time the weather changes. Types are in the Weather tab." },
+				{ key: "weather_minutes_min", label: "Each spell lasts at least (min)", type: "number" },
+				{ key: "weather_minutes_max", label: "…and at most (min)", type: "number" },
 			]],
 			["Light and colour", [
 				{ key: "sun_color", label: "Sunlight", type: "color" },
@@ -1554,6 +1631,66 @@ function fieldControl(t, entry, f) {
 			wrap.appendChild(add);
 			break;
 		}
+		case "conditions": {
+			if (!Array.isArray(entry[f.key])) entry[f.key] = [];
+			wrap.append(label, conditionsEditor(entry[f.key], r => changed(r)));
+			break;
+		}
+		case "objectives": {
+			if (!Array.isArray(entry[f.key])) entry[f.key] = [];
+			const list = entry[f.key];
+			wrap.className += " list-field";
+			list.forEach((o, i) => {
+				const row = el("div", { className: "row" });
+				const txt = el("input", { type: "text", value: o.text || "", placeholder: "Shown text, e.g. Bandit Insignias" });
+				txt.style.flex = "1";
+				txt.oninput = () => { o.text = txt.value; changed(); };
+				const type = selectOf([["item", "Carry item"], ["kill", "Defeat enemies"], ["switch", "Switch is on"], ["variable", "Variable at least"]], o.type || "item", false);
+				type.onchange = () => { o.type = type.value; changed(true); };
+				row.append(txt, type);
+				const sel = (opts, key) => { const s = selectOf(opts, o[key] || "", true); s.onchange = () => { o[key] = s.value; changed(); }; row.appendChild(s); };
+				if ((o.type || "item") === "item") sel(itemOptions(), "item");
+				else if (o.type === "kill") sel((((data.enemies || {}).enemies) || []).map(x => [x.id, (x.display_name || x.id)]), "enemy");
+				else if (o.type === "switch") sel(switchOptions(), "switch");
+				else if (o.type === "variable") sel(variableOptions(), "variable");
+				if (o.type !== "switch") {
+					const n = el("input", { type: "number", value: o.count ?? 1, title: "How many" });
+					n.style.width = "60px";
+					n.oninput = () => { const v = parseInt(n.value); if (!Number.isNaN(v)) { o.count = v; changed(); } };
+					row.append(el("span", { textContent: "×" }), n);
+				}
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); changed(true); };
+				row.appendChild(rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Objective" });
+			add.onclick = () => { list.push({ text: "", type: "item", item: "", count: 1 }); changed(true); };
+			wrap.appendChild(add);
+			break;
+		}
+		case "weatherlist": {
+			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const types = (((data.weather || {}).types) || []).map(t => [t.id, t.name || t.id]);
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const sel = selectOf(types, r.type, false);
+				sel.onchange = () => { list[i].type = sel.value; set(list); };
+				const w = el("input", { type: "number", value: r.weight ?? 1, step: 0.1, title: "Weight" });
+				w.style.width = "70px";
+				w.oninput = () => { const v = parseFloat(w.value); if (!Number.isNaN(v)) { list[i].weight = v; set(list); } };
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); set(list, true); };
+				row.append(sel, el("span", { textContent: "weight" }), w, rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Weather" });
+			add.onclick = () => { list.push({ type: types.length ? types[0][0] : "clear", weight: 1 }); set(list, true); };
+			wrap.appendChild(add);
+			break;
+		}
 		case "skillnodes": {
 			wrap.appendChild(skillTreeEditor(entry));
 			break;
@@ -1610,11 +1747,18 @@ const CMD_GROUPS = [
 	["Flow", ["if", "wait", "call", "stop", "erase", "note"]],
 	["Switches", ["switch", "self_switch", "variable"]],
 	["Player", ["give_item", "take_item", "gold", "xp", "heal", "follower", "animation"]],
-	["World", ["teleport", "set_home", "fade_out", "fade_in", "sound", "effect"]],
-	["Progress", ["achievement"]],
+	["World", ["teleport", "set_home", "fade_out", "fade_in", "sound", "effect", "weather"]],
+	["Progress", ["quest", "achievement"]],
 ];
+const questOptions = () => (((data.quests || {}).quests) || []).map(q => [q.id, (q.name || q.id) + "  (" + q.id + ")"]);
 const achievementOptions = () => (((data.achievements || {}).achievements) || []).map(a => [a.id, (a.name || a.id) + "  (" + a.id + ")"]);
 const CMDS = {
+	weather: { label: "Weather", make: () => ({ cmd: "weather", type: "rain", minutes: 5 }),
+		fields: [["type", "Weather", "select", () => (((data.weather || {}).types) || []).map(t => [t.id, t.name || t.id])], ["minutes", "For (minutes, 0 = until it changes)", "number"]],
+		show: c => "Weather: " + c.type + (c.minutes ? " for " + c.minutes + " min" : "") },
+	quest: { label: "Quest", make: () => ({ cmd: "quest", id: "", op: "start" }),
+		fields: [["id", "Quest", "select", questOptions], ["op", "Do", "select", [["start", "Start (accept)"], ["complete", "Complete"], ["fail", "Fail"], ["reset", "Reset (not started)"]]]],
+		show: c => "Quest: " + ({ start: "start", complete: "complete", fail: "fail", reset: "reset" }[c.op] || c.op) + " " + nameOf(questOptions(), c.id) },
 	achievement: { label: "Unlock achievement", make: () => ({ cmd: "achievement", id: "" }),
 		fields: [["id", "Achievement", "select", achievementOptions]], show: c => "Achievement: " + nameOf(achievementOptions(), c.id) },
 	text: { label: "Show text", make: () => ({ cmd: "text", speaker: "", text: "" }),
@@ -1680,8 +1824,8 @@ function condText(conds) {
 	}).join(" and ");
 }
 
-const COND_TYPES = [["switch", "Switch"], ["self", "Self switch"], ["variable", "Variable"], ["item", "Has item"], ["gold", "Has gold"], ["level", "Level at least"], ["class", "Class is"]];
-const COND_BLANK = { switch: { id: "", is: true }, self: { letter: "A", is: true }, variable: { id: "", op: ">=", value: 1 }, item: { item: "", count: 1 }, gold: { value: 10 }, level: { value: 2 }, class: { id: "" } };
+const COND_TYPES = [["switch", "Switch"], ["self", "Self switch"], ["variable", "Variable"], ["item", "Has item"], ["gold", "Has gold"], ["level", "Level at least"], ["class", "Class is"], ["quest", "Quest is"]];
+const COND_BLANK = { switch: { id: "", is: true }, self: { letter: "A", is: true }, variable: { id: "", op: ">=", value: 1 }, item: { item: "", count: 1 }, gold: { value: 10 }, level: { value: 2 }, class: { id: "" }, quest: { id: "", state: "active" } };
 
 // Rows of conditions, edited in place.
 function conditionsEditor(list, onChange) {
@@ -1702,6 +1846,7 @@ function conditionsEditor(list, onChange) {
 			case "item": sel(itemOptions(), "item", true); row.appendChild(el("span", { textContent: "×" })); num("count", "60px"); break;
 			case "gold": case "level": num("value", "100px"); break;
 			case "class": sel(classOptions(), "id", true); break;
+			case "quest": sel(questOptions(), "id", true); sel([["not_started", "not started"], ["active", "active"], ["ready", "ready to hand in"], ["done", "done"], ["failed", "failed"]], "state", false); break;
 		}
 		const rm = el("button", { textContent: "✕", title: "Remove" });
 		rm.onclick = () => { list.splice(i, 1); onChange(true); };

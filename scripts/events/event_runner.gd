@@ -16,6 +16,8 @@ extends Node
 ##   teleport {scene, marker, position, fade}   set_home {name}   fade_out / fade_in {seconds}
 ##   follower {npc, op join/leave}           call {event}   erase {}   stop {}
 ##   achievement {id}                        (Achievements.unlock)
+##   quest {id, op start/complete/fail/reset} (Quests)
+##   weather {type, minutes}                 (Weather.force; 0 minutes = until the next change)
 ## Text can use {player} and pronouns (DialogueBox), {var:id}, {gold} and {item:id} (its name).
 
 signal finished
@@ -205,6 +207,17 @@ func _execute(c: Dictionary, list: Array, top: Dictionary) -> void:
 				at = player
 			if at:
 				Effects.burst(Combat.world_root(at), at.global_position + Vector3.UP, Color.from_string(String(c.get("color", "#ffd76a")), Color.WHITE), float(c.get("size", 1.0)))
+		"quest":
+			match String(c.get("op", "start")):
+				"start": Quests.start(String(c.get("id", "")))
+				"complete": Quests.complete(String(c.get("id", "")))
+				"fail": Quests.fail(String(c.get("id", "")))
+				"reset": Quests.reset(String(c.get("id", "")))
+		"weather":
+			var atmos := get_tree().get_first_node_in_group("atmosphere")
+			var w: Weather = atmos.get("weather") if atmos else null
+			if w:
+				w.force(String(c.get("type", "clear")), float(c.get("minutes", 0.0)))
 		"achievement":
 			var ach := get_node_or_null("/root/Achievements")
 			if ach:

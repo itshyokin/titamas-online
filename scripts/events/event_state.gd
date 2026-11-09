@@ -13,6 +13,7 @@ extends RefCounted
 ##   {type: "gold", value}               at least this much gold
 ##   {type: "level", value}              at least this level
 ##   {type: "class", id}                 playing this class
+##   {type: "quest", id, state}          not_started / active / ready / done / failed (Quests)
 
 const LETTERS := ["A", "B", "C", "D"]
 
@@ -109,6 +110,8 @@ static func test(c: Dictionary, self_key: String, player: Node) -> bool:
 			var session := _session()
 			var data: Dictionary = session.get("data") if session else {}
 			return String(data.get("class", "")) == String(c.get("id", ""))
+		"quest":
+			return Quests.test(c)
 	return true
 
 

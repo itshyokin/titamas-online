@@ -352,12 +352,15 @@ func _build_hotbar() -> void:
 	add_child(_wheel)
 	_spellbook = Spellbook.new(_combat, _inventory)
 	add_child(_spellbook)
+	add_child(QuestLog.new())
+	add_child(QuestTracker.new())
 	# Experience bar and the Weakened marker.
 	var progress := _combat.player.get_node_or_null("Progress") as PlayerProgress
 	if progress:
 		progress.xp_changed.connect(set_xp)
 		set_xp(progress.xp, progress.needed(), progress.level, progress.is_max_level())
 		_weakened_progress = progress
+		add_child(SkillWindow.new(progress))
 		_weakened = _label("", 13)
 		_weakened.add_theme_color_override("font_color", Color(1.0, 0.5, 0.45))
 		_weakened.tooltip_text = "Weakened: you deal less damage and have less health until it wears off."

@@ -22,6 +22,13 @@ uniform vec3 moon_direction = vec3(0.0, -1.0, 0.0);
 uniform float night_amount : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 moon_color : source_color = vec3(0.85, 0.9, 1.0);
 global uniform float wind_strength;
+// Region sky picture (equirectangular panorama), blended over the gradient sky.
+uniform sampler2D panorama : source_color, filter_linear, repeat_enable;
+uniform float panorama_strength : hint_range(0.0, 1.0) = 0.0;
+// How many stars show at night (region "stars").
+uniform float stars_amount : hint_range(0.0, 2.0) = 1.0;
+// Weather: storm clouds darken, rain mutes the sky.
+uniform float cloud_darken : hint_range(0.0, 1.0) = 0.0;
 
 float hash(vec2 p) {
 	// Sin-free hash: stays stable at large coordinates (sin-based hashes lose
@@ -59,6 +66,11 @@ void sky() {
 		col = mix(horizon_color, ground_color, clamp(-dir.y * 6.0, 0.0, 1.0));
 	}
 
+	if (panorama_strength > 0.0) {
+		vec2 puv = vec2(atan(dir.x, -dir.z) / (2.0 * PI) + 0.5, acos(clamp(dir.y, -1.0, 1.0)) / PI);
+		col = mix(col, texture(panorama, puv).rgb, panorama_strength);
+	}
+
 	// Sun, moon and stars.
 	if (use_cycle) {
 		float d = dot(dir, normalize(sun_direction));
@@ -74,7 +86,7 @@ void sky() {
 			vec2 at = cell + vec2(hash(cell + 7.1), hash(cell + 3.3));
 			float star = smoothstep(1.0, 0.0, length(sp - at) * 3.5) * step(0.88, h);
 			star *= 0.6 + 0.4 * sin(TIME * (1.5 + h * 3.0) + h * 40.0);
-			col += vec3(star) * night_amount * smoothstep(0.0, 0.25, dir.y) * (0.6 + h);
+			col += vec3(star) * night_amount * smoothstep(0.0, 0.25, dir.y) * (0.6 + h) * stars_amount * (1.0 - cloud_coverage * 0.8);
 		}
 		float m = dot(dir, normalize(moon_direction));
 		float moon_disc = smoothstep(0.9993, 0.9996, m);
@@ -97,6 +109,7 @@ void sky() {
 		float c = smoothstep(1.0 - cloud_coverage, 1.0 - cloud_coverage + 0.25, n);
 		float shade = fbm(uv * 2.0 + vec2(0.08, 0.08));
 		vec3 cloud = mix(cloud_color, cloud_shade, smoothstep(0.4, 0.8, shade));
+		cloud = mix(cloud, cloud_shade * 0.45, cloud_darken);
 		float fade = smoothstep(0.0, 0.25, dir.y);
 		col = mix(col, cloud, c * fade * 0.9);
 	}

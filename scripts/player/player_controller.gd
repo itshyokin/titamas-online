@@ -120,6 +120,8 @@ var state := State.NORMAL
 var is_sprinting := false
 ## Movement speed multiplier (Weakened slows you; PlayerProgress sets it).
 var speed_scale := 1.0
+## Movement speed multiplier from skills (PlayerProgress).
+var skill_speed := 1.0
 var _dying := false
 var _going_home := false
 var _stuck_air := 0.0
@@ -351,7 +353,7 @@ func _normal_movement(delta: float) -> void:
 		speed = sprint_speed
 	elif Input.is_action_pressed("walk"):
 		speed = walk_speed
-	var target := direction * speed * speed_scale
+	var target := direction * speed * speed_scale * skill_speed
 	var accel := acceleration if is_on_floor() else acceleration * air_control
 	velocity.x = lerpf(velocity.x, target.x, accel * delta)
 	velocity.z = lerpf(velocity.z, target.z, accel * delta)

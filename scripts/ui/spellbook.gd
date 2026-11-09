@@ -48,7 +48,7 @@ func _ready() -> void:
 	head.add_child(close_button)
 	v.add_child(head)
 	var hint := Label.new()
-	hint.text = "Drag a spell onto the hotbar (boxes 3–10)."
+	hint.text = "Drag a spell onto the hotbar (boxes 1–10)."
 	hint.modulate = Color(1, 1, 1, 0.6)
 	hint.add_theme_font_size_override("font_size", 12)
 	v.add_child(hint)

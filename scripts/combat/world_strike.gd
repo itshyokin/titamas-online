@@ -66,7 +66,7 @@ static func strike(player: Node3D, hit: Dictionary, settings: Dictionary) -> voi
 			Combat.play_sound(player, THUNKS.pick_random(), -8.0, 0.8)
 		_:
 			Combat.play_sound(player, CLANGS.pick_random(), -1.0, randf_range(0.9, 1.1))
-			Effects.sparks(root, at, Color(1.0, 0.8, 0.4), 1.1, normal + Vector3.UP * 0.4)
+			Effects.strike_sparks(root, at, normal, float(settings.get("spark_size", 1.0)))
 	var back := Vector3(normal.x, 0.0, normal.z)
 	if back.length() < 0.1:
 		back = player.global_position - at

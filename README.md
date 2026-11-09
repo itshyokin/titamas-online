@@ -22,6 +22,8 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 | Sprint (controller: tap to toggle); stamina is hotbar box 11 | X | Shift (hold) |
 | Character and backpack | Back | I or B |
 | Spellbook | | P |
+| Skill trees | | N |
+| Quest log | | L |
 | Danger mode (lets you attack friendly NPCs) | | K |
 | Target an enemy | RB (nearest the middle of the screen) | Left-click it (click another to switch) |
 | Clear target | RB | Tab |

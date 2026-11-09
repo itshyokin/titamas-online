@@ -373,6 +373,11 @@
 										"value": true
 									},
 									{
+										"cmd": "quest",
+										"id": "bandit_insignias",
+										"op": "start"
+									},
+									{
 										"cmd": "text",
 										"speaker": "",
 										"text": "Thank you! Come back when you have them."
@@ -439,6 +444,11 @@
 									"cmd": "switch",
 									"id": "insignia_done",
 									"value": true
+								},
+								{
+									"cmd": "quest",
+									"id": "bandit_insignias",
+									"op": "complete"
 								},
 								{
 									"cmd": "achievement",

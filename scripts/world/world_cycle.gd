@@ -149,10 +149,14 @@ func apply_time(v: Dictionary) -> Dictionary:
 	var out := v.duplicate()
 	var night := 1.0 - daylight
 	var glow := twilight * 0.85
-	out.sky_top = (v.sky_top as Color).lerp(NIGHT_SKY, night)
+	# Region night colours (RegionAtmosphere night_*), else the defaults.
+	var night_sky: Color = v.get("night_sky_top", NIGHT_SKY)
+	var night_horizon: Color = v.get("night_sky_horizon", NIGHT_HORIZON)
+	var night_fog: Color = v.get("night_fog", NIGHT_FOG)
+	out.sky_top = (v.sky_top as Color).lerp(night_sky, night)
 	var horizon := (v.sky_horizon as Color).lerp(DUSK_HORIZON, glow * 0.7)
-	out.sky_horizon = horizon.lerp(NIGHT_HORIZON, night * (1.0 - glow * 0.5))
-	out.fog_color = (v.fog_color as Color).lerp(DUSK_HORIZON.darkened(0.15), glow * 0.5).lerp(NIGHT_FOG, night * (1.0 - glow * 0.4))
+	out.sky_horizon = horizon.lerp(night_horizon, night * (1.0 - glow * 0.5))
+	out.fog_color = (v.fog_color as Color).lerp(DUSK_HORIZON.darkened(0.15), glow * 0.5).lerp(night_fog, night * (1.0 - glow * 0.4))
 	out.cloud_color = (v.cloud_color as Color).lerp(Color(1.0, 0.65, 0.5), glow * 0.6).lerp(Color(0.16, 0.18, 0.26), night)
 	out.cloud_shade = (v.cloud_shade as Color).lerp(Color(0.55, 0.35, 0.4), glow * 0.5).lerp(Color(0.07, 0.08, 0.13), night)
 	out.sun_color = (v.sun_color as Color).lerp(DUSK_SUN, glow)

@@ -5,7 +5,7 @@ shader_type spatial;
 // Edges are broken up with noise so painted borders look natural, steep slopes can
 // turn to the B layer (rock) automatically, and the B layer is projected from three
 // sides so cliffs don't stretch.
-render_mode diffuse_lambert, specular_disabled;
+render_mode diffuse_lambert;
 
 #include "res://assets/materials/pixel_sample.gdshaderinc"
 
@@ -28,6 +28,8 @@ uniform float cliff_slope_end : hint_range(0.0, 1.0) = 0.55;
 // How much ambient occlusion also darkens sunlit ground (the ground is mostly lit by the
 // sun, so without this the contact shading only shows in shade). Set from data/world.json
 // "ambient_occlusion" "terrain_light_affect" by AtmosphereManager.
+// Rain (Weather): 0 dry, 1 soaked: darker and shinier ground.
+global uniform float wetness;
 uniform float ao_light_affect : hint_range(0.0, 1.0) = 0.85;
 
 varying vec3 world_pos;
@@ -86,7 +88,9 @@ void fragment() {
 	w /= max(w.r + w.g + w.b, 0.0001);
 
 	ALBEDO = col_r * w.r + col_g * w.g + col_b * w.b;
-	ROUGHNESS = 1.0;
+	ROUGHNESS = mix(1.0, 0.35, wetness * (1.0 - w.b * 0.5));
+	ALBEDO *= 1.0 - 0.32 * wetness;
+	SPECULAR = 0.5 * wetness;
 	AO = 1.0;
 	AO_LIGHT_AFFECT = ao_light_affect;
 }

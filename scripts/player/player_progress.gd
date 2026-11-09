@@ -10,10 +10,18 @@ extends Node
 ## and leaves you Weakened for a while: less damage and less maximum health
 ## (player.json "death"). Level, experience and the Weakened timer are saved with the
 ## character.
+##
+## Skill points (Database → Skill Trees, player.json leveling skill_points_start /
+## skill_points_per_level): spent on the class's tree skills (`rank_up`), saved as
+## data.skill_ranks {skill id: rank}. Skills raise stats (Stats.set_skill_bonus), teach
+## abilities (added to PlayerCombat.spells) or switch on passives (`passive(key)` = rank,
+## for game code to check).
 
 signal xp_changed(xp: int, needed: int, level: int, max_level: bool)
 signal leveled_up(level: int)
 signal weakened_changed(seconds_left: float)
+## Skill ranks or free points changed.
+signal skills_changed
 
 const LEVEL_SOUND := preload("res://assets/audio/weapons/swap_bow.ogg")
 
@@ -22,6 +30,9 @@ const LEVEL_SOUND := preload("res://assets/audio/weapons/swap_bow.ogg")
 
 var level := 1
 var xp := 0
+## skill id -> rank
+var skill_ranks := {}
+var _skill_spells: Array[Ability] = []
 ## Unix time the Weakened debuff wears off (0 = not weakened).
 var weakened_until := 0.0
 ## Without a saved character (F6): Weakened counts down from here instead.
@@ -34,12 +45,19 @@ func _ready() -> void:
 		level = clampi(int(GameSession.data.get("level", 1)), 1, max_level())
 		xp = int(GameSession.data.get("xp", 0))
 		weakened_until = float(GameSession.data.get("weakened_until", 0.0))
+		var ranks = GameSession.data.get("skill_ranks", {})
+		if ranks is Dictionary:
+			for k in ranks:
+				skill_ranks[String(k)] = int(ranks[k])
 	_apply_level()
+	_apply_skills.call_deferred()
 	_apply_weakened()
 	stats.restore.call_deferred()  # start full, once gear and levels are on
 	Database.changed.connect(func(which: String) -> void:
 		if which == "player":
-			_apply_level())
+			_apply_level()
+		if which in ["player", "skill_trees", "abilities"]:
+			_apply_skills.call_deferred())
 	_emit.call_deferred()
 
 
@@ -103,6 +121,7 @@ func credit_kill(enemy: Node) -> void:
 	var ach := get_node_or_null("/root/Achievements")
 	if ach:
 		ach.call("count_kill", String(enemy.get("enemy_id")) if "enemy_id" in enemy else "")
+	Quests.count_kill(String(enemy.get("enemy_id")) if "enemy_id" in enemy else "")
 	var amount := xp_for_kill(s.level, data)
 	if amount > 0:
 		add_xp(amount, s.display_name)
@@ -135,6 +154,9 @@ func _on_level_up() -> void:
 		hud.call("show_message", "You reached level %d!" % level, 3.0)
 	GameLog.post("You reached level %d!" % level, Color(1.0, 0.85, 0.35))
 	leveled_up.emit(level)
+	if points_free() > 0:
+		GameLog.post("You have %d skill point%s to spend (%s)." % [points_free(), "" if points_free() == 1 else "s", GameSettings.binding_label("skills")], Color(1.0, 0.85, 0.35))
+	skills_changed.emit()
 	var net := get_tree().root.get_node_or_null("Net")
 	if net and net.get("active"):
 		net.call("send_info")
@@ -142,6 +164,7 @@ func _on_level_up() -> void:
 
 func _save() -> void:
 	if GameSession.active():
+		GameSession.data["skill_ranks"] = skill_ranks.duplicate()
 		GameSession.data["level"] = level
 		GameSession.data["xp"] = xp
 		GameSession.data["weakened_until"] = weakened_until
@@ -205,3 +228,135 @@ func _process(delta: float) -> void:
 static func _duration(seconds: float) -> String:
 	var s := ceili(seconds)
 	return ("%d min" % (s / 60)) if s % 60 == 0 else "%d:%02d" % [s / 60, s % 60]
+
+
+# --- Skills ------------------------------------------------------------------------
+
+## This character's class's skill trees (Database.trees_for).
+func trees() -> Array:
+	var cls := String(GameSession.data.get("class", "")) if GameSession.active() else ""
+	if cls.is_empty():
+		cls = String(Database.player.get("default_class", "fighter"))
+	return Database.trees_for(cls)
+
+
+func skill(id: String) -> Dictionary:
+	for t: Dictionary in trees():
+		for n: Dictionary in t.get("nodes", []):
+			if String(n.get("id", "")) == id:
+				return n
+	return {}
+
+
+func tree_of(id: String) -> Dictionary:
+	for t: Dictionary in trees():
+		for n: Dictionary in t.get("nodes", []):
+			if String(n.get("id", "")) == id:
+				return t
+	return {}
+
+
+func rank(id: String) -> int:
+	return int(skill_ranks.get(id, 0))
+
+
+func points_total() -> int:
+	var l := _leveling()
+	return int(l.get("skill_points_start", 1)) + (level - 1) * int(l.get("skill_points_per_level", 1))
+
+
+func points_spent(tree_id := "") -> int:
+	var total := 0
+	for id: String in skill_ranks:
+		var n := skill(id)
+		if n.is_empty():
+			continue
+		if tree_id != "" and String(tree_of(id).get("id", "")) != tree_id:
+			continue
+		total += int(skill_ranks[id]) * int(n.get("cost", 1))
+	return total
+
+
+func points_free() -> int:
+	return maxi(points_total() - points_spent(), 0)
+
+
+## Why a skill can't take another rank ("" = it can).
+func cant_rank(id: String) -> String:
+	var n := skill(id)
+	if n.is_empty():
+		return "Unknown skill"
+	if rank(id) >= int(n.get("max_rank", 1)):
+		return "Fully learned"
+	if level < int(n.get("min_level", 1)):
+		return "Needs level %d" % int(n.get("min_level", 1))
+	var above := int(n.get("points_above", 0))
+	if points_spent(String(tree_of(id).get("id", ""))) < above:
+		return "Needs %d points in %s" % [above, tree_of(id).get("name", "this tree")]
+	for req in n.get("requires", []):
+		var r := skill(String(req))
+		if not r.is_empty() and rank(String(req)) < int(r.get("max_rank", 1)):
+			return "Needs %s" % r.get("name", req)
+	if points_free() < int(n.get("cost", 1)):
+		return "No skill points"
+	return ""
+
+
+func rank_up(id: String) -> bool:
+	if cant_rank(id) != "":
+		return false
+	skill_ranks[id] = rank(id) + 1
+	_apply_skills()
+	_save()
+	var n := skill(id)
+	GameLog.post("%s: rank %d." % [n.get("name", id), rank(id)], Color(1.0, 0.85, 0.35))
+	return true
+
+
+## Gives every point back.
+func respec() -> void:
+	skill_ranks.clear()
+	_apply_skills()
+	_save()
+
+
+## Rank of the skills with this passive key (0 = none), for game code: passive("cleave").
+func passive(key: String) -> int:
+	var total := 0
+	for id: String in skill_ranks:
+		var n := skill(id)
+		if String(n.get("effect", "")) == "passive" and String(n.get("key", "")) == key:
+			total += int(skill_ranks[id])
+	return total
+
+
+func _apply_skills() -> void:
+	var bonus := {}
+	var learn: Array[Ability] = []
+	for id: String in skill_ranks:
+		var n := skill(id)
+		var r := int(skill_ranks[id])
+		if n.is_empty() or r <= 0:
+			continue
+		match String(n.get("effect", "stat")):
+			"stat":
+				var key := String(n.get("stat", "attack"))
+				bonus[key] = float(bonus.get(key, 0.0)) + float(n.get("per_rank", 0.0)) * r
+			"ability":
+				var ab := Database.ability(String(n.get("ability", "")))
+				if ab:
+					learn.append(ab)
+	stats.set_skill_bonus(bonus)
+	if "skill_speed" in player:
+		player.set("skill_speed", 1.0 + float(bonus.get("move_speed", 0.0)) / 100.0)
+	var combat := player.get_node_or_null("PlayerCombat") as PlayerCombat
+	if combat:
+		for ab in _skill_spells:
+			if not ab in learn:
+				combat.spells.erase(ab)
+		for ab in learn:
+			if not ab in combat.spells:
+				combat.spells.append(ab)
+		_skill_spells = learn
+		combat.loadout_changed.emit()
+	skills_changed.emit()

@@ -40,7 +40,37 @@
 			"music_night": "res://assets/audio/music/saturn_night.ogg",
 			"music_volume_db": -12.0,
 			"shadow_color": "#55637f",
-			"shadow_fill": 0.55
+			"shadow_fill": 0.55,
+			"night_sky_top": "#050916",
+			"night_sky_horizon": "#12172e",
+			"night_fog": "#0f1424",
+			"stars": 1.0,
+			"sky_panorama": "",
+			"sky_panorama_strength": 0.0,
+			"weather": [
+				{
+					"type": "clear",
+					"weight": 4
+				},
+				{
+					"type": "cloudy",
+					"weight": 3
+				},
+				{
+					"type": "rain",
+					"weight": 2
+				},
+				{
+					"type": "storm",
+					"weight": 0.6
+				},
+				{
+					"type": "fog",
+					"weight": 1
+				}
+			],
+			"weather_minutes_min": 6.0,
+			"weather_minutes_max": 14.0
 		},
 		{
 			"ambient_energy": 0.9,
@@ -82,7 +112,33 @@
 			"music_night": "",
 			"music_volume_db": -12.0,
 			"shadow_color": "#55637f",
-			"shadow_fill": 0.55
+			"shadow_fill": 0.55,
+			"night_sky_top": "#050916",
+			"night_sky_horizon": "#12172e",
+			"night_fog": "#0f1424",
+			"stars": 1.0,
+			"sky_panorama": "",
+			"sky_panorama_strength": 0.0,
+			"weather": [
+				{
+					"type": "clear",
+					"weight": 3
+				},
+				{
+					"type": "cloudy",
+					"weight": 2
+				},
+				{
+					"type": "rain",
+					"weight": 1
+				},
+				{
+					"type": "storm",
+					"weight": 0.5
+				}
+			],
+			"weather_minutes_min": 6.0,
+			"weather_minutes_max": 14.0
 		}
 	]
 }
