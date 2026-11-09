@@ -44,6 +44,7 @@ var _label: Label
 var _file_time := -1
 var _preview_key := ""
 var _file_check := 0.0
+var _world_time := -1
 var _label_tween: Tween
 var _beds: Array[AudioStreamPlayer] = []  # two players, crossfaded between regions
 var _music: Array[AudioStreamPlayer] = []
@@ -91,6 +92,9 @@ func _process(delta: float) -> void:
 	_file_check += delta
 	if _file_check > 1.0:
 		_file_check = 0.0
+		# Ambient occlusion settings (data/world.json) apply live as the Database saves them.
+		if not Engine.is_editor_hint() and DataFiles.modified_time(DataFiles.WORLD) != _world_time:
+			_apply_ssao()
 		if DataFiles.modified_time(regions_file) != _file_time:
 			_load_regions()
 			if current and not Engine.is_editor_hint():
@@ -344,6 +348,7 @@ func _update_wind(delta: float) -> void:
 func _apply_ssao() -> void:
 	if _env == null:
 		return
+	_world_time = DataFiles.modified_time(DataFiles.WORLD)
 	var world = DataFiles.read(DataFiles.WORLD)
 	var ao: Dictionary = world.get("ambient_occlusion", {}) if world is Dictionary else {}
 	_env.ssao_enabled = GameSettings.ssao
@@ -354,6 +359,9 @@ func _apply_ssao() -> void:
 	_env.ssao_horizon = float(ao.get("horizon", 0.06))
 	# Share of the darkening that also applies in direct sunlight (otherwise only shade gets it).
 	_env.ssao_light_affect = float(ao.get("light_affect", 0.45))
+	# Godot only lets ssao_light_affect reach materials through this ("AO channel affect"):
+	# at 0 the sunlit sides of rocks and trees never darken whatever light_affect says.
+	_env.ssao_ao_channel_affect = 1.0
 	# The terrain is mostly sunlit: its own share (the shared chunk material).
 	var terrain := load("res://assets/materials/terrain/terrain.tres") as ShaderMaterial
 	if terrain:
