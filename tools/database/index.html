@@ -824,7 +824,7 @@ const TABS = {
 		title: "Body Models", file: "body_models", single: true,
 		groups: [
 			["Importing from Blender", [
-				{ key: "_intro", label: "", type: "note", wide: true, text: "Keep the body and every wearable piece in one .blend under the one armature (pieces parented to it with Armature modifiers, or rigid pieces parented to a bone). Export the whole scene as glTF Binary (.glb, Apply Modifiers on, Animation off) over the Source file below. New Blender objects then show up in the Meshes list: add a piece for each (one mesh can make several pieces, split by material or height), Save, then Rebuild. Each piece becomes assets/characters/lowpoly/<id>_masc.scn: point an item's Fitted model (Items tab) or an appearance option at it. Changing the body itself (bones, proportions) also needs Animations → Rebuild animations." },
+				{ key: "_intro", label: "", type: "note", wide: true, text: "Keep the body and every wearable piece in one .blend under the one armature (pieces parented to it with Armature modifiers, or rigid pieces parented to a bone). Export the whole scene as glTF Binary (.glb, Apply Modifiers on, Animation off) over the Source file below. New Blender objects then show up in the Meshes list: add a piece for each (one mesh can make several pieces, split by material or height), Save, then Rebuild. Each piece becomes assets/characters/lowpoly/<id>_masc.scn: point an item's Fitted model (Items tab) at it. Pieces set to Hair style / Facial hair / Head / Face appear in the character creator by themselves after the rebuild (give them a name there). Changing the body itself (bones, proportions) also needs Animations → Rebuild animations." },
 				{ key: "source", label: "Source .glb", type: "select", options: () => (assets.glbs || []).map(g => [g, g.replace("res://assets/models/characters/src/", "")]) },
 				{ key: "height", label: "Height (m, top of the head)", type: "number" },
 				{ key: "body_meshes", label: "Meshes that make the body", type: "glbmeshes", wide: true },
@@ -834,7 +834,7 @@ const TABS = {
 				{ key: "pieces", label: "", type: "glbpieces", wide: true },
 			]],
 			["Rebuild", [
-				{ key: "_rebuild", label: "Rebuild bodies and pieces", type: "rebuild", wide: true, endpoint: "/api/rebuild_bodies", file: "body_models", button: "Rebuild bodies and pieces", note: "Builds base_bodies.scn and every piece from the .glb, then the placeholder hair (about half a minute). Save first.", done: "Bodies and pieces rebuilt. Restart the game to see them." },
+				{ key: "_rebuild", label: "Rebuild bodies and pieces", type: "rebuild", wide: true, endpoint: "/api/rebuild_bodies", file: "body_models", button: "Rebuild bodies and pieces", note: "Builds base_bodies.scn and every piece from the .glb, then the placeholder beards (about half a minute). Save first.", done: "Bodies and pieces rebuilt. Restart the game to see them." },
 			]],
 		],
 	},
@@ -1311,7 +1311,7 @@ function fieldControl(t, entry, f) {
 			break;
 		}
 		case "lookopt": {
-			const opts = ((data.appearance || {})[f.list] || []).map(o => [o.id, o.name]);
+			const opts = lookOptions(f.list);
 			const sel = selectOf(opts, value, true);
 			sel.onchange = () => set(sel.value);
 			wrap.append(label, sel);
@@ -1630,6 +1630,7 @@ function fieldControl(t, entry, f) {
 			break;
 		}
 		case "glbpieces": {
+			// (each piece: what it's for → appearance option / item; see pieceUse)
 			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
 			wrap.className += " list-field";
 			const meshes = assets.glb_meshes || [];
@@ -1653,7 +1654,16 @@ function fieldControl(t, entry, f) {
 				const num = k => { const n = el("input", { type: "number", step: 0.05, value: r[k] ?? -1, title: k + " (-1 = none)" }); n.style.width = "64px"; n.oninput = () => { const v = parseFloat(n.value); if (!Number.isNaN(v)) { list[i][k] = v; set(list); } }; return n; };
 				const rm = el("button", { textContent: "✕", title: "Remove" });
 				rm.onclick = () => { list.splice(i, 1); set(list, true); };
-				row.append(id, ms, mat, num("min_y"), num("max_y"));
+				const use = selectOf(PIECE_USES, pieceUse(r), false);
+				use.title = "What it's for: hair / facial hair / head / face pieces show up in the character creator by themselves; items point at the piece in the Items tab.";
+				use.onchange = () => { list[i].use = use.value; set(list, true); };
+				row.append(id, ms, mat, num("min_y"), num("max_y"), use);
+				if (PIECE_LIST[pieceUse(r)]) {
+					const nm = el("input", { type: "text", value: r.name || "", placeholder: pieceName(r), title: "Name in the character creator" });
+					nm.style.width = "130px";
+					nm.oninput = () => { list[i].name = nm.value; set(list); };
+					row.append(nm);
+				}
 				if (mesh && !mesh.skinned) {
 					const bone = el("input", { type: "text", value: r.bone || "mixamorig_Head", title: "Bone a rigid mesh follows" });
 					bone.style.width = "150px";
@@ -1666,6 +1676,11 @@ function fieldControl(t, entry, f) {
 			const add = el("button", { textContent: "+ Add piece" });
 			add.onclick = () => { const m = unused[0] || meshes[0]; list.push({ id: m ? m.name.toLowerCase().replace(/[^a-z0-9_]/g, "_") : "new_piece", mesh: m ? m.name : "", material: "", min_y: -1, max_y: -1 }); set(list, true); };
 			wrap.appendChild(add);
+			if (unused.length > 1) {
+				const all = el("button", { textContent: "+ Add all unused (" + unused.length + ")" });
+				all.onclick = () => { for (const m of unused) list.push({ id: m.name.toLowerCase().replace(/[^a-z0-9_]/g, "_"), mesh: m.name, material: "", min_y: -1, max_y: -1 }); set(list, true); };
+				wrap.appendChild(all);
+			}
 			break;
 		}
 		case "conditions": {
@@ -1787,6 +1802,28 @@ const CMD_GROUPS = [
 	["World", ["teleport", "set_home", "fade_out", "fade_in", "sound", "effect", "weather"]],
 	["Progress", ["quest", "achievement"]],
 ];
+// Body Models pieces → appearance options (mirrors Database.piece_use / _merge_pieces).
+const PIECE_USES = [["", "Item / other"], ["hair", "Hair style"], ["facial_hair", "Facial hair"], ["head", "Head"], ["face", "Face"]];
+const PIECE_LIST = { hair: "hair_styles", facial_hair: "facial_hair", head: "heads", face: "faces" };
+function pieceUse(p) {
+	if (p.use !== undefined) return p.use;
+	const id = (p.id || "").toLowerCase();
+	if (id.startsWith("hair") || id.endsWith("_hair") || id.includes("hairstyle")) return "hair";
+	if (["beard", "mustache", "moustache", "goatee", "stubble", "sideburn"].some(w => id.includes(w))) return "facial_hair";
+	return "";
+}
+function pieceName(p) {
+	if (p.name) return p.name;
+	const id = (p.id || "").replace(/^hairstyle_|^hair_/, "").replace(/_/g, " ");
+	return id.replace(/\b\w/g, c => c.toUpperCase());
+}
+function lookOptions(list) {
+	const opts = ((data.appearance || {})[list] || []).map(o => [o.id, o.name]);
+	for (const p of (((data.body_models || {}).pieces) || [])) {
+		if (PIECE_LIST[pieceUse(p)] === list && !opts.some(o => o[0] === p.id)) opts.push([p.id, pieceName(p)]);
+	}
+	return opts;
+}
 const questOptions = () => (((data.quests || {}).quests) || []).map(q => [q.id, (q.name || q.id) + "  (" + q.id + ")"]);
 const achievementOptions = () => (((data.achievements || {}).achievements) || []).map(a => [a.id, (a.name || a.id) + "  (" + a.id + ")"]);
 const CMDS = {

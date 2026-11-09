@@ -622,7 +622,18 @@ func _tint(nodes: Array, color: Color) -> void:
 		if node is MeshInstance3D:
 			meshes.append(node)
 		for mi: MeshInstance3D in meshes:
-			mi.material_override = mat
+			# A textured piece (hair painted in Blender) keeps its texture, multiplied by the
+			# colour; plain pieces get the flat colour.
+			var textured := false
+			for i in (mi.mesh.get_surface_count() if mi.mesh else 0):
+				var m := mi.get_active_material(i) as BaseMaterial3D
+				if m and m.albedo_texture:
+					var t := m.duplicate() as BaseMaterial3D
+					t.albedo_color = color
+					mi.set_surface_override_material(i, t)
+					textured = true
+			if not textured:
+				mi.material_override = mat
 
 
 ## Two flat eye quads laid on the face, following its shape, on the head bone.
