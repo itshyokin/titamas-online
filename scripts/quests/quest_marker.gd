@@ -25,6 +25,7 @@ func _init(for_event := "", for_npc := "") -> void:
 	modulate = Color(1.0, 0.84, 0.25)
 	visible = false
 	top_level = true
+	add_to_group("quest_markers")  # (the compass shows them)
 
 
 func _process(delta: float) -> void:

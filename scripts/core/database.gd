@@ -11,7 +11,7 @@ signal changed(which: String)
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
 	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "skill_trees": DataFiles.SKILL_TREES, "quests": DataFiles.QUESTS, "npcs": DataFiles.NPCS,
 	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS, "events": DataFiles.EVENTS,
-	"achievements": DataFiles.ACHIEVEMENTS, "body_models": DataFiles.BODY_MODELS}
+	"achievements": DataFiles.ACHIEVEMENTS, "body_models": DataFiles.BODY_MODELS, "lore": DataFiles.LORE}
 
 ## Appearance lists filled from Body Models pieces by their "use" (see _merge_pieces).
 const PIECE_LISTS := {"hair": "hair_styles", "facial_hair": "facial_hair", "head": "heads", "face": "faces"}
@@ -37,6 +37,8 @@ var player := {}
 var items := {}  # id -> Dictionary (data/items.json entries)
 ## data/appearance.json: the character creator's choices (styles, colours, sizes).
 var appearance := {}
+## Codex lore entries (data/lore.json): {id, title, category, text, conditions}.
+var lore: Array = []
 ## data/body_models.json (pieces built from the body .glb).
 var body_models := {}
 var _appearance_file := {}
@@ -111,6 +113,8 @@ func _load(which: String) -> void:
 		"appearance":
 			_appearance_file = data
 			_merge_pieces()
+		"lore":
+			lore = data.get("entries", [])
 		"body_models":
 			body_models = data
 			_merge_pieces()

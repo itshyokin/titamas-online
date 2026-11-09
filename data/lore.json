@@ -1,0 +1,24 @@
+{
+	"entries": [
+		{
+			"id": "titamas",
+			"title": "Titamas",
+			"category": "The World",
+			"text": "A world of seas and scattered isles. Travellers say the old roads were laid long before any living kingdom, and that the stones still remember who walked them.",
+			"conditions": []
+		},
+		{
+			"id": "bandits",
+			"title": "The Road Bandits",
+			"category": "Peoples",
+			"text": "Since the last harvest failed, bands of desperate folk have taken to the roads. They wear a crude insignia to tell friend from mark.",
+			"conditions": [
+				{
+					"type": "quest",
+					"id": "bandit_insignias",
+					"state": "active"
+				}
+			]
+		}
+	]
+}

@@ -71,6 +71,10 @@ func _ready() -> void:
 			_fill())
 
 
+## Shown inside the Codex right now (the Codex handles keys and closing).
+var embedded := false
+
+
 func is_open() -> bool:
 	return _window.visible
 
@@ -83,11 +87,16 @@ func open() -> void:
 
 
 func close() -> void:
+	if embedded:
+		get_tree().call_group("codex", "close")
+		return
 	_window.visible = false
 	GameSettings.menu_open = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if embedded:
+		return
 	if event.is_action_pressed("skills"):
 		if is_open():
 			close()
@@ -130,6 +139,8 @@ func _fill() -> void:
 
 
 func _center() -> void:
+	if embedded:
+		return
 	_window.reset_size()
 	var view := _window.get_viewport_rect().size
 	_window.position = ((view - _window.size) * 0.5).floor()

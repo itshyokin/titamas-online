@@ -68,6 +68,10 @@ func _ready() -> void:
 	cols.add_child(right)
 
 
+## Shown inside the Codex right now (the Codex handles keys and closing).
+var embedded := false
+
+
 func is_open() -> bool:
 	return _window.visible
 
@@ -82,11 +86,16 @@ func open() -> void:
 
 
 func close() -> void:
+	if embedded:
+		get_tree().call_group("codex", "close")
+		return
 	_window.visible = false
 	GameSettings.menu_open = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if embedded:
+		return
 	if event.is_action_pressed("quest_log"):
 		if is_open():
 			close()

@@ -13,6 +13,9 @@ signal closed
 var targeting: Node = null
 ## The title screen opens the window itself: no gear button, no Esc/Start shortcut.
 var title_screen := false
+## In game the Codex shows these settings as one of its pages (take_tabs): no gear button,
+## no window, no shortcut of its own.
+var embedded := false
 
 var _window: PanelContainer
 var _tabs: TabContainer
@@ -23,7 +26,7 @@ var _waiting: Array = []  # [action, gamepad, Button] while waiting for a key/bu
 
 func _ready() -> void:
 	layer = 20
-	if not title_screen:
+	if not title_screen and not embedded:
 		_build_gear()
 	_build_window()
 	_window.visible = false
@@ -50,7 +53,14 @@ func close() -> void:
 	closed.emit()
 
 
+## The settings pages, for the Codex to show (it reparents them).
+func take_tabs() -> TabContainer:
+	return _tabs
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if embedded:
+		return
 	if title_screen and not _window.visible:
 		return
 	if _window.visible:
@@ -217,11 +227,11 @@ func _help_tab() -> Control:
 			"[b]Fighting[/b]",
 			"%s attack: tap to swing (tap again to combo), hold for a heavy blow or to draw a bow" % k.call("attack"),
 			"%s block with melee weapons (start just before a hit to parry) · aim with ranged weapons" % k.call("block"),
-			"%s…%s use hotbar boxes 1–10 (spells, potions; a weapon there is taken in hand) · %s ability wheel (controller)" % [k.call("hotbar_1"), k.call("hotbar_10"), k.call("ability_wheel")],
+			"%s…%s use hotbar boxes 1–10 (spells, abilities, potions) · %s ability wheel (controller)" % [k.call("hotbar_1"), k.call("hotbar_10"), k.call("ability_wheel")],
 			"%s target and lock on (again to clear) · %s cycle targets · %s lock on / off" % [k.call("target_next"), k.call("target_prev"), k.call("lock_on")],
 			"",
 			"[b]Windows[/b]",
-			"%s character and backpack · %s spellbook · %s chat · %s / gear: this menu" % [k.call("inventory"), k.call("spellbook"), k.call("chat"), k.call("menu")],
+			"%s character and backpack · %s spellbook · %s quests · %s skills · %s chat · Esc / %s / the book: the Codex (character, quests, skills, achievements, lore, settings)" % [k.call("inventory"), k.call("spellbook"), k.call("quest_log"), k.call("skills"), k.call("chat"), k.call("menu")],
 			"%s danger mode: lets you target and attack friendly NPCs (they fight back)" % k.call("danger_mode"),
 		])
 	fill.call()

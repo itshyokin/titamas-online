@@ -43,11 +43,14 @@ var _danger: Label
 var _weakened_progress: PlayerProgress
 
 var _settings: SettingsMenu
+var _codex: Codex
 var _clock: Label
 var _inventory: Inventory
 var _character_window: CharacterWindow
 var _gold: Label
 var _pickups: VBoxContainer
+var _compass: Compass
+var _enemy_bars: EnemyBars
 
 
 func _ready() -> void:
@@ -62,7 +65,11 @@ func _ready() -> void:
 	message.add_theme_constant_override("outline_size", 6)
 	message.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	_settings = SettingsMenu.new()
+	_settings.embedded = true
 	add_child(_settings)
+	_codex = Codex.new()
+	_codex.settings = _settings
+	add_child(_codex)
 	# Time of day, top right beside the settings gear (only when the world has a day cycle).
 	_clock = Label.new()
 	_clock.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -73,6 +80,8 @@ func _ready() -> void:
 	_clock.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	_clock.add_theme_constant_override("outline_size", 4)
 	add_child(_clock)
+	_compass = Compass.new()
+	add_child(_compass)
 	var stats := get_node_or_null(stats_path) as Stats
 	if stats == null:
 		push_warning("HUD: no Stats node at %s" % stats_path)
@@ -92,6 +101,7 @@ func _ready() -> void:
 		_targeting = player.get_node_or_null("Targeting") as Targeting
 		if _targeting:
 			_settings.targeting = _targeting
+			_codex.targeting = _targeting
 		if _combat and _targeting:
 			_build_combat_hud()
 		_inventory = player.get_node_or_null("Inventory") as Inventory
@@ -278,6 +288,9 @@ func _label(text: String, size := 16) -> Label:
 # --- Combat HUD -----------------------------------------------------------------
 
 func _build_combat_hud() -> void:
+	_enemy_bars = EnemyBars.new()
+	_enemy_bars.targeting = _targeting
+	add_child(_enemy_bars)
 	# Target frame, top centre.
 	_target_frame = PanelContainer.new()
 	var panel := StyleBoxFlat.new()
@@ -352,7 +365,9 @@ func _build_hotbar() -> void:
 	add_child(_wheel)
 	_spellbook = Spellbook.new(_combat, _inventory)
 	add_child(_spellbook)
-	add_child(QuestLog.new())
+	var quest_log := QuestLog.new()
+	add_child(quest_log)
+	_codex.quest_log = quest_log
 	add_child(QuestTracker.new())
 	# Experience bar and the Weakened marker.
 	var progress := _combat.player.get_node_or_null("Progress") as PlayerProgress
@@ -360,7 +375,9 @@ func _build_hotbar() -> void:
 		progress.xp_changed.connect(set_xp)
 		set_xp(progress.xp, progress.needed(), progress.level, progress.is_max_level())
 		_weakened_progress = progress
-		add_child(SkillWindow.new(progress))
+		var skills := SkillWindow.new(progress)
+		add_child(skills)
+		_codex.skill_window = skills
 		_weakened = _label("", 13)
 		_weakened.add_theme_color_override("font_color", Color(1.0, 0.5, 0.45))
 		_weakened.tooltip_text = "Weakened: you deal less damage and have less health until it wears off."
@@ -385,6 +402,9 @@ func _process(delta: float) -> void:
 	if _target_stats:
 		_target_bar.max_value = _target_stats.max_health
 		_target_bar.value = _target_stats.health
+		# Hostile targets get a big bar at the top instead; others sit below the bars.
+		_target_frame.visible = not _enemy_bars.shows(_targeting.target)
+		_target_frame.position.y = _enemy_bars.position.y + (_enemy_bars.size.y if _enemy_bars.visible else 0.0) + 6.0
 	# Cast / charge / reload bar.
 	if _cast_flash > 0.0:
 		_cast_flash -= delta

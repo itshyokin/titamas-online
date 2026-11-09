@@ -30,6 +30,7 @@ var _grid: GridContainer
 var _bag_slots: Array[ItemSlot] = []  # the grid's slots (key = backpack index)
 var _equip_slots := {}  # slot name -> ItemSlot
 var _stats_label: RichTextLabel
+var _preview: CharacterPreview
 var _details: RichTextLabel
 var _use_button: Button
 var _bar_button: Button
@@ -101,7 +102,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Fixed sizes, so the window never jumps around as you point at things.
 const DETAILS_SIZE := Vector2(300, 176)
-const GEAR_WIDTH := 158.0
+const GEAR_WIDTH := 262.0
+## Paper doll: slots down the left and right of the character, weapons underneath.
+const DOLL_LEFT := ["head", "shoulders", "chest"]
+const DOLL_RIGHT := ["hands", "legs", "feet"]
+const DOLL_BOTTOM := ["primary", "off_hand"]
 
 
 func _build() -> void:
@@ -153,13 +158,31 @@ func _build() -> void:
 	gear.add_theme_constant_override("separation", 6)
 	columns.add_child(gear)
 	gear.add_child(_section_label("Equipment"))
-	var doll := GridContainer.new()
-	doll.columns = 3
-	doll.add_theme_constant_override("h_separation", 4)
-	doll.add_theme_constant_override("v_separation", 4)
-	for slot: String in Inventory.SLOTS:
-		doll.add_child(_equip_box(slot))
+	var doll := HBoxContainer.new()
+	doll.add_theme_constant_override("separation", 6)
+	doll.alignment = BoxContainer.ALIGNMENT_CENTER
+	var left := VBoxContainer.new()
+	var right := VBoxContainer.new()
+	for col: Array in [[left, DOLL_LEFT], [right, DOLL_RIGHT]]:
+		var box: VBoxContainer = col[0]
+		box.add_theme_constant_override("separation", 14)
+		box.alignment = BoxContainer.ALIGNMENT_CENTER
+		for slot: String in col[1]:
+			box.add_child(_equip_box(slot))
+	_preview = CharacterPreview.new(Vector2i(150, 196))
+	doll.add_child(left)
+	doll.add_child(_preview)
+	doll.add_child(right)
 	gear.add_child(doll)
+	var weapons := HBoxContainer.new()
+	weapons.alignment = BoxContainer.ALIGNMENT_CENTER
+	weapons.add_theme_constant_override("separation", 10)
+	for slot: String in DOLL_BOTTOM:
+		weapons.add_child(_equip_box(slot))
+	gear.add_child(weapons)
+	for slot: String in Inventory.SLOTS:
+		if not _equip_slots.has(slot):
+			gear.add_child(_equip_box(slot))
 	gear.add_child(_section_label("Stats"))
 	_stats_label = RichTextLabel.new()
 	_stats_label.bbcode_enabled = true
@@ -381,6 +404,8 @@ func refresh() -> void:
 	_fill_grid()
 	for s in _equip_slots.values():
 		s.refresh()
+	if _preview:
+		_preview.show_player(inventory.get_parent())
 	_refresh_stats()
 	_show_details(_selected if is_instance_valid(_selected) else null)
 

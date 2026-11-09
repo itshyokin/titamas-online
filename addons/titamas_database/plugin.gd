@@ -19,6 +19,7 @@ const FILES := {
 	"classes": "res://data/classes.json",
 	"skill_trees": "res://data/skill_trees.json",
 	"quests": "res://data/quests.json",
+	"lore": "res://data/lore.json",
 	"weather": "res://data/weather.json",
 	"body_models": "res://data/body_models.json",
 	"npcs": "res://data/npcs.json",

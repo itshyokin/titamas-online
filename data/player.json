@@ -165,7 +165,23 @@
 		"health_full": "#3fbf4a",
 		"health_half": "#e6d23a",
 		"health_low": "#ee8a2a",
-		"health_critical": "#d8332a"
+		"health_critical": "#d8332a",
+		"compass": {
+			"enabled": true,
+			"width": 0.4,
+			"quest_range": 150,
+			"enemy_range": 40
+		},
+		"enemy_bars": {
+			"enabled": true,
+			"min_width": 25,
+			"max_width": 80,
+			"hp_at_max": 2000,
+			"max_bars": 3,
+			"top": 50,
+			"color": "#b3241e",
+			"damage_color": "#e8c46a"
+		}
 	},
 	"equip_sounds": {
 		"cloth": "res://assets/audio/sfx/equip_cloth.ogg",

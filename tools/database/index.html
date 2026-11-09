@@ -381,6 +381,7 @@ const TABS = {
 				{ key: "name", label: "Name", type: "text" },
 				{ key: "level", label: "Level", type: "int" },
 				{ key: "max_health", label: "Health", type: "number" },
+				{ key: "bar_width", label: "Health bar width (% of screen, 0 = by health)", type: "number", help: "The bar across the top while it fights you. Bosses ~80, a bandit ~25." },
 				{ key: "skin_color", label: "Skin colour", type: "color" },
 				{ key: "weapon", label: "Weapon", type: "select", options: [["sword", "Sword"], ["none", "None"]] },
 			]],
@@ -441,6 +442,22 @@ const TABS = {
 				{ key: "hud.health_half", label: "Hurt (35%)", type: "color" },
 				{ key: "hud.health_low", label: "Badly hurt (15%)", type: "color" },
 				{ key: "hud.health_critical", label: "Nearly dead", type: "color" },
+			]],
+			["HUD: compass", [
+				{ key: "hud.compass.enabled", label: "Show the compass", type: "bool" },
+				{ key: "hud.compass.width", label: "Width (share of the screen, 0–1)", type: "number" },
+				{ key: "hud.compass.quest_range", label: "Quest givers shown within (m)", type: "number" },
+				{ key: "hud.compass.enemy_range", label: "Enemies fighting you shown within (m)", type: "number", help: "Also shows home (⌂) when it's in this level." },
+			]],
+			["HUD: enemy health bars (top of the screen)", [
+				{ key: "hud.enemy_bars.enabled", label: "Show enemy bars", type: "bool" },
+				{ key: "hud.enemy_bars.min_width", label: "Weakest enemy's bar (% of screen)", type: "number" },
+				{ key: "hud.enemy_bars.max_width", label: "Toughest enemy's bar (% of screen)", type: "number" },
+				{ key: "hud.enemy_bars.hp_at_max", label: "Health that gets the widest bar", type: "number", help: "Bars grow with max health between the two widths; an enemy can set its own Bar width (Enemies tab)." },
+				{ key: "hud.enemy_bars.max_bars", label: "Most bars at once", type: "int" },
+				{ key: "hud.enemy_bars.top", label: "Distance from the top (px)", type: "number" },
+				{ key: "hud.enemy_bars.color", label: "Bar colour", type: "color" },
+				{ key: "hud.enemy_bars.damage_color", label: "Recent damage colour", type: "color" },
 			]],
 			["Movement", [
 				{ key: "movement.walk_speed", label: "Walk speed (m/s)", type: "number" },
@@ -799,6 +816,19 @@ const TABS = {
 			]],
 			["Variables (numbers, saved with the character)", [
 				{ key: "variables", label: "", type: "namelist", prefix: "var_", wide: true },
+			]],
+		],
+	},
+	lore: {
+		title: "Lore", file: "lore", listKey: "entries", idKey: "id", nameKey: "title",
+		blank: () => ({ id: "new_entry", title: "New Entry", category: "The World", text: "", conditions: [] }),
+		groups: [
+			["Entry", [
+				{ key: "id", label: "ID", type: "text" },
+				{ key: "title", label: "Title", type: "text" },
+				{ key: "category", label: "Category", type: "text", help: "Entries are grouped by this in the Codex's Lore page (The World, Peoples, Bestiary...)." },
+				{ key: "text", label: "Text", type: "textarea", wide: true, help: "BBCode works: [b]bold[/b], [i]italic[/i], [color=#ffd873]colour[/color]." },
+				{ key: "conditions", label: "Shown once", type: "conditions", wide: true, help: "Empty = known from the start. E.g. a switch an event turns on when you read a book, or a quest being active." },
 			]],
 		],
 	},
