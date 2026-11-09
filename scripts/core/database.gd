@@ -11,7 +11,11 @@ signal changed(which: String)
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
 	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "skill_trees": DataFiles.SKILL_TREES, "quests": DataFiles.QUESTS, "npcs": DataFiles.NPCS,
 	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS, "events": DataFiles.EVENTS,
-	"achievements": DataFiles.ACHIEVEMENTS}
+	"achievements": DataFiles.ACHIEVEMENTS, "body_models": DataFiles.BODY_MODELS}
+
+## Appearance lists filled from Body Models pieces by their "use" (see _merge_pieces).
+const PIECE_LISTS := {"hair": "hair_styles", "facial_hair": "facial_hair", "head": "heads", "face": "faces"}
+const PIECE_DIR := "res://assets/characters/lowpoly/"
 
 const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
@@ -33,6 +37,9 @@ var player := {}
 var items := {}  # id -> Dictionary (data/items.json entries)
 ## data/appearance.json: the character creator's choices (styles, colours, sizes).
 var appearance := {}
+## data/body_models.json (pieces built from the body .glb).
+var body_models := {}
+var _appearance_file := {}
 var classes: Array = []  # data/classes.json entries, in order
 var npcs := {}  # id -> Dictionary (data/npcs.json entries)
 var weapon_types := {}  # id -> Dictionary (data/weapon_types.json entries)
@@ -102,7 +109,11 @@ func _load(which: String) -> void:
 			for d: Dictionary in data.get("items", []):
 				items[String(d.get("id", ""))] = d
 		"appearance":
-			appearance = data
+			_appearance_file = data
+			_merge_pieces()
+		"body_models":
+			body_models = data
+			_merge_pieces()
 		"classes":
 			classes = data.get("classes", [])
 		"animations":
@@ -179,6 +190,56 @@ func class_data(id: String) -> Dictionary:
 	return {}
 
 
+## What a Body Models piece is for: its "use" (hair / facial_hair / head / face / "" = an
+## item or other), guessed from the id when it has none (hair_*, beard / mustache / goatee).
+static func piece_use(piece: Dictionary) -> String:
+	if piece.has("use"):
+		return String(piece.use)
+	var id := String(piece.get("id", "")).to_lower()
+	if id.begins_with("hair") or id.ends_with("_hair") or id.contains("hairstyle"):
+		return "hair"
+	for w in ["beard", "mustache", "moustache", "goatee", "stubble", "sideburn"]:
+		if id.contains(w):
+			return "facial_hair"
+	return ""
+
+
+## Shown name of a piece: its "name", else the id made readable (hair_long_wavy → Long wavy).
+static func piece_name(piece: Dictionary) -> String:
+	if String(piece.get("name", "")) != "":
+		return String(piece.name)
+	var id := String(piece.get("id", ""))
+	for prefix in ["hair_", "hairstyle_"]:
+		if id.begins_with(prefix):
+			id = id.trim_prefix(prefix)
+	return id.replace("_", " ").capitalize()
+
+
+## appearance = appearance.json plus an option for every Body Models piece marked hair /
+## facial hair / head / face (built to assets/characters/lowpoly/<id>_masc.scn). Options
+## in appearance.json with the same id win (so one can be given a fit, hides, etc.).
+func _merge_pieces() -> void:
+	appearance = _appearance_file.duplicate(true)
+	for piece in body_models.get("pieces", []):
+		if not piece is Dictionary:
+			continue
+		var list_key: String = PIECE_LISTS.get(piece_use(piece), "")
+		var id := String(piece.get("id", ""))
+		if list_key == "" or id == "":
+			continue
+		var path := PIECE_DIR + id + "_masc.scn"
+		if not ResourceLoader.exists(path):
+			continue  # not built yet (Rebuild in Body Models)
+		var list: Array = appearance.get(list_key, [])
+		if list.any(func(o) -> bool: return o is Dictionary and String(o.get("id", "")) == id):
+			continue
+		var opt := {"id": id, "name": piece_name(piece), "fitted_masc": path, "fitted_femme": ""}
+		if piece_use(piece) == "head":
+			opt["hides"] = ["head"]
+		list.append(opt)
+		appearance[list_key] = list
+
+
 ## One entry of an appearance list ("hair_styles", "eyes", "heights"...) by id ({} if unknown).
 func appearance_option(list: String, id: String) -> Dictionary:
 	for o in appearance.get(list, []):
@@ -203,7 +264,7 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 		"skin": Color.html(get.call("skin")) if Color.html_is_valid(get.call("skin")) else Color(0.8, 0.6, 0.45),
 		"head": appearance_option("heads", get.call("head")),
 		"face": appearance_option("faces", get.call("face")),
-		"hair": appearance_option("hair_styles", get.call("hair")),
+		"hair": _hair_option(get.call("hair"), String(d.get("hair", ""))),
 		"hair_color": Color.html(get.call("hair_color")) if Color.html_is_valid(get.call("hair_color")) else Color(0.25, 0.15, 0.1),
 		"facial_hair": appearance_option("facial_hair", get.call("facial_hair")),
 		"facial_color": Color.html(get.call("facial_color")) if Color.html_is_valid(get.call("facial_color")) else Color(0.25, 0.15, 0.1),
@@ -214,6 +275,14 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 		"height_scale": float(appearance_option("heights", get.call("height")).get("scale", 1.0)),
 		"weight": float(appearance_option("builds", get.call("build")).get("weight", 0.0)),
 	}
+
+
+## A hair style by id; an unknown id (an old generated style) falls back to the default.
+func _hair_option(id: String, fallback: String) -> Dictionary:
+	var o := appearance_option("hair_styles", id)
+	if o.is_empty() and id != "" and id != "bald":
+		o = appearance_option("hair_styles", fallback)
+	return o
 
 
 ## A class's skill trees, by their order.

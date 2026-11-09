@@ -1,14 +1,13 @@
 extends SceneTree
-## Builds the placeholder hair and facial hair for the character creator from the base
+## Builds the placeholder facial hair and underclothes for the character creator from the base
 ## bodies' head meshes: the scalp (or jaw) is copied, pushed out along its normals by a
 ## thickness that fades at the hairline, keeping the bone weights so it moves with the
 ## head. One scene per style per body:
-##   assets/characters/hair/<style>_<masc|femme>.scn
 ##   assets/characters/facial_hair/<style>_<masc|femme>.scn
 ##   godot --headless --path . --script res://tools/godot/make_appearance.gd
-## Hair made in Blender (skinned to the same rig) replaces these: point the style's
-## fitted_masc / fitted_femme in data/appearance.json at the new file. Long hair, ponytail
-## and bun add a rigid piece on the head bone (WeaponModels "builtin:hair_*").
+## Hair comes from the body .glb: Body Models pieces used as hair (Database) become hair
+## styles by themselves (Database._merge_pieces). Beards made in Blender work the same way
+## (use "facial_hair") and can replace these placeholders.
 
 const BODIES := "res://assets/models/characters/base_bodies.scn"
 
@@ -53,9 +52,6 @@ func _initialize() -> void:
 		var head_bone := skel.get_bone_global_rest(skel.find_bone("mixamorig_Head")).origin.y
 		HEAD[body] = {"top": hi.y, "chin": head_bone - 0.012, "front": lo.z, "back": hi.z}
 		print(body, " head ", HEAD[body])
-		for style: String in HAIR:
-			_save(head, func(p: Vector3) -> float: return _hair(p, HEAD[body], HAIR[style]),
-				"res://assets/characters/hair/%s_%s.scn" % [style, body], Color(0.35, 0.22, 0.12))
 		for style: String in FACIAL:
 			_save(head, func(p: Vector3) -> float: return _facial(p, HEAD[body], style),
 				"res://assets/characters/facial_hair/%s_%s.scn" % [style, body], Color(0.35, 0.22, 0.12))
