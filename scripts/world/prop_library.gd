@@ -38,6 +38,7 @@ func instantiate(prop_name: String) -> Node3D:
 	if info == null:
 		return null
 	var node := (info.scene as PackedScene).instantiate() as Node3D
+	node.set_meta("prop_name", prop_name)
 	if not info.materials.is_empty():
 		for mi in node.find_children("*", "MeshInstance3D", true, false):
 			var mesh_instance := mi as MeshInstance3D
@@ -54,6 +55,7 @@ func instantiate(prop_name: String) -> Node3D:
 		col.transform = info.shape_xform
 		body.add_child(col)
 		body.set_meta("surface", surface_of(prop_name))
+		body.set_meta("prop_name", prop_name)
 		if not String(info.group).is_empty():
 			body.add_to_group(info.group)
 		node.add_child(body)
@@ -61,6 +63,31 @@ func instantiate(prop_name: String) -> Node3D:
 
 
 ## Footstep surface for a prop name: "wood", "metal", "grass" or (rocks and the rest) "stone".
+static var _harvest := {}
+static var _harvest_time := -1
+
+
+## data/harvest.json (what can be chopped / smashed; see Harvest).
+static func harvest_data() -> Dictionary:
+	var t := DataFiles.modified_time("res://data/harvest.json")
+	if t != _harvest_time:
+		_harvest_time = t
+		var d = DataFiles.read("res://data/harvest.json")
+		_harvest = d if d is Dictionary else {}
+	return _harvest
+
+
+## "chop", "smash" or "" for a prop / object name ("_chop" / "_smash" in it, or listed
+## under harvest.json "props").
+static func harvest_kind(n: String) -> String:
+	var lower := n.to_lower()
+	if lower.contains("_chop"):
+		return "chop"
+	if lower.contains("_smash"):
+		return "smash"
+	return String((harvest_data().get("props", {}) as Dictionary).get(n, ""))
+
+
 static func surface_of(prop_name: String) -> String:
 	var lower := prop_name.to_lower()
 	for surface: String in SURFACE_WORDS:
@@ -86,7 +113,10 @@ func _info(prop_name: String):
 	var foliage := FOLIAGE_WORDS.any(func(w: String) -> bool: return lower.contains(w))
 	var ladder := LADDER_WORDS.any(func(w: String) -> bool: return lower.contains(w))
 	var climbable := CLIMBABLE_WORDS.any(func(w: String) -> bool: return lower.contains(w))
-	var solid := ladder or climbable or not NO_COLLISION_WORDS.any(func(w: String) -> bool: return lower.contains(w))
+	# Things you can chop or smash (data/harvest.json, or _chop / _smash in the name) are
+	# always solid, so a swing can reach them.
+	var harvest := harvest_kind(prop_name)
+	var solid := harvest != "" or ladder or climbable or not NO_COLLISION_WORDS.any(func(w: String) -> bool: return lower.contains(w))
 
 	# Bounds of the whole prop in its own space.
 	var bounds := AABB()

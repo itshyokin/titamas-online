@@ -22,6 +22,8 @@ const FILES := {
 	"lore": "res://data/lore.json",
 	"species": "res://data/species.json",
 	"weather": "res://data/weather.json",
+	"harvest": "res://data/harvest.json",
+	"wildlife": "res://data/wildlife.json",
 	"body_models": "res://data/body_models.json",
 	"npcs": "res://data/npcs.json",
 	"weapon_types": "res://data/weapon_types.json",

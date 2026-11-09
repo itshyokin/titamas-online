@@ -16,14 +16,15 @@ static var _gashes: Array[Decal] = []
 
 ## Looks for something solid in the swing's path. Returns {position, normal, surface}
 ## or {} (nothing there, or only gentle ground underfoot).
-static func find(player: Node3D, forward: Vector3, reach: float) -> Dictionary:
+## `low` also checks just above the ground (tools reaching small stones).
+static func find(player: Node3D, forward: Vector3, reach: float, low := false) -> Dictionary:
 	var space := player.get_world_3d().direct_space_state
 	var from := player.global_position + Vector3.UP * 1.15
 	var flat := Vector3(forward.x, 0.0, forward.z).normalized()
 	if flat == Vector3.ZERO:
 		return {}
 	for angle: float in [0.0, -0.35, 0.35]:
-		for height: float in [0.0, -0.35]:
+		for height: float in ([0.0, -0.35, -0.9] if low else [0.0, -0.35]):
 			var dir := flat.rotated(Vector3.UP, angle)
 			var start := from + Vector3.UP * height
 			var q := PhysicsRayQueryParameters3D.create(start, start + dir * reach, 1)
@@ -32,9 +33,9 @@ static func find(player: Node3D, forward: Vector3, reach: float) -> Dictionary:
 			if hit.is_empty():
 				continue
 			var normal: Vector3 = hit.normal
-			if normal.y > 0.6:
+			if normal.y > 0.6 and Harvest.find(hit.collider as Node).is_empty():
 				continue  # ground you could walk on: the swing passes over it
-			return {"position": hit.position, "normal": normal, "surface": surface_of(hit.collider as Node, normal)}
+			return {"position": hit.position, "normal": normal, "surface": surface_of(hit.collider as Node, normal), "collider": hit.collider}
 	return {}
 
 

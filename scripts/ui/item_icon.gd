@@ -108,6 +108,15 @@ func _draw() -> void:
 			draw_colored_polygon(PackedVector2Array([p.call(0.15, 0.3), p.call(0.8, 0.2), p.call(0.85, 0.7), p.call(0.2, 0.8)]), color)
 			draw_line(p.call(0.2, 0.45), p.call(0.82, 0.37), dark, s * 0.02)
 			draw_line(p.call(0.2, 0.62), p.call(0.84, 0.55), dark, s * 0.02)
+		"log":
+			draw_colored_polygon(PackedVector2Array([p.call(0.12, 0.62), p.call(0.7, 0.28), p.call(0.82, 0.48), p.call(0.24, 0.82)]), color)
+			draw_circle(p.call(0.76, 0.38), s * 0.12, light)
+			draw_arc(p.call(0.76, 0.38), s * 0.06, 0.0, TAU, 12, dark, s * 0.02)
+			draw_line(p.call(0.25, 0.66), p.call(0.6, 0.46), dark, s * 0.02)
+		"ore":
+			draw_colored_polygon(PackedVector2Array([p.call(0.2, 0.62), p.call(0.35, 0.3), p.call(0.62, 0.22), p.call(0.82, 0.45), p.call(0.72, 0.78), p.call(0.38, 0.84)]), color)
+			draw_colored_polygon(PackedVector2Array([p.call(0.35, 0.3), p.call(0.62, 0.22), p.call(0.55, 0.45)]), light)
+			draw_line(p.call(0.55, 0.45), p.call(0.72, 0.78), dark, s * 0.02)
 		_:
 			draw_circle(p.call(0.5, 0.55), s * 0.3, color)
 			draw_rect(Rect2(p.call(0.4, 0.15), Vector2(s * 0.2, s * 0.15)), dark)

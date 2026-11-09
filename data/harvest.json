@@ -1,0 +1,47 @@
+{
+	"kinds": {
+		"chop": {
+			"name": "Chop",
+			"weapon_types": [
+				"axe"
+			],
+			"hits": 4,
+			"drops": [
+				{
+					"item": "wood_log",
+					"count": 2
+				}
+			],
+			"respawn_seconds": 600,
+			"xp": 2,
+			"wrong_tool": "You need an axe to fell this."
+		},
+		"smash": {
+			"name": "Smash",
+			"weapon_types": [
+				"hammer"
+			],
+			"hits": 3,
+			"drops": [
+				{
+					"item": "stone_chunk",
+					"count": 2
+				}
+			],
+			"respawn_seconds": 600,
+			"xp": 2,
+			"wrong_tool": "You need a hammer to break this."
+		}
+	},
+	"props": {
+		"birch_tree": "chop",
+		"birch_tree_small": "chop",
+		"birch_tree_tall": "chop",
+		"pine_tree": "chop",
+		"stone_small_1": "smash",
+		"stone_small_2": "smash",
+		"stone_small_3": "smash"
+	},
+	"fall_seconds": 1.6,
+	"fade_seconds": 2.5
+}

@@ -1,0 +1,90 @@
+{
+	"enabled": true,
+	"radius": 45,
+	"min_distance": 14,
+	"despawn_radius": 70,
+	"types": [
+		{
+			"id": "squirrel",
+			"name": "Squirrels",
+			"kind": "critter",
+			"max": 4,
+			"when": "day",
+			"near": "trees",
+			"color": "#8a5a32",
+			"size": 1.0,
+			"speed": 5.0,
+			"flee_distance": 7
+		},
+		{
+			"id": "rabbit",
+			"name": "Rabbits",
+			"kind": "critter",
+			"max": 2,
+			"when": "any",
+			"near": "grass",
+			"color": "#a89880",
+			"size": 1.3,
+			"speed": 6.0,
+			"flee_distance": 9,
+			"ears": true
+		},
+		{
+			"id": "birds",
+			"name": "Birds",
+			"kind": "birds",
+			"max": 2,
+			"when": "day",
+			"near": "any",
+			"color": "#2e2e34",
+			"size": 1.0,
+			"flock": 5,
+			"height": 16
+		},
+		{
+			"id": "fireflies",
+			"name": "Fireflies",
+			"kind": "swarm",
+			"max": 6,
+			"when": "night",
+			"near": "grass",
+			"color": "#d8ff6a",
+			"glow": true,
+			"count": 14,
+			"spread": 2.5,
+			"speed": 0.4,
+			"lifetime": 4.0,
+			"hover": 0.9,
+			"size": 1.0
+		},
+		{
+			"id": "mosquitos",
+			"name": "Mosquitos",
+			"kind": "swarm",
+			"max": 3,
+			"when": "dusk",
+			"near": "water",
+			"color": "#1c1c1c",
+			"count": 30,
+			"spread": 0.9,
+			"speed": 1.2,
+			"lifetime": 2.0,
+			"hover": 1.2,
+			"size": 1.0
+		},
+		{
+			"id": "flies",
+			"name": "Flies over bodies",
+			"kind": "swarm",
+			"max": 4,
+			"when": "any",
+			"near": "corpses",
+			"color": "#121212",
+			"count": 12,
+			"spread": 0.5,
+			"speed": 1.0,
+			"lifetime": 2.0,
+			"size": 1.0
+		}
+	]
+}

@@ -244,3 +244,9 @@ Events work like Saturn's (and RPG Maker's): a box placed in a level, with pages
 4. Co-op ← **foundation in, being tested**
 5. Content tools
 6. World
+
+## Painting props (trees, bushes, stones)
+
+Open a level with a ChunkStreamer (its **Editor Preview** on). In the **Props** dock (right side), tick **Paint props**, pick one or more props, set the brush, then click or drag on the terrain in the 3D view. **Shift** + click/drag erases, **Ctrl + mouse wheel** changes the brush size, **Ctrl+Z** undoes a stroke. Placements are saved into `chunk_I_J.props.json` next to each chunk, like the Blender add-on's. New generated props (birches, bushes, small stones) come from `tools/godot/make_props.gd`.
+
+Trees listed in Database → **Harvesting** (or any Blender object with `_chop` in its name) can be felled with an axe; stones listed there (or `_smash`) break with a hammer.

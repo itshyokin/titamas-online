@@ -728,11 +728,18 @@ func _land(ab: Ability) -> void:
 			if landed and _flourish:
 				FloatingText.spawn(player, "Flourish!", Color(1.0, 0.8, 0.3), 1.3)
 				TimeFX.hit_stop(player, 0.14)
-			if not landed and bool(_world_settings().get("world_bounce", true)):
-				var wall := WorldStrike.find(player, fwd, ab.reach * float(_world_settings().get("world_check", 0.8)))
+			if not landed:
+				# Trees / stones: an axe or hammer chops or breaks them (Harvest);
+				# anything else solid bounces the weapon off.
+				var wt := String(weapon_type.get("id", ""))
+				var tool := Harvest.is_tool(wt)
+				var wall := WorldStrike.find(player, fwd, ab.reach * float(_world_settings().get("world_check", 0.8)) * (1.25 if tool else 1.0), tool)
 				if not wall.is_empty():
-					WorldStrike.strike(player, wall, _world_settings())
-					_bounce.call_deferred()
+					if wall.has("collider") and Harvest.hit(player, wall.collider, wt, wall.position, wall.normal):
+						pass
+					elif bool(_world_settings().get("world_bounce", true)):
+						WorldStrike.strike(player, wall, _world_settings())
+						_bounce.call_deferred()
 		Ability.Delivery.PROJECTILE:
 			var weapon_move := _is_weapon_move(ab)
 			var bolt := ab.projectile_style == Ability.ProjectileStyle.BOLT

@@ -84,6 +84,9 @@ func _ready() -> void:
 	weather = Weather.new()
 	weather.name = "Weather"
 	add_child(weather)
+	var wildlife := Wildlife.new()
+	wildlife.name = "Wildlife"
+	add_child(wildlife)
 	_build_label()
 	_build_audio()
 	current = _region_at_target()

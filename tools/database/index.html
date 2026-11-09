@@ -872,6 +872,76 @@ const TABS = {
 			]],
 		],
 	},
+	harvest: {
+		title: "Harvesting", file: "harvest", single: true,
+		groups: [
+			["Chopping trees", [
+				{ key: "kinds.chop.weapon_types", label: "Weapon types that chop", type: "weapontypes", wide: true },
+				{ key: "kinds.chop.hits", label: "Hits to fell", type: "int" },
+				{ key: "kinds.chop.drops", label: "Gives", type: "itemcounts", wide: true },
+				{ key: "kinds.chop.xp", label: "Experience", type: "int" },
+				{ key: "kinds.chop.respawn_seconds", label: "Grows back after (s, 0 = never)", type: "number" },
+				{ key: "kinds.chop.wrong_tool", label: "Hint with the wrong weapon", type: "text", wide: true },
+			]],
+			["Smashing stones", [
+				{ key: "kinds.smash.weapon_types", label: "Weapon types that smash", type: "weapontypes", wide: true },
+				{ key: "kinds.smash.hits", label: "Hits to break", type: "int" },
+				{ key: "kinds.smash.drops", label: "Gives", type: "itemcounts", wide: true },
+				{ key: "kinds.smash.xp", label: "Experience", type: "int" },
+				{ key: "kinds.smash.respawn_seconds", label: "Comes back after (s, 0 = never)", type: "number" },
+				{ key: "kinds.smash.wrong_tool", label: "Hint with the wrong weapon", type: "text", wide: true },
+			]],
+			["Which props", [
+				{ key: "props", label: "Props and what they are", type: "propkinds", wide: true, help: "Anything else counts by name: put _chop or _smash in an object's name in Blender (e.g. oak_chop, boulder_smash)." },
+				{ key: "fall_seconds", label: "Tree falling time (s)", type: "number" },
+				{ key: "fade_seconds", label: "Felled tree sinking time (s)", type: "number" },
+			]],
+		],
+	},
+	wildlife: {
+		title: "Wildlife", file: "wildlife", listKey: "types", idKey: "id", nameKey: "name",
+		blank: () => ({ id: "new_creature", name: "New Creature", kind: "critter", max: 3, when: "day", near: "any", color: "#8a5a32", size: 1 }),
+		groups: [
+			["What", [
+				{ key: "id", label: "ID", type: "text" },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "kind", label: "Kind", type: "select", options: [["critter", "Ground critter (hops about, runs from you)"], ["birds", "Flock of birds (circles overhead)"], ["swarm", "Swarm of insects"]] },
+				{ key: "max", label: "How many at once", type: "int" },
+				{ key: "when", label: "When", type: "select", options: [["any", "Any time"], ["day", "Day"], ["dusk", "Dusk and dawn"], ["night", "Night"]] },
+				{ key: "near", label: "Where", type: "select", options: [["any", "Anywhere"], ["trees", "Near trees"], ["grass", "Over grass"], ["water", "By water"], ["corpses", "Over bodies"]] },
+				{ key: "color", label: "Colour", type: "color" },
+				{ key: "size", label: "Size", type: "number" },
+			]],
+			["Critters", [
+				{ key: "speed", label: "Running speed (m/s)", type: "number", show: e => e.kind === "critter" },
+				{ key: "flee_distance", label: "Runs when you're this close (m)", type: "number", show: e => e.kind === "critter" },
+				{ key: "ears", label: "Long ears and a puff tail (rabbit) instead of a bushy tail", type: "bool", show: e => e.kind === "critter" },
+			]],
+			["Birds", [
+				{ key: "flock", label: "Birds per flock", type: "int", show: e => e.kind === "birds" },
+				{ key: "height", label: "Height above the ground (m)", type: "number", show: e => e.kind === "birds" },
+			]],
+			["Swarms", [
+				{ key: "count", label: "Insects", type: "int", show: e => e.kind === "swarm" },
+				{ key: "spread", label: "Cloud size (m)", type: "number", show: e => e.kind === "swarm" },
+				{ key: "speed", label: "Buzzing speed", type: "number", show: e => e.kind === "swarm" },
+				{ key: "lifetime", label: "Blink / life time (s)", type: "number", show: e => e.kind === "swarm" },
+				{ key: "hover", label: "Height above the ground (m)", type: "number", show: e => e.kind === "swarm" },
+				{ key: "glow", label: "Glows (fireflies)", type: "bool", show: e => e.kind === "swarm" },
+			]],
+		],
+	},
+	wildlife_settings: {
+		title: "Wildlife Settings", file: "wildlife", single: true,
+		groups: [
+			["Spawning", [
+				{ key: "enabled", label: "Wildlife on", type: "bool" },
+				{ key: "radius", label: "Appear within (m)", type: "number" },
+				{ key: "min_distance", label: "…but no closer than (m)", type: "number" },
+				{ key: "despawn_radius", label: "Removed beyond (m)", type: "number" },
+			]],
+		],
+	},
 	lore: {
 		title: "Lore", file: "lore", listKey: "entries", idKey: "id", nameKey: "title",
 		blank: () => ({ id: "new_entry", title: "New Entry", category: "The World", text: "", conditions: [] }),
@@ -1659,6 +1729,30 @@ function fieldControl(t, entry, f) {
 				row.append(el("span", { textContent: String((i + 1) % 10) }), s);
 				wrap.appendChild(row);
 			});
+			break;
+		}
+		case "propkinds": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const obj = (value && typeof value === "object" && !Array.isArray(value)) ? Object.assign({}, value) : {};
+			const kinds = [["chop", "Chop (trees)"], ["smash", "Smash (stones)"]];
+			const props = (assets.props || []).map(p => [p, p]);
+			for (const name of Object.keys(obj).sort()) {
+				const row = el("div", { className: "row" });
+				row.append(el("span", { textContent: name }));
+				const k = selectOf(kinds, obj[name], false);
+				k.onchange = () => { obj[name] = k.value; set(Object.assign({}, obj)); };
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { delete obj[name]; set(Object.assign({}, obj), true); };
+				row.append(k, rm);
+				wrap.appendChild(row);
+			}
+			const addRow = el("div", { className: "row" });
+			const pick = selectOf(props.filter(p => !(p[0] in obj)), "", true);
+			const add = el("button", { textContent: "+ Add prop" });
+			add.onclick = () => { if (pick.value) { obj[pick.value] = /tree|log|stump/.test(pick.value) ? "chop" : "smash"; set(Object.assign({}, obj), true); } };
+			addRow.append(pick, add);
+			wrap.appendChild(addRow);
 			break;
 		}
 		case "racials": {

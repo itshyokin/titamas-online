@@ -30,7 +30,7 @@ window/size/viewport_height=720
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/titamas_database/plugin.cfg")
+enabled=PackedStringArray("res://addons/titamas_database/plugin.cfg", "res://addons/prop_painter/plugin.cfg")
 
 [input]
 
