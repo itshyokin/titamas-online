@@ -1,20 +1,20 @@
 {
-	"day_length_minutes": 24.0,
-	"start_hour": 9.0,
-	"sun_height": 65.0,
-	"night_brightness": 0.3,
-	"wind": {
-		"calm": 0.4,
-		"gusty": 1.5,
-		"gust_seconds": 25.0
-	},
 	"ambient_occlusion": {
-		"radius": 2.0,
-		"intensity": 3.0,
-		"power": 1.6,
 		"detail": 0.6,
 		"horizon": 0.06,
-		"light_affect": 0.6,
+		"intensity": 5.0,
+		"light_affect": 1.0,
+		"power": 1.6,
+		"radius": 2.0,
 		"terrain_light_affect": 0.85
+	},
+	"day_length_minutes": 24.0,
+	"night_brightness": 0.3,
+	"start_hour": 9.0,
+	"sun_height": 65.0,
+	"wind": {
+		"calm": 0.4,
+		"gust_seconds": 25.0,
+		"gusty": 1.5
 	}
 }
