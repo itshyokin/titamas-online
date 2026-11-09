@@ -5,8 +5,9 @@ extends EditorPlugin
 ##   Turn on "Paint", pick one or more props (each dab picks one of them at random), then
 ##   click or drag in the 3D view. Shift + click/drag erases props under the brush.
 ##   Ctrl + mouse wheel changes the brush size. Ctrl+Z undoes a stroke.
-## Placements go into chunk_I_J.props.json next to each chunk (the same file the Blender
-## add-on writes), so the game places them like any other prop.
+## Placements go into chunk_I_J.painted.json next to each chunk (the Blender add-on's
+## props.json is never touched, so re-exporting from Blender keeps painted props); the
+## erase brush only removes painted props.
 
 const Z_UP := Basis(Vector3(1, 0, 0), Vector3(0, 0, -1), Vector3(0, 1, 0))
 
@@ -240,7 +241,7 @@ func _restore(path: String, text: String) -> void:
 	var streamer := _streamer()
 	if streamer == null:
 		return
-	var m := RegEx.create_from_string("chunk_(-?\\d+)_(-?\\d+)\\.props\\.json$").search(path)
+	var m := RegEx.create_from_string("chunk_(-?\\d+)_(-?\\d+)\\.painted\\.json$").search(path)
 	if m:
 		var cell := Vector2i(m.get_string(1).to_int(), m.get_string(2).to_int())
 		var chunk := _b._chunk(streamer, cell)

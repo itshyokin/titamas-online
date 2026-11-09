@@ -341,26 +341,29 @@ func _add_chunk(cell: Vector2i, scene: PackedScene) -> void:
 	_loaded[cell] = chunk
 
 
-## Places the props listed in chunk_I_J.props.json (written by the Blender add-on).
+## Places the props listed in chunk_I_J.props.json (written by the Blender add-on) and
+## chunk_I_J.painted.json (the Prop Painter in the editor; kept separate so a new Blender
+## export never wipes what was painted).
 func _place_props(cell: Vector2i, chunk: Node3D) -> void:
-	var path := String(_available[cell]).get_basename() + ".props.json"
-	if not FileAccess.file_exists(path):
-		return
-	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if not data is Dictionary or not data.has("props"):
-		push_warning("ChunkStreamer: couldn't read %s" % path)
-		return
 	var holder := Node3D.new()
 	holder.name = "Props"
 	chunk.add_child(holder)
-	for entry in data.props:
-		var prop := _props.instantiate(entry.name)
-		if prop == null:
+	for suffix in [".props.json", ".painted.json"]:
+		var path: String = String(_available[cell]).get_basename() + suffix
+		if not FileAccess.file_exists(path):
 			continue
-		var c: Array = entry.basis
-		var basis := Basis(Vector3(c[0][0], c[0][1], c[0][2]), Vector3(c[1][0], c[1][1], c[1][2]), Vector3(c[2][0], c[2][1], c[2][2]))
-		prop.transform = Transform3D(basis, Vector3(entry.pos[0], entry.pos[1], entry.pos[2]))
-		holder.add_child(prop)
+		var data = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if not data is Dictionary or not data.has("props"):
+			push_warning("ChunkStreamer: couldn't read %s" % path)
+			continue
+		for entry in data.props:
+			var prop := _props.instantiate(entry.name)
+			if prop == null:
+				continue
+			var c: Array = entry.basis
+			var basis := Basis(Vector3(c[0][0], c[0][1], c[0][2]), Vector3(c[1][0], c[1][1], c[1][2]), Vector3(c[2][0], c[2][1], c[2][2]))
+			prop.transform = Transform3D(basis, Vector3(entry.pos[0], entry.pos[1], entry.pos[2]))
+			holder.add_child(prop)
 
 
 ## A Blender water plane (object named "<name>-water"): give it the water look and a

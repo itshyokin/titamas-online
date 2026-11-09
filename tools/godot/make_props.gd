@@ -5,6 +5,9 @@ extends SceneTree
 ##     collider and the wind sway)
 ##   bush_round, bush_wide, bush_berry — leaf clumps (no collision: "bush" isn't solid)
 ##   stone_small_1..3 — little rocks (no collision: "small")
+##   maple_tree (+ _small, _tall, _autumn), pine_tree_small / pine_tree_tall (the Blender
+##     pine_tree stays as it is), and dead versions: birch_tree_dead, maple_tree_dead,
+##     pine_tree_dead (bare branches)
 ## Run: godot --headless --path . --script res://tools/godot/make_props.gd
 ## Re-running overwrites them (different random shapes only if SEED changes).
 
@@ -29,12 +32,29 @@ func _initialize() -> void:
 	_save("bush_berry", _bush(0.7, 4, leaves_dark, berries))
 	for i in 3:
 		_save("stone_small_%d" % (i + 1), _stone(0.25 + i * 0.12, stone))
+	# Maples, pines and dead trees (added after the birches so those keep their shapes).
+	var maple_bark := _material("bark", _furrowed_bark(Color(0.42, 0.33, 0.26), Color(0.26, 0.2, 0.16)), Color(1, 1, 1))
+	var maple_leaves := _material("leaves", _noise_texture(Color(0.36, 0.6, 0.2), Color(0.24, 0.45, 0.14)), Color(1, 1, 1))
+	var autumn_leaves := _material("leaves", _noise_texture(Color(0.92, 0.42, 0.14), Color(0.75, 0.18, 0.1)), Color(1, 1, 1))
+	var pine_bark := _material("bark", _furrowed_bark(Color(0.45, 0.28, 0.2), Color(0.28, 0.17, 0.12)), Color(1, 1, 1))
+	var needles := _material("leaves", _noise_texture(Color(0.16, 0.36, 0.2), Color(0.1, 0.25, 0.14)), Color(1, 1, 1))
+	var dead_bark := _material("bark", _furrowed_bark(Color(0.5, 0.47, 0.43), Color(0.32, 0.3, 0.28)), Color(1, 1, 1))
+	var dead_birch := _material("bark", _bark_texture(), Color(0.78, 0.76, 0.72))
+	_save("maple_tree", _maple(8.0, 0.4, maple_bark, maple_leaves))
+	_save("maple_tree_small", _maple(5.0, 0.26, maple_bark, maple_leaves))
+	_save("maple_tree_tall", _maple(11.0, 0.52, maple_bark, maple_leaves))
+	_save("maple_tree_autumn", _maple(8.0, 0.4, maple_bark, autumn_leaves))
+	_save("pine_tree_small", _pine(5.5, 0.15, pine_bark, needles))
+	_save("pine_tree_tall", _pine(13.0, 0.3, pine_bark, needles))
+	_save("birch_tree_dead", _birch(7.0, 0.15, 0, dead_birch, null, true))
+	_save("maple_tree_dead", _maple(7.5, 0.38, dead_bark, null, true))
+	_save("pine_tree_dead", _pine(10.0, 0.24, dead_bark, null, true))
 	quit()
 
 
 # --- Shapes (built Y-up, turned Z-up when saved) ------------------------------------
 
-func _birch(height: float, radius: float, clumps: int, bark: Material, leaves: Material) -> Node3D:
+func _birch(height: float, radius: float, clumps: int, bark: Material, leaves: Material, dead := false) -> Node3D:
 	var root := Node3D.new()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -69,6 +89,16 @@ func _birch(height: float, radius: float, clumps: int, bark: Material, leaves: M
 		var y := height * rng.randf_range(0.45, 0.75)
 		var dir := Vector3(rng.randf_range(-1, 1), 0.9, rng.randf_range(-1, 1)).normalized()
 		_cylinder(st, Vector3(lean.x * 0.3, y, lean.y * 0.3), Vector3(lean.x * 0.3, y, lean.y * 0.3) + dir * height * 0.18, radius * 0.35, radius * 0.15, 5)
+	if dead:
+		# Bare: more branches, each splitting into twigs.
+		for b in 7:
+			var y := height * rng.randf_range(0.35, 0.8)
+			var k := y / (height * 0.82)
+			var from := Vector3(lean.x * k * k, y, lean.y * k * k)
+			var dir := Vector3(rng.randf_range(-1, 1), rng.randf_range(0.4, 1.0), rng.randf_range(-1, 1)).normalized()
+			_branch(st, from, dir, height * rng.randf_range(0.14, 0.22), radius * 0.3, 2, [])
+		_add_mesh(root, st, bark)
+		return root
 	_add_mesh(root, st, bark)
 	# Leaf clumps around the top half.
 	var lst := SurfaceTool.new()
@@ -85,6 +115,106 @@ func _birch(height: float, radius: float, clumps: int, bark: Material, leaves: M
 		_blob(lst, c, Vector3(s, s * 1.4, s))
 	_add_mesh(root, lst, leaves)
 	return root
+
+
+## Broadleaf: a short trunk splitting into limbs, a wide round crown of clumps at the
+## branch tips (or bare branches when dead).
+func _maple(height: float, radius: float, bark: Material, leaves: Material, dead := false) -> Node3D:
+	var root := Node3D.new()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var fork := Vector3(rng.randf_range(-0.15, 0.15), height * rng.randf_range(0.38, 0.46), rng.randf_range(-0.15, 0.15))
+	_cylinder(st, Vector3.ZERO, fork, radius, radius * 0.75, 8)
+	# Root flare.
+	for k in 4:
+		var a := TAU * k / 4 + rng.randf() * 0.5
+		_cylinder(st, Vector3(0, radius * 1.2, 0), Vector3(cos(a) * radius * 2.2, -0.05, sin(a) * radius * 2.2), radius * 0.45, radius * 0.15, 5)
+	var tips: Array = []
+	var limbs := rng.randi_range(3, 4)
+	for i in limbs:
+		var a := TAU * i / limbs + rng.randf_range(-0.4, 0.4)
+		var dir := Vector3(cos(a) * 0.65, 1.0, sin(a) * 0.65).normalized()
+		_branch(st, fork, dir, height * rng.randf_range(0.26, 0.34), radius * 0.7, 3 if dead else 2, tips)
+	_add_mesh(root, st, bark)
+	if dead or leaves == null:
+		return root
+	var lst := SurfaceTool.new()
+	lst.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for tip: Vector3 in tips:
+		var s := height * rng.randf_range(0.1, 0.14)
+		_blob(lst, tip + Vector3.UP * s * 0.3, Vector3(s * 1.2, s, s * 1.2))
+	# Fill the middle of the crown.
+	var crown := Vector3(fork.x, height * 0.72, fork.z)
+	for i in 5:
+		var a := rng.randf() * TAU
+		var r := height * rng.randf_range(0.05, 0.18)
+		var s := height * rng.randf_range(0.14, 0.18)
+		_blob(lst, crown + Vector3(cos(a) * r, rng.randf_range(-0.6, 0.8), sin(a) * r), Vector3(s * 1.2, s, s * 1.2))
+	_add_mesh(root, lst, leaves)
+	return root
+
+
+## Conifer: a straight trunk and stacked, slightly drooping cone tiers (or, dead, a
+## snapped top with whorls of broken stubs).
+func _pine(height: float, radius: float, bark: Material, needles: Material, dead := false) -> Node3D:
+	var root := Node3D.new()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var top := height * (0.78 if dead else 0.97)
+	_cylinder(st, Vector3.ZERO, Vector3(0, top, 0), radius, radius * (0.35 if dead else 0.12), 7)
+	if dead:
+		var y := height * 0.18
+		while y < top - 0.4:
+			var n := rng.randi_range(3, 5)
+			var span := (1.0 - y / top) * height * 0.22 + 0.3
+			for i in n:
+				var a := TAU * i / n + rng.randf() * 0.6
+				var dir := Vector3(cos(a), rng.randf_range(-0.35, 0.05), sin(a)).normalized()
+				_cylinder(st, Vector3(0, y, 0), Vector3(0, y, 0) + dir * span * rng.randf_range(0.3, 1.0), radius * 0.22, radius * 0.06, 4)
+			y += height * rng.randf_range(0.06, 0.1)
+		_add_mesh(root, st, bark)
+		return root
+	_add_mesh(root, st, bark)
+	var nst := SurfaceTool.new()
+	nst.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var tiers := 6
+	for i in tiers:
+		var t := float(i) / (tiers - 1)
+		var base_y := height * lerpf(0.18, 0.78, t)
+		var r := height * lerpf(0.3, 0.09, t) * rng.randf_range(0.9, 1.1)
+		var h := height * lerpf(0.3, 0.24, t)
+		_cone(nst, Vector3(rng.randf_range(-0.05, 0.05), base_y, rng.randf_range(-0.05, 0.05)), r, h, 9)
+	_add_mesh(root, nst, needles)
+	return root
+
+
+## A cone with a jagged, drooping rim and a flat underside.
+func _cone(st: SurfaceTool, base: Vector3, radius: float, height: float, sides: int) -> void:
+	var apex := base + Vector3.UP * height
+	var rim: Array[Vector3] = []
+	for k in sides:
+		var a := TAU * k / sides + rng.randf_range(-0.1, 0.1)
+		var r := radius * rng.randf_range(0.82, 1.1)
+		rim.append(base + Vector3(cos(a) * r, -height * rng.randf_range(0.05, 0.16), sin(a) * r))
+	var inside := base + Vector3.UP * height * 0.3
+	for k in sides:
+		var a := rim[k]
+		var b := rim[(k + 1) % sides]
+		_tri(st, a, b, apex, Vector2(0, 0), Vector2(1, 0), Vector2(0.5, 1), inside)
+		_tri(st, a, b, base + Vector3.UP * height * 0.08, Vector2(0, 0), Vector2(1, 0), Vector2(0.5, 0.5), inside + Vector3.UP * height)
+
+
+## A limb from `from` along `dir`, splitting into 2–3 thinner ones `depth` times; the
+## ends of the last ones go into `tips`.
+func _branch(st: SurfaceTool, from: Vector3, dir: Vector3, length: float, radius: float, depth: int, tips: Array) -> void:
+	var to := from + dir * length
+	_cylinder(st, from, to, radius, radius * 0.65, 5 if radius > 0.05 else 4)
+	if depth <= 0:
+		tips.append(to)
+		return
+	for i in rng.randi_range(2, 3):
+		var d := (dir + Vector3(rng.randf_range(-0.7, 0.7), rng.randf_range(-0.1, 0.5), rng.randf_range(-0.7, 0.7))).normalized()
+		_branch(st, to, d, length * rng.randf_range(0.55, 0.75), radius * 0.6, depth - 1, tips)
 
 
 func _bush(size: float, clumps: int, leaves: Material, berries: Material) -> Node3D:
@@ -230,6 +360,23 @@ func _bark_texture() -> ImageTexture:
 			img.set_pixel((x0 + x) % 32, y, Color(0.12, 0.11, 0.1))
 			if rng.randf() < 0.5:
 				img.set_pixel((x0 + x) % 32, mini(y + 1, 63), Color(0.2, 0.19, 0.17))
+	return ImageTexture.create_from_image(img)
+
+
+## Brown / grey bark with vertical furrows.
+func _furrowed_bark(base: Color, dark: Color) -> ImageTexture:
+	var img := Image.create(32, 64, false, Image.FORMAT_RGB8)
+	for y in 64:
+		for x in 32:
+			img.set_pixel(x, y, base.lerp(dark, rng.randf() * 0.35))
+	for i in 9:
+		var x := rng.randi_range(0, 31)
+		var y := 0
+		while y < 64:
+			img.set_pixel(x % 32, y, dark.darkened(0.2))
+			if rng.randf() < 0.25:
+				x += rng.randi_range(-1, 1)
+			y += 1
 	return ImageTexture.create_from_image(img)
 
 

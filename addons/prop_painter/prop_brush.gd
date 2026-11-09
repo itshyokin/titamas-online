@@ -39,7 +39,7 @@ func _rebuild_props(streamer: Node, cell: Vector2i, chunk: Node3D) -> void:
 
 
 func _props_path(streamer: Node, cell: Vector2i) -> String:
-	return String(streamer.get("chunk_dir")).path_join("chunk_%d_%d.props.json" % [cell.x, cell.y])
+	return String(streamer.get("chunk_dir")).path_join("chunk_%d_%d.painted.json" % [cell.x, cell.y])
 
 
 

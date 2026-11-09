@@ -40,7 +40,16 @@
 		"pine_tree": "chop",
 		"stone_small_1": "smash",
 		"stone_small_2": "smash",
-		"stone_small_3": "smash"
+		"stone_small_3": "smash",
+		"maple_tree": "chop",
+		"maple_tree_small": "chop",
+		"maple_tree_tall": "chop",
+		"maple_tree_autumn": "chop",
+		"pine_tree_small": "chop",
+		"pine_tree_tall": "chop",
+		"birch_tree_dead": "chop",
+		"maple_tree_dead": "chop",
+		"pine_tree_dead": "chop"
 	},
 	"fall_seconds": 1.6,
 	"fade_seconds": 2.5

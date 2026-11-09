@@ -247,6 +247,6 @@ Events work like Saturn's (and RPG Maker's): a box placed in a level, with pages
 
 ## Painting props (trees, bushes, stones)
 
-Open a level with a ChunkStreamer (its **Editor Preview** on). In the **Props** dock (right side), tick **Paint props**, pick one or more props, set the brush, then click or drag on the terrain in the 3D view. **Shift** + click/drag erases, **Ctrl + mouse wheel** changes the brush size, **Ctrl+Z** undoes a stroke. Placements are saved into `chunk_I_J.props.json` next to each chunk, like the Blender add-on's. New generated props (birches, bushes, small stones) come from `tools/godot/make_props.gd`.
+Open a level with a ChunkStreamer (its **Editor Preview** on). In the **Props** dock (right side), tick **Paint props**, pick one or more props, set the brush, then click or drag on the terrain in the 3D view. **Shift** + click/drag erases, **Ctrl + mouse wheel** changes the brush size, **Ctrl+Z** undoes a stroke. Painted placements are saved into `chunk_I_J.painted.json` next to each chunk, separate from the Blender add-on's `props.json`, so re-exporting a chunk from Blender never wipes them (the eraser only removes painted props). Generated props (birch, maple, pine and dead trees, bushes, small stones) come from `tools/godot/make_props.gd`; they can also be imported into Blender (File → Import → glTF) and placed there like the other props.
 
 Trees listed in Database → **Harvesting** (or any Blender object with `_chop` in its name) can be felled with an axe; stones listed there (or `_smash`) break with a hammer.
