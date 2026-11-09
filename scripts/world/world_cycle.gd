@@ -158,5 +158,7 @@ func apply_time(v: Dictionary) -> Dictionary:
 	out.sun_color = (v.sun_color as Color).lerp(DUSK_SUN, glow)
 	out.sun_energy = float(v.sun_energy) * smoothstep(-0.03, 0.25, sun_direction.y)
 	out.ambient_energy = float(v.ambient_energy) * lerpf(night_brightness, 1.0, daylight)
+	if v.has("shadow_color"):
+		out.shadow_color = (v.shadow_color as Color).lerp(Color(0.12, 0.15, 0.26), night * 0.6)
 	out.god_rays = float(v.get("god_rays", 0.0)) * (0.4 + 0.6 * daylight) * (1.0 + glow)
 	return out

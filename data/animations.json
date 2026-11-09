@@ -947,6 +947,20 @@
 			"note": ""
 		},
 		{
+			"name": "greatsword_slash_1_mirrored",
+			"kind": "mirrored",
+			"from": "greatsword_slash_1",
+			"start": 0,
+			"end": 0,
+			"loop": false,
+			"in_place": false,
+			"root_motion": false,
+			"no_hip_rise": false,
+			"yaw_fix": 0.0,
+			"height_match": "",
+			"note": "Second greatsword swing: the first swing mirrored (from the other side)."
+		},
+		{
 			"name": "attack_light_2",
 			"kind": "cut",
 			"from": "attack_light_2_full",

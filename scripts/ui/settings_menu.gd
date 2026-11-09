@@ -280,6 +280,13 @@ func _graphics_tab() -> Control:
 	ao.button_pressed = GameSettings.ssao
 	ao.toggled.connect(func(on: bool) -> void: GameSettings.set_ssao(on))
 	page.add_child(ao)
+	# Ambient occlusion only exists in the Forward+ renderer.
+	var method := RenderingServer.get_current_rendering_method()
+	var driver := RenderingServer.get_current_rendering_driver_name()
+	if method != "forward_plus":
+		ao.disabled = true
+		ao.text += "  (needs the Forward+ renderer; this is %s / %s)" % [method, driver]
+	ao.tooltip_text = "Renderer: %s / %s. Press F9 in game to see the ambient occlusion buffer." % [method, driver]
 	var reflect := CheckBox.new()
 	reflect.text = "Water reflections (trees and cliffs mirrored in water)"
 	reflect.button_pressed = GameSettings.water_reflections

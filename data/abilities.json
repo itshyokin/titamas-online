@@ -385,7 +385,7 @@
 			"windup_time": 0.45
 		},
 		{
-			"animation": "greatsword_slash_2",
+			"animation": "greatsword_slash_1_mirrored",
 			"animation_speed": 1.0,
 			"arc": 170.0,
 			"charge_power": 1.0,
@@ -396,7 +396,7 @@
 			"description": "An overhead two-handed chop.",
 			"display_name": "Greatsword chop",
 			"hit_sound": "",
-			"hit_time": 0.32,
+			"hit_time": 0.45,
 			"id": "gs_slash_2",
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
@@ -406,7 +406,7 @@
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
 			"reach": 2.8,
-			"recovery_time": 0.7,
+			"recovery_time": 0.9,
 			"sounds": [
 				"res://assets/audio/combat/swing_1.ogg",
 				"res://assets/audio/combat/swing_2.ogg"

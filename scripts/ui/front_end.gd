@@ -366,6 +366,21 @@ func _panel(anchor: int, offset: Vector2, min_size: Vector2) -> PanelContainer:
 	return p
 
 
+## Fills a top panel down to just above the bottom bar and scrolls what doesn't fit
+## (so tall panels never run under the buttons or off a small window).
+func _scrolling(panel: PanelContainer, separation: int) -> VBoxContainer:
+	panel.anchor_bottom = 1.0
+	panel.offset_bottom = -110.0
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", separation)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(v)
+	return v
+
+
 func _heading(text: String, size := 22) -> Label:
 	var l := Label.new()
 	l.text = text
@@ -807,9 +822,7 @@ func _creator_page() -> Control:
 	# Left: species, body type, pronouns.
 	var left := _panel(Control.PRESET_TOP_LEFT, Vector2(30, 40), Vector2(300, 0))
 	page.add_child(left)
-	var lv := VBoxContainer.new()
-	lv.add_theme_constant_override("separation", 10)
-	left.add_child(lv)
+	var lv := _scrolling(left, 10)
 	lv.add_child(_heading("Create your character", 24))
 	lv.add_child(_section("Species"))
 	lv.add_child(_choice_row("species", _options(a.get("species", []))))
@@ -828,9 +841,7 @@ func _creator_page() -> Control:
 	# Right: hair, facial hair, eyes.
 	var right := _panel(Control.PRESET_TOP_RIGHT, Vector2(-370, 40), Vector2(340, 0))
 	page.add_child(right)
-	var rv := VBoxContainer.new()
-	rv.add_theme_constant_override("separation", 10)
-	right.add_child(rv)
+	var rv := _scrolling(right, 10)
 	rv.add_child(_heading("Appearance", 24))
 	rv.add_child(_stepper("Head", "head", "heads"))
 	rv.add_child(_stepper("Face", "face", "faces"))
@@ -1090,9 +1101,7 @@ func _class_page() -> Control:
 
 	var right := _panel(Control.PRESET_TOP_RIGHT, Vector2(-410, 30), Vector2(380, 0))
 	page.add_child(right)
-	var rv := VBoxContainer.new()
-	rv.add_theme_constant_override("separation", 10)
-	right.add_child(rv)
+	var rv := _scrolling(right, 10)
 	_class_info = RichTextLabel.new()
 	_class_info.bbcode_enabled = true
 	_class_info.fit_content = true

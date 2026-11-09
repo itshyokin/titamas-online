@@ -28,6 +28,11 @@ extends Resource
 @export var ambient_energy := 0.6
 ## How dark shadows are: 1 = full, lower = softer (stylized, lighter shadows).
 @export_range(0.0, 1.0) var shadow_strength := 0.6
+## The colour the shade takes (the ambient light): sides turned away from the sun and
+## shadowed ground are lit by this instead of going near-black.
+@export var shadow_color := Color(0.33, 0.39, 0.52)
+## How much of the ambient light is that colour (0 = all from the sky, 1 = all this colour).
+@export_range(0.0, 1.0) var shadow_fill := 0.55
 
 ## Light shafts through the air (god rays): 0 = none, 1 = strong.
 @export_range(0.0, 1.0) var god_rays := 0.3

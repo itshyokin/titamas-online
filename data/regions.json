@@ -1,7 +1,7 @@
 {
 	"regions": [
 		{
-			"ambient_energy": 0.6,
+			"ambient_energy": 0.9,
 			"ambient_loop": "res://assets/audio/ambience/forest_day_loop.ogg",
 			"ambient_volume_db": -8.0,
 			"brightness": 1.0,
@@ -38,10 +38,12 @@
 			"ambient_loop_night": "res://assets/audio/ambience/forest_night_loop.ogg",
 			"music": "res://assets/audio/music/saturn_field.ogg",
 			"music_night": "res://assets/audio/music/saturn_night.ogg",
-			"music_volume_db": -12.0
+			"music_volume_db": -12.0,
+			"shadow_color": "#55637f",
+			"shadow_fill": 0.55
 		},
 		{
-			"ambient_energy": 0.65,
+			"ambient_energy": 0.9,
 			"ambient_loop": "",
 			"ambient_volume_db": -8.0,
 			"brightness": 1.0,
@@ -78,7 +80,9 @@
 			"ambient_loop_night": "",
 			"music": "",
 			"music_night": "",
-			"music_volume_db": -12.0
+			"music_volume_db": -12.0,
+			"shadow_color": "#55637f",
+			"shadow_fill": 0.55
 		}
 	]
 }

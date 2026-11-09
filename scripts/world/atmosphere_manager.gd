@@ -58,7 +58,7 @@ var _wind: AudioStreamPlayer
 const FIELDS := [
 	"fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
-	"shadow_strength", "saturation", "contrast", "brightness", "god_rays",
+	"shadow_strength", "shadow_color", "shadow_fill", "saturation", "contrast", "brightness", "god_rays",
 	"grass_base", "grass_tip", "grass_density", "grass_height", "grass_ground_match",
 ]
 
@@ -189,6 +189,10 @@ func _apply() -> void:
 		_env.fog_density = v.fog_density
 		_env.fog_sky_affect = v.fog_sky_affect
 		_env.ambient_light_energy = v.ambient_energy
+		# Shade colour: part of the ambient light is the region's shadow colour, so the
+		# unlit sides are dark blue-grey instead of black (and ambient occlusion shows).
+		_env.ambient_light_color = v.shadow_color
+		_env.ambient_light_sky_contribution = 1.0 - clampf(float(v.shadow_fill), 0.0, 1.0)
 		_env.adjustment_enabled = true
 		_env.adjustment_saturation = v.saturation
 		_env.adjustment_contrast = v.contrast
