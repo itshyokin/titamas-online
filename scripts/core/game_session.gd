@@ -134,6 +134,63 @@ func travel_home() -> void:
 	start_game()
 
 
+## Moves the player to another level (or elsewhere in this one when `scene_path` is empty
+## or the current level): to the node called `marker` there (a Marker3D, or anything),
+## else to `at` ([x, y, z]), else where the level puts them. Events' teleports.
+func travel_to(scene_path: String, marker := "", at: Variant = null, fade := true) -> void:
+	var tree := get_tree()
+	var current := tree.current_scene
+	if fade:
+		ScreenFade.to_black(self, 0.35)
+		await tree.create_timer(0.4).timeout
+	if scene_path.is_empty() or (current and current.scene_file_path == scene_path):
+		var player := tree.get_first_node_in_group("player") as Node3D
+		var spot = _spot_in(current, marker, at)
+		if player and spot != null:
+			player.global_position = spot
+			if player is CharacterBody3D:
+				(player as CharacterBody3D).velocity = Vector3.ZERO
+	elif ResourceLoader.exists(scene_path):
+		save_game()
+		var level := (load(scene_path) as PackedScene).instantiate()
+		var player := level.get_node_or_null("Player") as Node3D
+		var spot = _spot_in(level, marker, at)
+		if player and spot != null:
+			player.position = spot
+		if active():
+			data["scene"] = scene_path
+			if spot != null:
+				data["position"] = [spot.x, spot.y, spot.z]
+		_switch_to(level)
+		await tree.process_frame
+		await tree.process_frame
+	else:
+		push_warning("GameSession: no level %s" % scene_path)
+	if fade:
+		await tree.create_timer(0.15).timeout
+		ScreenFade.clear(self, 0.5)
+
+
+## Where `marker` (a node's name) is in `level`, or `at` ([x, y, z]); null for neither.
+func _spot_in(level: Node, marker: String, at: Variant) -> Variant:
+	if level and not marker.is_empty():
+		var n := level.find_child(marker, true, false) as Node3D
+		if n:
+			if n.is_inside_tree():
+				return n.global_position
+			var t := Transform3D()
+			var p: Node = n
+			while p and p != level:
+				if p is Node3D:
+					t = (p as Node3D).transform * t
+				p = p.get_parent()
+			return t.origin
+		push_warning("GameSession: no '%s' in %s" % [marker, level.scene_file_path])
+	if at is Array and at.size() == 3:
+		return Vector3(float(at[0]), float(at[1]), float(at[2]))
+	return null
+
+
 ## Saves, forgets the character and goes back to the title screen.
 func quit_to_title() -> void:
 	save_game()

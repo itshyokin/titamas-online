@@ -123,6 +123,10 @@ func refresh() -> void:
 func _process(_delta: float) -> void:
 	for s in slots:
 		s.update_state(combat)
+	# Keep the frame on its box while nothing animates it (the row lays itself out a frame
+	# or two after loading, and the active weapon can be restored after the HUD is built).
+	if not (_frame_tween and _frame_tween.is_running()):
+		_place_frame(false)
 
 
 func _place_frame(animate: bool) -> void:

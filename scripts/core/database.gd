@@ -10,7 +10,7 @@ signal changed(which: String)
 
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
 	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "npcs": DataFiles.NPCS,
-	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS}
+	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS, "events": DataFiles.EVENTS}
 
 const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
@@ -38,6 +38,11 @@ var weapon_types := {}  # id -> Dictionary (data/weapon_types.json entries)
 ## data/animations.json: clip import settings (used by the retarget tool), which clip
 ## plays for each role (CharacterModel.roles), head turning and strafing settings.
 var animations := {}
+## data/events.json: events (pages of commands, placed in levels with MapEvent), and the
+## names of switches and variables.
+var events := {}  # id -> Dictionary
+var switches: Array = []  # [{id, name}]
+var variables: Array = []  # [{id, name}]
 
 var _times := {}
 var _watch := 0.0
@@ -98,6 +103,14 @@ func _load(which: String) -> void:
 			weapon_types.clear()
 			for d in data.get("types", []):
 				weapon_types[String(d.get("id", ""))] = d
+		"events":
+			events.clear()
+			for d in data.get("events", []):
+				events[String(d.get("id", ""))] = d
+			switches = data.get("switches", [])
+			variables = data.get("variables", [])
+			if is_inside_tree():
+				get_tree().call_group.call_deferred("map_events", "reload")
 		"npcs":
 			npcs.clear()
 			for d in data.get("npcs", []):
@@ -129,6 +142,11 @@ func look_settings() -> Dictionary:
 ## A weapon family (sword, bow, pistol...) from data/weapon_types.json ({} if unknown).
 func weapon_type(id: String) -> Dictionary:
 	return weapon_types.get(id, {})
+
+
+## An event's data ({} if unknown).
+func event(id: String) -> Dictionary:
+	return events.get(id, {})
 
 
 ## An NPC's data ({} if unknown).

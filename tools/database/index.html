@@ -162,6 +162,28 @@
 	.list-field .row span { align-self: center; font-size: 12px; color: var(--soft); }
 	.rect { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 	.rect span { font-size: 11px; color: var(--soft); }
+	.ev-tabs { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+	.ev-tabs button.on { background: var(--select); color: var(--select-ink); border-color: #23497e; }
+	.ev-hint { font-size: 11.5px; color: var(--soft); margin-left: 8px; }
+	.ev-bar { display: flex; gap: 6px; margin-bottom: 6px; }
+	.ev-bar select { width: auto; flex: 1; max-width: 260px; }
+	.ev-lines { background: #fff; border: 1px solid #a69f90; font-family: "Consolas", "Cascadia Mono", monospace; font-size: 13px; max-height: 340px; min-height: 120px; overflow-y: auto; outline: none; }
+	.ev-line { padding: 2px 8px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.ev-line:hover { background: #ece6d8; }
+	.ev-line.on { background: var(--select); color: var(--select-ink); }
+	.ev-line.label { color: #6a5a8a; cursor: default; }
+	.ev-line.label:hover { background: none; }
+	.ev-line.insert { color: #a69f90; }
+	.ev-line.c-text { color: #20304f; }
+	.ev-line.c-if, .ev-line.c-choice { color: #2b5ea8; font-weight: 600; }
+	.ev-line.c-switch, .ev-line.c-self_switch, .ev-line.c-variable { color: #b0322a; }
+	.ev-line.c-give_item, .ev-line.c-take_item, .ev-line.c-gold, .ev-line.c-xp { color: #2e7d4f; }
+	.ev-line.c-teleport, .ev-line.c-fade_out, .ev-line.c-fade_in, .ev-line.c-set_home { color: #8a5a10; }
+	.ev-line.c-note { color: #888; font-style: italic; }
+	.ev-line.on[class*=" c-"] { color: var(--select-ink); }
+	.ev-edit { margin-top: 10px; border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px; background: #efece4; }
+	.ev-edit-title { font-weight: 600; font-size: 12px; color: var(--title); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+	.ev .list-field .row input[type=text] { flex: 1; }
 	.empty { padding: 30px; color: var(--soft); }
 	.toast {
 		position: fixed;
@@ -281,7 +303,7 @@ const TABS = {
 		blank: () => ({
 			id: "new_item", name: "New Item", description: "", kind: "material", slot: "", rarity: "common",
 			icon: "bag", icon_color: "#c0b090", value: 1, stack_max: 0, attack: 0, spell_power: 0, armor: 0, block: 0,
-			bonus_health: 0, bonus_mana: 0, use_heal: 0, use_hot_per_tick: 0, use_hot_ticks: 0, use_mana: 0,
+			bonus_health: 0, bonus_mana: 0, use_heal: 0, use_hot_per_tick: 0, use_hot_ticks: 0, use_mana: 0, use_time: 0, use_anim: "",
 			model: "", fitted_masc: "", fitted_femme: "", hides: [], fit: { masc: [], femme: [] },
 		}),
 		groups: [
@@ -315,6 +337,8 @@ const TABS = {
 				{ key: "use_hot_per_tick", label: "Heals per tick", type: "number" },
 				{ key: "use_hot_ticks", label: "Ticks (2 s apart)", type: "int" },
 				{ key: "use_mana", label: "Restores mana", type: "number" },
+				{ key: "use_time", label: "Takes (s)", type: "number", help: "0 = at once. Otherwise a cast bar fills while drinking; the effect comes at the end. Moving, dodging or a hit stops it (the item is kept)." },
+				{ key: "use_anim", label: "Animation", type: "anim", help: "Empty = the Drinking animation (Animations tab)." },
 			], e => e.kind === "consumable"],
 			["Looks", [
 				{ key: "model", label: "Rigid model", type: "text", help: "builtin:sword / bow / shield / helm, or a res:// .glb. Placed with Fit Armor in Godot." },
@@ -468,6 +492,7 @@ const TABS = {
 				{ key: "level", label: "Level", type: "int" },
 				{ key: "max_health", label: "Health", type: "number" },
 				{ key: "immortal", label: "Can't die", type: "bool", help: "Quest givers and companions: health never drops below 1." },
+				{ key: "event", label: "Talking runs event", type: "event", help: "Instead of its lines: the event's active page (Events tab). Self switches are the event's." },
 			]],
 			["Behaviour", [
 				{ key: "behaviour", label: "When idle", type: "select", options: [["stand", "Stand where placed"], ["wander", "Wander nearby"], ["patrol", "Patrol (Marker3D children of a Patrol node)"]] },
@@ -550,6 +575,7 @@ const TABS = {
 				{ key: "roles.death", label: "Dying", type: "anim" },
 				{ key: "roles.cast_channel", label: "Casting (while the bar fills)", type: "anim" },
 				{ key: "roles.loot", label: "Looting a body (kneel)", type: "anim" },
+				{ key: "roles.drink", label: "Drinking / using an item", type: "anim", help: "Items can pick their own (Items → When used)." },
 				{ key: "loot.pause_at", label: "Looting: hold the kneel at (s)", type: "number", help: "Where the clip pauses while the loot window is open (frame 40 = 1.33 s)." },
 				{ key: "roles.bow_aim", label: "Aiming (default)", type: "anim", help: "Weapon types can pick their own." },
 			]],
@@ -663,6 +689,31 @@ const TABS = {
 				{ key: "starting_kit.gold", label: "Gold", type: "int" },
 				{ key: "starting_kit.equipment", label: "Equipped", type: "kitgear", wide: true },
 				{ key: "starting_kit.backpack", label: "In the backpack", type: "kitbag", wide: true },
+			]],
+		],
+	},
+	events: {
+		title: "Events", file: "events", listKey: "events", idKey: "id", nameKey: "name",
+		blank: () => ({ id: "new_event", name: "New Event", note: "", pages: [blankPage()] }),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Set as the Event Id of a MapEvent in a level (scenes/world/map_event.tscn). Self switches are kept per ID." },
+				{ key: "name", label: "Name", type: "text", help: "Default speaker name." },
+				{ key: "note", label: "Note", type: "textarea", wide: true },
+			]],
+			["Pages", [
+				{ key: "pages", label: "", type: "pages", wide: true },
+			]],
+		],
+	},
+	event_switches: {
+		title: "Switches", file: "events", single: true,
+		groups: [
+			["Switches (on / off, saved with the character)", [
+				{ key: "switches", label: "", type: "namelist", prefix: "switch_", wide: true },
+			]],
+			["Variables (numbers, saved with the character)", [
+				{ key: "variables", label: "", type: "namelist", prefix: "var_", wide: true },
 			]],
 		],
 	},
@@ -797,7 +848,7 @@ async function save() {
 
 function validate() {
 	const out = [];
-	for (const key of ["abilities", "items", "enemies", "regions"]) {
+	for (const key of ["abilities", "items", "enemies", "regions", "events"]) {
 		const t = TABS[key];
 		const seen = new Set();
 		for (const e of data[t.file][t.listKey]) {
@@ -868,7 +919,7 @@ function renderList(t) {
 	const list = data[t.file][t.listKey];
 	const items = $("items");
 	items.innerHTML = "";
-	selected[tab] = Math.min(selected[tab], list.length - 1);
+	selected[tab] = Math.max(0, Math.min(selected[tab] ?? 0, list.length - 1));
 	list.forEach((e, i) => {
 		const div = document.createElement("div");
 		div.textContent = String(i + 1).padStart(4, "0") + ": " + (e[t.nameKey] || e[t.idKey] || "");
@@ -1292,6 +1343,21 @@ function fieldControl(t, entry, f) {
 			}
 			break;
 		}
+		case "pages": {
+			wrap.appendChild(eventPagesEditor(entry));
+			break;
+		}
+		case "namelist": {
+			if (!Array.isArray(entry[f.key])) entry[f.key] = [];
+			wrap.appendChild(nameListEditor(entry[f.key], f.prefix || "", r => changed(r)));
+			break;
+		}
+		case "event": {
+			const sel = selectOf(eventOptions(), value, true);
+			sel.onchange = () => set(sel.value);
+			wrap.append(label, sel);
+			break;
+		}
 		case "rect": {
 			const r = Array.isArray(value) && value.length === 4 ? value.slice() : [0, 0, 1, 1];
 			const grid = el("div", { className: "rect" });
@@ -1308,6 +1374,403 @@ function fieldControl(t, entry, f) {
 	}
 	if (f.help) wrap.appendChild(el("div", { className: "help", textContent: f.help }));
 	return wrap;
+}
+
+// ---------------------------------------------------------------------------
+// Events: pages and commands (like Saturn's / RPG Maker's event editor).
+// ---------------------------------------------------------------------------
+const BUILTIN_MODELS = ["chest", "chest_open", "sign", "standing_stone", "crate", "barrel", "orb", "lever", "lever_on"];
+const TRIGGERS = [["action", "Action (press Jump / talk next to it)"], ["touch", "Touch (step into the box)"], ["leave", "Leave (step out of the box)"], ["auto", "Autorun (when the page turns on)"], ["none", "None (only called by other events)"]];
+const blankPage = () => ({ conditions: [], trigger: "action", model: "", solid: false, marker: false, prompt: "Examine", speaker: "", freeze: true, commands: [] });
+const switchOptions = () => (((data.events || {}).switches) || []).map(s => [s.id, s.name ? s.name + "  (" + s.id + ")" : s.id]);
+const variableOptions = () => (((data.events || {}).variables) || []).map(s => [s.id, s.name ? s.name + "  (" + s.id + ")" : s.id]);
+const eventOptions = () => (((data.events || {}).events) || []).map(e => [e.id, (e.name || e.id) + "  (" + e.id + ")"]);
+const npcOptions = () => (((data.npcs || {}).npcs) || []).map(n => [n.id, n.name + "  (" + n.id + ")"]);
+const classOptions = () => (((data.classes || {}).classes) || []).map(c => [c.id, c.name]);
+const nameOf = (opts, id) => { const o = opts.find(x => x[0] === id); return o ? o[1].replace(/\s+\(.*\)$/, "") : (id || "?"); };
+const itemName = id => nameOf(itemOptions(), id);
+
+const CMD_GROUPS = [
+	["Message", ["text", "choice", "log"]],
+	["Flow", ["if", "wait", "call", "stop", "erase", "note"]],
+	["Switches", ["switch", "self_switch", "variable"]],
+	["Player", ["give_item", "take_item", "gold", "xp", "heal", "follower", "animation"]],
+	["World", ["teleport", "set_home", "fade_out", "fade_in", "sound", "effect"]],
+];
+const CMDS = {
+	text: { label: "Show text", make: () => ({ cmd: "text", speaker: "", text: "" }),
+		fields: [["speaker", "Speaker (empty = the event's name)", "text"], ["text", "Text", "textarea", "{player}, {they}/{them}/{their}, {var:id}, {item:id}, {gold}. Texts in a row share one box."]],
+		show: c => "Text: " + (c.speaker ? c.speaker + ": " : "") + (c.text || "") },
+	choice: { label: "Show choices", make: () => ({ cmd: "choice", options: ["Yes", "No"], branches: [[], []], cancel: 1 }),
+		fields: [["options", "Choices", "options"], ["cancel", "Esc / B picks", "cancel"]],
+		show: c => "Show choices: " + (c.options || []).join(", ") },
+	log: { label: "Game log line", make: () => ({ cmd: "log", text: "", color: "#e6e6e0" }),
+		fields: [["text", "Text", "text"], ["color", "Colour", "color"]], show: c => "Log: " + (c.text || "") },
+	if: { label: "Conditional branch", make: () => ({ cmd: "if", conditions: [{ type: "switch", id: "", is: true }], then: [], else: [] }),
+		fields: [["conditions", "Conditions (all must hold)", "conditions"]], show: c => "If: " + condText(c.conditions) },
+	wait: { label: "Wait", make: () => ({ cmd: "wait", seconds: 1 }), fields: [["seconds", "Seconds", "number"]], show: c => "Wait: " + c.seconds + " s" },
+	call: { label: "Call event", make: () => ({ cmd: "call", event: "" }), fields: [["event", "Event (its active page runs)", "event"]], show: c => "Call event: " + nameOf(eventOptions(), c.event) },
+	stop: { label: "Exit event", make: () => ({ cmd: "stop" }), fields: [], show: () => "Exit event" },
+	erase: { label: "Erase event (until the level reloads)", make: () => ({ cmd: "erase" }), fields: [], show: () => "Erase event" },
+	note: { label: "Comment", make: () => ({ cmd: "note", text: "" }), fields: [["text", "Comment (does nothing)", "textarea"]], show: c => "// " + (c.text || "") },
+	switch: { label: "Control switch", make: () => ({ cmd: "switch", id: "", value: true }),
+		fields: [["id", "Switch", "switch"], ["value", "Turn", "onoff"]], show: c => "Switch: " + nameOf(switchOptions(), c.id) + " = " + (c.value ? "ON" : "OFF") },
+	self_switch: { label: "Control self switch", make: () => ({ cmd: "self_switch", letter: "A", value: true }),
+		fields: [["letter", "Self switch", "letter"], ["value", "Turn", "onoff"]], show: c => "Self switch " + c.letter + " = " + (c.value ? "ON" : "OFF") },
+	variable: { label: "Control variable", make: () => ({ cmd: "variable", id: "", op: "set", value: 0 }),
+		fields: [["id", "Variable", "variable"], ["op", "Operation", "select", [["set", "Set to"], ["add", "Add"], ["sub", "Subtract"], ["mul", "Multiply by"], ["random", "Random from value to max"]]], ["value", "Value", "number"], ["max", "Max (random)", "number"]],
+		show: c => "Variable: " + nameOf(variableOptions(), c.id) + " " + ({ set: "=", add: "+=", sub: "-=", mul: "*=", random: "= random" }[c.op] || c.op) + " " + c.value + (c.op === "random" ? "–" + (c.max ?? c.value) : "") },
+	give_item: { label: "Give item", make: () => ({ cmd: "give_item", item: "", count: 1, silent: false }),
+		fields: [["item", "Item", "item"], ["count", "How many", "int"], ["silent", "Quietly (no 'Received')", "bool"]],
+		show: c => "Give item: " + itemName(c.item) + " x" + c.count },
+	take_item: { label: "Take item", make: () => ({ cmd: "take_item", item: "", count: 1 }),
+		fields: [["item", "Item", "item"], ["count", "How many", "int"]], show: c => "Take item: " + itemName(c.item) + " x" + c.count },
+	gold: { label: "Change gold", make: () => ({ cmd: "gold", op: "add", value: 10, silent: false }),
+		fields: [["op", "Operation", "select", [["add", "Give"], ["take", "Take"], ["set", "Set to"]]], ["value", "Gold", "int"], ["silent", "Quietly", "bool"]],
+		show: c => "Gold: " + ({ add: "+", take: "-", set: "=" }[c.op] || "") + c.value },
+	xp: { label: "Give experience", make: () => ({ cmd: "xp", value: 50 }), fields: [["value", "XP", "int"]], show: c => "XP +" + c.value },
+	heal: { label: "Full recovery", make: () => ({ cmd: "heal" }), fields: [], show: () => "Recover health and mana" },
+	follower: { label: "Follower joins / leaves", make: () => ({ cmd: "follower", npc: "", op: "join" }),
+		fields: [["npc", "NPC (in this level)", "npc"], ["op", "", "select", [["join", "Joins"], ["leave", "Leaves"]]]], show: c => "Follower: " + nameOf(npcOptions(), c.npc) + " " + (c.op === "leave" ? "leaves" : "joins") },
+	animation: { label: "Player animation", make: () => ({ cmd: "animation", role: "", wait: true }),
+		fields: [["role", "Animation", "anim"], ["wait", "Wait for it to finish", "bool"]], show: c => "Animation: " + (c.role || "?") + (c.wait ? " (wait)" : "") },
+	teleport: { label: "Teleport", make: () => ({ cmd: "teleport", scene: "", marker: "", fade: true }),
+		fields: [["scene", "Level (empty = this one)", "level"], ["marker", "To the node named", "marker", "A Marker3D (or any node) in that level."], ["position", "Or to x, y, z", "vec3"], ["fade", "Fade to black", "bool"]],
+		show: c => "Teleport: " + (c.scene ? c.scene.replace("res://scenes/levels/", "") : "here") + (c.marker ? " → " + c.marker : c.position ? " → " + c.position.join(", ") : "") },
+	set_home: { label: "Set home (hearthstone)", make: () => ({ cmd: "set_home", name: "" }), fields: [["name", "Home's name", "text"]], show: c => "Set home: " + c.name },
+	fade_out: { label: "Fade out", make: () => ({ cmd: "fade_out", seconds: 0.6 }), fields: [["seconds", "Seconds", "number"]], show: c => "Fade out (" + c.seconds + " s)" },
+	fade_in: { label: "Fade in", make: () => ({ cmd: "fade_in", seconds: 0.6 }), fields: [["seconds", "Seconds", "number"]], show: c => "Fade in (" + c.seconds + " s)" },
+	sound: { label: "Play sound", make: () => ({ cmd: "sound", sound: "", volume_db: 0 }), fields: [["sound", "Sound", "sound"], ["volume_db", "Volume (dB)", "number"]], show: c => "Sound: " + soundLabel(c.sound || "") },
+	effect: { label: "Sparkle effect", make: () => ({ cmd: "effect", on: "event", color: "#ffd76a", size: 1 }),
+		fields: [["on", "On", "select", [["event", "The event"], ["player", "The player"]]], ["color", "Colour", "color"], ["size", "Size", "number"]], show: c => "Effect on the " + c.on },
+};
+
+function condText(conds) {
+	if (!conds || !conds.length) return "(always)";
+	return conds.map(c => {
+		switch (c.type) {
+			case "switch": return nameOf(switchOptions(), c.id) + " is " + (c.is === false ? "OFF" : "ON");
+			case "self": return "Self " + c.letter + " is " + (c.is === false ? "OFF" : "ON");
+			case "variable": return nameOf(variableOptions(), c.id) + " " + c.op + " " + c.value;
+			case "item": return "has " + itemName(c.item) + " x" + (c.count || 1);
+			case "gold": return "gold ≥ " + c.value;
+			case "level": return "level ≥ " + c.value;
+			case "class": return "class is " + nameOf(classOptions(), c.id);
+		}
+		return "?";
+	}).join(" and ");
+}
+
+const COND_TYPES = [["switch", "Switch"], ["self", "Self switch"], ["variable", "Variable"], ["item", "Has item"], ["gold", "Has gold"], ["level", "Level at least"], ["class", "Class is"]];
+const COND_BLANK = { switch: { id: "", is: true }, self: { letter: "A", is: true }, variable: { id: "", op: ">=", value: 1 }, item: { item: "", count: 1 }, gold: { value: 10 }, level: { value: 2 }, class: { id: "" } };
+
+// Rows of conditions, edited in place.
+function conditionsEditor(list, onChange) {
+	const box = el("div", { className: "list-field" });
+	list.forEach((c, i) => {
+		const row = el("div", { className: "row" });
+		const type = selectOf(COND_TYPES, c.type, false);
+		type.style.flex = "0 0 130px";
+		type.onchange = () => { list[i] = Object.assign({ type: type.value }, clone(COND_BLANK[type.value])); onChange(true); };
+		row.appendChild(type);
+		const sel = (opts, key, empty) => { const s = selectOf(opts, c[key], empty); s.onchange = () => { c[key] = s.value; onChange(); }; row.appendChild(s); };
+		const num = (key, w) => { const n = el("input", { type: "number", value: c[key] ?? 0, step: "any" }); n.style.width = w; n.oninput = () => { const v = parseFloat(n.value); if (!Number.isNaN(v)) { c[key] = v; onChange(); } }; row.appendChild(n); };
+		const onoff = () => { const s = selectOf([["on", "is ON"], ["off", "is OFF"]], c.is === false ? "off" : "on", false); s.style.flex = "0 0 80px"; s.onchange = () => { c.is = s.value === "on"; onChange(); }; row.appendChild(s); };
+		switch (c.type) {
+			case "switch": sel(switchOptions(), "id", true); onoff(); break;
+			case "self": sel(["A", "B", "C", "D"], "letter", false); onoff(); break;
+			case "variable": sel(variableOptions(), "id", true); { const s = selectOf([">=", "<=", "==", "!=", ">", "<"], c.op, false); s.style.flex = "0 0 60px"; s.onchange = () => { c.op = s.value; onChange(); }; row.appendChild(s); } num("value", "80px"); break;
+			case "item": sel(itemOptions(), "item", true); row.appendChild(el("span", { textContent: "×" })); num("count", "60px"); break;
+			case "gold": case "level": num("value", "100px"); break;
+			case "class": sel(classOptions(), "id", true); break;
+		}
+		const rm = el("button", { textContent: "✕", title: "Remove" });
+		rm.onclick = () => { list.splice(i, 1); onChange(true); };
+		row.appendChild(rm);
+		box.appendChild(row);
+	});
+	const add = el("button", { textContent: "+ Condition" });
+	add.onclick = () => { list.push({ type: "switch", id: "", is: true }); onChange(true); };
+	box.appendChild(add);
+	return box;
+}
+
+// UI state per event: which page, which line is selected, the copied command.
+const evUI = { page: {}, sel: null, clip: null };
+
+// The command tree as lines: commands, branch labels and the empty "◆" lines you
+// insert at to add to the end of a list.
+function flattenCommands(list, depth, out) {
+	list.forEach((c, i) => {
+		out.push({ list, i, depth, c });
+		if (c.cmd === "if") {
+			c.then = c.then || []; c.else = c.else || [];
+			flattenCommands(c.then, depth + 1, out);
+			out.push({ list: c.then, i: c.then.length, depth: depth + 1, insert: true });
+			out.push({ label: ": Else", depth });
+			flattenCommands(c.else, depth + 1, out);
+			out.push({ list: c.else, i: c.else.length, depth: depth + 1, insert: true });
+			out.push({ label: ": End", depth });
+		} else if (c.cmd === "choice") {
+			c.options = c.options || [];
+			c.branches = c.branches || [];
+			while (c.branches.length < c.options.length) c.branches.push([]);
+			c.options.forEach((o, k) => {
+				out.push({ label: ": When [" + o + "]", depth });
+				flattenCommands(c.branches[k], depth + 1, out);
+				out.push({ list: c.branches[k], i: c.branches[k].length, depth: depth + 1, insert: true });
+			});
+			out.push({ label: ": End", depth });
+		}
+	});
+	return out;
+}
+
+function eventPagesEditor(entry) {
+	const root = el("div", { className: "ev" });
+	entry.pages = entry.pages || [];
+	if (!entry.pages.length) entry.pages.push(blankPage());
+	const id = entry.id;
+	let pi = Math.min(evUI.page[id] || 0, entry.pages.length - 1);
+	evUI.page[id] = pi;
+	const page = entry.pages[pi];
+	const redo = () => changed(true);
+	const edit = () => changed();
+
+	// Page tabs.
+	const tabs = el("div", { className: "ev-tabs" });
+	entry.pages.forEach((p, i) => {
+		const b = el("button", { textContent: String(i + 1), className: i === pi ? "on" : "", title: condText(p.conditions) });
+		b.onclick = () => { evUI.page[id] = i; evUI.sel = null; render(); };
+		tabs.appendChild(b);
+	});
+	const tool = (text, fn, title) => { const b = el("button", { textContent: text, title: title || "" }); b.onclick = fn; tabs.appendChild(b); return b; };
+	tool("New page", () => { entry.pages.push(blankPage()); evUI.page[id] = entry.pages.length - 1; redo(); });
+	tool("Copy page", () => { entry.pages.splice(pi + 1, 0, clone(page)); evUI.page[id] = pi + 1; redo(); });
+	tool("Delete page", () => { if (entry.pages.length > 1 && confirm("Delete page " + (pi + 1) + "?")) { entry.pages.splice(pi, 1); evUI.page[id] = Math.max(0, pi - 1); redo(); } }).disabled = entry.pages.length < 2;
+	tabs.appendChild(el("span", { className: "ev-hint", textContent: "The last page whose conditions hold is the one in use." }));
+	root.appendChild(tabs);
+
+	// Page settings.
+	const grid = el("div", { className: "grid" });
+	const cell = (labelText, control, help, wide) => {
+		const w = el("div", { className: "field" + (wide ? " wide" : "") });
+		w.append(el("label", { textContent: labelText }), control);
+		if (help) w.appendChild(el("div", { className: "help", textContent: help }));
+		grid.appendChild(w);
+	};
+	const conds = el("div", { className: "field wide" });
+	page.conditions = page.conditions || [];
+	conds.append(el("label", { textContent: "Conditions (all must hold; none = always)" }), conditionsEditor(page.conditions, r => changed(r)));
+	grid.appendChild(conds);
+	const trig = selectOf(TRIGGERS, page.trigger || "action", false);
+	trig.onchange = () => { page.trigger = trig.value; edit(); };
+	cell("Trigger", trig);
+	const model = el("input", { type: "text", value: page.model || "", placeholder: "(nothing: an invisible area)" });
+	model.setAttribute("list", "ev-models");
+	model.oninput = () => { page.model = model.value.trim(); edit(); };
+	cell("Shows", model, "builtin:chest…, prop:<name> (assets/props), npc:<id> (talk to the NPC to run this page), or a res:// scene.", false);
+	const text = (key, help, ph) => { const i = el("input", { type: "text", value: page[key] || "", placeholder: ph || "" }); i.oninput = () => { page[key] = i.value; edit(); }; return i; };
+	cell("Prompt", text("prompt", "", "Examine"), "Shown over it: \"Space  Examine\".");
+	cell("Speaker", text("speaker", "", "(the event's name)"), "Name on text boxes unless a text says otherwise.");
+	const check = (key, labelText, help, def) => {
+		const w = el("div", { className: "field check" });
+		const c = el("input", { type: "checkbox", checked: page[key] === undefined ? def : !!page[key] });
+		c.onchange = () => { page[key] = c.checked; edit(); };
+		w.append(c, el("label", { textContent: labelText }));
+		if (help) w.title = help;
+		grid.appendChild(w);
+	};
+	check("solid", "Blocks the way", "A solid box the size of the event (not for props or NPCs, which have their own).", false);
+	check("marker", "Sparkles", "Golden motes and a glow, so it can be spotted.", false);
+	check("freeze", "Player waits while it runs", "", true);
+	const fs1 = el("fieldset");
+	fs1.append(el("legend", { textContent: "Page " + (pi + 1) }), grid);
+	root.appendChild(fs1);
+
+	// Commands.
+	page.commands = page.commands || [];
+	const lines = flattenCommands(page.commands, 0, []);
+	lines.push({ list: page.commands, i: page.commands.length, depth: 0, insert: true });
+	const isSel = l => evUI.sel && l.list === evUI.sel.list && l.i === evUI.sel.i && !l.label;
+	if (!lines.some(isSel)) evUI.sel = null;
+	const fs2 = el("fieldset");
+	fs2.appendChild(el("legend", { textContent: "Commands" }));
+	const bar = el("div", { className: "ev-bar" });
+	const pick = el("select");
+	pick.appendChild(el("option", { value: "", textContent: "+ Insert command…" }));
+	for (const [g, keys] of CMD_GROUPS) {
+		const og = el("optgroup", { label: g });
+		for (const k of keys) og.appendChild(el("option", { value: k, textContent: CMDS[k].label }));
+		pick.appendChild(og);
+	}
+	pick.onchange = () => {
+		if (!pick.value) return;
+		const at = evUI.sel || { list: page.commands, i: page.commands.length };
+		at.list.splice(at.i, 0, CMDS[pick.value].make());
+		evUI.sel = { list: at.list, i: at.i };
+		redo();
+	};
+	const selCmd = () => (evUI.sel && evUI.sel.i < evUI.sel.list.length ? evUI.sel : null);
+	const btn = (t, fn, title, off) => { const b = el("button", { textContent: t, title }); b.onclick = fn; b.disabled = !!off; bar.appendChild(b); };
+	bar.appendChild(pick);
+	btn("↑", () => { const s = selCmd(); if (s && s.i > 0) { const [c] = s.list.splice(s.i, 1); s.list.splice(s.i - 1, 0, c); s.i--; redo(); } }, "Move up", !selCmd());
+	btn("↓", () => { const s = selCmd(); if (s && s.i < s.list.length - 1) { const [c] = s.list.splice(s.i, 1); s.list.splice(s.i + 1, 0, c); s.i++; redo(); } }, "Move down", !selCmd());
+	btn("Copy", () => { const s = selCmd(); if (s) { evUI.clip = clone(s.list[s.i]); toast("Copied"); render(); } }, "Copy the command (and what's inside it)", !selCmd());
+	btn("Paste", () => { const at = evUI.sel || { list: page.commands, i: page.commands.length }; at.list.splice(at.i, 0, clone(evUI.clip)); redo(); }, "Paste above the selected line", !evUI.clip);
+	btn("Delete", () => { const s = selCmd(); if (s) { s.list.splice(s.i, 1); redo(); } }, "Delete the command (Del)", !selCmd());
+	fs2.appendChild(bar);
+	const listBox = el("div", { className: "ev-lines", tabIndex: 0 });
+	for (const l of lines) {
+		const d = el("div", { className: "ev-line" + (l.label ? " label" : "") + (l.insert ? " insert" : "") + (isSel(l) ? " on" : "") });
+		d.style.paddingLeft = (8 + l.depth * 22) + "px";
+		if (l.label) d.textContent = l.label;
+		else if (l.insert) d.textContent = "◆";
+		else {
+			const def = CMDS[l.c.cmd];
+			d.textContent = "◆" + (def ? def.show(l.c) : "Unknown: " + l.c.cmd);
+			d.className += " c-" + l.c.cmd;
+		}
+		if (!l.label) d.onclick = () => { evUI.sel = { list: l.list, i: l.i }; render(); };
+		listBox.appendChild(d);
+	}
+	listBox.onkeydown = e => {
+		if (e.key === "Delete" && selCmd()) { const s = selCmd(); s.list.splice(s.i, 1); redo(); }
+	};
+	fs2.appendChild(listBox);
+	// The selected command's settings.
+	const s = selCmd();
+	if (s) fs2.appendChild(commandEditor(s.list[s.i]));
+	else fs2.appendChild(el("div", { className: "help", textContent: "Click a line to select it. New commands go above the selected line; select a ◆ line to add at the end of a list (or a branch)." }));
+	root.appendChild(fs2);
+
+	// Suggestions for "Shows".
+	const dl = el("datalist", { id: "ev-models" });
+	for (const m of BUILTIN_MODELS) dl.appendChild(el("option", { value: "builtin:" + m }));
+	for (const p of (assets.props || [])) dl.appendChild(el("option", { value: "prop:" + p }));
+	for (const [n] of npcOptions()) dl.appendChild(el("option", { value: "npc:" + n }));
+	root.appendChild(dl);
+	return root;
+}
+
+// A form for one command.
+function commandEditor(c) {
+	const def = CMDS[c.cmd];
+	const box = el("div", { className: "ev-edit" });
+	box.appendChild(el("div", { className: "ev-edit-title", textContent: def ? def.label : c.cmd }));
+	if (!def) return box;
+	const grid = el("div", { className: "grid" });
+	if (!def.fields.length) grid.appendChild(el("div", { className: "help", textContent: "Nothing to set." }));
+	for (const [key, labelText, type, extra] of def.fields) {
+		const w = el("div", { className: "field" + (["textarea", "conditions", "options"].includes(type) ? " wide" : "") });
+		const lab = el("label", { textContent: labelText });
+		const setv = (v, re) => {
+			c[key] = v;
+			changed(re);
+			const on = document.querySelector(".ev-line.on");
+			if (on && !re) on.textContent = "◆" + def.show(c);
+		};
+		let ctl;
+		switch (type) {
+			case "text": ctl = el("input", { type: "text", value: c[key] ?? "" }); ctl.oninput = () => setv(ctl.value); break;
+			case "textarea": ctl = el("textarea", { value: c[key] ?? "", rows: 3 }); ctl.oninput = () => setv(ctl.value); break;
+			case "number": case "int": ctl = el("input", { type: "number", value: c[key] ?? 0, step: type === "int" ? 1 : "any" });
+				ctl.oninput = () => { const v = type === "int" ? parseInt(ctl.value, 10) : parseFloat(ctl.value); if (!Number.isNaN(v)) setv(v); }; break;
+			case "bool": w.className = "field check"; ctl = el("input", { type: "checkbox", checked: !!c[key] }); ctl.onchange = () => setv(ctl.checked); w.append(ctl, lab); grid.appendChild(w); continue;
+			case "onoff": ctl = selectOf([["on", "ON"], ["off", "OFF"]], c[key] === false ? "off" : "on", false); ctl.onchange = () => setv(ctl.value === "on"); break;
+			case "select": ctl = selectOf(extra, c[key], false); ctl.onchange = () => setv(ctl.value); break;
+			case "letter": ctl = selectOf(["A", "B", "C", "D"], c[key], false); ctl.onchange = () => setv(ctl.value); break;
+			case "switch": ctl = selectOf(switchOptions(), c[key], true); ctl.onchange = () => setv(ctl.value); break;
+			case "variable": ctl = selectOf(variableOptions(), c[key], true); ctl.onchange = () => setv(ctl.value); break;
+			case "item": ctl = selectOf(itemOptions(), c[key], true); ctl.onchange = () => setv(ctl.value); break;
+			case "event": ctl = selectOf(eventOptions(), c[key], true); ctl.onchange = () => setv(ctl.value); break;
+			case "npc": ctl = selectOf(npcOptions(), c[key], true); ctl.onchange = () => setv(ctl.value); break;
+			case "anim": ctl = selectOf(assets.animations || [], c[key], true); ctl.onchange = () => setv(ctl.value); break;
+			case "sound": ctl = selectOf((assets.sounds || []).map(p => [p, soundLabel(p)]), c[key], true); ctl.onchange = () => setv(ctl.value); break;
+			case "level": ctl = selectOf((assets.levels || []).map(p => [p, p.replace("res://scenes/levels/", "")]), c[key], true); ctl.onchange = () => setv(ctl.value, true); break;
+			case "marker": {
+				ctl = el("input", { type: "text", value: c[key] ?? "" });
+				const dl = el("datalist", { id: "ev-markers" });
+				const markers = (assets.markers || {});
+				const lv = c.scene || Object.keys(markers)[0] || "";
+				for (const m of (markers[lv] || [])) dl.appendChild(el("option", { value: m }));
+				ctl.setAttribute("list", "ev-markers");
+				ctl.oninput = () => setv(ctl.value);
+				w.appendChild(dl);
+				break;
+			}
+			case "vec3": {
+				ctl = el("div", { className: "rect" });
+				const v = Array.isArray(c[key]) ? c[key].slice() : null;
+				["x", "y", "z"].forEach((n, i) => {
+					const inp = el("input", { type: "number", value: v ? v[i] : "", step: "any", placeholder: n });
+					inp.oninput = () => {
+						const vals = [...ctl.querySelectorAll("input")].map(x => x.value === "" ? NaN : parseFloat(x.value));
+						if (vals.every(x => Number.isNaN(x))) { delete c[key]; changed(); } else if (vals.every(x => !Number.isNaN(x))) setv(vals);
+					};
+					ctl.appendChild(inp);
+				});
+				break;
+			}
+			case "color": {
+				ctl = el("input", { type: "color", value: c[key] || "#ffffff" });
+				ctl.oninput = () => setv(ctl.value);
+				break;
+			}
+			case "conditions": c[key] = c[key] || []; ctl = conditionsEditor(c[key], r => changed(r)); break;
+			case "options": {
+				c.options = c.options || [];
+				c.branches = c.branches || [];
+				ctl = el("div", { className: "list-field" });
+				c.options.forEach((o, i) => {
+					const row = el("div", { className: "row" });
+					const t = el("input", { type: "text", value: o });
+					t.oninput = () => { c.options[i] = t.value; changed(); };
+					const rm = el("button", { textContent: "✕", title: "Remove (and what's under it)" });
+					rm.onclick = () => { c.options.splice(i, 1); c.branches.splice(i, 1); if ((c.cancel ?? -1) >= c.options.length) c.cancel = -1; changed(true); };
+					row.append(t, rm);
+					ctl.appendChild(row);
+				});
+				const add = el("button", { textContent: "+ Choice" });
+				add.onclick = () => { c.options.push("Choice " + (c.options.length + 1)); c.branches.push([]); changed(true); };
+				ctl.appendChild(add);
+				break;
+			}
+			case "cancel": {
+				const opts = [["-1", "Nothing (just close)"]].concat((c.options || []).map((o, i) => [String(i), "[" + o + "]"]));
+				ctl = selectOf(opts, String(c[key] ?? -1), false);
+				ctl.onchange = () => setv(parseInt(ctl.value, 10));
+				break;
+			}
+		}
+		w.append(lab, ctl);
+		if (typeof extra === "string") w.appendChild(el("div", { className: "help", textContent: extra }));
+		grid.appendChild(w);
+	}
+	box.appendChild(grid);
+	return box;
+}
+
+// Names for switches and variables (Switches tab).
+function nameListEditor(list, prefix, onChange) {
+	const box = el("div", { className: "list-field" });
+	list.forEach((s, i) => {
+		const row = el("div", { className: "row" });
+		const num = el("span", { textContent: String(i + 1).padStart(4, "0") });
+		const idIn = el("input", { type: "text", value: s.id, title: "ID (used by events)" });
+		idIn.style.flex = "0 0 200px";
+		idIn.oninput = () => { s.id = idIn.value.toLowerCase().replace(/[^a-z0-9_]/g, "_"); onChange(); };
+		const nm = el("input", { type: "text", value: s.name || "", placeholder: "Name" });
+		nm.oninput = () => { s.name = nm.value; onChange(); };
+		const rm = el("button", { textContent: "✕" });
+		rm.onclick = () => { list.splice(i, 1); onChange(true); };
+		row.append(num, idIn, nm, rm);
+		box.appendChild(row);
+	});
+	const add = el("button", { textContent: "+ Add" });
+	add.onclick = () => { let n = list.length + 1; while (list.some(s => s.id === prefix + n)) n++; list.push({ id: prefix + n, name: "" }); onChange(true); };
+	box.appendChild(add);
+	return box;
 }
 
 load();

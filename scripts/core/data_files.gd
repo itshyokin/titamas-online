@@ -17,6 +17,7 @@ const CLASSES := "res://data/classes.json"
 const NPCS := "res://data/npcs.json"
 const WEAPON_TYPES := "res://data/weapon_types.json"
 const ANIMATIONS := "res://data/animations.json"
+const EVENTS := "res://data/events.json"
 
 ## Ability fields that need converting (everything else is a plain number/string/bool).
 const ABILITY_COLORS := ["color", "projectile_color"]

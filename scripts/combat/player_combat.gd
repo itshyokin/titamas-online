@@ -910,7 +910,8 @@ func _end_cast() -> void:
 
 ## Casts something that isn't an ability (a hearthstone): the cast bar fills over
 ## `seconds`, then `on_done` runs. Moving, dodging or being hit stops it.
-func channel(display: String, seconds: float, on_done: Callable) -> bool:
+## `anim`: the animation role/clip played while the bar fills.
+func channel(display: String, seconds: float, on_done: Callable, anim := "cast_channel") -> bool:
 	if _channel or _current or _charging or _blocking or _casting:
 		notice.emit("You're busy")
 		return false
@@ -924,7 +925,7 @@ func channel(display: String, seconds: float, on_done: Callable) -> bool:
 	_channel.cast_time = seconds
 	_channel_time = 0.0
 	_channel_done = on_done
-	player.action_animation.emit("cast_channel", 0.0, 0.2, 1.0)
+	player.action_animation.emit(anim, 0.0, 0.2, 1.0)
 	return true
 
 

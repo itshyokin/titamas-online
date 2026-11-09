@@ -569,7 +569,9 @@
 			"name": "Minor Healing Potion",
 			"kind": "consumable",
 			"icon": "potion",
-			"icon_color": "#d0302a"
+			"icon_color": "#d0302a",
+			"use_time": 1.2,
+			"use_anim": ""
 		},
 		{
 			"description": "Heals 30 health over 10 seconds.",
@@ -598,7 +600,9 @@
 			"name": "Bandage",
 			"kind": "consumable",
 			"icon": "bandage",
-			"icon_color": "#e8e0c8"
+			"icon_color": "#e8e0c8",
+			"use_time": 1.0,
+			"use_anim": ""
 		},
 		{
 			"description": "Restores 40 mana.",
@@ -627,7 +631,9 @@
 			"name": "Mana Draught",
 			"kind": "consumable",
 			"icon": "potion",
-			"icon_color": "#3060d8"
+			"icon_color": "#3060d8",
+			"use_time": 1.2,
+			"use_anim": ""
 		},
 		{
 			"description": "Proof of a bandit dealt with. Some guards pay for these.",

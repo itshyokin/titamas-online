@@ -40,7 +40,15 @@ static func open(from: Node, speaker: String, title: String, lines: Array, on_do
 	box._from = from
 	from.get_tree().root.add_child(box)
 	box._name.text = speaker + ("  —  " + title if title != "" else "")
-	box._show_line()
+	box._name.visible = speaker != ""
+	if box._lines.is_empty():
+		# Just choices (an event's choice with no text before it).
+		box._lines = [""]
+		box._show_line()
+		box._text.visible = false
+		box._show_choices()
+	else:
+		box._show_line()
 	return box
 
 

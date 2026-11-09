@@ -120,6 +120,24 @@ func remove_at(index: int, count := 1) -> void:
 	_changed()
 
 
+## Removes up to `count` of an item (from the last stacks first). Returns how many went.
+func remove_item(id: String, count := 1) -> int:
+	var removed := 0
+	for i in range(SIZE - 1, -1, -1):
+		if removed >= count:
+			break
+		var s = bag[i]
+		if s and s.id == id:
+			var n := mini(int(s.count), count - removed)
+			s.count -= n
+			removed += n
+			if s.count <= 0:
+				bag[i] = null
+	if removed > 0:
+		_changed()
+	return removed
+
+
 ## Moves (or merges, or swaps) one backpack slot onto another.
 func move(from: int, to: int) -> void:
 	if from == to or from < 0 or to < 0 or from >= SIZE or to >= SIZE:
@@ -301,6 +319,33 @@ func use_at(index: int) -> bool:
 	var d := item(s.id)
 	if bool(d.get("use_hearth", false)):
 		return _use_hearthstone(d)
+	var id: String = s.id
+	var seconds := float(d.get("use_time", 0.0))
+	var anim := String(d.get("use_anim", ""))
+	if anim.is_empty():
+		anim = "drink"
+	var player := get_parent() as PlayerController
+	var combat := get_node_or_null("../PlayerCombat")
+	if seconds > 0.0 and combat:
+		# Drinking takes a moment (a cast bar; moving or a hit stops it and the potion is kept).
+		return combat.channel(String(d.get("name", id)), seconds, _apply_use.bind(id), anim)
+	if player and player.state == PlayerController.State.NORMAL:
+		player.action_animation.emit(anim, 0.0, 0.15, 1.0)
+	return _apply_use(id)
+
+
+## The item's effect, then one is used up (from its first stack).
+func _apply_use(id: String) -> bool:
+	if stats.is_dead():
+		return false
+	var index := -1
+	for i in SIZE:
+		if bag[i] and bag[i].id == id:
+			index = i
+			break
+	if index < 0:
+		return false
+	var d := item(id)
 	if float(d.get("use_heal", 0.0)) > 0.0:
 		stats.heal(float(d.use_heal))
 	if float(d.get("use_hot_per_tick", 0.0)) > 0.0:

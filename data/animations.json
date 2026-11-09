@@ -1051,7 +1051,8 @@
 		"talk_2": "talk_2",
 		"talk_3": "talk_3",
 		"talk_4": "talk_4",
-		"loot": "loot_kneel"
+		"loot": "loot_kneel",
+		"drink": "cast_heal"
 	},
 	"look": {
 		"range": 6.0,

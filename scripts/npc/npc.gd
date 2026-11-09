@@ -31,6 +31,10 @@ signal follow_changed(following: bool)
 
 var ai := AI.IDLE
 var data := {}
+## A placed event showing this NPC on one of its pages (MapEvent "npc:<id>"): talking
+## runs that page. Otherwise the NPC's own `event` (data/npcs.json) if it has one, else
+## its lines.
+var event_owner: Node = null
 var target: Node3D = null  # who it's fighting or fleeing from
 ## The player hit it in danger mode: it fights (or flees from) them until it calms down.
 var angry_at_player := false
@@ -177,6 +181,15 @@ func talk(player: Node3D) -> void:
 	if player.has_method("face_toward"):
 		player.face_toward(global_position)
 	character.play("idle", 0.25)
+	# An event instead of plain lines.
+	var runner: EventRunner = null
+	if event_owner and is_instance_valid(event_owner):
+		runner = event_owner.call("start", player, self)
+	elif String(data.get("event", "")) != "":
+		runner = MapEvent.run_event(String(data.event), self, player, String(data.get("name", "")))
+	if runner:
+		runner.finished.connect(_end_talk)
+		return
 	var choices := []
 	if can_follow():
 		if leader:
@@ -191,6 +204,12 @@ func talk(player: Node3D) -> void:
 		if ai == AI.TALK:
 			ai = AI.FOLLOW if leader else AI.IDLE
 			_wait = randf_range(1.0, 3.0), choices)
+
+
+func _end_talk() -> void:
+	if ai == AI.TALK:
+		ai = AI.FOLLOW if leader else AI.IDLE
+		_wait = randf_range(1.0, 3.0)
 
 
 # --- Physics and AI ------------------------------------------------------------------

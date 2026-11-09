@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/npcs/npc.tscn" id="95_npc"]
 [ext_resource type="PackedScene" path="res://scenes/world/home_point.tscn" id="96_home"]
 [ext_resource type="PackedScene" path="res://scenes/world/loot_chest.tscn" id="97_chest"]
+[ext_resource type="PackedScene" path="res://scenes/world/map_event.tscn" id="98_event"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
@@ -144,3 +145,38 @@ chest_id = "start_weapon_chest"
 title = "Weapon Chest"
 items = Array[String](["worn_dagger", "iron_greatsword", "smiths_hammer", "woodcutters_axe", "light_crossbow", "flintlock_pistol", "flintlock_rifle"])
 greeting = "Someone left a chest of practice weapons by the road."
+
+[node name="Events" type="Node3D" parent="."]
+
+[node name="OldStone" parent="Events" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53.5, 3, 77)
+event_id = "old_stone"
+size = Vector3(1.2, 2.2, 1)
+
+[node name="RoadChest" parent="Events" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50.5, 3, 71)
+event_id = "road_chest"
+size = Vector3(1.2, 1, 0.8)
+
+[node name="RoadLever" parent="Events" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44.5, 3, 78)
+event_id = "road_lever"
+size = Vector3(0.8, 1, 0.6)
+
+[node name="RoadSign" parent="Events" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -47, 3, 80)
+event_id = "road_sign"
+size = Vector3(1, 1.6, 0.4)
+
+[node name="WelcomeArea" parent="Events" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43, 3, 72)
+event_id = "welcome_area"
+size = Vector3(5, 3, 5)
+
+[node name="InsigniaVillager" parent="Events" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 3, 72)
+event_id = "insignia_villager"
+size = Vector3(1, 2, 1)
+
+[node name="LookoutPoint" type="Marker3D" parent="Events"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 7, 60)

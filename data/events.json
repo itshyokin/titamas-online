@@ -1,0 +1,480 @@
+{
+	"switches": [
+		{
+			"id": "lever_pulled",
+			"name": "Lever by the road is down"
+		},
+		{
+			"id": "insignia_quest",
+			"name": "Quest: insignias (started)"
+		},
+		{
+			"id": "insignia_done",
+			"name": "Quest: insignias (done)"
+		}
+	],
+	"variables": [
+		{
+			"id": "lever_pulls",
+			"name": "Times the lever was pulled"
+		}
+	],
+	"events": [
+		{
+			"id": "old_stone",
+			"name": "Old Stone",
+			"note": "Example: a choice, rewards and a self switch.",
+			"pages": [
+				{
+					"conditions": [],
+					"trigger": "action",
+					"model": "builtin:standing_stone",
+					"solid": true,
+					"marker": false,
+					"prompt": "Touch the stone",
+					"speaker": "",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "An old standing stone. Runes glow faintly along one side."
+						},
+						{
+							"cmd": "choice",
+							"options": [
+								"Touch the runes",
+								"Leave it"
+							],
+							"cancel": 1,
+							"branches": [
+								[
+									{
+										"cmd": "effect",
+										"on": "player",
+										"color": "#66ccff",
+										"size": 1.2
+									},
+									{
+										"cmd": "sound",
+										"sound": "res://assets/audio/sfx/pickup.ogg"
+									},
+									{
+										"cmd": "heal"
+									},
+									{
+										"cmd": "text",
+										"speaker": "",
+										"text": "Warmth runs up your arm. You feel rested."
+									},
+									{
+										"cmd": "give_item",
+										"item": "minor_healing_potion",
+										"count": 2,
+										"silent": false
+									},
+									{
+										"cmd": "xp",
+										"value": 25
+									},
+									{
+										"cmd": "self_switch",
+										"letter": "A",
+										"value": true
+									}
+								],
+								[]
+							]
+						}
+					]
+				},
+				{
+					"conditions": [
+						{
+							"type": "self",
+							"letter": "A",
+							"is": true
+						}
+					],
+					"trigger": "action",
+					"model": "builtin:standing_stone",
+					"solid": true,
+					"marker": false,
+					"prompt": "Look at the stone",
+					"speaker": "",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "The runes have gone dark."
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "road_chest",
+			"name": "Chest by the road",
+			"note": "Example: a chest that opens once.",
+			"pages": [
+				{
+					"conditions": [],
+					"trigger": "action",
+					"model": "builtin:chest",
+					"solid": true,
+					"marker": true,
+					"prompt": "Open",
+					"speaker": "",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "give_item",
+							"item": "bandage",
+							"count": 3,
+							"silent": false
+						},
+						{
+							"cmd": "gold",
+							"op": "add",
+							"value": 15,
+							"silent": false
+						},
+						{
+							"cmd": "self_switch",
+							"letter": "A",
+							"value": true
+						}
+					]
+				},
+				{
+					"conditions": [
+						{
+							"type": "self",
+							"letter": "A",
+							"is": true
+						}
+					],
+					"trigger": "action",
+					"model": "builtin:chest_open",
+					"solid": true,
+					"marker": false,
+					"prompt": "Look inside",
+					"speaker": "",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "It's empty."
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "road_lever",
+			"name": "Lever",
+			"note": "Example: a switch, a variable and {var:...} in text.",
+			"pages": [
+				{
+					"conditions": [],
+					"trigger": "action",
+					"model": "builtin:lever",
+					"solid": false,
+					"marker": false,
+					"prompt": "Pull",
+					"speaker": "",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "sound",
+							"sound": "res://assets/audio/sfx/pickup.ogg"
+						},
+						{
+							"cmd": "switch",
+							"id": "lever_pulled",
+							"value": true
+						},
+						{
+							"cmd": "variable",
+							"id": "lever_pulls",
+							"op": "add",
+							"value": 1
+						},
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Clunk. (Times pulled: {var:lever_pulls})"
+						}
+					]
+				},
+				{
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "lever_pulled",
+							"is": true
+						}
+					],
+					"trigger": "action",
+					"model": "builtin:lever_on",
+					"solid": false,
+					"marker": false,
+					"prompt": "Push back",
+					"speaker": "",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "switch",
+							"id": "lever_pulled",
+							"value": false
+						},
+						{
+							"cmd": "log",
+							"text": "The lever clicks back up.",
+							"color": "#e6e6e0"
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "road_sign",
+			"name": "Signpost",
+			"note": "Example: a teleport to a Marker3D in the level.",
+			"pages": [
+				{
+					"conditions": [],
+					"trigger": "action",
+					"model": "builtin:sign",
+					"solid": true,
+					"marker": false,
+					"prompt": "Read",
+					"speaker": "Signpost",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "Signpost",
+							"text": "North: the lookout. South: the sea."
+						},
+						{
+							"cmd": "text",
+							"speaker": "Signpost",
+							"text": "Somebody has scratched a shortcut under it."
+						},
+						{
+							"cmd": "choice",
+							"options": [
+								"Take the shortcut",
+								"Stay"
+							],
+							"cancel": 1,
+							"branches": [
+								[
+									{
+										"cmd": "teleport",
+										"scene": "",
+										"marker": "LookoutPoint",
+										"fade": true
+									}
+								],
+								[]
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "welcome_area",
+			"name": "Welcome (walk in)",
+			"note": "Example: a touch area that runs once.",
+			"pages": [
+				{
+					"conditions": [],
+					"trigger": "touch",
+					"model": "",
+					"solid": false,
+					"marker": false,
+					"prompt": "",
+					"speaker": "",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "A road through the hills. Somewhere to start, {player}."
+						},
+						{
+							"cmd": "self_switch",
+							"letter": "A",
+							"value": true
+						}
+					]
+				},
+				{
+					"conditions": [
+						{
+							"type": "self",
+							"letter": "A",
+							"is": true
+						}
+					],
+					"trigger": "none",
+					"model": "",
+					"solid": false,
+					"marker": false,
+					"prompt": "",
+					"speaker": "",
+					"freeze": true,
+					"commands": []
+				}
+			]
+		},
+		{
+			"id": "insignia_villager",
+			"name": "Villager with a request",
+			"note": "Example: an NPC on an event page (model npc:villager) with a small quest.",
+			"pages": [
+				{
+					"conditions": [],
+					"trigger": "action",
+					"model": "npc:villager",
+					"solid": false,
+					"marker": false,
+					"prompt": "",
+					"speaker": "",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Bandits took my brother's cart last week."
+						},
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "If you bring me 3 bandit insignias, I'll make it worth your while."
+						},
+						{
+							"cmd": "choice",
+							"options": [
+								"I'll do it",
+								"Not now"
+							],
+							"cancel": 1,
+							"branches": [
+								[
+									{
+										"cmd": "switch",
+										"id": "insignia_quest",
+										"value": true
+									},
+									{
+										"cmd": "text",
+										"speaker": "",
+										"text": "Thank you! Come back when you have them."
+									}
+								],
+								[
+									{
+										"cmd": "text",
+										"speaker": "",
+										"text": "I understand."
+									}
+								]
+							]
+						}
+					]
+				},
+				{
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "insignia_quest",
+							"is": true
+						}
+					],
+					"trigger": "action",
+					"model": "npc:villager",
+					"solid": false,
+					"marker": false,
+					"prompt": "",
+					"speaker": "",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "if",
+							"conditions": [
+								{
+									"type": "item",
+									"item": "bandit_insignia",
+									"count": 3
+								}
+							],
+							"then": [
+								{
+									"cmd": "text",
+									"speaker": "",
+									"text": "You found them! Here, take this."
+								},
+								{
+									"cmd": "take_item",
+									"item": "bandit_insignia",
+									"count": 3
+								},
+								{
+									"cmd": "gold",
+									"op": "add",
+									"value": 50,
+									"silent": false
+								},
+								{
+									"cmd": "xp",
+									"value": 120
+								},
+								{
+									"cmd": "switch",
+									"id": "insignia_done",
+									"value": true
+								}
+							],
+							"else": [
+								{
+									"cmd": "text",
+									"speaker": "",
+									"text": "Any luck with those insignias? I need 3."
+								}
+							]
+						}
+					]
+				},
+				{
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "insignia_done",
+							"is": true
+						}
+					],
+					"trigger": "action",
+					"model": "npc:villager",
+					"solid": false,
+					"marker": false,
+					"prompt": "",
+					"speaker": "",
+					"freeze": true,
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Thanks again, {player}. The roads feel safer already."
+						}
+					]
+				}
+			]
+		}
+	]
+}

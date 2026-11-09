@@ -21,6 +21,7 @@ const FILES := {
 	"weapon_types": "res://data/weapon_types.json",
 	"animations": "res://data/animations.json",
 	"appearance": "res://data/appearance.json",
+	"events": "res://data/events.json",
 }
 const MAX_BODY := 4 * 1024 * 1024
 
@@ -198,7 +199,12 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 			var fbx := []
 			for f in _files("res://assets/animations/mixamo", ["fbx"]):
 				fbx.append(String(f).get_file().get_basename())
-			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"]), "fbx": fbx})
+			var props := []
+			for f in _files("res://assets/props", ["glb"]):
+				props.append(String(f).get_file().get_basename())
+			var levels := _files("res://scenes/levels", ["tscn"])
+			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"]), "fbx": fbx,
+				"props": props, "levels": levels, "markers": _markers(levels)})
 		["POST", "/api/rebuild_animations"]:
 			_json(peer, 200, {"ok": _start_rebuild()})
 		["GET", "/api/rebuild_status"]:
@@ -242,6 +248,18 @@ func _animations() -> Array:
 		names.append(String(n))
 	names.sort()
 	return names
+
+
+## Marker3D names in each level (teleport destinations for events).
+func _markers(levels: Array) -> Dictionary:
+	var out := {}
+	var rx := RegEx.create_from_string('\\[node name="([^"]+)" type="Marker3D"')
+	for level in levels:
+		var names := []
+		for m in rx.search_all(FileAccess.get_file_as_string(level)):
+			names.append(m.get_string(1))
+		out[level] = names
+	return out
 
 
 func _files(dir: String, exts: Array) -> Array:

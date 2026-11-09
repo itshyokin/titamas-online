@@ -218,7 +218,8 @@ func _try_talk() -> bool:
 			continue
 		var to := node.global_position - global_position
 		to.y = 0.0
-		var d := to.length()
+		# Areas (events) measure from their edge.
+		var d: float = node.call("talk_distance", global_position) if node.has_method("talk_distance") else to.length()
 		if d < best_d and (d < 1.2 or fwd.dot(to.normalized()) > -0.2):
 			best_d = d
 			best = node
