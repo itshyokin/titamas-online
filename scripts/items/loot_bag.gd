@@ -136,7 +136,7 @@ func _physics_process(delta: float) -> void:
 		_sack.rotation.y += delta * 0.8
 		_sack.position.y = 0.04 * sin(_age * 2.5)
 	var player := get_tree().get_first_node_in_group("player") as Node3D
-	var show := player != null and can_talk() and player.global_position.distance_to(global_position) <= TALK_RANGE
+	var show: bool = player != null and can_talk() and player.get("talk_focus") == self
 	_prompt.visible = show
 	if show:
 		var key := GameSettings.interact_label()

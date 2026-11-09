@@ -223,7 +223,7 @@ func _process(_delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
 	var player := _player()
-	var show := player != null and can_talk() and talk_distance(player.global_position) <= TALK_RANGE
+	var show: bool = player != null and can_talk() and player.get("talk_focus") == self
 	_prompt.visible = show
 	if show:
 		var k := GameSettings.interact_label()

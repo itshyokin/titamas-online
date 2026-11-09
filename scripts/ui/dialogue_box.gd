@@ -13,6 +13,10 @@ extends CanvasLayer
 ## Interact to choose). A choice's callable may return a reply line to show before
 ## the window closes.
 ##
+## Speech bubbles are white with black text (bbcode colours still work); narration and
+## choices use the dark panel. Text types out with a soft tick (player.json "dialogue":
+## chars_per_second, tick_sound, tick_every, tick_db; each speaker gets their own pitch).
+##
 ## Lines can use {player} (the character's name) and the player's pronouns:
 ## {they} {them} {their} {theirs} {themself} (he/him/his..., she/her/hers..., they/them...).
 
@@ -43,6 +47,12 @@ var _from: Node
 var _panel: PanelContainer
 var _tail: Polygon2D
 var _anchor: Node3D  # the speaker the bubble floats over (null = narration)
+var _bubble_style: StyleBoxFlat
+var _dark_style: StyleBoxFlat
+var _is_bubble := -1  # style in use (-1 = not set yet)
+var _tick: AudioStreamPlayer
+var _ticked := 0
+var _cps := CHARS_PER_SECOND
 
 
 static func open(from: Node, speaker: String, title: String, lines: Array, on_done: Callable, choices: Array = []) -> DialogueBox:
@@ -55,6 +65,7 @@ static func open(from: Node, speaker: String, title: String, lines: Array, on_do
 	box._name.text = speaker + ("  —  " + title if title != "" else "")
 	box._name.visible = speaker != ""
 	box._anchor = DialogueBox._anchor_of(from) if speaker != "" else null
+	box._tick.pitch_scale = 0.85 + float(absi(hash(speaker)) % 1000) / 1000.0 * 0.35 if speaker != "" else 1.0
 	if box._lines.is_empty():
 		# Just choices (an event's choice with no text before it).
 		box._lines = [""]
@@ -102,6 +113,13 @@ func _init() -> void:
 	sb.set_corner_radius_all(10)
 	sb.set_content_margin_all(14)
 	panel.add_theme_stylebox_override("panel", sb)
+	_dark_style = sb
+	_bubble_style = StyleBoxFlat.new()
+	_bubble_style.bg_color = Color(0.98, 0.97, 0.95)
+	_bubble_style.border_color = Color(0.12, 0.11, 0.13)
+	_bubble_style.set_border_width_all(2)
+	_bubble_style.set_corner_radius_all(16)
+	_bubble_style.set_content_margin_all(14)
 	panel.custom_minimum_size = Vector2(BUBBLE_WIDTH, 0)
 	panel.size = Vector2(BUBBLE_WIDTH, 0)
 	add_child(panel)
@@ -134,16 +152,45 @@ func _init() -> void:
 	_hint.add_theme_font_size_override("font_size", 14)
 	_hint.modulate = Color(1, 1, 1, 0.6)
 	v.add_child(_hint)
+	_tick = AudioStreamPlayer.new()
+	_tick.bus = &"SFX"
+	add_child(_tick)
+
+
+## Settings from player.json "dialogue".
+func _settings() -> Dictionary:
+	var db := get_tree().root.get_node_or_null("Database") if is_inside_tree() else null
+	var d = (db.get("player") as Dictionary).get("dialogue", {}) if db else {}
+	return d if d is Dictionary else {}
+
+
+## White bubble with black text over a speaker; the dark panel for narration / choices.
+func _set_bubble(on: bool) -> void:
+	if int(on) == _is_bubble:
+		return
+	_is_bubble = int(on)
+	_panel.add_theme_stylebox_override("panel", _bubble_style if on else _dark_style)
+	_tail.color = _bubble_style.bg_color if on else _dark_style.bg_color
+	_text.add_theme_color_override("default_color", Color(0.05, 0.05, 0.06) if on else Color(0.95, 0.94, 0.92))
+	_name.add_theme_color_override("font_color", Color(0.45, 0.3, 0.08) if on else Color(1.0, 0.82, 0.42))
+	_hint.add_theme_color_override("font_color", Color(0.2, 0.2, 0.22) if on else Color(1, 1, 1))
 
 
 func _ready() -> void:
 	GameSettings.menu_open = true
 	is_open = true
+	var d := _settings()
+	_cps = float(d.get("chars_per_second", CHARS_PER_SECOND))
+	var path := String(d.get("tick_sound", ""))
+	if path != "" and ResourceLoader.exists(path):
+		_tick.stream = load(path)
+	_tick.volume_db = float(d.get("tick_db", -14.0))
 
 
 func _show_line() -> void:
 	_text.text = _lines[_index]
 	_shown = 0.0
+	_ticked = 0
 	_text.visible_characters = 0
 	var key := GameSettings.interact_label()
 	var last := _index >= _lines.size() - 1
@@ -158,10 +205,25 @@ func _show_line() -> void:
 func _process(delta: float) -> void:
 	_place()
 	if _text.visible_characters >= 0:
-		_shown += delta * CHARS_PER_SECOND
+		_shown += delta * _cps
 		_text.visible_characters = int(_shown)
+		_tick_sound()
 		if _shown >= _text.get_total_character_count():
 			_text.visible_characters = -1
+
+
+## A tick every few letters while the text types out (not on spaces).
+func _tick_sound() -> void:
+	if _tick.stream == null or not _text.visible:
+		return
+	var every := maxi(int(_settings().get("tick_every", 2)), 1)
+	var n := int(_shown)
+	if n - _ticked < every:
+		return
+	_ticked = n
+	var plain := _text.get_parsed_text()
+	if n > 0 and n <= plain.length() and plain[n - 1] != " ":
+		_tick.play()
 
 
 func _input(event: InputEvent) -> void:
@@ -195,6 +257,7 @@ func _place() -> void:
 	size.x = BUBBLE_WIDTH
 	_tail.visible = false
 	if _choosing or _choice_row.visible:
+		_set_bubble(false)
 		_panel.position = CHOICES_AT
 		return
 	var cam := get_viewport().get_camera_3d()
@@ -205,10 +268,12 @@ func _place() -> void:
 			var pos := Vector2(at.x - size.x * 0.5, at.y - size.y - 22.0)
 			pos.x = clampf(pos.x, 12.0, view.x - size.x - 12.0)
 			pos.y = clampf(pos.y, 12.0, view.y - NARRATION_BOTTOM - size.y)
+			_set_bubble(true)
 			_panel.position = pos
 			_tail.visible = true
 			_tail.position = Vector2(clampf(at.x, pos.x + 24.0, pos.x + size.x - 24.0), pos.y + size.y - 2.0)
 			return
+	_set_bubble(false)
 	_panel.position = Vector2((view.x - size.x) * 0.5, view.y - NARRATION_BOTTOM - size.y)
 
 

@@ -78,6 +78,7 @@ func _ready() -> void:
 	add_to_group("talkable")
 	if not Engine.is_editor_hint():
 		add_child(QuestMarker.new("", npc_id))
+		DispositionDisc.attach(self)
 	_home_yaw = model.rotation.y
 	var patrol := get_node_or_null("Patrol")
 	if patrol:
@@ -770,8 +771,7 @@ func _head_of(who: Node3D) -> Vector3:
 ## "E  Talk" over its head while the player is close and could talk.
 func _update_prompt() -> void:
 	var player := get_tree().get_first_node_in_group("player") as Node3D
-	var show := player != null and can_talk() and ai != AI.TALK \
-		and player.global_position.distance_to(global_position) <= TALK_RANGE
+	var show: bool = player != null and can_talk() and ai != AI.TALK and player.get("talk_focus") == self
 	_prompt.visible = show
 	if show:
 		var key := GameSettings.interact_label()

@@ -47,7 +47,8 @@
 		"world_knockback": 4.5,
 		"world_check": 0.8,
 		"gash_time": 25.0,
-		"spark_size": 1.0
+		"spark_size": 1.0,
+		"heal_color": "#ffdb52"
 	},
 	"loadout": {
 		"light_combo": [
@@ -165,5 +166,26 @@
 		"health_half": "#e6d23a",
 		"health_low": "#ee8a2a",
 		"health_critical": "#d8332a"
+	},
+	"equip_sounds": {
+		"cloth": "res://assets/audio/sfx/equip_cloth.ogg",
+		"leather": "res://assets/audio/sfx/equip_leather.ogg",
+		"metal": "res://assets/audio/sfx/equip_metal.ogg",
+		"jewelry": "res://assets/audio/sfx/equip_jewelry.ogg",
+		"volume_db": -6
+	},
+	"dialogue": {
+		"chars_per_second": 45,
+		"tick_sound": "res://assets/audio/sfx/text_tick.ogg",
+		"tick_every": 2,
+		"tick_db": -14
+	},
+	"discs": {
+		"enabled": true,
+		"hostile": "#d8332a",
+		"neutral": "#9a9a9a",
+		"friendly": "#3fbf4a",
+		"opacity": 0.75,
+		"size": 1.0
 	}
 }

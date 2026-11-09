@@ -140,7 +140,7 @@ func _physics_process(_delta: float) -> void:
 		_settled = true
 		global_position = hit.position
 	var player := get_tree().get_first_node_in_group("player") as Node3D
-	var show := player != null and can_talk() and player.global_position.distance_to(global_position) <= TALK_RANGE
+	var show: bool = player != null and can_talk() and player.get("talk_focus") == self
 	_prompt.visible = show
 	if show:
 		var key := GameSettings.interact_label()

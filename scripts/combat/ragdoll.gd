@@ -187,7 +187,39 @@ func _physics_process(delta: float) -> void:
 			if is_instance_valid(body):
 				body.freeze = true
 				body.collision_mask = 0
+		_snap_to_ground()
 		settled.emit()
+
+
+## A body that stopped above the ground (caught on something, or out of time while
+## still falling) is lowered until its lowest part touches the ground below it.
+func _snap_to_ground() -> void:
+	var space := get_skeleton().get_world_3d().direct_space_state if get_skeleton() else null
+	if space == null:
+		return
+	var gap := INF
+	for p: Array in _parts:
+		var body := p[1] as RigidBody3D
+		if not is_instance_valid(body):
+			continue
+		var shape := body.get_child(0) as CollisionShape3D
+		var r := (shape.shape as CapsuleShape3D).radius if shape else 0.05
+		# Both ends of the capsule.
+		var half := shape.transform.origin if shape else Vector3.ZERO
+		for end in [body.global_transform * Vector3.ZERO, body.global_transform * (half * 2.0)]:
+			var q := PhysicsRayQueryParameters3D.create(end + Vector3.UP * 0.05, end + Vector3.DOWN * 30.0, 1)
+			var hit := space.intersect_ray(q)
+			if hit.is_empty():
+				continue
+			gap = minf(gap, end.y - r - float((hit.position as Vector3).y))
+	if gap == INF or gap < 0.12:
+		return
+	var drop := Vector3.DOWN * gap
+	for p: Array in _parts:
+		var body := p[1] as RigidBody3D
+		if is_instance_valid(body):
+			var t := body.create_tween()
+			t.tween_property(body, "global_position", body.global_position + drop, clampf(gap * 0.25, 0.1, 0.4)).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 
 
 func _exit_tree() -> void:

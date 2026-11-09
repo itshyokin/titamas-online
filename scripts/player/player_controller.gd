@@ -182,6 +182,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	talk_focus = _pick_talkable() if not GameSettings.menu_open else null
 	RenderingServer.global_shader_parameter_set("player_position", global_position)
 	_update_survival(delta)
 	_dodge_cooldown_left = maxf(_dodge_cooldown_left - delta, 0.0)
@@ -225,7 +226,22 @@ func _apply_push(delta: float) -> void:
 
 
 ## Jump / talk next to someone who can talk (and roughly faced) starts a conversation.
+## The one thing Interact would use right now (its prompt is the only one shown).
+var talk_focus: Node3D = null
+
+
 func _try_talk() -> bool:
+	var best := _pick_talkable()
+	if best == null:
+		return false
+	velocity.x = 0.0
+	velocity.z = 0.0
+	best.call("talk", self)
+	return true
+
+
+## The closest talkable in reach (in front, or right beside).
+func _pick_talkable() -> Node3D:
 	var best: Node3D = null
 	var best_d := 2.6
 	var fwd := _forward()
@@ -240,12 +256,7 @@ func _try_talk() -> bool:
 		if d < best_d and (d < 1.2 or fwd.dot(to.normalized()) > -0.2):
 			best_d = d
 			best = node
-	if best == null:
-		return false
-	velocity.x = 0.0
-	velocity.z = 0.0
-	best.call("talk", self)
-	return true
+	return best
 
 
 ## True during the invulnerable part of a dodge.

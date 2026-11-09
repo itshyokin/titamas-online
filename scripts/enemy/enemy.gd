@@ -113,6 +113,7 @@ func _ready() -> void:
 	stats.died.connect(_on_died)
 	Combat.show_numbers(self)
 	_plate = Nameplate.attach(self)
+	DispositionDisc.attach(self)
 	_equip.call_deferred()
 
 

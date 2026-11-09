@@ -249,6 +249,7 @@ func equip_from(index: int, slot := "") -> bool:
 	equipped[slot] = s.id
 	bag[index] = {"id": old, "count": 1} if not old.is_empty() else null
 	_equipment_changed()
+	play_equip_sound(s.id)
 	return true
 
 
@@ -265,6 +266,7 @@ func unequip(slot: String, to := -1) -> bool:
 		equipped[slot] = other
 		bag[to] = {"id": id, "count": 1}
 		_equipment_changed()
+		play_equip_sound(other)
 		return true
 	if to < 0 or to >= SIZE:
 		to = bag.find(null)
@@ -273,6 +275,7 @@ func unequip(slot: String, to := -1) -> bool:
 	bag[to] = {"id": id, "count": 1}
 	equipped.erase(slot)
 	_equipment_changed()
+	play_equip_sound(id, -6.0)
 	return true
 
 
@@ -303,6 +306,46 @@ func set_active_weapon(slot: String) -> void:
 ## The weapon in use ({} if that slot is empty: fists).
 func active_weapon_item() -> Dictionary:
 	return equipped_item(active_weapon)
+
+
+## Gear going on (or off, quieter): the item's `equip_sound`, else its weapon type's swap
+## sound, else player.json `equip_sounds` by `material` (cloth / leather / metal / jewelry;
+## guessed from the id when not set).
+func play_equip_sound(id: String, db := 0.0) -> void:
+	var d := item(id)
+	var path := String(d.get("equip_sound", ""))
+	if path == "" and is_weapon(id):
+		path = String(Database.weapon_type(String(d.get("weapon_type", ""))).get("swap_sound", ""))
+	if path == "":
+		var sounds: Dictionary = Database.player.get("equip_sounds", {})
+		path = String(sounds.get(material_of(d), sounds.get("cloth", "")))
+	if path == "" or not ResourceLoader.exists(path):
+		return
+	var p := AudioStreamPlayer.new()
+	p.stream = load(path)
+	p.bus = &"SFX"
+	p.volume_db = db + float(Database.player.get("equip_sounds", {}).get("volume_db", -6.0))
+	p.pitch_scale = randf_range(0.95, 1.05)
+	add_child(p)
+	p.finished.connect(p.queue_free)
+	p.play()
+
+
+## What gear is made of (for its sound): the item's `material`, else a guess from its id.
+static func material_of(d: Dictionary) -> String:
+	if String(d.get("material", "")) != "":
+		return String(d.material)
+	var id := String(d.get("id", "")).to_lower()
+	for w in ["ring", "amulet", "necklace", "earring", "pendant", "charm"]:
+		if id.contains(w):
+			return "jewelry"
+	for w in ["iron", "steel", "chain", "mail", "plate", "tin", "bronze", "silver", "gold", "helm"]:
+		if id.contains(w):
+			return "metal"
+	for w in ["leather", "hide", "boots", "jerkin", "gloves", "belt", "wood", "shield"]:
+		if id.contains(w):
+			return "leather"
+	return "cloth"
 
 
 func equipped_item(slot: String) -> Dictionary:
@@ -382,6 +425,7 @@ func _apply_use(id: String) -> bool:
 	var d := item(id)
 	if float(d.get("use_heal", 0.0)) > 0.0:
 		stats.heal(float(d.use_heal))
+		Effects.heal_burst(get_parent())
 	if float(d.get("use_hot_per_tick", 0.0)) > 0.0:
 		stats.add_heal_over_time(float(d.use_hot_per_tick), int(d.get("use_hot_ticks", 1)), 2.0, self)
 		Effects.heal_glow(get_parent(), int(d.get("use_hot_ticks", 1)) * 2.0)

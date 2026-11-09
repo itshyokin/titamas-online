@@ -203,35 +203,82 @@ static func flash(node: Node, color := Color(1, 1, 1), seconds := 0.12, strength
 				(m as MeshInstance3D).material_overlay = null)
 
 
-## Soft rising motes around a combatant for `seconds` (healing over time).
-static func heal_glow(on: Node3D, seconds: float, color := Color(0.4, 1.0, 0.5)) -> void:
-	var old := on.get_node_or_null("HealGlow")
-	if old:
-		old.free()
-	var p := CPUParticles3D.new()
-	p.name = "HealGlow"
-	p.amount = 24
-	p.lifetime = 1.2
-	p.local_coords = false
-	p.mesh = _quad(0.12, color)
-	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
-	p.emission_ring_axis = Vector3.UP
-	p.emission_ring_radius = 0.5
-	p.emission_ring_inner_radius = 0.3
-	p.emission_ring_height = 0.1
-	p.direction = Vector3.UP
-	p.spread = 10.0
-	p.initial_velocity_min = 0.6
-	p.initial_velocity_max = 1.1
-	p.gravity = Vector3.ZERO
-	p.color_ramp = _fade_ramp(color)
-	p.position = Vector3.UP * 0.2
-	on.add_child(p)
-	var timer := on.get_tree().create_timer(seconds)
+## Rising golden motes (soft circles and little diamonds) around a combatant for
+## `seconds` (healing, potions). Colour: player.json combat `heal_color` unless given.
+static func heal_glow(on: Node3D, seconds: float, color := Color(0, 0, 0, 0)) -> void:
+	if color.a == 0.0:
+		color = _heal_color()
+	for old_name in ["HealGlow", "HealGlowDiamonds"]:
+		var old := on.get_node_or_null(old_name)
+		if old:
+			old.free()
+	var parts: Array[CPUParticles3D] = []
+	for diamond in [false, true]:
+		var p := CPUParticles3D.new()
+		p.name = "HealGlowDiamonds" if diamond else "HealGlow"
+		p.amount = 10 if diamond else 22
+		p.lifetime = 1.3
+		p.local_coords = false
+		var q := QuadMesh.new()
+		q.size = Vector2.ONE * (0.15 if diamond else 0.13)
+		var m := _particle_material(color, 2.5)
+		m.albedo_texture = _mote_texture(diamond)
+		q.material = m
+		p.mesh = q
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
+		p.emission_ring_axis = Vector3.UP
+		p.emission_ring_radius = 0.55
+		p.emission_ring_inner_radius = 0.25
+		p.emission_ring_height = 0.6 if diamond else 0.2
+		p.direction = Vector3.UP
+		p.spread = 12.0
+		p.initial_velocity_min = 0.5
+		p.initial_velocity_max = 1.0
+		p.gravity = Vector3.ZERO
+		p.scale_amount_min = 0.6
+		p.scale_amount_max = 1.2
+		p.color_ramp = _fade_ramp(color)
+		p.position = Vector3.UP * (0.6 if diamond else 0.2)
+		on.add_child(p)
+		parts.append(p)
+	var timer := on.get_tree().create_timer(maxf(seconds, 0.6))
 	timer.timeout.connect(func() -> void:
-		if is_instance_valid(p):
-			p.emitting = false
-			p.get_tree().create_timer(1.3).timeout.connect(p.queue_free))
+		for p in parts:
+			if is_instance_valid(p):
+				p.emitting = false
+				p.get_tree().create_timer(1.4).timeout.connect(p.queue_free))
+
+
+## A quick ring of golden motes rising around someone (an instant heal).
+static func heal_burst(on: Node3D) -> void:
+	heal_glow(on, 0.7)
+
+
+static func _heal_color() -> Color:
+	var loop := Engine.get_main_loop() as SceneTree
+	var db := loop.root.get_node_or_null("Database") if loop else null
+	var c = (db.get("player") as Dictionary).get("combat", {}).get("heal_color", "") if db else ""
+	return Color.html(String(c)) if String(c) != "" and Color.html_is_valid(String(c)) else Color(1.0, 0.86, 0.32)
+
+
+static var _motes := {}
+
+## White soft circle / diamond on transparent (tinted by the particle colour).
+static func _mote_texture(diamond: bool) -> Texture2D:
+	if _motes.has(diamond):
+		return _motes[diamond]
+	var n := 32
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	for y in n:
+		for x in n:
+			var u := (x + 0.5) / n * 2.0 - 1.0
+			var v := (y + 0.5) / n * 2.0 - 1.0
+			var d := (absf(u) + absf(v) * 0.75) if diamond else sqrt(u * u + v * v)
+			var a := clampf((1.0 - d) * (6.0 if diamond else 3.0), 0.0, 1.0)
+			img.set_pixel(x, y, Color(1, 1, 1, a))
+	var tex := ImageTexture.create_from_image(img)
+	_motes[diamond] = tex
+	return tex
 
 
 ## A glow held in the hand while casting. Free it when the cast ends.
