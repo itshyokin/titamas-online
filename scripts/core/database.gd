@@ -10,13 +10,14 @@ signal changed(which: String)
 
 const FILES := {"abilities": DataFiles.ABILITIES, "enemies": DataFiles.ENEMIES, "player": DataFiles.PLAYER, "items": DataFiles.ITEMS,
 	"appearance": DataFiles.APPEARANCE, "classes": DataFiles.CLASSES, "npcs": DataFiles.NPCS,
-	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS, "events": DataFiles.EVENTS}
+	"weapon_types": DataFiles.WEAPON_TYPES, "animations": DataFiles.ANIMATIONS, "events": DataFiles.EVENTS,
+	"achievements": DataFiles.ACHIEVEMENTS}
 
 const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
 	"attack_range", "attack_cooldown", "attack_animation", "attack_animation_speed", "attack_hit_time",
 	"attack_arc", "corpse_time", "respawn_time", "loot_time", "knockback", "heavy_every", "heavy_power",
-	"heavy_animation", "heavy_animation_speed", "heavy_hit_time",
+	"heavy_animation", "heavy_animation_speed", "heavy_hit_time", "ragdoll", "death_push", "fade_time",
 ]
 const PLAYER_STATS := ["max_health", "max_mana", "max_stamina", "stamina_regen", "stamina_regen_delay", "mana_regen"]
 const PLAYER_MOVEMENT := ["run_speed", "walk_speed", "sprint_speed", "jump_velocity", "sprint_stamina_cost", "swim_speed",
@@ -24,7 +25,7 @@ const PLAYER_MOVEMENT := ["run_speed", "walk_speed", "sprint_speed", "jump_veloc
 const PLAYER_COMBAT := ["tap_time", "quick_shot_power", "block_reduction", "lunge_range", "parry_window",
 	"counter_window", "perfect_dodge_window", "cast_pushback", "interrupt_share", "proficiency_damage", "proficiency_speed",
 	"arrow_gravity", "combat_linger", "block_arc"]
-const PLAYER_TARGETING := ["tab_range", "lock_range", "lose_range", "snap_range"]
+const PLAYER_TARGETING := ["tab_range", "lock_range", "lose_range", "snap_range", "tab_selects", "attack_selects", "click_radius"]
 
 var abilities := {}  # id -> Ability (the same objects for the whole session)
 var enemies := {}  # id -> Dictionary
@@ -43,6 +44,8 @@ var animations := {}
 var events := {}  # id -> Dictionary
 var switches: Array = []  # [{id, name}]
 var variables: Array = []  # [{id, name}]
+## data/achievements.json entries, in order (the Achievements autoload uses them).
+var achievements: Array = []
 
 var _times := {}
 var _watch := 0.0
@@ -111,6 +114,8 @@ func _load(which: String) -> void:
 			variables = data.get("variables", [])
 			if is_inside_tree():
 				get_tree().call_group.call_deferred("map_events", "reload")
+		"achievements":
+			achievements = data.get("achievements", [])
 		"npcs":
 			npcs.clear()
 			for d in data.get("npcs", []):
@@ -228,6 +233,12 @@ func apply_enemy(node: Node, id: String, refill := false) -> void:
 		stats.max_health = float(d.get("max_health", stats.max_health))
 		stats.health = stats.max_health if refill else stats.max_health * share
 		stats.health_changed.emit(stats.health, stats.max_health)
+	if d.has("death_sounds"):
+		var list: Array[AudioStream] = []
+		for path in d.death_sounds:
+			if ResourceLoader.exists(String(path)):
+				list.append(load(String(path)))
+		node.set("death_sounds", list)
 	var character := node.get_node_or_null("Model/Character")
 	if character and d.has("skin_color"):
 		character.set("skin_color", DataFiles.color_from(d.skin_color))

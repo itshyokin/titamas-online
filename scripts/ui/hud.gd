@@ -497,3 +497,14 @@ func _process_party(delta: float) -> void:
 		bar.value = s.health / maxf(s.max_health, 1.0) * 100.0
 		_tint_fill(bar, HealthColors.of(s.health / maxf(s.max_health, 1.0)))
 		(_party_rows[node][0] as Label).text = s.display_name + ("  (down)" if s.is_dead() else "")
+
+
+## F9: show what ambient occlusion is doing (the AO buffer: white = none, dark = shaded),
+## then back to normal. A quick check that it's on and how strong it is.
+func _unhandled_key_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key and key.pressed and not key.echo and key.physical_keycode == KEY_F9:
+		var vp := get_viewport()
+		var showing := vp.debug_draw == Viewport.DEBUG_DRAW_SSAO
+		vp.debug_draw = Viewport.DEBUG_DRAW_DISABLED if showing else Viewport.DEBUG_DRAW_SSAO
+		GameLog.post("Ambient occlusion view %s (F9)" % ("off" if showing else "on: white = none, dark = occluded"), Color(0.7, 0.85, 1.0))

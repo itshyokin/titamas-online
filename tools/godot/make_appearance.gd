@@ -13,10 +13,8 @@ extends SceneTree
 const BODIES := "res://assets/models/characters/base_bodies.glb"
 
 ## Head measurements at rest, metres: top of the head, chin, front of the face, back.
-const HEAD := {
-	"masc": {"top": 1.878, "chin": 1.625, "front": -0.095, "back": 0.122},
-	"femme": {"top": 1.868, "chin": 1.605, "front": -0.045, "back": 0.189},
-}
+## Measured from each body's head mesh (chin = just under the head bone).
+var HEAD := {}
 
 ## u = 0 at the chin, 1 at the top; d = 0 at the face, 1 at the back of the head.
 ## front/back: hairline height (u) at the forehead and at the nape.
@@ -46,6 +44,15 @@ func _initialize() -> void:
 	for body: String in ["masc", "femme"]:
 		var skel := bodies.get_node("Armature_%s/Skeleton3D" % body) as Skeleton3D
 		var head := skel.get_node(("f_" if body == "femme" else "") + "head") as MeshInstance3D
+		var hv: PackedVector3Array = head.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var lo := Vector3(INF, INF, INF)
+		var hi := -lo
+		for v in hv:
+			lo = lo.min(v)
+			hi = hi.max(v)
+		var head_bone := skel.get_bone_global_rest(skel.find_bone("mixamorig_Head")).origin.y
+		HEAD[body] = {"top": hi.y, "chin": head_bone - 0.012, "front": lo.z, "back": hi.z}
+		print(body, " head ", HEAD[body])
 		for style: String in HAIR:
 			_save(head, func(p: Vector3) -> float: return _hair(p, HEAD[body], HAIR[style]),
 				"res://assets/characters/hair/%s_%s.scn" % [style, body], Color(0.35, 0.22, 0.12))

@@ -283,6 +283,7 @@ func _build_ui() -> void:
 	_pages["title"] = _title_page()
 	_pages["load"] = _load_page()
 	_pages["credits"] = _credits_page()
+	_pages["achievements"] = _achievements_page()
 	_pages["creator"] = _creator_page()
 	_pages["class"] = _class_page()
 	for key: String in _pages:
@@ -414,9 +415,11 @@ func _show(page: String) -> void:
 		"load":
 			_shot = "left"
 			_refresh_saves()
-		"credits":
+		"credits", "achievements":
 			_shot = "credits"
 			_model.visible = not _saves.is_empty()
+			if page == "achievements":
+				_fill_achievements()
 		"creator":
 			_shot = "full"
 			_model.visible = true
@@ -469,10 +472,7 @@ func _title_page() -> Control:
 	buttons.add_child(_button("New Game", _new_game, 260))
 	_load_game_button = _button("Load Game", func() -> void: _show("load"), 260)
 	buttons.add_child(_load_game_button)
-	var ach := _button("Achievements", func() -> void: pass, 260)
-	ach.disabled = true
-	ach.tooltip_text = "Coming in a later update."
-	buttons.add_child(ach)
+	buttons.add_child(_button("Achievements", func() -> void: _show("achievements"), 260))
 	buttons.add_child(_button("Settings", func() -> void:
 		(_pages["title"] as Control).visible = false
 		_settings.open(), 260))
@@ -709,6 +709,93 @@ func _credits_page() -> Control:
 			list.add_child(l)
 	v.add_child(_button("Back", func() -> void: _show("title")))
 	return page
+
+
+# --- Achievements (account-wide; Database → Achievements) -----------------------------------
+
+var _ach_list: VBoxContainer
+var _ach_total: Label
+
+
+func _achievements_page() -> Control:
+	var page := _page_root()
+	var panel := _panel(Control.PRESET_CENTER, Vector2(-330, -290), Vector2(660, 580))
+	page.add_child(panel)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	panel.add_child(v)
+	v.add_child(_heading("Achievements", 30))
+	_ach_total = _note("")
+	v.add_child(_ach_total)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(scroll)
+	_ach_list = VBoxContainer.new()
+	_ach_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_ach_list.add_theme_constant_override("separation", 6)
+	scroll.add_child(_ach_list)
+	v.add_child(_button("Back", func() -> void: _show("title")))
+	return page
+
+
+func _fill_achievements() -> void:
+	for c in _ach_list.get_children():
+		c.queue_free()
+	var ach := get_node_or_null("/root/Achievements")
+	if ach == null:
+		return
+	var got_count := 0
+	var defs: Array = ach.call("all")
+	for d: Dictionary in defs:
+		var id := String(d.get("id", ""))
+		var got := bool(ach.call("is_unlocked", id))
+		got_count += 1 if got else 0
+		var secret := bool(d.get("hidden", false)) and not got
+		var row := PanelContainer.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(1, 1, 1, 0.05 if got else 0.025)
+		sb.border_color = Color(1, 1, 1, 0.1)
+		sb.set_border_width_all(1)
+		sb.set_corner_radius_all(10)
+		sb.set_content_margin_all(8)
+		row.add_theme_stylebox_override("panel", sb)
+		var h := HBoxContainer.new()
+		h.add_theme_constant_override("separation", 12)
+		row.add_child(h)
+		var badge := AchievementPopup.Trophy.new()
+		badge.custom_minimum_size = Vector2(52, 52)
+		badge.locked = not got
+		badge.icon = AchievementPopup.icon_of(d)
+		h.add_child(badge)
+		var text := VBoxContainer.new()
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.alignment = BoxContainer.ALIGNMENT_CENTER
+		var name_l := Label.new()
+		name_l.text = "???" if secret else String(d.get("name", id))
+		name_l.add_theme_font_size_override("font_size", 18)
+		name_l.add_theme_color_override("font_color", Color(0.96, 0.92, 0.85) if got else Color(0.72, 0.74, 0.8))
+		text.add_child(name_l)
+		var desc := _note("Hidden achievement." if secret else String(d.get("description", "")))
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.add_child(desc)
+		h.add_child(text)
+		var right := VBoxContainer.new()
+		right.alignment = BoxContainer.ALIGNMENT_CENTER
+		var pts := Label.new()
+		pts.text = "%d pts" % int(d.get("points", 0))
+		pts.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		pts.add_theme_color_override("font_color", Color(1.0, 0.82, 0.48) if got else Color(0.42, 0.44, 0.53))
+		right.add_child(pts)
+		if got:
+			var when := _note(Time.get_date_string_from_unix_time(int(ach.call("unlocked_at", id))))
+			when.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			when.add_theme_font_size_override("font_size", 12)
+			right.add_child(when)
+		h.add_child(right)
+		_ach_list.add_child(row)
+	var p: Vector2i = ach.call("points")
+	_ach_total.text = "%d of %d earned  ·  %d / %d points" % [got_count, defs.size(), p.x, p.y]
 
 
 # --- Character creator ----------------------------------------------------------------------

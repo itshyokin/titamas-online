@@ -8,7 +8,7 @@ extends Area3D
 ## (switches, self switches A–D, variables, items, gold, level, class); it decides what
 ## shows here (nothing, a built-in model, a prop, a scene or an NPC), whether it blocks
 ## the way, and when its commands run:
-##   action  walk up and press Jump / talk (Space, A)
+##   action  walk up and press Interact (E, A)
 ##   touch   step into the box          leave  step out of it
 ##   auto    as soon as the page becomes active (use a self switch to run it once)
 ##   none    never by itself (other events can "call" it)
@@ -225,8 +225,7 @@ func _process(_delta: float) -> void:
 	var show := player != null and can_talk() and talk_distance(player.global_position) <= TALK_RANGE
 	_prompt.visible = show
 	if show:
-		var keys := GameSettings.events_for("jump", GameSettings.gamepad)
-		var k := GameSettings.event_name(keys[0]) if not keys.is_empty() else "Jump"
+		var k := GameSettings.interact_label()
 		_prompt.text = "%s  %s" % [k, String(page.get("prompt", "Examine"))]
 		_prompt.position = Vector3.UP * (size.y + 0.3) if _visual == null or not String(page.get("model", "")).begins_with("npc:") else Vector3.UP * 2.3
 

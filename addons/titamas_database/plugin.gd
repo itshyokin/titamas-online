@@ -22,6 +22,7 @@ const FILES := {
 	"animations": "res://data/animations.json",
 	"appearance": "res://data/appearance.json",
 	"events": "res://data/events.json",
+	"achievements": "res://data/achievements.json",
 }
 const MAX_BODY := 4 * 1024 * 1024
 

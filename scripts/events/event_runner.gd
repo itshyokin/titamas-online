@@ -15,6 +15,7 @@ extends Node
 ##   animation {role, wait}                  effect {color}
 ##   teleport {scene, marker, position, fade}   set_home {name}   fade_out / fade_in {seconds}
 ##   follower {npc, op join/leave}           call {event}   erase {}   stop {}
+##   achievement {id}                        (Achievements.unlock)
 ## Text can use {player} and pronouns (DialogueBox), {var:id}, {gold} and {item:id} (its name).
 
 signal finished
@@ -204,6 +205,10 @@ func _execute(c: Dictionary, list: Array, top: Dictionary) -> void:
 				at = player
 			if at:
 				Effects.burst(Combat.world_root(at), at.global_position + Vector3.UP, Color.from_string(String(c.get("color", "#ffd76a")), Color.WHITE), float(c.get("size", 1.0)))
+		"achievement":
+			var ach := get_node_or_null("/root/Achievements")
+			if ach:
+				ach.call("unlock", String(c.get("id", "")))
 		"fade_out":
 			ScreenFade.to_black(self, float(c.get("seconds", 0.6)))
 			_wait = float(c.get("seconds", 0.6))

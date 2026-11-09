@@ -52,6 +52,19 @@ var tagged_by_player := false
 @export var respawn_time := 90.0
 ## A body with loot left on it stays up to this long before sinking (s).
 @export var loot_time := 60.0
+## Goes limp when it dies (1), else plays the death animation (0).
+@export var ragdoll := 1.0
+## How hard the killing blow throws the body (m/s).
+@export var death_push := 2.5
+## Seconds the body takes to fade away.
+@export var fade_time := 2.0
+## One of these plays when it dies.
+@export var death_sounds: Array[AudioStream] = [
+	preload("res://assets/audio/combat/death_grunt_1.ogg"),
+	preload("res://assets/audio/combat/death_grunt_2.ogg"),
+	preload("res://assets/audio/combat/death_grunt_3.ogg"),
+]
+var _killer_dir := Vector3.ZERO
 var _loot: LootBag = null
 
 @onready var stats: Stats = $Stats
@@ -301,6 +314,10 @@ func _nearest_player(radius: float) -> Node3D:
 # --- Events -------------------------------------------------------------------
 
 func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
+	if source is Node3D:
+		var away := global_position - (source as Node3D).global_position
+		away.y = 0.0
+		_killer_dir = away.normalized()
 	if ai == AI.RETURN or ai == AI.DEAD:
 		return
 	if source is Node3D and target == null:
@@ -322,7 +339,13 @@ func _on_died() -> void:
 	collision_layer = 0
 	velocity = Vector3.ZERO
 	_walk = Vector3.ZERO
-	character.play_from("death", 0.0, 0.15, 1.0)
+	if not death_sounds.is_empty():
+		Combat.play_sound(self, death_sounds.pick_random(), 2.0, randf_range(0.92, 1.08))
+	var rag: Ragdoll = null
+	if ragdoll > 0.5:
+		rag = Ragdoll.start(character, _killer_dir * death_push + Vector3.UP * 0.8)
+	if rag == null:
+		character.play_from("death", 0.0, 0.15, 1.0)
 	await get_tree().create_timer(corpse_time).timeout
 	# A body with loot left on it stays a while longer (and while someone's looking through it).
 	var waited := corpse_time
@@ -332,14 +355,28 @@ func _on_died() -> void:
 	if is_instance_valid(_loot):
 		_loot.queue_free()
 	_loot = null
-	# Sink into the ground, then gone.
-	var sink := create_tween()
-	sink.tween_property(model, "position:y", model.position.y - 1.2, 1.5)
-	await sink.finished
+	# Fade away, then gone.
+	await _fade_body(1.0)
 	model.visible = false
-	model.position.y += 1.2
+	Ragdoll.stop(character)
+	_fade_body(0.0, 0.0)
 	await get_tree().create_timer(maxf(respawn_time - waited, 5.0)).timeout
 	_respawn()
+
+
+## Fades every mesh of the body to `to` transparency (1 = gone) over fade_time.
+func _fade_body(to: float, seconds := -1.0) -> void:
+	var t := fade_time if seconds < 0.0 else seconds
+	var tween := create_tween().set_parallel(true)
+	for mi in model.find_children("*", "GeometryInstance3D", true, false):
+		if seconds == 0.0:
+			(mi as GeometryInstance3D).transparency = to
+		else:
+			tween.tween_property(mi, "transparency", to, maxf(t, 0.01))
+	if seconds == 0.0:
+		tween.kill()
+		return
+	await tween.finished
 
 
 ## Experience for the player who fought it (each game credits its own player).

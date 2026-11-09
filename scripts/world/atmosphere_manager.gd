@@ -46,6 +46,11 @@ var _preview_key := ""
 var _file_check := 0.0
 var _label_tween: Tween
 var _beds: Array[AudioStreamPlayer] = []  # two players, crossfaded between regions
+var _music: Array[AudioStreamPlayer] = []
+var _ambience_night := false
+var _night_check := 0.0
+## Seconds music takes to cross between regions (and day / night).
+@export var music_fade := 4.0
 var _bed_index := 0
 var _wind: AudioStreamPlayer
 
@@ -107,6 +112,12 @@ func _process(delta: float) -> void:
 	if current == null:
 		return
 	_update_wind(delta)
+	# Day turning to night (or back): the night sounds and music fade in.
+	_night_check += delta
+	if _night_check > 2.0:
+		_night_check = 0.0
+		if _is_night() != _ambience_night:
+			_change_ambience(current, 6.0)
 	var k := 1.0 - exp(-delta * 3.0 / maxf(blend_seconds, 0.01))
 	for f in FIELDS:
 		var goal: Variant = current.get(f)
@@ -257,6 +268,12 @@ func _build_audio() -> void:
 		bed.volume_db = -80.0
 		add_child(bed)
 		_beds.append(bed)
+	for i in 2:
+		var m := AudioStreamPlayer.new()
+		m.bus = &"Music"
+		m.volume_db = -80.0
+		add_child(m)
+		_music.append(m)
 	_wind = AudioStreamPlayer.new()
 	_wind.bus = &"Ambience"
 	_wind.stream = AmbientLoops.looped(wind_loop)
@@ -266,26 +283,44 @@ func _build_audio() -> void:
 		_wind.play()
 
 
-## Fades the old region's loop out and the new one in (if they differ).
+## Fades the old loop out and the region's one in (if they differ): its night loop
+## after dark. Also the region's music.
 func _change_ambience(region: RegionAtmosphere, fade: float) -> void:
-	var old := _beds[_bed_index]
-	if old.playing and old.stream == region.ambient_loop:
-		create_tween().tween_property(old, "volume_db", region.ambient_volume_db, fade)
+	var night := _is_night()
+	var loop := region.ambient_loop_night if night and region.ambient_loop_night else region.ambient_loop
+	_ambience_night = night
+	_crossfade(_beds, loop, region.ambient_volume_db, fade, true)
+	var tune := region.music_night if night and region.music_night else region.music
+	_crossfade(_music, tune, region.music_volume_db, maxf(fade, music_fade), false)
+
+
+func _is_night() -> bool:
+	var cycle := get_tree().get_first_node_in_group("world_cycle") as WorldCycle if is_inside_tree() else null
+	return cycle != null and cycle.daylight < 0.35
+
+
+## Two players crossfading: the playing one fades out, the other fades `stream` in.
+func _crossfade(pair: Array[AudioStreamPlayer], stream: AudioStream, volume_db: float, fade: float, random_start: bool) -> void:
+	if pair.is_empty():
+		return
+	var index := 0 if pair[0].playing and pair[0].volume_db > -59.0 else 1
+	var old := pair[index] if pair[index].playing else pair[1 - index]
+	var wanted := AmbientLoops.looped(stream) if stream else null
+	if old.playing and wanted and old.stream == wanted:
+		create_tween().tween_property(old, "volume_db", volume_db, fade)
 		return
 	if old.playing:
 		var out := create_tween()
 		out.tween_property(old, "volume_db", -60.0, fade)
 		out.tween_callback(old.stop)
-	if region.ambient_loop == null:
+	if wanted == null:
 		return
-	var stream := AmbientLoops.looped(region.ambient_loop)
-	_bed_index = 1 - _bed_index
-	var bed := _beds[_bed_index]
-	bed.stream = stream
-	bed.volume_db = -60.0
-	# Start somewhere random so the loop doesn't always begin the same way.
-	bed.play(randf() * maxf(stream.get_length() - 1.0, 0.0))
-	create_tween().tween_property(bed, "volume_db", region.ambient_volume_db, fade)
+	var player := pair[1] if old == pair[0] else pair[0]
+	player.stream = wanted
+	player.volume_db = -60.0
+	# Ambience starts somewhere random so it doesn't always begin the same way.
+	player.play(randf() * maxf(wanted.get_length() - 1.0, 0.0) if random_start else 0.0)
+	create_tween().tween_property(player, "volume_db", volume_db, fade)
 
 
 func _update_wind(delta: float) -> void:

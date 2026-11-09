@@ -8,7 +8,7 @@ extends CharacterBody3D
 ## Behaviour: stand, wander near home, or patrol (Marker3D children of a "Patrol" node
 ## under it, walked in order). When enemies come close, NPCs that can fight and hold a
 ## weapon fight them (and enemies fight back); the rest run away until it's safe.
-## Walk up and press Jump / talk (Space, A) to hear its lines.
+## Walk up and press Interact (E, A) to hear its lines.
 ##
 ## Followers (can_follow in its entry): talking offers "Follow me" / "Wait here". A follower
 ## keeps beside the player, runs to catch up, joins fights against enemies going for the
@@ -658,14 +658,13 @@ func _head_of(who: Node3D) -> Vector3:
 	return Combat.aim_point(who) + Vector3.UP * 0.4
 
 
-## "Space  Talk" over its head while the player is close and could talk.
+## "E  Talk" over its head while the player is close and could talk.
 func _update_prompt() -> void:
 	var player := get_tree().get_first_node_in_group("player") as Node3D
 	var show := player != null and can_talk() and ai != AI.TALK \
 		and player.global_position.distance_to(global_position) <= TALK_RANGE
 	_prompt.visible = show
 	if show:
-		var keys := GameSettings.events_for("jump", GameSettings.gamepad)
-		var key := GameSettings.event_name(keys[0]) if not keys.is_empty() else "Jump"
+		var key := GameSettings.interact_label()
 		var title := String(data.get("title", ""))
 		_prompt.text = "%s  Talk to %s%s" % [key, data.get("name", ""), (" (%s)" % title) if title != "" else ""]

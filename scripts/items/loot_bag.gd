@@ -1,7 +1,7 @@
 class_name LootBag
 extends Node3D
 ## What an enemy drops: gold and items, lying with its body. Walk up and press Jump /
-## talk (Space, A) to kneel and look through it (LootWindow): take things one by one or
+## interact (E, A) to kneel and look through it (LootWindow): take things one by one or
 ## all at once; whatever you leave stays until the body is gone. A drop without a body
 ## (or once it's gone) shows as a small sack.
 
@@ -139,14 +139,16 @@ func _physics_process(delta: float) -> void:
 	var show := player != null and can_talk() and player.global_position.distance_to(global_position) <= TALK_RANGE
 	_prompt.visible = show
 	if show:
-		var keys := GameSettings.events_for("jump", GameSettings.gamepad)
-		var key := GameSettings.event_name(keys[0]) if not keys.is_empty() else "Jump"
+		var key := GameSettings.interact_label()
 		_prompt.text = "%s  Loot %s" % [key, title]
 
 
 ## Where the body lies: under its hips (death clips move them away from the origin).
 func _body_spot() -> Vector3:
 	var cm := corpse.get_node_or_null("Model/Character") as CharacterModel
+	var limp = Ragdoll.hips_of(cm)
+	if limp != null:
+		return Vector3(limp.x, (limp as Vector3).y - 0.1, limp.z)
 	var skel := cm.get_skeleton() if cm else null
 	var bone := skel.find_bone("mixamorig_Hips") if skel else -1
 	if bone < 0:
@@ -161,7 +163,7 @@ func can_talk() -> bool:
 	return not open and not is_empty() and not DialogueBox.is_open and Time.get_ticks_msec() - DialogueBox.closed_at > 300
 
 
-## Jump / talk next to it: kneel and open the loot window.
+## Interact next to it: kneel and open the loot window.
 func talk(player: Node3D) -> void:
 	if can_talk():
 		LootWindow.open_for(self, player)

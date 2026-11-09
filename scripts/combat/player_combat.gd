@@ -369,9 +369,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if GameSettings.menu_open:
 		return
 	if event.is_action_pressed("attack"):
-		# Clicking an enemy selects it; the click is also an attack.
-		if event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
-			targeting.click_select(event.position)
+		# Clicking an enemy targets it (that click doesn't attack; the next one does).
+		if event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE \
+				and targeting.click_select(event.position):
+			get_viewport().set_input_as_handled()
+			return
 		if not _attack_down:
 			_attack_down = true
 			_press_time = 0.0

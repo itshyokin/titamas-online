@@ -18,7 +18,8 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 | Swap primary / secondary weapon | Y | R |
 | Primary / secondary weapon | (Y) | 1 / 2 |
 | Hotbar boxes 3–10 (spells, potions…) | Hold D-pad up: ability wheel | 3–9, 0 (or keypad) |
-| Jump / talk | A | Space |
+| Jump | A | Space |
+| Talk, loot, open, examine | A | E |
 | Dodge / roll (with a direction; none = back-hop) | B | Double-tap W/A/S/D (or Alt + direction) |
 | Sprint (controller: tap to toggle); stamina is hotbar box 11 | X | Shift (hold) |
 | Character and backpack | Back | I or B |

@@ -1,11 +1,11 @@
 class_name DialogueBox
 extends CanvasLayer
 ## The talk window: speaker's name and title, then their lines one at a time, typed out.
-## Jump / talk, Attack, Enter or a click shows the whole line, then the next; Esc or
+## Interact, Jump, Attack, Enter or a click shows the whole line, then the next; Esc or
 ## B closes. Gameplay input is paused while it's open.
 ##
 ## After the last line it can offer choices (buttons; left/right or the mouse to pick,
-## Jump / talk to choose). A choice's callable may return a reply line to show before
+## Interact to choose). A choice's callable may return a reply line to show before
 ## the window closes.
 ##
 ## Lines can use {player} (the character's name) and the player's pronouns:
@@ -117,8 +117,7 @@ func _show_line() -> void:
 	_text.text = _lines[_index]
 	_shown = 0.0
 	_text.visible_characters = 0
-	var keys := GameSettings.events_for("jump", GameSettings.gamepad)
-	var key := GameSettings.event_name(keys[0]) if not keys.is_empty() else "Jump"
+	var key := GameSettings.interact_label()
 	var last := _index >= _lines.size() - 1
 	if last and _replying:
 		_hint.text = "%s  Close" % key
@@ -140,7 +139,7 @@ func _input(event: InputEvent) -> void:
 	if _choosing:
 		_choice_input(event)
 		return
-	var advance: bool = event.is_action_pressed("jump") or event.is_action_pressed("attack") or event.is_action_pressed("ui_accept") \
+	var advance: bool = event.is_action_pressed("jump") or event.is_action_pressed("interact") or event.is_action_pressed("attack") or event.is_action_pressed("ui_accept") \
 		or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
 	var close: bool = event.is_action_pressed("ui_cancel") or event.is_action_pressed("dodge") or event.is_action_pressed("menu")
 	if not advance and not close:
@@ -188,7 +187,7 @@ func _choice_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("move_right") or event.is_action_pressed("ui_right"):
 		get_viewport().set_input_as_handled()
 		(buttons[posmod(focused + 1, buttons.size())] as Button).grab_focus()
-	elif event.is_action_pressed("jump") or event.is_action_pressed("attack") and not event is InputEventMouseButton:
+	elif event.is_action_pressed("jump") or event.is_action_pressed("interact") or event.is_action_pressed("attack") and not event is InputEventMouseButton:
 		get_viewport().set_input_as_handled()
 		_choose(maxi(focused, 0))
 

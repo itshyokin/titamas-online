@@ -15,6 +15,12 @@ const SOURCE_DIR := "res://assets/animations/mixamo"
 const BODIES := {"masc": "Armature_masc", "femme": "Armature_femme"}
 const BODY_SCENE := "res://assets/models/characters/base_bodies.glb"
 const ROOT_BONE := "mixamorig_Hips"
+## Limb bones whose rest direction is matched to Mixamo's T-pose, and the child bone
+## (first one found) that gives each one's direction.
+const LIMB_CHILD := {
+	"Shoulder": ["Arm"], "Arm": ["ForeArm"], "ForeArm": ["Hand"], "Hand": ["HandMiddle1", "HandIndex1"],
+	"UpLeg": ["Leg"], "Leg": ["Foot"], "Foot": ["ToeBase"],
+}
 const FPS := 30.0
 ## Per-clip settings come from data/animations.json (Database → Animations), read by
 ## _load_settings() into these:
@@ -506,6 +512,26 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 	# Whole-body turn for clips authored facing the other way.
 	var turn := Quaternion(Vector3.UP, deg_to_rad(YAW_FIX.get(anim_name, 0.0)))
 
+	# Rest-pose fix: a body modelled in an A-pose (arms down, feet apart) has limbs that
+	# point differently from Mixamo's T-pose. Per limb bone, the swing that turns the
+	# body's rest direction onto the source's, so the deltas start from a matching pose.
+	var rest_fix := {}
+	for limb in LIMB_CHILD:
+		for side in ["Left", "Right"]:
+			var bname := "mixamorig_%s%s" % [side, limb]
+			var child_name := ""
+			for c: String in LIMB_CHILD[limb]:
+				if child_name.is_empty() and dst.find_bone("mixamorig_%s%s" % [side, c]) >= 0 and src.find_bone("mixamorig_%s%s" % [side, c]) >= 0:
+					child_name = "mixamorig_%s%s" % [side, c]
+			var db := dst.find_bone(bname)
+			var sb := src.find_bone(bname)
+			if child_name.is_empty() or db < 0 or sb < 0:
+				continue
+			var d_dir := (dst_skel_xf.basis * (dst_rest[dst.find_bone(child_name)].origin - dst_rest[db].origin)).normalized()
+			var s_dir := align * (src_skel_xf.basis * (src_rest[src.find_bone(child_name)].origin - src_rest[sb].origin)).normalized()
+			if d_dir.length() > 0.5 and s_dir.length() > 0.5 and d_dir.dot(s_dir) < 0.9999:
+				rest_fix[bname] = Quaternion(d_dir, s_dir)
+
 	# Arm spread: swing each whole arm outward about the character's forward axis.
 	var left_dir := Vector3.UP.cross(dst_fwd)
 	var spread_left := Quaternion(Vector3.DOWN.cross(left_dir).normalized(), deg_to_rad(arm_spread))
@@ -577,7 +603,7 @@ func _retarget(src: Skeleton3D, src_anim: Animation, dst: Skeleton3D, anim_name:
 			var world: Quaternion
 			if src_pose_w.has(name):
 				var delta: Quaternion = src_pose_w[name] * src_rest_w[name].inverse()
-				world = turn * align * delta * align.inverse() * dst_rest_w[name]
+				world = turn * align * delta * align.inverse() * rest_fix.get(name, Quaternion.IDENTITY) * dst_rest_w[name]
 				if left_arm.has(i):
 					world = spread_left * world
 				elif right_arm.has(i):

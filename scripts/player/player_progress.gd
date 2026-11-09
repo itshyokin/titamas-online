@@ -100,6 +100,9 @@ func credit_kill(enemy: Node) -> void:
 	if s == null:
 		return
 	var data: Dictionary = Database.enemy(String(enemy.get("enemy_id"))) if "enemy_id" in enemy else {}
+	var ach := get_node_or_null("/root/Achievements")
+	if ach:
+		ach.call("count_kill", String(enemy.get("enemy_id")) if "enemy_id" in enemy else "")
 	var amount := xp_for_kill(s.level, data)
 	if amount > 0:
 		add_xp(amount, s.display_name)

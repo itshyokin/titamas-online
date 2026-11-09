@@ -355,7 +355,7 @@ const TABS = {
 			id: "new_enemy", name: "New Enemy", level: 1, max_health: 60, skin_color: "#9e8c80", weapon: "sword",
 			aggro_radius: 12, leash_distance: 35, wander_radius: 5, walk_speed: 1.4, run_speed: 4,
 			attack_power: 8, attack_range: 2, attack_cooldown: 1.6, attack_animation: "attack_light_1",
-			attack_animation_speed: 0.75, attack_hit_time: 0.32, attack_arc: 110, corpse_time: 12, respawn_time: 90, loot_time: 60,
+			attack_animation_speed: 0.75, attack_hit_time: 0.32, attack_arc: 110, corpse_time: 12, respawn_time: 90, loot_time: 60, ragdoll: 1, death_push: 2.5, fade_time: 2, death_sounds: [],
 			gold_min: 1, gold_max: 5, xp: 0, loot: [],
 		}),
 		groups: [
@@ -394,7 +394,11 @@ const TABS = {
 			["Death", [
 				{ key: "corpse_time", label: "Body stays (s)", type: "number" },
 				{ key: "respawn_time", label: "Respawns after (s)", type: "number" },
-				{ key: "loot_time", label: "Body with loot stays up to (s)", type: "number", help: "Unlooted bodies wait this long before sinking (from death)." },
+				{ key: "loot_time", label: "Body with loot stays up to (s)", type: "number", help: "Unlooted bodies wait this long before fading (from death)." },
+				{ key: "ragdoll", label: "Goes limp (ragdoll, 1 = yes)", type: "number", help: "0 = plays its death animation instead." },
+				{ key: "death_push", label: "Thrown by the killing blow (m/s)", type: "number" },
+				{ key: "fade_time", label: "Fades away over (s)", type: "number" },
+				{ key: "death_sounds", label: "Death cries (one at random)", type: "sounds", wide: true },
 			]],
 			["Loot", [
 				{ key: "xp", label: "Experience for a kill", type: "int", help: "0 = automatic (Player tab: base + per level)." },
@@ -453,6 +457,9 @@ const TABS = {
 				{ key: "combat.lock_range", label: "Lock-on breaks beyond (m)", type: "number", help: "Keep it at least the target button's reach." },
 				{ key: "combat.lose_range", label: "Target dropped beyond (m)", type: "number" },
 				{ key: "combat.snap_range", label: "Swings turn to enemies within (m)", type: "number", help: "Even behind you." },
+				{ key: "combat.click_radius", label: "Click picks enemies within (px)", type: "number", help: "Clicking this close to an enemy on screen targets it." },
+				{ key: "combat.tab_selects", label: "Tab picks a target when there's none (1 = yes)", type: "number", help: "0: Tab only clears the target; click enemies to target them." },
+				{ key: "combat.attack_selects", label: "Attacking picks a target (1 = yes)", type: "number", help: "0: swinging or shooting at someone doesn't make them your target (controllers always do)." },
 			]],
 			["Loadout", [
 				{ key: "loadout.light_combo", label: "Bare-hands combo (in order)", type: "abilities", wide: true, help: "Weapons bring their own moves (Weapon Types tab)." },
@@ -731,6 +738,30 @@ const TABS = {
 			]],
 		],
 	},
+	achievements: {
+		title: "Achievements", file: "achievements", listKey: "achievements", idKey: "id", nameKey: "name",
+		blank: () => ({ id: "NEW_ACHIEVEMENT", name: "New Achievement", description: "", icon: "", points: 10, hidden: false, steam_id: "", rule: { kind: "event" } }),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Also the Steam API name (unless Steam ID is set). Event command: Unlock achievement." },
+				{ key: "name", label: "Name", type: "text", help: "Shown first in the pop-up." },
+				{ key: "description", label: "How it's earned", type: "textarea", wide: true, help: "The pop-up switches to this after the name; also listed on the title screen's Achievements page." },
+				{ key: "points", label: "Points", type: "int" },
+				{ key: "hidden", label: "Hidden until earned", type: "bool", help: "Listed as ??? on the Achievements page." },
+				{ key: "icon", label: "Icon image", type: "text", help: "A res:// image (PNG) shown on the badge. Empty = the trophy." },
+				{ key: "steam_id", label: "Steam ID", type: "text", help: "Its API name on Steam, if different from the ID." },
+			]],
+			["Earned when", [
+				{ key: "rule.kind", label: "Rule", type: "select", options: [["event", "An event unlocks it (command)"], ["switch", "A switch turns on"], ["defeat", "Enemies defeated"], ["level", "Reaching a level"], ["item", "Carrying an item"], ["gold", "Holding gold"]] },
+				{ key: "rule.switch", label: "Switch", type: "select", empty: true, options: () => switchOptions(), show: e => (e.rule || {}).kind === "switch" },
+				{ key: "rule.enemy", label: "Enemy (empty = any)", type: "select", empty: true, options: () => (((data.enemies || {}).enemies) || []).map(x => [x.id, (x.display_name || x.name || x.id) + "  (" + x.id + ")"]), show: e => (e.rule || {}).kind === "defeat" },
+				{ key: "rule.count", label: "How many", type: "int", show: e => ["defeat", "item"].includes((e.rule || {}).kind) },
+				{ key: "rule.level", label: "Level", type: "int", show: e => (e.rule || {}).kind === "level" },
+				{ key: "rule.item", label: "Item", type: "select", empty: true, options: () => itemOptions(), show: e => (e.rule || {}).kind === "item" },
+				{ key: "rule.amount", label: "Gold", type: "int", show: e => (e.rule || {}).kind === "gold" },
+			]],
+		],
+	},
 	world: {
 		title: "World", file: "world", single: true,
 		groups: [
@@ -763,7 +794,7 @@ const TABS = {
 			sky_ground: "#525c66", cloud_color: "#ffffff", cloud_shade: "#b3bdd1", cloud_coverage: 0.45,
 			sun_color: "#fff2d9", sun_energy: 1.1, ambient_energy: 0.6, shadow_strength: 0.6, saturation: 1.2,
 			contrast: 1.05, brightness: 1, god_rays: 0.35, grass_density: 1.6, grass_height: 0.8, grass_ground_match: 0.85, grass_base: "#2a5c1f", grass_tip: "#8cc74d",
-			ambient_loop: "", ambient_volume_db: -8, wind_volume_db: -20,
+			ambient_loop: "", ambient_loop_night: "", music: "", music_night: "", music_volume_db: -12, ambient_volume_db: -8, wind_volume_db: -20,
 		}),
 		groups: [
 			["General", [
@@ -804,7 +835,11 @@ const TABS = {
 			]],
 			["Sound", [
 				{ key: "ambient_loop", label: "Ambient loop", type: "sound", wide: true },
+				{ key: "ambient_loop_night", label: "Ambient loop at night", type: "sound", wide: true, help: "After dark (crickets). None: the day loop all the time." },
 				{ key: "ambient_volume_db", label: "Ambient volume (dB)", type: "number" },
+				{ key: "music", label: "Music", type: "sound", wide: true },
+				{ key: "music_night", label: "Music at night", type: "sound", wide: true, help: "None: the day music all the time." },
+				{ key: "music_volume_db", label: "Music volume (dB)", type: "number" },
 				{ key: "wind_volume_db", label: "Wind (dB)", type: "number" },
 			]],
 		],
@@ -1147,7 +1182,7 @@ function fieldControl(t, entry, f) {
 			break;
 		}
 		case "select": {
-			const s = selectOf(f.options, value, false);
+			const s = selectOf(typeof f.options === "function" ? f.options() : f.options, value, !!f.empty);
 			s.onchange = () => set(s.value, true);
 			wrap.append(label, s);
 			break;
@@ -1420,8 +1455,12 @@ const CMD_GROUPS = [
 	["Switches", ["switch", "self_switch", "variable"]],
 	["Player", ["give_item", "take_item", "gold", "xp", "heal", "follower", "animation"]],
 	["World", ["teleport", "set_home", "fade_out", "fade_in", "sound", "effect"]],
+	["Progress", ["achievement"]],
 ];
+const achievementOptions = () => (((data.achievements || {}).achievements) || []).map(a => [a.id, (a.name || a.id) + "  (" + a.id + ")"]);
 const CMDS = {
+	achievement: { label: "Unlock achievement", make: () => ({ cmd: "achievement", id: "" }),
+		fields: [["id", "Achievement", "select", achievementOptions]], show: c => "Achievement: " + nameOf(achievementOptions(), c.id) },
 	text: { label: "Show text", make: () => ({ cmd: "text", speaker: "", text: "" }),
 		fields: [["speaker", "Speaker (empty = the event's name)", "text"], ["text", "Text", "textarea", "{player}, {they}/{them}/{their}, {var:id}, {item:id}, {gold}. Texts in a row share one box."]],
 		show: c => "Text: " + (c.speaker ? c.speaker + ": " : "") + (c.text || "") },
@@ -1702,7 +1741,7 @@ function commandEditor(c) {
 				ctl.oninput = () => { const v = type === "int" ? parseInt(ctl.value, 10) : parseFloat(ctl.value); if (!Number.isNaN(v)) setv(v); }; break;
 			case "bool": w.className = "field check"; ctl = el("input", { type: "checkbox", checked: !!c[key] }); ctl.onchange = () => setv(ctl.checked); w.append(ctl, lab); grid.appendChild(w); continue;
 			case "onoff": ctl = selectOf([["on", "ON"], ["off", "OFF"]], c[key] === false ? "off" : "on", false); ctl.onchange = () => setv(ctl.value === "on"); break;
-			case "select": ctl = selectOf(extra, c[key], false); ctl.onchange = () => setv(ctl.value); break;
+			case "select": ctl = selectOf(typeof extra === "function" ? extra() : extra, c[key], typeof extra === "function"); ctl.onchange = () => setv(ctl.value); break;
 			case "letter": ctl = selectOf(["A", "B", "C", "D"], c[key], false); ctl.onchange = () => setv(ctl.value); break;
 			case "switch": ctl = selectOf(switchOptions(), c[key], true); ctl.onchange = () => setv(ctl.value); break;
 			case "variable": ctl = selectOf(variableOptions(), c[key], true); ctl.onchange = () => setv(ctl.value); break;

@@ -1,7 +1,7 @@
 @tool
 class_name LootChest
 extends StaticBody3D
-## A chest (or weapon rack) the player opens once: walk up and press Jump / talk
+## A chest (or weapon rack) the player opens once: walk up and press Interact (E, A)
 ## (Space, A) to take what's inside. Each character can open it once; which chests they've
 ## opened is saved with them (GameSession.data.opened_chests, by `chest_id`).
 ##
@@ -143,6 +143,5 @@ func _physics_process(_delta: float) -> void:
 	var show := player != null and can_talk() and player.global_position.distance_to(global_position) <= TALK_RANGE
 	_prompt.visible = show
 	if show:
-		var keys := GameSettings.events_for("jump", GameSettings.gamepad)
-		var key := GameSettings.event_name(keys[0]) if not keys.is_empty() else "Jump"
+		var key := GameSettings.interact_label()
 		_prompt.text = "%s  %s" % [key, "Open" if not is_opened() else title]

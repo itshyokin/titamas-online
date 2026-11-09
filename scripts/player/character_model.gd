@@ -1,7 +1,7 @@
 @tool
 class_name CharacterModel
 extends Node3D
-## Shows one of the two base bodies from base_bodies.glb, tints its skin and plays
+## Shows one of the two base bodies from base_bodies.scn (built by tools/godot/build_bodies.gd), tints its skin and plays
 ## its animations. Lives under Player/Model. The imported body faces -Z (the game's
 ## forward), so it needs no extra rotation.
 ##
@@ -211,8 +211,11 @@ func attach_to_hand(item: Node3D, right := true) -> BoneAttachment3D:
 	var side := "Right" if right else "Left"
 	var hand := skel.find_bone("mixamorig_%sHand" % side)
 	var index := skel.find_bone("mixamorig_%sHandIndex1" % side)
-	# The bodies have three-chain hands (thumb, index, ring): the ring stands in for the pinky side.
-	var pinky := skel.find_bone("mixamorig_%sHandRing1" % side)
+	# The pinky side of the hand: the pinky, else the ring or middle finger (bodies differ).
+	var pinky := -1
+	for finger in ["Pinky1", "Ring1", "Middle1"]:
+		if pinky < 0:
+			pinky = skel.find_bone("mixamorig_%sHand%s" % [side, finger])
 	if hand < 0 or index < 0 or pinky < 0:
 		push_warning("CharacterModel: hand bones not found")
 		return null
@@ -585,7 +588,7 @@ func _build_eyes() -> void:
 	var head := skel.get_node_or_null(("f_" if body_type == BodyType.FEMME else "") + "head") as MeshInstance3D
 	if eyes.is_empty() or place.is_empty() or head == null or not ResourceLoader.exists(String(eyes.get("texture", ""))):
 		return
-	var verts: PackedVector3Array = head.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var head_arrays := head.mesh.surface_get_arrays(0)
 	var mat := ShaderMaterial.new()
 	mat.shader = EYE_SHADER
 	mat.set_shader_parameter("eye_texture", load(String(eyes.texture)))
@@ -606,7 +609,7 @@ func _build_eyes() -> void:
 		for c: Vector2 in corners:
 			var px := cx + c.x * side
 			var py := y + c.y
-			pts.append(Vector3(px, py, _face_z(verts, px, py, w * 0.7) - float(place.forward)))
+			pts.append(Vector3(px, py, _face_z(head_arrays, px, py, w * 0.7) - float(place.forward)))
 		for k: int in [0, 1, 2, 0, 2, 3]:
 			st.set_uv(uvs[k])
 			st.add_vertex(pts[k])
@@ -622,15 +625,31 @@ func _build_eyes() -> void:
 			_eye_nodes.append(attach)
 
 
-## Front of the face (smallest z) near (x, y), from the head mesh.
-static func _face_z(verts: PackedVector3Array, x: float, y: float, radius: float) -> float:
+## Front of the face (smallest z) at (x, y): where a line along z meets the head mesh's
+## triangles (low-poly heads have too few vertices to go by the nearest one).
+static func _face_z(arrays: Array, x: float, y: float, _radius: float) -> float:
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var index = arrays[Mesh.ARRAY_INDEX]
+	if index == null:
+		index = PackedInt32Array(range(verts.size()))
 	var best := INF
-	var r := radius
-	while best == INF and r < 0.05:
-		for p in verts:
-			if absf(p.x - x) < r and absf(p.y - y) < r:
-				best = minf(best, p.z)
-		r *= 1.6
+	var p := Vector2(x, y)
+	for t in range(0, index.size(), 3):
+		var a := verts[index[t]]
+		var b := verts[index[t + 1]]
+		var c := verts[index[t + 2]]
+		# Barycentric coordinates of (x, y) in the triangle seen along z.
+		var v0 := Vector2(b.x - a.x, b.y - a.y)
+		var v1 := Vector2(c.x - a.x, c.y - a.y)
+		var v2 := p - Vector2(a.x, a.y)
+		var den := v0.x * v1.y - v1.x * v0.y
+		if absf(den) < 1e-10:
+			continue
+		var u := (v2.x * v1.y - v1.x * v2.y) / den
+		var v := (v0.x * v2.y - v2.x * v0.y) / den
+		if u < 0.0 or v < 0.0 or u + v > 1.0:
+			continue
+		best = minf(best, a.z + u * (b.z - a.z) + v * (c.z - a.z))
 	return best if best != INF else 0.0
 
 

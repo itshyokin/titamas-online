@@ -25,7 +25,7 @@ const DEFAULT_GRASS := "High"
 const REBINDABLE := [
 	["move_forward", "Move forward"], ["move_back", "Move back"], ["move_left", "Move left"], ["move_right", "Move right"],
 	["camera_left", "Camera left"], ["camera_right", "Camera right"], ["camera_up", "Camera up"], ["camera_down", "Camera down"],
-	["jump", "Jump / talk"], ["sprint", "Sprint"], ["walk", "Walk"], ["dodge", "Dodge"],
+	["jump", "Jump"], ["interact", "Interact (talk, loot, open)"], ["sprint", "Sprint"], ["walk", "Walk"], ["dodge", "Dodge"],
 	["attack", "Attack (hold to charge)"], ["block", "Block"], ["cycle_mode", "Swap weapons"],
 	["hotbar_1", "Primary weapon"], ["hotbar_2", "Secondary weapon"], ["hotbar_3", "Hotbar 3"], ["hotbar_4", "Hotbar 4"],
 	["hotbar_5", "Hotbar 5"], ["hotbar_6", "Hotbar 6"], ["hotbar_7", "Hotbar 7"], ["hotbar_8", "Hotbar 8"],
@@ -207,6 +207,12 @@ const PAD_BUTTONS := {
 const MOUSE_BUTTONS := {1: "LMB", 2: "RMB", 3: "Middle mouse", 4: "Wheel up", 5: "Wheel down", 8: "Mouse 4", 9: "Mouse 5"}
 
 
+## The key/button shown in "E  Talk" prompts.
+func interact_label() -> String:
+	var keys := events_for("interact", gamepad)
+	return event_name(keys[0]) if not keys.is_empty() else "E"
+
+
 static func event_name(e: InputEvent) -> String:
 	if e is InputEventKey:
 		var code: int = e.physical_keycode if e.physical_keycode != 0 else e.keycode
@@ -249,7 +255,7 @@ func save_settings() -> void:
 			if not d.is_empty():
 				list.append(d)
 		cfg.set_value("bindings", entry[0], list)
-	cfg.set_value("controls", "bindings_version", 2)
+	cfg.set_value("controls", "bindings_version", 3)
 	cfg.save(PATH)
 
 
@@ -273,8 +279,8 @@ func load_settings() -> void:
 		for action in cfg.get_section_keys("bindings"):
 			if not InputMap.has_action(action):
 				continue
-			if version < 2 and action in ["block", "camera_look", "lock_on"]:
-				continue  # block moved to the right mouse button, looking around to the middle one, lock-on to Q
+			if version < 3 and action in ["block", "camera_look", "lock_on", "interact"]:
+				continue  # defaults changed: block Q, look right mouse, lock-on middle mouse, interact E
 			InputMap.action_erase_events(action)
 			for d in cfg.get_value("bindings", action, []):
 				var e := _from_dict(d)

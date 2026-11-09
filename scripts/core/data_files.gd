@@ -18,6 +18,7 @@ const NPCS := "res://data/npcs.json"
 const WEAPON_TYPES := "res://data/weapon_types.json"
 const ANIMATIONS := "res://data/animations.json"
 const EVENTS := "res://data/events.json"
+const ACHIEVEMENTS := "res://data/achievements.json"
 
 ## Ability fields that need converting (everything else is a plain number/string/bool).
 const ABILITY_COLORS := ["color", "projectile_color"]
@@ -32,11 +33,13 @@ const ABILITY_FIELDS := [
 	"animation_speed", "hit_time", "recovery_time", "move_scale", "sounds", "hit_sound",
 ]
 const REGION_COLORS := ["fog_color", "sky_top", "sky_horizon", "sky_ground", "cloud_color", "cloud_shade", "sun_color", "grass_base", "grass_tip"]
+## Region fields that are sounds (res:// paths in the file).
+const REGION_STREAMS := ["ambient_loop", "ambient_loop_night", "music", "music_night"]
 const REGION_FIELDS := [
 	"region_name", "fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
 	"shadow_strength", "saturation", "contrast", "brightness", "god_rays", "grass_density", "grass_base",
-	"grass_tip", "grass_height", "grass_ground_match", "ambient_loop", "ambient_volume_db", "wind_volume_db",
+	"grass_tip", "grass_height", "grass_ground_match", "ambient_loop", "ambient_loop_night", "ambient_volume_db", "wind_volume_db", "music", "music_night", "music_volume_db",
 ]
 
 
@@ -132,7 +135,7 @@ static func region_to_dict(r: RegionAtmosphere, id: String, is_default := false)
 		var v: Variant = r.get(field)
 		if field in REGION_COLORS:
 			v = color_to(v)
-		elif field == "ambient_loop":
+		elif field in REGION_STREAMS:
 			v = stream_to(v)
 		d[field] = v
 	return d
@@ -149,8 +152,8 @@ static func region_from_dict(d: Dictionary) -> RegionAtmosphere:
 		var v: Variant = d[field]
 		if field in REGION_COLORS:
 			r.set(field, color_from(v))
-		elif field == "ambient_loop":
-			r.ambient_loop = stream_from(v)
+		elif field in REGION_STREAMS:
+			r.set(field, stream_from(v))
 		else:
 			r.set(field, v)
 	return r

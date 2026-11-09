@@ -20,6 +20,14 @@ signal lock_changed(locked: bool)
 @export var lock_range := 40.0
 ## Swings turn to enemies this close even if they're behind you.
 @export var snap_range := 2.5
+## Keyboard and mouse: Tab picks the enemy you're looking at when nothing is targeted
+## (1), or only clears the target (0; click enemies to target them).
+@export var tab_selects := 0.0
+## Attacking with nothing targeted makes the enemy you swing at / shoot the target (1).
+## 0: only clicking (or Tab / lock-on) picks targets.
+@export var attack_selects := 0.0
+## Clicking within this many pixels of an enemy on screen picks it.
+@export var click_radius := 48.0
 
 ## Picking a target only reaches this far: set from the weapon in use (Weapon Types →
 ## Targeting range); tab_range when the weapon doesn't say.
@@ -213,29 +221,47 @@ func pick_for_attack(max_distance: float, select := true) -> Node3D:
 			best_score = s
 			best = n
 	# A swing may snap to someone behind you, but they don't become the target.
-	if best and select and not has_target() and selectable(best):
+	if best and select and (attack_selects > 0.5 or GameSettings.gamepad) and not has_target() and selectable(best):
 		set_target(best)
 	return best
 
 
 ## Selects the enemy under the mouse cursor, if any. Returns true if one was picked.
+## Clicking an enemy (or near one on screen) makes it the target. Returns true if the
+## click picked someone (the click is then only a selection, not an attack).
 func click_select(screen_pos: Vector2) -> bool:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return false
+	var picked: Node3D = null
 	var from := cam.project_ray_origin(screen_pos)
 	var to := from + cam.project_ray_normal(screen_pos) * 120.0
 	var query := PhysicsRayQueryParameters3D.create(from, to, 1 | enemy_mask)
 	var hit := player.get_world_3d().direct_space_state.intersect_ray(query)
-	if hit.is_empty():
+	if not hit.is_empty():
+		var node := hit.collider as Node
+		while node and not node.is_in_group(Combat.GROUP):
+			node = node.get_parent()
+		if node and Combat.is_alive(node) and Combat.is_enemy_of(player, node):
+			picked = node as Node3D
+	if picked == null:
+		# Near enough on screen: the line from its feet to its head passes close to the click.
+		var best := click_radius
+		for n in Combat.enemies_near(player, player.global_position, 120.0):
+			var feet := n.global_position
+			var head := Combat.aim_point(n) + Vector3.UP * 0.6
+			if cam.is_position_behind(feet) or cam.is_position_behind(head):
+				continue
+			var a := cam.unproject_position(feet)
+			var b := cam.unproject_position(head)
+			var d := Geometry2D.get_closest_point_to_segment(screen_pos, a, b).distance_to(screen_pos)
+			if d < best:
+				best = d
+				picked = n
+	if picked == null or picked == target:
 		return false
-	var node := hit.collider as Node
-	while node and not node.is_in_group(Combat.GROUP):
-		node = node.get_parent()
-	if node and Combat.is_alive(node) and Combat.is_enemy_of(player, node):
-		set_target(node as Node3D)
-		return true
-	return false
+	set_target(picked)
+	return true
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -244,6 +270,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("target_next"):
 		if event is InputEventKey and (event as InputEventKey).shift_pressed:
 			cycle_keeping_lock(-1)
+		elif event is InputEventKey and tab_selects < 0.5:
+			set_target(null)  # Tab clears; click an enemy to target it
 		else:
 			toggle_target()
 		get_viewport().set_input_as_handled()

@@ -211,7 +211,7 @@ func _help_tab() -> Control:
 		var k := func(action: String) -> String: return "[color=#ffd76a]%s[/color]" % g.binding_label(action)
 		text.text = "\n".join([
 			"[b]Moving[/b]",
-			"%s/%s/%s/%s move · %s walk · %s sprint · %s jump (and talk) · %s dodge (or double-tap a direction to roll)" % [k.call("move_forward"), k.call("move_left"), k.call("move_back"), k.call("move_right"), k.call("walk"), k.call("sprint"), k.call("jump"), k.call("dodge")],
+			"%s/%s/%s/%s move · %s walk · %s sprint · %s jump · %s talk / loot / open · %s dodge (or double-tap a direction to roll)" % [k.call("move_forward"), k.call("move_left"), k.call("move_back"), k.call("move_right"), k.call("walk"), k.call("sprint"), k.call("jump"), k.call("interact"), k.call("dodge")],
 			"%s hold to look around · %s / %s zoom" % [k.call("camera_look"), k.call("zoom_in"), k.call("zoom_out")],
 			"",
 			"[b]Fighting[/b]",

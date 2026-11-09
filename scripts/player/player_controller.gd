@@ -318,8 +318,10 @@ func _normal_movement(delta: float) -> void:
 				return
 			if _try_attach_surface(false):
 				return
-	elif _pressed("jump") and (_try_talk() or Time.get_ticks_msec() - DialogueBox.closed_at < 300):
-		return  # talking, or the press that just closed a conversation
+	elif _pressed("interact") and _try_talk():
+		return  # E (or A on a controller) next to someone / something
+	elif (_pressed("jump") or _pressed("interact")) and Time.get_ticks_msec() - DialogueBox.closed_at < 300:
+		return  # the press that just closed a conversation
 	elif _pressed("jump") and stats.use_stamina(jump_stamina_cost):
 		velocity.y = jump_velocity
 		jumped.emit()

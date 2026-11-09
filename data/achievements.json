@@ -1,0 +1,30 @@
+{
+	"achievements": [
+		{
+			"id": "BANDIT_BASHER",
+			"name": "Bandit Basher",
+			"description": "Collect 3 Bandit Insignias for the villager.",
+			"icon": "",
+			"points": 10,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "event"
+			}
+		},
+		{
+			"id": "FIRST_BLOOD",
+			"name": "First Blood",
+			"description": "Defeat your first enemy.",
+			"icon": "",
+			"points": 5,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "defeat",
+				"enemy": "",
+				"count": 1
+			}
+		}
+	]
+}

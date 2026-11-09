@@ -53,5 +53,11 @@ extends Resource
 ## when crossing into another region.
 @export var ambient_loop: AudioStream
 @export_range(-40.0, 6.0) var ambient_volume_db := -8.0
+## After dark (crickets); none = the same as by day.
+@export var ambient_loop_night: AudioStream
+## Music while here (by day / after dark; none at night = the day music).
+@export var music: AudioStream
+@export var music_night: AudioStream
+@export_range(-40.0, 6.0) var music_volume_db := -12.0
 ## How windy it is here at ground level (dB); higher ground gets windier on top of this.
 @export_range(-60.0, 6.0) var wind_volume_db := -20.0

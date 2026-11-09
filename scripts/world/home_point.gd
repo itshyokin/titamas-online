@@ -2,7 +2,7 @@
 class_name HomePoint
 extends StaticBody3D
 ## A place the player can make their home: an inn bed, a camp bedroll, a house. Walk up
-## and press Jump / talk (Space, A); choosing "Make this my home" sets where the
+## and press Interact (E, A); choosing "Make this my home" sets where the
 ## hearthstone takes them. The spot is a "Spawn" Marker3D child if there is one,
 ## otherwise just in front of it.
 ##
@@ -137,6 +137,5 @@ func _physics_process(_delta: float) -> void:
 	var show := player != null and can_talk() and player.global_position.distance_to(global_position) <= TALK_RANGE
 	_prompt.visible = show
 	if show:
-		var keys := GameSettings.events_for("jump", GameSettings.gamepad)
-		var key := GameSettings.event_name(keys[0]) if not keys.is_empty() else "Jump"
+		var key := GameSettings.interact_label()
 		_prompt.text = "%s  Rest" % key

@@ -439,6 +439,10 @@
 									"cmd": "switch",
 									"id": "insignia_done",
 									"value": true
+								},
+								{
+									"cmd": "achievement",
+									"id": "BANDIT_BASHER"
 								}
 							],
 							"else": [

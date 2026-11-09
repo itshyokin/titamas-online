@@ -62,7 +62,15 @@
 			"heavy_animation_speed": 0.7,
 			"heavy_hit_time": 0.68,
 			"xp": 0,
-			"loot_time": 60.0
+			"loot_time": 60.0,
+			"ragdoll": 1.0,
+			"death_push": 2.5,
+			"fade_time": 2.0,
+			"death_sounds": [
+				"res://assets/audio/combat/death_grunt_1.ogg",
+				"res://assets/audio/combat/death_grunt_2.ogg",
+				"res://assets/audio/combat/death_grunt_3.ogg"
+			]
 		}
 	]
 }
