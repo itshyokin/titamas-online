@@ -1,0 +1,94 @@
+{
+	"source": "res://assets/models/characters/src/lowpoly_guy.glb",
+	"height": 1.86,
+	"body_meshes": [
+		"bare_body",
+		"head_human"
+	],
+	"body_extra": [
+		{
+			"material": "leather",
+			"part": "underwear"
+		}
+	],
+	"pieces": [
+		{
+			"id": "chainmail_shirt",
+			"mesh": "chainmail",
+			"material": "chainmail",
+			"min_y": -1,
+			"max_y": -1
+		},
+		{
+			"id": "cloth_leggings",
+			"mesh": "chainmail",
+			"material": "tan_cloth",
+			"min_y": -1,
+			"max_y": -1
+		},
+		{
+			"id": "leather_tunic",
+			"mesh": "leatherarmor",
+			"material": "tan_cloth",
+			"min_y": -1,
+			"max_y": -1
+		},
+		{
+			"id": "dark_leggings",
+			"mesh": "leatherarmor",
+			"material": "leggings",
+			"min_y": -1,
+			"max_y": -1
+		},
+		{
+			"id": "leather_gloves",
+			"mesh": "leatherarmor",
+			"material": "leather",
+			"min_y": 0.62,
+			"max_y": -1
+		},
+		{
+			"id": "leather_boots",
+			"mesh": "leatherarmor",
+			"material": "leather",
+			"min_y": -1,
+			"max_y": 0.62
+		},
+		{
+			"id": "head_elf",
+			"mesh": "head_elf",
+			"material": "",
+			"min_y": -1,
+			"max_y": -1
+		},
+		{
+			"id": "face_default",
+			"mesh": "face_default",
+			"material": "",
+			"min_y": -1,
+			"max_y": -1
+		},
+		{
+			"id": "hair_short",
+			"mesh": "hair_short",
+			"material": "",
+			"min_y": -1,
+			"max_y": -1
+		},
+		{
+			"id": "hair_balding",
+			"mesh": "hair_balding",
+			"material": "",
+			"min_y": -1,
+			"max_y": -1
+		},
+		{
+			"id": "tin_hat",
+			"mesh": "hat_tin",
+			"material": "",
+			"min_y": -1,
+			"max_y": -1,
+			"bone": "mixamorig_Head"
+		}
+	]
+}

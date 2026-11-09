@@ -17,6 +17,8 @@ const FILES := {
 	"world": "res://data/world.json",
 	"items": "res://data/items.json",
 	"classes": "res://data/classes.json",
+	"skill_trees": "res://data/skill_trees.json",
+	"body_models": "res://data/body_models.json",
 	"npcs": "res://data/npcs.json",
 	"weapon_types": "res://data/weapon_types.json",
 	"animations": "res://data/animations.json",
@@ -33,6 +35,7 @@ var _button: Button
 var _fit_button: Button
 const FITTER := "res://scenes/tools/armor_fitter.tscn"
 const RETARGET := "res://tools/godot/retarget_mixamo.gd"
+const BUILD_BODIES := ["res://tools/godot/build_bodies.gd", "res://tools/godot/make_appearance.gd"]
 
 # Rebuilding animations (Database → Animations → Rebuild): the retarget tool runs in a
 # separate headless Godot, on a thread so the editor stays responsive.
@@ -40,6 +43,8 @@ var _rebuild_thread: Thread
 var _rebuild_log := ""
 var _rebuild_ok := false
 var _rebuild_done := false
+var _rebuild_scripts: Array = []
+var _rebuild_marker := ""
 
 
 func _enter_tree() -> void:
@@ -59,10 +64,13 @@ func _enter_tree() -> void:
 	_start_server()
 
 
-## Starts rebuilding masc.res / femme.res from the FBX files and data/animations.json.
-func _start_rebuild() -> bool:
+## Starts rebuilding masc.res / femme.res from the FBX files and data/animations.json
+## (or, with the body scripts, the bodies and pieces from data/body_models.json).
+func _start_rebuild(scripts: Array = [RETARGET], marker := "saved res://assets/animations/femme.res") -> bool:
 	if _rebuild_thread and _rebuild_thread.is_alive():
 		return false
+	_rebuild_scripts = scripts
+	_rebuild_marker = marker
 	if _rebuild_thread:
 		_rebuild_thread.wait_to_finish()
 	_rebuild_log = "Rebuilding…"
@@ -74,17 +82,20 @@ func _start_rebuild() -> bool:
 
 
 func _run_rebuild() -> void:
-	var out := []
-	var args := ["--headless", "--path", ProjectSettings.globalize_path("res://"), "--script", RETARGET]
-	var code := OS.execute(OS.get_executable_path(), args, out, true)
-	var text := "\n".join(out)
+	var text := ""
+	var code := 0
+	for script: String in _rebuild_scripts:
+		var out := []
+		var args := ["--headless", "--path", ProjectSettings.globalize_path("res://"), "--script", script]
+		code = maxi(code, OS.execute(OS.get_executable_path(), args, out, true))
+		text += "\n".join(out) + "\n"
 	# Keep the useful lines (clip list, errors), not the engine's start-up chatter.
 	var lines := []
 	for line in text.split("\n"):
 		if line.strip_edges().is_empty() or line.begins_with("Godot Engine"):
 			continue
 		lines.append(line)
-	_rebuild_ok = code == 0 and text.contains("saved res://assets/animations/femme.res")
+	_rebuild_ok = code == 0 and text.contains(_rebuild_marker)
 	_rebuild_log = "\n".join(lines.slice(maxi(lines.size() - 400, 0)))
 	_rebuild_done = true
 
@@ -93,7 +104,7 @@ func _check_rebuild() -> void:
 	if _rebuild_done:
 		_rebuild_done = false
 		# Let the editor pick up the new libraries.
-		for path in ["res://assets/animations/masc.res", "res://assets/animations/femme.res"]:
+		for path in ["res://assets/animations/masc.res", "res://assets/animations/femme.res", "res://assets/models/characters/base_bodies.scn"]:
 			EditorInterface.get_resource_filesystem().update_file(path)
 		EditorInterface.get_resource_filesystem().scan()
 
@@ -205,9 +216,13 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 				props.append(String(f).get_file().get_basename())
 			var levels := _files("res://scenes/levels", ["tscn"])
 			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"]), "fbx": fbx,
-				"props": props, "levels": levels, "markers": _markers(levels)})
+				"props": props, "levels": levels, "markers": _markers(levels),
+				"glbs": _files("res://assets/models/characters/src", ["glb"]), "glb_meshes": _glb_meshes(),
+				"pieces": _files("res://assets/characters/lowpoly", ["scn"])})
 		["POST", "/api/rebuild_animations"]:
 			_json(peer, 200, {"ok": _start_rebuild()})
+		["POST", "/api/rebuild_bodies"]:
+			_json(peer, 200, {"ok": _start_rebuild(BUILD_BODIES, "saved res://assets/models/characters/base_bodies.scn err=0")})
 		["GET", "/api/rebuild_status"]:
 			_json(peer, 200, {"running": _rebuild_thread != null and _rebuild_thread.is_alive(), "log": _rebuild_log, "ok": _rebuild_ok})
 		["POST", "/api/save"]:
@@ -226,6 +241,34 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 			_json(peer, 200, {"ok": true, "path": path})
 		_:
 			_send(peer, 404, "text/plain", "Not found".to_utf8_buffer())
+
+
+## The meshes in the body .glb (data/body_models.json "source"): {name, materials, skinned},
+## read from the file's glTF JSON so new Blender objects show up in Database → Body Models.
+func _glb_meshes() -> Array:
+	var settings = JSON.parse_string(FileAccess.get_file_as_string("res://data/body_models.json")) if FileAccess.file_exists("res://data/body_models.json") else {}
+	var path := String(settings.get("source", "")) if settings is Dictionary else ""
+	var f := FileAccess.open(path, FileAccess.READ) if path != "" else null
+	if f == null:
+		return []
+	f.seek(12)
+	var length := f.get_32()
+	f.get_32()  # chunk type JSON
+	var gltf = JSON.parse_string(f.get_buffer(length).get_string_from_utf8())
+	if not gltf is Dictionary:
+		return []
+	var materials: Array = gltf.get("materials", [])
+	var meshes: Array = gltf.get("meshes", [])
+	var out := []
+	for node: Dictionary in gltf.get("nodes", []):
+		if not node.has("mesh"):
+			continue
+		var mats := []
+		for prim: Dictionary in meshes[int(node.mesh)].get("primitives", []):
+			if prim.has("material"):
+				mats.append(String(materials[int(prim.material)].get("name", "")))
+		out.append({"name": String(node.get("name", "")), "materials": mats, "skinned": node.has("skin")})
+	return out
 
 
 func _json(peer: StreamPeerTCP, code: int, data: Variant) -> void:

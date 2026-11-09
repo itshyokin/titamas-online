@@ -66,8 +66,7 @@
 		"equipment": {
 			"legs": "travelers_trousers",
 			"feet": "worn_boots",
-			"primary": "rusty_sword",
-			"secondary": "hunting_bow"
+			"primary": "rusty_sword"
 		},
 		"backpack": [
 			[
@@ -105,10 +104,16 @@
 			[
 				"mana_draught",
 				2
+			],
+			[
+				"hunting_bow",
+				1
 			]
 		]
 	},
 	"hotbar": [
+		"item:rusty_sword",
+		"item:hunting_bow",
 		"ability:firebolt",
 		"ability:mend",
 		"item:minor_healing_potion",

@@ -15,9 +15,7 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 | --- | --- | --- |
 | Attack: tap = quick, hold = charge (heavy blow, bow draw) | RT | Left mouse |
 | Block (melee) / aim (ranged), hold | LT | Q |
-| Swap primary / secondary weapon | Y | R |
-| Primary / secondary weapon | (Y) | 1 / 2 |
-| Hotbar boxes 3–10 (spells, potions…) | Hold D-pad up: ability wheel | 3–9, 0 (or keypad) |
+| Hotbar boxes 1–10 (spells, potions, weapons: pressing a weapon takes it in hand) | Hold D-pad up: ability wheel | 1–9, 0 (or keypad) |
 | Jump | A | Space |
 | Talk, loot, open, examine | A | E |
 | Dodge / roll (with a direction; none = back-hop) | B | Double-tap W/A/S/D (or Alt + direction) |
@@ -69,7 +67,7 @@ Settings → **How to play** lists the controls as currently bound.
 - **Scale:** 1 unit = 1 metre. Characters about 1.8 m tall.
 - **Export:** File → Export → glTF 2.0, format **glTF Binary (.glb)**, +Y Up on.
 - **Characters:** Mixamo skeleton (`mixamorig:` bones), same names on masc and femme bodies.
-- **Body file:** the masc body and its variants live in one .blend under one armature: `bare_body` (skin + a `leather` underwear surface), `head_human`, plus variants (`head_elf`, `face_default`, `hair_*`, `chainmail`, `leatherarmor`, `hat_tin`). Export the whole scene to `assets/models/characters/src/lowpoly_guy.glb` (Apply Modifiers on, Animation off), then run `tools/godot/build_bodies.gd`, `retarget_mixamo.gd`, `make_appearance.gd`. New variant meshes get a line in `PIECES` at the top of build_bodies.gd, then an item or appearance entry pointing at `assets/characters/lowpoly/<piece>_masc.scn`.
+- **Body file:** the masc body and its variants live in one .blend under one armature: `bare_body` (skin + a `leather` underwear surface), `head_human`, plus variants (`head_elf`, `face_default`, `hair_*`, `chainmail`, `leatherarmor`, `hat_tin`). Export the whole scene to `assets/models/characters/src/lowpoly_guy.glb` (Apply Modifiers on, Animation off). Then in the Database → **Body Models**: new objects are listed under "Not used yet"; add a piece for each (split a mesh by material or by height if it holds several items), Save, **Rebuild bodies and pieces**, and point an item's Fitted model (or an appearance option) at the new piece. If the body or skeleton changed, also Animations → Rebuild animations.
 - **Climbing marks (object names):** only marked surfaces can be grabbed or climbed. Put `_grab` or `_shimmy` in a name for ledges you can hang from and shimmy along, `_climb` for walls you can climb (also grabbable at the top), `_ladder` for ladders, e.g. `cliff_grab-col`. (Database → Player → "Grab any ledge" turns the restriction off.)
 - **Hair under hats:** give the faces of a hair style that should disappear under a hat a material named `hat_clip` (glTF doesn't export vertex groups). Hats then choose Head clipping: none, hat clip, or total (hides the whole head).
 - **Collision via name suffixes** (Godot reads these on import):

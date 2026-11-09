@@ -405,5 +405,8 @@
 		"fitted_masc": "",
 		"fitted_femme": "res://assets/characters/underwear_femme.scn",
 		"color": "#cbbd9f"
-	}
+	},
+	"bodies": [
+		"masc"
+	]
 }

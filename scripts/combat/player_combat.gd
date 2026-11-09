@@ -1,14 +1,14 @@
 class_name PlayerCombat
 extends Node
 ## The player's fighting, Fable style. One attack button; what it does depends on the
-## weapon in use (primary or secondary, swapped with Swap weapon or hotbar keys 1 and 2):
+## weapon in hand (one at a time; a weapon on the hotbar is swapped in by pressing it):
 ##   Melee weapons: tap = quick swing (rapid taps chain the combo), hold = heavy blow.
 ##   Bows: tap = quick shot, hold = draw (harder the longer), release fires.
 ##   Crossbows and guns: each press fires, then the weapon reloads (a "Reloading" bar).
 ## Block (held) guards with melee weapons and aims with ranged ones (over the shoulder,
 ## zoomed, with a crosshair). Ranged weapons aim by hand (where the crosshair is, or at a
 ## locked target) only when the item has "auto_aim" off; by default shots home onto the target.
-## Spells and items sit on the hotbar (boxes 3-10) and are cast with a cast bar.
+## Spells, items and weapons sit on the hotbar (boxes 1-10); spells are cast with a cast bar.
 ## Weapon families (speed, power, combo, reload, sounds) are data/weapon_types.json; the
 ## class's "proficient" families hit harder and faster. Lives under Player, next to Targeting.
 
@@ -253,28 +253,25 @@ func dps_of(item: Dictionary) -> float:
 	return dmg / maxf(secs, 0.01)
 
 
-## Primary ↔ secondary.
-func swap_weapon() -> void:
-	select_weapon("secondary" if active_slot() == "primary" else "primary")
-
-
-func select_weapon(slot: String) -> void:
-	if inventory == null or slot == active_slot():
+## Takes a weapon from the backpack in hand (a hotbar weapon); the one in hand goes back.
+func switch_to_weapon(id: String) -> void:
+	if inventory == null or String(inventory.equipped.get("primary", "")) == id:
 		return
 	if _current and not _hit_done:
 		return  # mid-swing
 	_cancel_all()
 	player.end_action()
 	_reload_left = 0.0
-	inventory.set_active_weapon(slot)  # → equipment_changed → _equip_weapons
-	var t := Database.weapon_type(String(inventory.equipped_item(slot).get("weapon_type", "")))
+	if not inventory.use_item(id):  # equips it → equipment_changed → _equip_weapons
+		return
+	var t := Database.weapon_type(String(inventory.equipped_item("primary").get("weapon_type", "")))
 	var sound := String(t.get("swap_sound", ""))
 	if not sound.is_empty() and ResourceLoader.exists(sound):
 		Combat.play_sound(player, load(sound), -4.0)
 	_enter_combat(false)
 	_play_draw()
 	_show_weapons()
-	weapon_changed.emit(slot)
+	weapon_changed.emit("primary")
 
 
 ## Builds the weapon models: the one in use goes in the hand while fighting; the other
@@ -378,17 +375,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not _attack_down:
 			_attack_down = true
 			_press_time = 0.0
-	elif event.is_action_pressed("cycle_mode"):
-		swap_weapon()
 	elif event.is_action_pressed("danger_mode"):
 		set_danger_mode(not Combat.danger_mode)
-	elif event.is_action_pressed("hotbar_1"):
-		select_weapon("primary")
-	elif event.is_action_pressed("hotbar_2"):
-		select_weapon("secondary")
 	else:
 		for i in Inventory.HOTBAR_SIZE:
-			if event.is_action_pressed("hotbar_%d" % (i + 3)):
+			if event.is_action_pressed("hotbar_%d" % (i + 1)):
 				use_hotbar(i)
 				get_viewport().set_input_as_handled()
 				return
@@ -421,7 +412,11 @@ func use_hotbar(i: int) -> void:
 	elif entry.begins_with("item:"):
 		if stats.is_dead():
 			return
-		inventory.use_item(entry.substr(5))
+		var id := entry.substr(5)
+		if String(Database.item(id).get("slot", "")) == "weapon":
+			switch_to_weapon(id)
+		else:
+			inventory.use_item(id)
 
 
 func _physics_process(delta: float) -> void:

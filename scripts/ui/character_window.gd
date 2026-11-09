@@ -157,7 +157,7 @@ func _build() -> void:
 	doll.columns = 3
 	doll.add_theme_constant_override("h_separation", 4)
 	doll.add_theme_constant_override("v_separation", 4)
-	for slot: String in ["head", "shoulders", "chest", "hands", "legs", "feet", "primary", "secondary", "off_hand"]:
+	for slot: String in Inventory.SLOTS:
 		doll.add_child(_equip_box(slot))
 	gear.add_child(doll)
 	gear.add_child(_section_label("Stats"))
@@ -583,9 +583,6 @@ func drop(data: Dictionary, target: ItemSlot) -> void:
 			inventory.equip_from(int(data.key), String(target.key))
 		["equip", "bag"]:
 			inventory.unequip(String(data.key), target.key)
-		["equip", "equip"]:
-			if String(data.key) in Inventory.WEAPON_SLOTS and String(target.key) in Inventory.WEAPON_SLOTS:
-				inventory.swap_weapon_slots()
 	refresh()
 
 

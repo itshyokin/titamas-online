@@ -357,8 +357,7 @@ const TABS = {
 			], e => !!e.use_hearth],
 			["Looks", [
 				{ key: "model", label: "Rigid model", type: "text", help: "builtin:sword / bow / shield / helm, or a res:// .glb. Placed with Fit Armor in Godot." },
-				{ key: "fitted_masc", label: "Fitted model (masc)", type: "text", help: "Skinned to the body rig in Blender (res://….glb or .scn)." },
-				{ key: "fitted_femme", label: "Fitted model (femme)", type: "text" },
+				{ key: "fitted_masc", label: "Fitted model (worn)", type: "select", empty: true, options: () => (assets.pieces || []).map(p => [p, p.replace("res://assets/characters/lowpoly/", "")]), help: "A piece from Body Models (skinned to the body rig in Blender). Pieces are listed after a rebuild." },
 				{ key: "hides", label: "Hides these body parts", type: "parts", wide: true },
 				{ key: "head_clip", label: "Head clipping (hats / helmets)", type: "select", options: [["", "None (sits clear of the hair)"], ["hat", "Hat clip: hide the hair's hat-clip parts"], ["total", "Total clip: hide the whole head (masked helmets)"]], help: "Hat clip hides the parts of a hair style given a \"hat_clip\" material in Blender (hair without one is hidden whole). Total clip hides head, face, eyes, hair and beard." },
 				{ key: "fit", label: "Fit", type: "fitnote", wide: true },
@@ -487,7 +486,7 @@ const TABS = {
 				{ key: "loadout.heavy_attack", label: "Bare-hands heavy (hold)", type: "ability" },
 				{ key: "loadout.ranged_attack", label: "Fallback ranged shot", type: "ability" },
 				{ key: "loadout.spells", label: "Spellbook (known spells)", type: "abilities", wide: true },
-				{ key: "hotbar", label: "Hotbar (boxes 3–10)", type: "hotbar", wide: true, help: "New characters start with this bar." },
+				{ key: "hotbar", label: "Hotbar (boxes 1–10)", type: "hotbar", wide: true, help: "New characters start with this bar. A weapon on it is taken in hand when pressed." },
 			]],
 			["Levels", [
 				{ key: "leveling.max_level", label: "Highest level", type: "int" },
@@ -564,7 +563,6 @@ const TABS = {
 				{ key: "loot", label: "Items", type: "loot", wide: true },
 			]],
 			["Look", [
-				{ key: "look.body", label: "Body", type: "select", options: [["masc", "Masc"], ["femme", "Femme"]] },
 				{ key: "look.skin", label: "Skin colour", type: "color" },
 				{ key: "look.head", label: "Head", type: "lookopt", list: "heads" },
 				{ key: "look.face", label: "Face", type: "lookopt", list: "faces" },
@@ -797,6 +795,43 @@ const TABS = {
 				{ key: "rule.level", label: "Level", type: "int", show: e => (e.rule || {}).kind === "level" },
 				{ key: "rule.item", label: "Item", type: "select", empty: true, options: () => itemOptions(), show: e => (e.rule || {}).kind === "item" },
 				{ key: "rule.amount", label: "Gold", type: "int", show: e => (e.rule || {}).kind === "gold" },
+			]],
+		],
+	},
+	skill_trees: {
+		title: "Skill Trees", file: "skill_trees", listKey: "trees", idKey: "id", nameKey: "name",
+		blank: () => ({ id: "new_tree", name: "New Tree", class: "", order: 1, color: "#c9a25a", description: "", rows: 6, cols: 4, nodes: [] }),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text" },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "class", label: "Class", type: "select", empty: true, options: () => (((data.classes || {}).classes) || []).map(c => [c.id, c.name]), help: "Each class shows its trees (in Order) on the class page." },
+				{ key: "order", label: "Order (1–3)", type: "int" },
+				{ key: "color", label: "Colour", type: "color" },
+				{ key: "rows", label: "Rows (tiers)", type: "int", help: "Tier 1 is the top row; lower tiers usually need points spent above." },
+				{ key: "cols", label: "Columns", type: "int" },
+				{ key: "description", label: "Description", type: "textarea", wide: true },
+			]],
+			["Skills (click a cell to add or edit one)", [
+				{ key: "nodes", label: "", type: "skillnodes", wide: true },
+			]],
+		],
+	},
+	body_models: {
+		title: "Body Models", file: "body_models", single: true,
+		groups: [
+			["Importing from Blender", [
+				{ key: "_intro", label: "", type: "note", wide: true, text: "Keep the body and every wearable piece in one .blend under the one armature (pieces parented to it with Armature modifiers, or rigid pieces parented to a bone). Export the whole scene as glTF Binary (.glb, Apply Modifiers on, Animation off) over the Source file below. New Blender objects then show up in the Meshes list: add a piece for each (one mesh can make several pieces, split by material or height), Save, then Rebuild. Each piece becomes assets/characters/lowpoly/<id>_masc.scn: point an item's Fitted model (Items tab) or an appearance option at it. Changing the body itself (bones, proportions) also needs Animations → Rebuild animations." },
+				{ key: "source", label: "Source .glb", type: "select", options: () => (assets.glbs || []).map(g => [g, g.replace("res://assets/models/characters/src/", "")]) },
+				{ key: "height", label: "Height (m, top of the head)", type: "number" },
+				{ key: "body_meshes", label: "Meshes that make the body", type: "glbmeshes", wide: true },
+				{ key: "body_extra", label: "Body materials kept as their own part (not skin)", type: "glbextra", wide: true },
+			]],
+			["Pieces (items, hair, heads, faces, hats…)", [
+				{ key: "pieces", label: "", type: "glbpieces", wide: true },
+			]],
+			["Rebuild", [
+				{ key: "_rebuild", label: "Rebuild bodies and pieces", type: "rebuild", wide: true, endpoint: "/api/rebuild_bodies", file: "body_models", button: "Rebuild bodies and pieces", note: "Builds base_bodies.scn and every piece from the .glb, then the placeholder hair (about half a minute). Save first.", done: "Bodies and pieces rebuilt. Restart the game to see them." },
 			]],
 		],
 	},
@@ -1316,11 +1351,11 @@ function fieldControl(t, entry, f) {
 		}
 		case "kitgear": {
 			const eq = Object.assign({}, value || {});
-			const slots = [["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["primary", "Primary"], ["secondary", "Secondary"], ["off_hand", "Off hand"]];
+			const slots = [["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["primary", "Weapon"], ["off_hand", "Off hand"]];
 			const grid = el("div", { className: "grid" });
 			for (const [slot, name] of slots) {
 				const cell = el("div", { className: "field" });
-				const want = slot === "primary" || slot === "secondary" ? "weapon" : slot;
+				const want = slot === "primary" ? "weapon" : slot;
 				const opts = data.items.items.filter(it => it.slot === want).map(it => [it.id, it.name]);
 				const s = selectOf(opts, eq[slot] || "", true);
 				s.onchange = () => { if (s.value) eq[slot] = s.value; else delete eq[slot]; set(Object.assign({}, eq)); };
@@ -1356,11 +1391,11 @@ function fieldControl(t, entry, f) {
 			break;
 		}
 		case "rebuild": {
-			const btn = el("button", { textContent: "Rebuild animations", className: "primary" });
-			const log = el("pre", { className: "rebuild-log", textContent: "Turns the FBX files and the clip settings into the game's animations (about a minute). Save first." });
+			const btn = el("button", { textContent: f.button || "Rebuild animations", className: "primary" });
+			const log = el("pre", { className: "rebuild-log", textContent: f.note || "Turns the FBX files and the clip settings into the game's animations (about a minute). Save first." });
 			btn.onclick = async () => {
-				if (dirty("animations")) { toast("Save first", true); return; }
-				const r = await fetch("/api/rebuild_animations", { method: "POST" }).then(r => r.json()).catch(() => ({ ok: false }));
+				if (dirty(f.file || "animations")) { toast("Save first", true); return; }
+				const r = await fetch(f.endpoint || "/api/rebuild_animations", { method: "POST" }).then(r => r.json()).catch(() => ({ ok: false }));
 				if (!r.ok) { toast("Couldn't start (already running?)", true); return; }
 				btn.disabled = true;
 				const poll = async () => {
@@ -1368,7 +1403,7 @@ function fieldControl(t, entry, f) {
 					if (st) log.textContent = st.log || "Rebuilding…";
 					if (st && st.running) { setTimeout(poll, 1000); return; }
 					btn.disabled = false;
-					toast(st && st.ok ? "Animations rebuilt. Restart the game to see them." : "Rebuild had problems; see the log.", !(st && st.ok));
+					toast(st && st.ok ? (f.done || "Animations rebuilt. Restart the game to see them.") : "Rebuild had problems; see the log.", !(st && st.ok));
 					const a = await fetch("/api/assets").then(r => r.json()).catch(() => null);
 					if (a) assets = a;
 				};
@@ -1411,14 +1446,14 @@ function fieldControl(t, entry, f) {
 			wrap.className += " list-field";
 			wrap.appendChild(label);
 			const list = Array.isArray(value) ? value.slice() : [];
-			while (list.length < 8) list.push("");
+			while (list.length < 10) list.push("");
 			const opts = abilityOptions().map(([id, n]) => ["ability:" + id, "Spell: " + n])
 				.concat(itemOptions().map(([id, n]) => ["item:" + id, "Item: " + n]));
-			list.slice(0, 8).forEach((v, i) => {
+			list.slice(0, 10).forEach((v, i) => {
 				const row = el("div", { className: "row" });
 				const s = selectOf(opts, v, true);
-				s.onchange = () => { list[i] = s.value; set(list.slice(0, 8)); };
-				row.append(el("span", { textContent: String(i + 3) }), s);
+				s.onchange = () => { list[i] = s.value; set(list.slice(0, 10)); };
+				row.append(el("span", { textContent: String((i + 1) % 10) }), s);
 				wrap.appendChild(row);
 			});
 			break;
@@ -1441,6 +1476,86 @@ function fieldControl(t, entry, f) {
 				add.onclick = () => { list.push(""); set(list, true); };
 				wrap.appendChild(add);
 			}
+			break;
+		}
+		case "glbmeshes": {
+			const list = Array.isArray(value) ? value.slice() : [];
+			const box = el("div");
+			for (const m of (assets.glb_meshes || [])) {
+				const lab = el("label", { className: "check" });
+				lab.style.cssText = "display:inline-flex;gap:4px;margin-right:14px";
+				const cb = el("input", { type: "checkbox", checked: list.includes(m.name) });
+				cb.onchange = () => { const v = list.filter(x => x !== m.name); if (cb.checked) v.push(m.name); set(v); };
+				lab.append(cb, document.createTextNode(" " + m.name));
+				box.appendChild(lab);
+			}
+			if (!(assets.glb_meshes || []).length) box.textContent = "(No meshes found: is the Source .glb there?)";
+			wrap.append(label, box);
+			break;
+		}
+		case "glbextra": {
+			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const mats = [...new Set((assets.glb_meshes || []).flatMap(m => m.materials))];
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const ms = selectOf(mats, r.material, false);
+				ms.style.minWidth = "160px";
+				ms.onchange = () => { list[i].material = ms.value; set(list); };
+				const part = el("input", { type: "text", value: r.part || "" });
+				part.oninput = () => { list[i].part = part.value; set(list); };
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); set(list, true); };
+				row.append(el("span", { textContent: "material" }), ms, el("span", { textContent: "→ part" }), part, rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Add" });
+			add.onclick = () => { list.push({ material: mats[0] || "", part: "underwear" }); set(list, true); };
+			wrap.appendChild(add);
+			break;
+		}
+		case "glbpieces": {
+			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
+			wrap.className += " list-field";
+			const meshes = assets.glb_meshes || [];
+			const used = new Set(list.map(p => p.mesh).concat(entry.body_meshes || []));
+			const unused = meshes.filter(m => !used.has(m.name));
+			if (unused.length) wrap.appendChild(el("div", { className: "help", textContent: "Not used yet: " + unused.map(m => m.name).join(", ") + "  (add a piece for each)" }));
+			const head = el("div", { className: "row" });
+			head.style.cssText = "font-size:12px;opacity:.7;display:grid;grid-template-columns:150px 1fr 1fr 140px;gap:6px";
+			head.append(el("span", { textContent: "piece id (file name)" }), el("span", { textContent: "mesh" }), el("span", { textContent: "material (all)" }), el("span", { textContent: "above / below (m)" }));
+			wrap.appendChild(head);
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const id = el("input", { type: "text", value: r.id || "" });
+				id.style.width = "150px";
+				id.oninput = () => { list[i].id = id.value.toLowerCase().replace(/[^a-z0-9_]/g, "_"); set(list); };
+				const ms = selectOf(meshes.map(m => [m.name, m.name + (m.skinned ? "" : " (rigid)")]), r.mesh, false);
+				ms.onchange = () => { list[i].mesh = ms.value; list[i].material = ""; set(list, true); };
+				const mesh = meshes.find(m => m.name === r.mesh);
+				const mat = selectOf(mesh ? mesh.materials : [], r.material || "", true);
+				mat.onchange = () => { list[i].material = mat.value; set(list); };
+				const num = k => { const n = el("input", { type: "number", step: 0.05, value: r[k] ?? -1, title: k + " (-1 = none)" }); n.style.width = "64px"; n.oninput = () => { const v = parseFloat(n.value); if (!Number.isNaN(v)) { list[i][k] = v; set(list); } }; return n; };
+				const rm = el("button", { textContent: "✕", title: "Remove" });
+				rm.onclick = () => { list.splice(i, 1); set(list, true); };
+				row.append(id, ms, mat, num("min_y"), num("max_y"));
+				if (mesh && !mesh.skinned) {
+					const bone = el("input", { type: "text", value: r.bone || "mixamorig_Head", title: "Bone a rigid mesh follows" });
+					bone.style.width = "150px";
+					bone.oninput = () => { list[i].bone = bone.value; set(list); };
+					row.append(bone);
+				}
+				row.append(rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Add piece" });
+			add.onclick = () => { const m = unused[0] || meshes[0]; list.push({ id: m ? m.name.toLowerCase().replace(/[^a-z0-9_]/g, "_") : "new_piece", mesh: m ? m.name : "", material: "", min_y: -1, max_y: -1 }); set(list, true); };
+			wrap.appendChild(add);
+			break;
+		}
+		case "skillnodes": {
+			wrap.appendChild(skillTreeEditor(entry));
 			break;
 		}
 		case "pages": {
@@ -1628,6 +1743,92 @@ function flattenCommands(list, depth, out) {
 		}
 	});
 	return out;
+}
+
+
+// --- Skill tree editor: a grid of tiers x columns; each cell can hold one skill. ---------
+const SKILL_STATS = [["attack", "Attack"], ["spell_power", "Spell power"], ["armor", "Armour"], ["block", "Block"], ["bonus_health", "Max health"], ["bonus_mana", "Max mana"], ["crit_chance", "Crit chance (%)"], ["move_speed", "Move speed (%)"], ["stamina", "Max stamina"]];
+let skillPick = {};  // tree id -> selected node id
+function skillTreeEditor(tree) {
+	if (!Array.isArray(tree.nodes)) tree.nodes = [];
+	const box = el("div", { className: "skilltree" });
+	const rows = Math.max(1, tree.rows | 0), cols = Math.max(1, tree.cols | 0);
+	const grid = el("div");
+	grid.style.cssText = `display:grid;grid-template-columns:repeat(${cols},minmax(90px,1fr));gap:8px;margin-bottom:12px`;
+	const at = (r, c) => tree.nodes.find(n => n.row === r && n.col === c);
+	const picked = skillPick[tree.id];
+	for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+		const n = at(r, c);
+		const cell = el("button", { textContent: n ? (n.name || n.id) + (n.max_rank > 1 ? "  0/" + n.max_rank : "") : "+", title: n ? n.description || "" : "Add a skill here (tier " + (r + 1) + ")" });
+		cell.style.cssText = "min-height:54px;white-space:normal;border-radius:8px;" + (n ? `border:2px solid ${tree.color || "#c9a25a"};` : "opacity:.45;border:1px dashed #666;") + (n && n.id === picked ? "background:#3a3324;" : "");
+		if (n && (n.requires || []).length) cell.textContent += "  ↑";
+		cell.onclick = () => {
+			if (!n) {
+				let k = 1; while (tree.nodes.some(x => x.id === tree.id + "_" + k)) k++;
+				const node = { id: tree.id + "_" + k, name: "New Skill", description: "", icon: "", row: r, col: c, max_rank: 1, cost: 1, min_level: 1, points_above: r * 3, requires: [], effect: "stat", stat: "attack", per_rank: 1, ability: "", key: "" };
+				tree.nodes.push(node);
+				skillPick[tree.id] = node.id;
+			} else skillPick[tree.id] = n.id;
+			changed(true);
+		};
+		grid.appendChild(cell);
+	}
+	box.appendChild(grid);
+	const node = tree.nodes.find(n => n.id === skillPick[tree.id]);
+	if (!node) {
+		box.appendChild(el("div", { className: "hint", textContent: "Click an empty cell to add a skill, or a skill to edit it. ↑ = needs another skill first." }));
+		return box;
+	}
+	const form = el("div", { className: "grid" });
+	const field = (label, input) => { const f = el("div", { className: "field" }); f.append(el("label", { textContent: label }), input); form.appendChild(f); return input; };
+	const txt = (k, label) => { const i = el("input", { type: "text", value: node[k] ?? "" }); i.oninput = () => { node[k] = k === "id" ? i.value.toLowerCase().replace(/[^a-z0-9_]/g, "_") : i.value; if (k === "id") skillPick[tree.id] = node[k]; changed(); }; return field(label, i); };
+	const num = (k, label, step = 1) => { const i = el("input", { type: "number", value: node[k] ?? 0, step }); i.oninput = () => { const v = parseFloat(i.value); if (!Number.isNaN(v)) { node[k] = v; changed(); } }; return field(label, i); };
+	txt("id", "ID");
+	txt("name", "Name");
+	num("max_rank", "Ranks");
+	num("cost", "Points per rank");
+	num("min_level", "Character level needed");
+	num("points_above", "Points spent in this tree first");
+	num("row", "Tier (row, from 0)");
+	num("col", "Column (from 0)");
+	const eff = selectOf([["stat", "Raises a stat"], ["ability", "Teaches an ability"], ["passive", "Passive (game code by key)"]], node.effect || "stat", false);
+	eff.onchange = () => { node.effect = eff.value; changed(true); };
+	field("Effect", eff);
+	if ((node.effect || "stat") === "stat") {
+		const st = selectOf(SKILL_STATS, node.stat || "attack", false);
+		st.onchange = () => { node.stat = st.value; changed(); };
+		field("Stat", st);
+		num("per_rank", "Amount per rank", 0.1);
+	} else if (node.effect === "ability") {
+		const ab = selectOf(abilityOptions(), node.ability || "", true);
+		ab.onchange = () => { node.ability = ab.value; changed(); };
+		field("Ability", ab);
+	} else {
+		txt("key", "Passive key");
+	}
+	box.appendChild(form);
+	const desc = el("div", { className: "field wide" });
+	const ta = el("textarea", { value: node.description || "" });
+	ta.oninput = () => { node.description = ta.value; changed(); };
+	desc.append(el("label", { textContent: "Description" }), ta);
+	box.appendChild(desc);
+	// Needs: other skills in this tree.
+	const req = el("div", { className: "field wide" });
+	req.appendChild(el("label", { textContent: "Needs (other skills in this tree, at full rank)" }));
+	for (const other of tree.nodes) {
+		if (other === node) continue;
+		const lab = el("label", { className: "check" });
+		const cb = el("input", { type: "checkbox", checked: (node.requires || []).includes(other.id) });
+		cb.onchange = () => { node.requires = (node.requires || []).filter(x => x !== other.id); if (cb.checked) node.requires.push(other.id); changed(); };
+		lab.append(cb, document.createTextNode(" " + (other.name || other.id) + "  (tier " + (other.row + 1) + ")"));
+		lab.style.cssText = "display:inline-flex;gap:4px;margin-right:12px";
+		req.appendChild(lab);
+	}
+	box.appendChild(req);
+	const rm = el("button", { textContent: "Delete this skill" });
+	rm.onclick = () => { tree.nodes = tree.nodes.filter(n => n !== node); for (const n of tree.nodes) n.requires = (n.requires || []).filter(x => x !== node.id); delete skillPick[tree.id]; changed(true); };
+	box.appendChild(rm);
+	return box;
 }
 
 function eventPagesEditor(entry) {
