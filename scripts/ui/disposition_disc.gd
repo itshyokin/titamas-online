@@ -54,7 +54,7 @@ func _process(delta: float) -> void:
 func _update() -> void:
 	var cfg := _cfg()
 	var st := Combat.stats_of(_owner)
-	if not bool(cfg.get("enabled", true)) or (st and st.is_dead()) or not _owner.is_visible_in_tree():
+	if not bool(cfg.get("enabled", true)) or (st and st.is_dead()) or not _owner.is_visible_in_tree() or _owner.get("hide_disc") == true:
 		visible = false
 		return
 	visible = true

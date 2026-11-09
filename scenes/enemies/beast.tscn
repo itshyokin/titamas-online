@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy/beast.gd" id="1_beast"]
+[ext_resource type="Script" path="res://scripts/player/stats.gd" id="2_stats"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_beast"]
+radius = 0.3
+height = 0.7
+
+[node name="Beast" type="CharacterBody3D"]
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("1_beast")
+enemy_id = "cave_bat"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+shape = SubResource("CapsuleShape3D_beast")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Stats" type="Node" parent="."]
+script = ExtResource("2_stats")
+display_name = "Beast"
+team = 1
+max_mana = 0.0

@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://5ixqu5qrpwvo" path="res://scripts/world/atmosphere_manager.gd" id="5_ujnkd"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/bandit.tscn" id="90_bandit"]
 [ext_resource type="Script" uid="uid://c0q1l2rd0tqsj" path="res://scripts/enemy/training_dummy.gd" id="91_dummy"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/beast.tscn" id="97_beast"]
 [ext_resource type="Script" uid="uid://cv0mayk5ckreu" path="res://scripts/world/world_cycle.gd" id="92_cycle"]
 [ext_resource type="PackedScene" path="res://scenes/npcs/npc.tscn" id="95_npc"]
 [ext_resource type="PackedScene" path="res://scenes/world/home_point.tscn" id="96_home"]
@@ -110,6 +111,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 2.795746, 10)
 
 [node name="Bandit3" parent="Enemies" unique_id=808439722 instance=ExtResource("90_bandit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.0862, 4.603443, 10.822014)
+
+[node name="Dragon" parent="Enemies" instance=ExtResource("97_beast")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 6, 52)
+enemy_id = "dragon"
+
+[node name="CaveBat" parent="Enemies" instance=ExtResource("97_beast")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 4, 45)
+enemy_id = "cave_bat"
+
+[node name="CaveBat2" parent="Enemies" instance=ExtResource("97_beast")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 4, 49)
+enemy_id = "cave_bat"
 
 [node name="NPCs" type="Node3D" parent="."]
 

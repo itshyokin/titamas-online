@@ -102,6 +102,7 @@ var _charge := 0.0
 # Casting a spell from the hotbar (the bar fills, then it goes off).
 var _casting: Ability = null
 var _cast_time := 0.0
+var _cast_len := 0.0  # this cast's length (the class's cast_time_scale applied)
 var _cast_glow: Node3D = null
 
 # The action playing now (a swing, a shot, a spell going off).
@@ -157,7 +158,11 @@ func _ready() -> void:
 			loadout_changed.emit())
 	player.action_interrupted.connect(_cancel_all)
 	player.respawned.connect(func(_reason: String) -> void: _cancel_all(); _set_combat(false))
-	stats.damaged.connect(func(_a: float, _s: Node, _c: bool) -> void: _enter_combat())
+	stats.damaged.connect(func(_a: float, s: Node, _c: bool) -> void:
+		_enter_combat()
+		if s != null:
+			_break_stealth())
+	stats.statuses_changed.connect(_on_statuses_changed)
 	Combat.show_numbers(player)
 	_equip_weapons.call_deferred()
 	if inventory:
@@ -565,6 +570,8 @@ func _start(ab: Ability, power: float, anim_start := 0.0) -> bool:
 		notice.emit("Too tired")
 		return false
 	var weapon_move := _is_weapon_move(ab)
+	if ab.delivery != Ability.Delivery.BUFF and ab.delivery != Ability.Delivery.MELEE:
+		_break_stealth()  # (melee breaks it when the blow lands: a sneak attack)
 	var target := _pick_target(ab, weapon_move)
 	if ab.delivery == Ability.Delivery.PROJECTILE and not weapon_move and target == null:
 		notice.emit("No target")
@@ -594,6 +601,13 @@ func _start(ab: Ability, power: float, anim_start := 0.0) -> bool:
 
 ## Extra power from equipment: weapon attack for swings and shots, spell power for spells
 ## (a quarter of it per heal tick).
+## Spell cast times for this character's class (classes.json cast_time_scale: mages 0.75).
+func cast_time_scale() -> float:
+	if not GameSession.active():
+		return 1.0
+	return float(Database.class_data(String(GameSession.data.get("class", ""))).get("cast_time_scale", 1.0))
+
+
 ## Racial abilities' extra power by ability id (grows with level; PlayerProgress).
 var racial_power := {}
 
@@ -715,11 +729,13 @@ func _land(ab: Ability) -> void:
 			if _passive("cleave") > 0 and ab.id == String(Database.weapon_type(String(weapon.get("weapon_type", ""))).get("heavy", "")):
 				arc = maxf(arc, 200.0)
 			var in_reach: Array[Node3D] = []
-			for n in Combat.enemies_near(player, player.global_position, ab.reach + 0.6):
+			for n in Combat.enemies_near(player, player.global_position, ab.reach + 6.0):
 				var to := n.global_position - player.global_position
 				if absf(to.y) > 2.0:
 					continue
 				to.y = 0.0
+				if to.length() - Combat.radius_of(n) > ab.reach + 0.6:
+					continue
 				if to.length() > 0.5 and rad_to_deg(fwd.angle_to(to.normalized())) > arc * 0.5:
 					continue
 				in_reach.append(n)
@@ -732,11 +748,18 @@ func _land(ab: Ability) -> void:
 					in_reach.sort_custom(func(a: Node3D, b: Node3D) -> bool: return a.global_position.distance_to(player.global_position) < b.global_position.distance_to(player.global_position))
 					one = in_reach[0]
 				in_reach = [one]
+			var sneak := is_stealthed() and not in_reach.is_empty()
+			if sneak:
+				power *= float(_world_settings().get("sneak_attack", 2.0))
+				FloatingText.spawn(in_reach[0], "Sneak attack!", Color(0.75, 0.6, 1.0), 1.2)
 			for n in in_reach:
 				if Combat.hit(player, n, power, staggers, push, Ability.applies_of(ab)) > 0.0:
 					landed = true
+					_use_enchant(n)
+					_maybe_finisher(n, ab)
 					if countering:
 						FloatingText.spawn(n, "Counter!", Color(1.0, 0.85, 0.3), 1.2)
+			_break_stealth()
 			if landed and _flourish:
 				FloatingText.spawn(player, "Flourish!", Color(1.0, 0.8, 0.3), 1.3)
 				TimeFX.hit_stop(player, 0.14)
@@ -781,6 +804,10 @@ func _land(ab: Ability) -> void:
 					cam.call("shake", 0.18)
 			if weapon_move and float(weapon_type.get("reload", 0.0)) > 0.0:
 				_start_reload.call_deferred()
+		Ability.Delivery.AREA:
+			_land_area(ab)
+		Ability.Delivery.BUFF:
+			_land_buff(ab)
 		Ability.Delivery.HEAL_OVER_TIME:
 			var who: Node3D = _target if _target else player
 			var s := Combat.stats_of(who)
@@ -791,6 +818,126 @@ func _land(ab: Ability) -> void:
 					Combat.play_sound(player, ab.release_sound, -3.0)
 				elif ab.sounds.size() > 0:
 					Combat.play_sound(who, ab.sounds[0], -4.0)
+
+
+# --- Area, buffs, enchants, stealth -----------------------------------------------------
+
+## Burst Quake and the like: a shockwave around you hitting everyone within reach.
+func _land_area(ab: Ability) -> void:
+	var at := player.global_position
+	var color := ab.color
+	Effects.shockwave(Combat.world_root(player), at, ab.reach, color)
+	if ab.release_sound:
+		Combat.play_sound(player, ab.release_sound, 0.0, 0.8)
+	elif ab.sounds.size() > 0:
+		Combat.play_sound(player, ab.sounds.pick_random(), 0.0, 0.8)
+	var cam := get_tree().get_first_node_in_group("player_camera")
+	if cam:
+		cam.call("shake", 0.5)
+	for n in Combat.enemies_near(player, at, ab.reach):
+		if absf(n.global_position.y - at.y) > 2.5:
+			continue
+		Combat.hit(player, n, _power, true, ab.knockback, Ability.applies_of(ab))
+
+
+## Buffs on yourself: a status (data "self_status": {status, seconds, rank_key,
+## seconds_per_rank}) and/or a weapon enchant (data "enchant": {status, hits, rank_key,
+## hits_per_rank, bonus_power, applies, color}).
+func _land_buff(ab: Ability) -> void:
+	var d := Ability.data_of(ab)
+	var ss = d.get("self_status", {})
+	if ss is Dictionary and not ss.is_empty():
+		var secs := float(ss.get("seconds", 8.0)) + _passive(String(ss.get("rank_key", ""))) * float(ss.get("seconds_per_rank", 0.0))
+		stats.add_status(String(ss.get("status", "")), secs, player)
+	var en = d.get("enchant", {})
+	if en is Dictionary and not en.is_empty():
+		_enchant = en.duplicate(true)
+		_enchant["left"] = int(en.get("hits", 3)) + _passive(String(en.get("rank_key", ""))) * int(en.get("hits_per_rank", 1))
+		stats.add_status(String(en.get("status", "enchanted")), 600.0, player)
+		_show_enchant()
+	Effects.burst(Combat.world_root(player), player.global_position + Vector3.UP * 1.2, ab.color, 0.8)
+	if ab.release_sound:
+		Combat.play_sound(player, ab.release_sound, -3.0)
+
+
+var _enchant := {}  # the weapon enchant in use (hits "left")
+var _enchant_fx: Node3D = null
+
+
+## The weapon glows and trails wisps while enchanted.
+func _show_enchant() -> void:
+	_hide_enchant()
+	var m: Dictionary = _models.get(active_slot(), {})
+	var hand = m.get("hand")
+	if hand == null or not is_instance_valid(hand):
+		return
+	var col := Color.html(String(_enchant.get("color", "#9fd8ff")))
+	_enchant_fx = Effects.enchant_glow(hand, col)
+
+
+func _hide_enchant() -> void:
+	if _enchant_fx and is_instance_valid(_enchant_fx):
+		_enchant_fx.queue_free()
+	_enchant_fx = null
+
+
+## A melee hit while enchanted: extra damage and statuses; uses up one charge.
+func _use_enchant(target: Node3D) -> void:
+	if _enchant.is_empty() or not is_instance_valid(target):
+		return
+	var bonus := float(_enchant.get("bonus_power", 6.0)) + stats.spell_power * 0.5
+	var col := Color.html(String(_enchant.get("color", "#9fd8ff")))
+	Combat.hit(player, target, bonus, false, 0.0, _enchant.get("applies", []))
+	Effects.burst(Combat.world_root(player), Combat.aim_point(target), col, 0.6)
+	_enchant.left = int(_enchant.left) - 1
+	if int(_enchant.left) <= 0:
+		stats.remove_status(String(_enchant.get("status", "enchanted")))
+		_enchant = {}
+		_hide_enchant()
+
+
+## Stealth: enemies don't notice you (unless right next to you); attacking or being hit
+## ends it, and the first blow from stealth hits twice as hard.
+func is_stealthed() -> bool:
+	return stats.has_status("stealth")
+
+
+func _break_stealth() -> void:
+	if is_stealthed():
+		stats.remove_status("stealth")
+
+
+var _was_stealthed := false
+
+
+## See-through while stealthed; the weapon glow goes when an enchant runs out.
+func _on_statuses_changed() -> void:
+	var hidden := is_stealthed()
+	if hidden != _was_stealthed:
+		_was_stealthed = hidden
+		for mi in player.model.find_children("*", "GeometryInstance3D", true, false):
+			(mi as GeometryInstance3D).transparency = 0.65 if hidden else 0.0
+		if hidden:
+			FloatingText.spawn(player, "Stealth", Color(0.75, 0.6, 1.0), 1.0)
+	if not _enchant.is_empty() and not stats.has_status(String(_enchant.get("status", "enchanted"))):
+		_enchant = {}
+		_hide_enchant()
+
+
+## A killing blow now and then becomes a finisher: slow motion and a camera swinging round
+## the two of you (player.json combat finisher_chance; not in co-op; not on bosses).
+func _maybe_finisher(n: Node3D, ab: Ability) -> void:
+	var st := Combat.stats_of(n)
+	if st == null or not st.is_dead() or Net.active:
+		return
+	var d: Dictionary = Database.enemy(String(n.get("enemy_id"))) if n.get("enemy_id") != null else {}
+	if bool(d.get("boss", false)):
+		return
+	var chance := float(_world_settings().get("finisher_chance", 0.35))
+	if ab.staggers:
+		chance *= 1.6  # heavy blows more often
+	if randf() < chance:
+		Finisher.play(player, n, float(_world_settings().get("finisher_seconds", 1.4)))
 
 
 func _world_settings() -> Dictionary:
@@ -939,7 +1086,7 @@ func cast(ab: Ability) -> bool:
 		return false
 	if _current and _time < _current.recovery_time:
 		return false
-	if stats.status_flag("no_spells") and not _is_weapon_move(ab):
+	if stats.status_flag("no_spells") and not _is_weapon_move(ab) and not bool(Ability.data_of(ab).get("technique", false)):
 		notice.emit("You're silenced")
 		return false
 	var left := cooldown_left(ab)
@@ -966,6 +1113,7 @@ func cast(ab: Ability) -> bool:
 	_aim_pose = false
 	_casting = ab
 	_cast_time = 0.0
+	_cast_len = ab.cast_time * cast_time_scale()
 	_enter_combat()
 	player.action_animation.emit("cast_channel", 0.0, 0.2, 1.0)
 	_start_loop(ab.cast_loop_sound)
@@ -981,7 +1129,7 @@ func _update_cast(delta: float) -> void:
 		return
 	if targeting.has_target():
 		player.face_toward(targeting.target.global_position, delta)
-	if _cast_time >= _casting.cast_time:
+	if _cast_time >= _cast_len:
 		var ab := _casting
 		_end_cast()
 		player.end_action()
@@ -1101,7 +1249,7 @@ func bar_state() -> Dictionary:
 	if _channel:
 		return {"name": _channel.display_name, "fraction": clampf(_channel_time / maxf(_channel.cast_time, 0.01), 0.0, 1.0), "kind": "cast"}
 	if _casting:
-		return {"name": _casting.display_name, "fraction": clampf(_cast_time / maxf(_casting.cast_time, 0.01), 0.0, 1.0), "kind": "cast"}
+		return {"name": _casting.display_name, "fraction": clampf(_cast_time / maxf(_cast_len, 0.01), 0.0, 1.0), "kind": "cast"}
 	if _charging:
 		return {"name": "Drawing" if is_ranged() else _charging.display_name, "fraction": _charge_fraction(), "kind": "charge"}
 	if _reload_left > 0.0:

@@ -65,6 +65,44 @@
 					"per_rank": 1,
 					"ability": "",
 					"key": "cleave"
+				},
+				{
+					"id": "fighter_blade_frost",
+					"name": "Frost Edge",
+					"description": "Learn Frost Edge: your weapon frosts over and the next hit deals ice damage.",
+					"icon": "",
+					"row": 0,
+					"col": 3,
+					"max_rank": 1,
+					"cost": 1,
+					"min_level": 1,
+					"points_above": 0,
+					"requires": [],
+					"effect": "ability",
+					"stat": "attack",
+					"per_rank": 1,
+					"ability": "frost_edge",
+					"key": ""
+				},
+				{
+					"id": "fighter_blade_rime",
+					"name": "Lasting Rime",
+					"description": "Enchantments last one more hit per rank.",
+					"icon": "",
+					"row": 1,
+					"col": 3,
+					"max_rank": 3,
+					"cost": 1,
+					"min_level": 3,
+					"points_above": 1,
+					"requires": [
+						"fighter_blade_frost"
+					],
+					"effect": "passive",
+					"stat": "attack",
+					"per_rank": 1,
+					"ability": "",
+					"key": "enchant_hits"
 				}
 			]
 		},
@@ -133,6 +171,24 @@
 					"per_rank": 1,
 					"ability": "",
 					"key": "riposte"
+				},
+				{
+					"id": "fighter_bulwark_quake",
+					"name": "Burst Quake",
+					"description": "Learn Burst Quake: punch the ground and knock nearby foes down.",
+					"icon": "",
+					"row": 2,
+					"col": 1,
+					"max_rank": 1,
+					"cost": 1,
+					"min_level": 4,
+					"points_above": 3,
+					"requires": [],
+					"effect": "ability",
+					"stat": "attack",
+					"per_rank": 1,
+					"ability": "burst_quake",
+					"key": ""
 				}
 			]
 		},
@@ -181,6 +237,56 @@
 					"per_rank": 2,
 					"ability": "",
 					"key": ""
+				}
+			]
+		},
+		{
+			"id": "rogue_shadow",
+			"name": "Shadow",
+			"class": "rogue",
+			"order": 1,
+			"color": "#7a6aa8",
+			"description": "Slip past enemies and strike from hiding.",
+			"rows": 6,
+			"cols": 4,
+			"nodes": [
+				{
+					"id": "rogue_shadow_stealth",
+					"name": "Stealth",
+					"description": "Learn Stealth: enemies only notice you up close.",
+					"icon": "",
+					"row": 0,
+					"col": 1,
+					"max_rank": 1,
+					"cost": 1,
+					"min_level": 1,
+					"points_above": 0,
+					"requires": [],
+					"effect": "ability",
+					"stat": "attack",
+					"per_rank": 1,
+					"ability": "stealth",
+					"key": ""
+				},
+				{
+					"id": "rogue_shadow_linger",
+					"name": "Lingering Shadow",
+					"description": "Stealth lasts 3 s longer per rank.",
+					"icon": "",
+					"row": 1,
+					"col": 1,
+					"max_rank": 3,
+					"cost": 1,
+					"min_level": 2,
+					"points_above": 1,
+					"requires": [
+						"rogue_shadow_stealth"
+					],
+					"effect": "passive",
+					"stat": "attack",
+					"per_rank": 1,
+					"ability": "",
+					"key": "stealth_time"
 				}
 			]
 		}

@@ -309,6 +309,9 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 				nodes.append(node)
 	if item.has("tint"):
 		_tint(nodes, item.tint)
+	var sway := float(item.get("sway", 0.0))
+	if sway > 0.0 and not Engine.is_editor_hint():
+		_add_sway(nodes, sway)
 	var hides: Array = _hides_of(item)
 	for part in hides:
 		_hidden_parts[part] = int(_hidden_parts.get(part, 0)) + 1
@@ -602,6 +605,7 @@ func _apply_look_parts() -> void:
 				item["tint"] = Color.html(String(entry.get("color", "#cbbd9f")))
 			else:
 				item["tint"] = _look.get("facial_color" if tag == "facial_hair" else "hair_color", Color(0.3, 0.2, 0.1))
+				item["sway"] = float(entry.get("sway", 0.35 if tag == "hair" else 0.15))
 			var nodes := wear(item, tag)
 			if tag == "head":
 				for n in nodes:
@@ -819,3 +823,74 @@ func _setup_animator() -> void:
 
 func _armature_name(type: BodyType) -> String:
 	return "Armature_femme" if type == BodyType.FEMME else "Armature_masc"
+
+
+# --- Hair and cape sway ------------------------------------------------------------------
+
+const SWAY_SHADER := preload("res://assets/materials/cloth_sway.gdshader")
+
+var _sway: Array = []  # [MeshInstance3D, [ShaderMaterial...]]
+var _sway_last := Vector3.INF
+var _sway_off := Vector3.ZERO  # world-space trail (spring)
+var _sway_vel := Vector3.ZERO
+
+
+## Swaps worn meshes' materials for cloth_sway.gdshader (same colour/texture) so they
+## swing with movement and flutter in the wind (items/looks with "sway" > 0).
+func _add_sway(nodes: Array, amount: float) -> void:
+	for node in nodes:
+		var meshes: Array = (node as Node).find_children("*", "MeshInstance3D", true, false)
+		if node is MeshInstance3D:
+			meshes.append(node)
+		for mi: MeshInstance3D in meshes:
+			if mi.mesh == null:
+				continue
+			var box := mi.mesh.get_aabb()
+			var mats: Array = []
+			for i in mi.mesh.get_surface_count():
+				var src := mi.get_active_material(i)
+				var sm := ShaderMaterial.new()
+				sm.shader = SWAY_SHADER
+				if src is BaseMaterial3D:
+					var b := src as BaseMaterial3D
+					sm.set_shader_parameter("albedo", b.albedo_color)
+					sm.set_shader_parameter("roughness", b.roughness)
+					if b.albedo_texture:
+						sm.set_shader_parameter("albedo_tex", b.albedo_texture)
+						sm.set_shader_parameter("use_tex", true)
+					if b.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR:
+						sm.set_shader_parameter("alpha_cut", b.alpha_scissor_threshold)
+				sm.set_shader_parameter("top", box.end.y)
+				sm.set_shader_parameter("hang", maxf(box.size.y, 0.05))
+				sm.set_shader_parameter("amount", amount)
+				mi.set_surface_override_material(i, sm)
+				mats.append(sm)
+			mi.material_override = null
+			_sway.append([mi, mats])
+	set_process(true)
+
+
+func _process(delta: float) -> void:
+	if _sway.is_empty() or delta <= 0.0:
+		return
+	# Trail behind the way the body moves (spring, so it overshoots and settles).
+	var pos := global_position
+	var vel := Vector3.ZERO if _sway_last == Vector3.INF else (pos - _sway_last) / delta
+	_sway_last = pos
+	if vel.length() > 30.0:
+		vel = Vector3.ZERO  # teleports
+	var goal := -vel * 0.035
+	goal.y = clampf(-vel.y * 0.03, -0.15, 0.15) + minf(Vector2(vel.x, vel.z).length() * 0.012, 0.12)
+	goal = goal.limit_length(0.35)
+	_sway_vel += ((goal - _sway_off) * 60.0 - _sway_vel * 9.0) * delta
+	_sway_off += _sway_vel * delta
+	for i in range(_sway.size() - 1, -1, -1):
+		var e: Array = _sway[i]
+		var mi = e[0]
+		if not is_instance_valid(mi) or not (mi as Node).is_inside_tree():
+			_sway.remove_at(i)
+			continue
+		var local := (mi as Node3D).global_basis.inverse() * _sway_off
+		for sm: ShaderMaterial in e[1]:
+			sm.set_shader_parameter("trail", local)
+

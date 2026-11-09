@@ -9,6 +9,8 @@ enum Delivery {
 	MELEE,           ## Swing hitting everything in an arc in front.
 	PROJECTILE,      ## Flies to the target and hits it.
 	HEAL_OVER_TIME,  ## Heals the target (an ally, or yourself) in ticks.
+	AREA,            ## Around the caster: hits everyone within reach (Burst Quake).
+	BUFF,            ## On yourself: a status (Stealth) and/or a weapon enchant (Frost Edge).
 }
 
 @export var id := ""

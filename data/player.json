@@ -50,7 +50,11 @@
 		"world_check": 0.8,
 		"gash_time": 25.0,
 		"spark_size": 1.0,
-		"heal_color": "#ffdb52"
+		"heal_color": "#ffdb52",
+		"sneak_attack": 2.0,
+		"stealth_notice": 1.8,
+		"finisher_chance": 0.35,
+		"finisher_seconds": 1.4
 	},
 	"loadout": {
 		"light_combo": [

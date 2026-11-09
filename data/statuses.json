@@ -54,6 +54,41 @@
 			"icon": "sword",
 			"color": "#e0a050",
 			"special": true
+		},
+		{
+			"id": "stealth",
+			"name": "Stealthed",
+			"description": "Enemies only notice you up close. Attacking or casting ends it; the first blow hits twice as hard.",
+			"kind": "buff",
+			"icon": "stealth",
+			"color": "#8a7ac0",
+			"move_scale": 0.85
+		},
+		{
+			"id": "frost_enchant",
+			"name": "Frost Edge",
+			"description": "Your weapon is frosted: the next hits deal extra ice damage and chill.",
+			"kind": "buff",
+			"icon": "frost",
+			"color": "#9fd8ff"
+		},
+		{
+			"id": "chilled",
+			"name": "Chilled",
+			"description": "Slowed by the cold.",
+			"kind": "debuff",
+			"icon": "frost",
+			"color": "#7ab8e8",
+			"move_scale": 0.7
+		},
+		{
+			"id": "burning",
+			"name": "Burning",
+			"description": "On fire: losing health every second.",
+			"kind": "ailment",
+			"icon": "fire",
+			"color": "#ff7a2a",
+			"damage_per_second": 5
 		}
 	]
 }

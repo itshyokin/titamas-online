@@ -57,6 +57,12 @@ static func is_enemy_of(a: Node, b: Node) -> bool:
 
 
 ## Where to aim at a combatant (its chest).
+## How far a body reaches out from its origin (big beasts: melee counts from their side, not their centre).
+static func radius_of(node: Node) -> float:
+	var r = node.get("body_radius") if node else null
+	return float(r) if r != null else 0.0
+
+
 static func aim_point(node: Node3D) -> Vector3:
 	if node.has_method("aim_point"):
 		return node.aim_point()

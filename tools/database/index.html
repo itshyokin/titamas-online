@@ -240,6 +240,7 @@
 const isMelee = e => e.delivery === "melee";
 const isProjectile = e => e.delivery === "projectile";
 const isHeal = e => e.delivery === "heal_over_time";
+const isBuff = e => e.delivery === "buff";
 
 const TABS = {
 	abilities: {
@@ -256,9 +257,11 @@ const TABS = {
 			["General", [
 				{ key: "id", label: "ID", type: "text", help: "Used to refer to it (player loadout). Lowercase, no spaces." },
 				{ key: "display_name", label: "Name", type: "text" },
-				{ key: "delivery", label: "Type", type: "select", options: [["melee", "Melee swing"], ["projectile", "Projectile (bolt / arrow)"], ["heal_over_time", "Heal over time"]] },
+				{ key: "delivery", label: "Type", type: "select", options: [["melee", "Melee swing"], ["projectile", "Projectile (bolt / arrow)"], ["heal_over_time", "Heal over time"], ["area", "Area around you (shockwave)"], ["buff", "Buff on yourself (status / weapon enchant)"]] },
 				{ key: "color", label: "Button colour", type: "color" },
-				{ key: "icon", label: "Hotbar icon", type: "select", options: [["", "(first letter)"], ["slash", "Slash"], ["heavy", "Heavy blow"], ["arrow", "Arrow"], ["bullet", "Bullet"], ["fire", "Fire"], ["heal", "Heal"], ["frost", "Frost"], ["shield", "Shield"], ["lightning", "Lightning"]] },
+				{ key: "icon", label: "Hotbar icon", type: "select", options: [["", "(first letter)"], ["slash", "Slash"], ["heavy", "Heavy blow"], ["arrow", "Arrow"], ["bullet", "Bullet"], ["fire", "Fire"], ["heal", "Heal"], ["frost", "Frost"], ["shield", "Shield"], ["lightning", "Lightning"], ["stealth", "Stealth"], ["quake", "Quake"]] },
+				{ key: "technique", label: "Technique (not a spell)", type: "bool", help: "Silence doesn't stop it (Stealth, weapon enchants)." },
+				{ key: "cleaves", label: "Hits everyone in reach", type: "bool", help: "Melee: without this a swing hits only one enemy (the target, else the closest) unless the player has the Cleave skill." },
 				{ key: "description", label: "Description", type: "textarea", wide: true },
 			]],
 			["Numbers", [
@@ -282,6 +285,19 @@ const TABS = {
 				{ key: "ticks", label: "Number of heals", type: "int" },
 				{ key: "tick_interval", label: "Seconds between heals", type: "number" },
 			], isHeal],
+			["Buff on yourself", [
+				{ key: "self_status.status", label: "Gives you status", type: "text", help: "A status id from the Statuses tab (e.g. stealth). Empty = none." },
+				{ key: "self_status.seconds", label: "For (s)", type: "number" },
+				{ key: "self_status.rank_key", label: "Longer with skill passive", type: "text", help: "Skill tree passive key (e.g. stealth_time)." },
+				{ key: "self_status.seconds_per_rank", label: "Extra seconds per rank", type: "number" },
+				{ key: "enchant.status", label: "Weapon enchant status", type: "text", help: "Shown as a buff while the weapon is enchanted (e.g. frost_enchant). Empty = no enchant." },
+				{ key: "enchant.hits", label: "Enchant lasts (hits)", type: "int" },
+				{ key: "enchant.rank_key", label: "More hits with skill passive", type: "text", help: "e.g. enchant_hits" },
+				{ key: "enchant.hits_per_rank", label: "Extra hits per rank", type: "int" },
+				{ key: "enchant.bonus_power", label: "Extra damage per hit", type: "number", help: "Plus half your spell power." },
+				{ key: "enchant.color", label: "Weapon glow colour", type: "color" },
+				{ key: "enchant.applies", label: "Enchanted hits give", type: "applies", wide: true },
+			], isBuff],
 			["Projectile", [
 				{ key: "projectile_style", label: "Looks like", type: "select", options: [["bolt", "Glowing bolt"], ["arrow", "Arrow / bolt (sticks)"], ["bullet", "Bullet (fast, leaves holes)"]] },
 				{ key: "projectile_speed", label: "Speed (m/s)", type: "number" },
@@ -363,6 +379,7 @@ const TABS = {
 				{ key: "hides", label: "Hides these body parts", type: "parts", wide: true },
 				{ key: "material", label: "Material (equip sound)", type: "select", options: [["", "Guess from the id"], ["cloth", "Cloth"], ["leather", "Leather / wood"], ["metal", "Metal"], ["jewelry", "Jewellery"]] },
 				{ key: "equip_sound", label: "Equip sound (overrides)", type: "sound" },
+				{ key: "sway", label: "Sways (capes, cloaks)", type: "number", help: "0 = still. How much the worn piece swings behind you as you move and flutters in the wind (1 = a cape; it hangs from its top edge)." },
 				{ key: "head_clip", label: "Head clipping (hats / helmets)", type: "select", options: [["", "None (sits clear of the hair)"], ["hat", "Hat clip: hide the hair's hat-clip parts"], ["total", "Total clip: hide the whole head (masked helmets)"]], help: "Hat clip hides the parts of a hair style given a \"hat_clip\" material in Blender (hair without one is hidden whole). Total clip hides head, face, eyes, hair and beard." },
 				{ key: "fit", label: "Fit", type: "fitnote", wide: true },
 			], e => e.slot !== ""],
@@ -386,6 +403,35 @@ const TABS = {
 				{ key: "bar_width", label: "Health bar width (% of screen, 0 = by health)", type: "number", help: "The bar across the top while it fights you. Bosses ~80, a bandit ~25." },
 				{ key: "skin_color", label: "Skin colour", type: "color" },
 				{ key: "weapon", label: "Weapon", type: "select", options: [["sword", "Sword"], ["none", "None"]] },
+				{ key: "boss", label: "Boss", type: "bool", help: "No finisher kill-cams on it." },
+			]],
+			["Beast body (scenes/enemies/beast.tscn: not a humanoid)", [
+				{ key: "beast.body", label: "Body", type: "select", options: [["", "(humanoid: use bandit.tscn)"], ["bat", "Bat (flies)"], ["dragon", "Dragon (boss)"]], help: "Place scenes/enemies/beast.tscn in a level and set its Enemy Id to this entry." },
+				{ key: "beast.color", label: "Colour", type: "color" },
+				{ key: "beast.scale", label: "Size ×", type: "number" },
+				{ key: "beast.flying", label: "Always flies", type: "bool", help: "Hovers out of sword reach and swoops to attack (bats)." },
+				{ key: "beast.fly_height", label: "Hover height (m)", type: "number" },
+				{ key: "beast.radius", label: "Body radius (m)", type: "number", help: "Collision, and melee reaches it from its side." },
+				{ key: "beast.height", label: "Body height (m)", type: "number" },
+				{ key: "beast.aim_height", label: "Aim point height (m)", type: "number", help: "Where arrows and spells aim." },
+				{ key: "beast.plate_height", label: "Nameplate height (m)", type: "number" },
+				{ key: "beast.swoop_range", label: "Flyer: swoops within (m)", type: "number" },
+				{ key: "beast.swoop_speed", label: "Flyer: swoop speed (m/s)", type: "number" },
+				{ key: "beast.bite_reach", label: "Flyer: bite reach (m)", type: "number" },
+				{ key: "beast.bite_range", label: "Dragon: bite range (m past its side)", type: "number" },
+				{ key: "beast.bite_power", label: "Dragon: bite × attack power", type: "number" },
+				{ key: "beast.tail_range", label: "Dragon: tail sweep range (m)", type: "number", help: "Used when you're behind or beside it; knocks down." },
+				{ key: "beast.tail_power", label: "Dragon: tail × attack power", type: "number" },
+				{ key: "beast.breath_range", label: "Dragon: fire breath range (m)", type: "number" },
+				{ key: "beast.breath_angle", label: "Dragon: breath cone half-angle (°)", type: "number" },
+				{ key: "beast.breath_power", label: "Dragon: breath × attack power (per ¼ s)", type: "number" },
+				{ key: "beast.fireball_power", label: "Dragon: fireball × attack power", type: "number" },
+				{ key: "beast.fireball_speed", label: "Dragon: fireball speed (m/s)", type: "number" },
+				{ key: "beast.flight_at", label: "Dragon: takes off at health shares", type: "text", help: "Comma list, e.g. 0.66,0.33 = at two thirds and one third health." },
+				{ key: "beast.flight_height", label: "Dragon: flight height (m)", type: "number" },
+				{ key: "beast.flight_seconds", label: "Dragon: flies for (s)", type: "number" },
+				{ key: "beast.flight_fire_every", label: "Dragon: fireball every (s) in flight", type: "number" },
+				{ key: "beast.circle_radius", label: "Dragon: circles at (m)", type: "number" },
 			]],
 			["Behaviour", [
 				{ key: "aggro_radius", label: "Notices players within (m)", type: "number" },
@@ -393,6 +439,7 @@ const TABS = {
 				{ key: "wander_radius", label: "Wanders within (m)", type: "number" },
 				{ key: "walk_speed", label: "Walk speed (m/s)", type: "number" },
 				{ key: "run_speed", label: "Run speed (m/s)", type: "number" },
+				{ key: "turn_speed", label: "Turn speed", type: "number", help: "How fast it turns to face you (8 = snappy; big beasts ~1.5)." },
 			]],
 			["Attack", [
 				{ key: "attack_power", label: "Damage", type: "number" },
@@ -493,6 +540,10 @@ const TABS = {
 				{ key: "combat.arrow_gravity", label: "Hand-aimed arrow drop (m/s²)", type: "number" },
 				{ key: "combat.combat_linger", label: "Weapon put away after (s)", type: "number", help: "Seconds without fighting before the weapon goes back on your back." },
 				{ key: "combat.block_arc", label: "Block covers (°)", type: "number", help: "Hits from within this arc in front are blocked." },
+				{ key: "combat.sneak_attack", label: "Sneak attack multiplier", type: "number", help: "The first blow from Stealth does this much more damage (2 = double)." },
+				{ key: "combat.stealth_notice", label: "Stealth noticed within (m)", type: "number", help: "Enemies only notice a stealthed player this close." },
+				{ key: "combat.finisher_chance", label: "Finisher chance on a kill", type: "number", help: "0–1. Kill-cam with slow motion; heavy blows ×1.6. Never on bosses or in co-op." },
+				{ key: "combat.finisher_seconds", label: "Finisher length (s)", type: "number" },
 				{ key: "combat.world_bounce", label: "Swings bounce off walls / trees", type: "bool", help: "A melee swing that meets rock, metal or wood instead of an enemy stops short with a recoil." },
 				{ key: "combat.world_knockback", label: "Bounce knockback (m/s)", type: "number" },
 				{ key: "combat.world_check", label: "Bounce check reach (share of weapon reach)", type: "number" },
@@ -805,6 +856,7 @@ const TABS = {
 				{ key: "color", label: "Colour", type: "color" },
 				{ key: "description", label: "Description", type: "textarea", wide: true },
 				{ key: "proficient", label: "Proficient with", type: "weapontypes", wide: true, help: "These weapon types hit 15% harder and swing, shoot and reload 10% faster." },
+				{ key: "cast_time_scale", label: "Spell cast time ×", type: "number", help: "0.75 = spells cast in 75% of the time (a 10 s spell takes 7.5 s)." },
 			]],
 			["Starting kit (leave empty to use the Player tab's)", [
 				{ key: "starting_kit.gold", label: "Gold", type: "int" },
@@ -2065,6 +2117,12 @@ function fieldControl(t, entry, f) {
 					nm.style.width = "130px";
 					nm.oninput = () => { list[i].name = nm.value; set(list); };
 					row.append(nm);
+					if (pieceUse(r) === "hair" || pieceUse(r) === "facial_hair") {
+						const sw = el("input", { type: "number", step: 0.05, value: r.sway ?? "", placeholder: "sway", title: "Sway: how much it swings with movement and wind (0 = still; empty = 0.35 hair / 0.15 beards; long hair ~0.8)" });
+						sw.style.width = "64px";
+						sw.oninput = () => { const v = parseFloat(sw.value); if (Number.isNaN(v)) delete list[i].sway; else list[i].sway = v; set(list); };
+						row.append(sw);
+					}
 				}
 				if (mesh && !mesh.skinned) {
 					const bone = el("input", { type: "text", value: r.bone || "mixamorig_Head", title: "Bone a rigid mesh follows" });

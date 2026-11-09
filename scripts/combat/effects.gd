@@ -406,3 +406,99 @@ static func splash(parent: Node, at: Vector3, size := 1.0) -> void:
 	ripple(parent, at + Vector3.UP * 0.02, size * 1.4, 1.6)
 	ripple(parent, at + Vector3.UP * 0.02, size * 0.8, 1.1)
 	holder.get_tree().create_timer(1.2).timeout.connect(holder.queue_free)
+
+
+## A ring of force spreading over the ground (Burst Quake): an expanding flat ring, dust
+## and a flash of light.
+static func shockwave(parent: Node, at: Vector3, radius: float, color: Color) -> void:
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.85
+	torus.outer_radius = 1.0
+	torus.rings = 48
+	torus.ring_segments = 4
+	ring.mesh = torus
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(color, 0.85)
+	mat.emission_enabled = true
+	mat.emission = color
+	ring.material_override = mat
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(ring)
+	ring.global_position = at + Vector3.UP * 0.15
+	ring.scale = Vector3(0.3, 0.6, 0.3)
+	var t := ring.create_tween().set_parallel()
+	t.tween_property(ring, "scale", Vector3(radius, 0.25, radius), 0.45).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	t.tween_property(mat, "albedo_color:a", 0.0, 0.5)
+	t.chain().tween_callback(ring.queue_free)
+	# Dust kicked up around the edge.
+	var dust := SparkBurst.new()
+	dust.count = 40
+	dust.speed = radius * 1.6
+	dust.out = Vector3.UP
+	dust.color = Color(0.7, 0.62, 0.5)
+	dust.life = 0.6
+	parent.add_child(dust)
+	dust.global_position = at + Vector3.UP * 0.1
+	var light := OmniLight3D.new()
+	light.light_color = color
+	light.light_energy = 5.0
+	light.omni_range = radius * 1.2
+	parent.add_child(light)
+	light.global_position = at + Vector3.UP * 0.5
+	var lt := light.create_tween()
+	lt.tween_property(light, "light_energy", 0.0, 0.4)
+	lt.tween_callback(light.queue_free)
+
+
+## A weapon enchant's look: a coloured sheen over the weapon and wisps trailing off it.
+## Returns the node to free when it ends.
+static func enchant_glow(weapon: Node3D, color: Color) -> Node3D:
+	var holder := Node3D.new()
+	holder.name = "EnchantGlow"
+	weapon.add_child(holder)
+	var sheen := StandardMaterial3D.new()
+	sheen.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	sheen.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sheen.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	sheen.albedo_color = Color(color, 0.45)
+	var meshes: Array = weapon.find_children("*", "MeshInstance3D", true, false)
+	for mi: MeshInstance3D in meshes:
+		mi.material_overlay = sheen
+	holder.tree_exiting.connect(func() -> void:
+		for mi in meshes:
+			if is_instance_valid(mi) and (mi as MeshInstance3D).material_overlay == sheen:
+				(mi as MeshInstance3D).material_overlay = null)
+	var wisps := GPUParticles3D.new()
+	wisps.amount = 28
+	wisps.lifetime = 0.8
+	wisps.local_coords = false
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(0.03, 0.45, 0.03)
+	pm.direction = Vector3.UP
+	pm.spread = 60.0
+	pm.initial_velocity_min = 0.1
+	pm.initial_velocity_max = 0.4
+	pm.gravity = Vector3(0, 0.3, 0)
+	pm.scale_min = 0.6
+	pm.scale_max = 1.4
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(color, 0.0))
+	ramp.add_point(0.2, Color(color.lightened(0.4), 0.9))
+	ramp.set_color(ramp.get_point_count() - 1, Color(color, 0.0))
+	var rt := GradientTexture1D.new()
+	rt.gradient = ramp
+	pm.color_ramp = rt
+	wisps.process_material = pm
+	var q := QuadMesh.new()
+	q.size = Vector2(0.08, 0.08)
+	var m := _particle_material(color, 2.0)
+	m.albedo_texture = _mote_texture(false)
+	q.material = m
+	wisps.draw_pass_1 = q
+	wisps.position = Vector3.UP * 0.5
+	holder.add_child(wisps)
+	return holder

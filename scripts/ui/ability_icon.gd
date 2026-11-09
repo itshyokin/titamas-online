@@ -66,6 +66,14 @@ func _draw() -> void:
 		"lightning":
 			draw_colored_polygon(PackedVector2Array([p.call(0.58, 0.1), p.call(0.3, 0.54), p.call(0.48, 0.54), p.call(0.38, 0.9),
 				p.call(0.72, 0.42), p.call(0.54, 0.42)]), ink)
+		"stealth":
+			draw_colored_polygon(PackedVector2Array([p.call(0.5, 0.14), p.call(0.82, 0.82), p.call(0.18, 0.82)]), Color(ink, 0.85))
+			draw_circle(p.call(0.5, 0.6), s * 0.12, deep)
+		"quake":
+			draw_colored_polygon(PackedVector2Array([p.call(0.42, 0.14), p.call(0.6, 0.14), p.call(0.62, 0.44), p.call(0.4, 0.44)]), ink)
+			draw_line(p.call(0.14, 0.7), p.call(0.86, 0.7), ink, s * 0.05)
+			draw_arc(p.call(0.5, 0.7), s * 0.22, PI, TAU, 12, Color(ink, 0.8), s * 0.04)
+			draw_arc(p.call(0.5, 0.7), s * 0.36, PI, TAU, 14, Color(ink, 0.5), s * 0.035)
 		_:
 			var font := get_theme_default_font()
 			var letter := ability.display_name.left(1).to_upper()

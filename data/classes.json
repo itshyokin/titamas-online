@@ -4,7 +4,7 @@
 			"id": "fighter",
 			"name": "Fighter",
 			"available": true,
-			"role": "Melee \u00b7 Versatile",
+			"role": "Melee · Versatile",
 			"color": "#c8553d",
 			"icon": "sword",
 			"description": "A trained soldier who can handle any weapon. Fighters stand at the front, trade blows with sword and shield, and carry a bow and a little magic for when the enemy keeps its distance.",
@@ -22,17 +22,22 @@
 				"axe",
 				"bow",
 				"crossbow"
-			]
+			],
+			"cast_time_scale": 1.0
 		},
 		{
 			"id": "rogue",
 			"name": "Rogue",
-			"available": false,
-			"role": "Melee \u00b7 Stealth",
+			"available": true,
+			"role": "Melee · Stealth",
 			"color": "#5a6b4a",
 			"icon": "dagger",
-			"description": "Coming in a later update.",
-			"strengths": [],
+			"description": "A quick, quiet fighter. Rogues slip past enemies in Stealth and open with a sneak attack that hits twice as hard.",
+			"strengths": [
+				"Stealth past enemies",
+				"Sneak attacks",
+				"Fast blades"
+			],
 			"starting_kit": {},
 			"proficient": [
 				"dagger",
@@ -40,13 +45,14 @@
 				"bow",
 				"crossbow",
 				"pistol"
-			]
+			],
+			"cast_time_scale": 1.0
 		},
 		{
 			"id": "mage",
 			"name": "Mage",
 			"available": false,
-			"role": "Magic \u00b7 Ranged",
+			"role": "Magic · Ranged",
 			"color": "#4a6ac8",
 			"icon": "staff",
 			"description": "Coming in a later update.",
@@ -54,13 +60,14 @@
 			"starting_kit": {},
 			"proficient": [
 				"dagger"
-			]
+			],
+			"cast_time_scale": 0.75
 		},
 		{
 			"id": "druid",
 			"name": "Druid",
 			"available": false,
-			"role": "Healing \u00b7 Nature",
+			"role": "Healing · Nature",
 			"color": "#3f8a4a",
 			"icon": "leaf",
 			"description": "Coming in a later update.",
@@ -70,7 +77,8 @@
 				"dagger",
 				"hammer",
 				"bow"
-			]
+			],
+			"cast_time_scale": 1.0
 		}
 	]
 }

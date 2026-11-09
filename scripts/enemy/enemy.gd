@@ -68,7 +68,7 @@ var _killer_dir := Vector3.ZERO
 var _loot: LootBag = null
 
 @onready var stats: Stats = $Stats
-@onready var character: CharacterModel = $Model/Character
+@onready var character: CharacterModel = get_node_or_null("Model/Character")
 @onready var model: Node3D = $Model
 
 var ai := AI.IDLE
@@ -344,6 +344,10 @@ func _give_up() -> void:
 
 
 func _target_valid() -> bool:
+	if target != null and is_instance_valid(target):
+		var pc = target.get_node_or_null("PlayerCombat")
+		if pc and pc.call("is_stealthed") and target.global_position.distance_to(global_position) > 4.0:
+			return false  # slipped away in stealth
 	return target != null and is_instance_valid(target) and Combat.is_alive(target) \
 		and (not target.has_method("is_alive") or target.is_alive())
 
@@ -355,6 +359,10 @@ func _nearest_player(radius: float) -> Node3D:
 		if n.has_method("is_alive") and not n.is_alive():
 			continue
 		var d := n.global_position.distance_to(global_position)
+		# A stealthed player goes unnoticed unless right next to it.
+		var pc = n.get_node_or_null("PlayerCombat")
+		if pc and pc.call("is_stealthed") and d > float(Database.player.get("combat", {}).get("stealth_notice", 1.8)):
+			continue
 		if d < best_d:
 			best_d = d
 			best = n
