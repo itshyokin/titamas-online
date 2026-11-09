@@ -68,7 +68,12 @@ func _load_settings() -> void:
 	HEIGHT = float(d.get("height", HEIGHT))
 	BODY_MESHES = d.get("body_meshes", [])
 	for e: Dictionary in d.get("body_extra", []):
-		BODY_EXTRA[String(e.material)] = String(e.part)
+		# material -> [[part, min_y, max_y]...]: one material can make several parts by height
+		# (the underwear's shorts and top, so trousers don't hide the top).
+		var mat := String(e.material)
+		if not BODY_EXTRA.has(mat):
+			BODY_EXTRA[mat] = []
+		BODY_EXTRA[mat].append([String(e.part), float(e.get("min_y", -1)), float(e.get("max_y", -1))])
 	for p: Dictionary in d.get("pieces", []):
 		var id := String(p.get("id", ""))
 		if id == "" or String(p.get("mesh", "")) == "":
@@ -179,7 +184,13 @@ func _bake_surface(mi: MeshInstance3D, surf: int) -> Dictionary:
 	var src_skin := mi.skin
 	if src_skin == null:
 		# A rigid mesh: everything follows one bone.
-		var bone := _skel.find_bone(String(BONE_OF.get(String(mi.name), "mixamorig_Head")))
+		var bone_name := String(BONE_OF.get(String(mi.name), "mixamorig_Head"))
+		var bone := _skel.find_bone(bone_name)
+		if bone < 0:
+			bone = _skel.find_bone(bone_name.replace(":", "_"))  # Blender's "mixamorig:Hand"
+		if bone < 0:
+			push_warning("%s: no bone '%s', using the head" % [mi.name, bone_name])
+			bone = _skel.find_bone("mixamorig_Head")
 		var xf := _scene_xform(mi, _src)
 		for v in verts.size():
 			pos[v] = _to_new(xf * verts[v])
@@ -282,11 +293,18 @@ func _build_body() -> void:
 		var mi := _mesh_named(mesh_name)
 		for surf in mi.mesh.get_surface_count():
 			var s := _bake_surface(mi, surf)
-			var fixed := String(BODY_EXTRA.get(s.material_name, ""))
-			if fixed != "":
-				extra_mats[fixed] = _material(s.material)
+			var extras: Array = BODY_EXTRA.get(s.material_name, [])
+			for e: Array in extras:
+				extra_mats[e[0]] = _material(s.material)
 			for t in range(0, s.index.size(), 3):
-				var part := fixed
+				var part := ""
+				if not extras.is_empty():
+					var cy: float = (s.pos[s.index[t]].y + s.pos[s.index[t + 1]].y + s.pos[s.index[t + 2]].y) / 3.0
+					part = String(extras[0][0])
+					for e: Array in extras:
+						if (float(e[1]) < 0.0 or cy >= float(e[1])) and (float(e[2]) < 0.0 or cy < float(e[2])):
+							part = String(e[0])
+							break
 				if part == "":
 					# The part its corners follow most (hands and feet count a little less,
 					# so wrists and ankles stay with the limb). The head mesh is all head.

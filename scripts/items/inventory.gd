@@ -5,9 +5,9 @@ extends Node
 ## data/items.json (Database → Items). Saved with the character (GameSession) whenever
 ## it changes; a new character starts with its class's (or the player data's) starting kit.
 ##
-## One weapon at a time (item slot "weapon" → equipment slot "primary"). Weapons can sit
-## on the hotbar: pressing one equips it (the one in hand goes back to the backpack).
-## The hotbar: 10 entries (keys 1-0), each "ability:<id>", "item:<id>" or "".
+## One weapon at a time (item slot "weapon" → equipment slot "primary"), changed in the
+## character window. The hotbar: 10 entries (keys 1-0), each "ability:<id>",
+## "item:<id>" (usable items: potions, bandages...) or ""; weapons never go on it.
 
 signal changed
 signal equipment_changed
@@ -32,7 +32,7 @@ const HOTBAR_SIZE := 10
 const OLD_HOTBAR_SIZE := 8
 ## Older saves' slot names.
 const OLD_SLOTS := {"main_hand": "primary", "ranged": "secondary"}
-## Old saves' second weapon goes to the backpack (and onto the hotbar).
+## Old saves' second weapon goes to the backpack.
 const RETIRED_SLOTS := ["secondary"]
 
 ## Backpack: SIZE entries, each null or {"id": String, "count": int}.
@@ -469,7 +469,7 @@ func use_item(id: String) -> bool:
 # --- Hotbar --------------------------------------------------------------------
 
 func set_hotbar(i: int, entry: String) -> void:
-	if i < 0 or i >= HOTBAR_SIZE:
+	if i < 0 or i >= HOTBAR_SIZE or not hotbar_allows(entry):
 		return
 	# An ability or item sits in one box only.
 	if not entry.is_empty():
@@ -493,7 +493,7 @@ func move_hotbar(from: int, to: int) -> void:
 
 ## Puts an entry in the first empty box (if it isn't on the bar already).
 func add_to_hotbar(entry: String) -> void:
-	if hotbar.has(entry):
+	if hotbar.has(entry) or not hotbar_allows(entry):
 		return
 	var i := hotbar.find("")
 	if i >= 0:
@@ -505,6 +505,22 @@ func _default_hotbar() -> void:
 	var d: Array = Database.player.get("hotbar", [])
 	for i in mini(d.size(), HOTBAR_SIZE):
 		hotbar[i] = String(d[i])
+	_clean_hotbar()
+
+
+## Abilities and usable items go on the hotbar; weapons don't (one weapon, in hand).
+func hotbar_allows(entry: String) -> bool:
+	return not (entry.begins_with("item:") and is_weapon(entry.trim_prefix("item:")))
+
+
+## Takes weapons off the bar (saves from when weapons sat there) and closes the gaps.
+func _clean_hotbar() -> void:
+	var kept: Array = hotbar.filter(func(e: Variant) -> bool: return String(e) != "" and hotbar_allows(String(e)))
+	if kept.size() == hotbar.filter(func(e: Variant) -> bool: return String(e) != "").size():
+		return
+	hotbar.fill("")
+	for i in kept.size():
+		hotbar[i] = kept[i]
 
 
 # --- Gold ----------------------------------------------------------------------
@@ -587,13 +603,8 @@ func load_character() -> bool:
 		# Older save: boxes 1 and 2 were the two weapons. They become hotbar entries for
 		# both weapons (press to switch), and the old entries keep their keys 3-0.
 		hotbar.fill("")
-		var weapons: Array = [equipped.get("primary", "")]
-		weapons.append_array(retired)
-		for k in 2:
-			if k < weapons.size() and String(weapons[k]) != "":
-				hotbar[k] = "item:" + String(weapons[k])
 		for i in OLD_HOTBAR_SIZE:
-			hotbar[i + 2] = String(hb[i])
+			hotbar[i] = String(hb[i])
 	elif hb is Array:
 		for i in mini(hb.size(), HOTBAR_SIZE):
 			hotbar[i] = String(hb[i])
@@ -603,6 +614,7 @@ func load_character() -> bool:
 		for id in data.get("quick", []):
 			if not String(id).is_empty():
 				add_to_hotbar("item:" + String(id))
+	_clean_hotbar()
 	return true
 
 

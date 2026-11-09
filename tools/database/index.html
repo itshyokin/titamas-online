@@ -828,7 +828,7 @@ const TABS = {
 				{ key: "source", label: "Source .glb", type: "select", options: () => (assets.glbs || []).map(g => [g, g.replace("res://assets/models/characters/src/", "")]) },
 				{ key: "height", label: "Height (m, top of the head)", type: "number" },
 				{ key: "body_meshes", label: "Meshes that make the body", type: "glbmeshes", wide: true },
-				{ key: "body_extra", label: "Body materials kept as their own part (not skin)", type: "glbextra", wide: true },
+				{ key: "body_extra", label: "Body materials kept as their own part (not skin)", type: "glbextra", wide: true, help: "One material can make several parts by height (-1 = no limit): the underwear's shorts (underwear) and top (underwear_top), so trousers hide only the shorts and shirts only the top. Items hide parts by these names." },
 			]],
 			["Pieces (items, hair, heads, faces, hats…)", [
 				{ key: "pieces", label: "", type: "glbpieces", wide: true },
@@ -1400,13 +1400,15 @@ function fieldControl(t, entry, f) {
 		}
 		case "parts": {
 			const all = ["hair", "head", "torso", "left_arm", "right_arm", "left_hand", "right_hand", "left_leg", "right_leg", "left_foot", "right_foot"];
+			for (const e of (((data.body_models || {}).body_extra) || [])) if (e.part && !all.includes(e.part)) all.push(e.part);
 			const on = new Set(Array.isArray(value) ? value : []);
+			for (const v of on) if (!all.includes(v)) all.push(v);
 			const box = el("div", { className: "parts" });
 			for (const name of all) {
 				const lab = el("label", { className: "part" });
 				const c = el("input", { type: "checkbox", checked: on.has(name) });
 				c.onchange = () => { c.checked ? on.add(name) : on.delete(name); set(all.filter(n => on.has(n))); };
-				lab.append(c, document.createTextNode(" " + name.replace("_", " ")));
+				lab.append(c, document.createTextNode(" " + name.replace(/_/g, " ")));
 				box.appendChild(lab);
 			}
 			wrap.append(label, box);
@@ -1621,7 +1623,8 @@ function fieldControl(t, entry, f) {
 				part.oninput = () => { list[i].part = part.value; set(list); };
 				const rm = el("button", { textContent: "✕" });
 				rm.onclick = () => { list.splice(i, 1); set(list, true); };
-				row.append(el("span", { textContent: "material" }), ms, el("span", { textContent: "→ part" }), part, rm);
+				const num = k => { const n = el("input", { type: "number", step: 0.05, value: r[k] ?? -1, title: k + " (m, -1 = none)" }); n.style.width = "64px"; n.oninput = () => { const v = parseFloat(n.value); if (!Number.isNaN(v)) { list[i][k] = v; set(list); } }; return n; };
+				row.append(el("span", { textContent: "material" }), ms, el("span", { textContent: "→ part" }), part, el("span", { textContent: "above / below (m)" }), num("min_y"), num("max_y"), rm);
 				wrap.appendChild(row);
 			});
 			const add = el("button", { textContent: "+ Add" });
