@@ -48,6 +48,8 @@ var variables: Array = []  # [{id, name}]
 var skill_trees: Array = []
 ## data/quests.json quests (the Quests class reads them).
 var quests: Array = []
+## The top of data/quests.json (start_sound, complete_sound, sound_db).
+var quest_settings := {}
 ## data/achievements.json entries, in order (the Achievements autoload uses them).
 var achievements: Array = []
 
@@ -124,6 +126,7 @@ func _load(which: String) -> void:
 			skill_trees = data.get("trees", [])
 		"quests":
 			quests = data.get("quests", [])
+			quest_settings = data
 			Quests.revision += 1
 		"npcs":
 			npcs.clear()

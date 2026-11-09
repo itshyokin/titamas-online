@@ -359,37 +359,27 @@
 							"text": "If you bring me 3 bandit insignias, I'll make it worth your while."
 						},
 						{
-							"cmd": "choice",
-							"options": [
-								"I'll do it",
-								"Not now"
+							"cmd": "quest",
+							"id": "bandit_insignias",
+							"op": "offer",
+							"accepted": [
+								{
+									"cmd": "switch",
+									"id": "insignia_quest",
+									"value": true
+								},
+								{
+									"cmd": "text",
+									"speaker": "",
+									"text": "Thank you! Come back when you have them."
+								}
 							],
-							"cancel": 1,
-							"branches": [
-								[
-									{
-										"cmd": "switch",
-										"id": "insignia_quest",
-										"value": true
-									},
-									{
-										"cmd": "quest",
-										"id": "bandit_insignias",
-										"op": "start"
-									},
-									{
-										"cmd": "text",
-										"speaker": "",
-										"text": "Thank you! Come back when you have them."
-									}
-								],
-								[
-									{
-										"cmd": "text",
-										"speaker": "",
-										"text": "I understand."
-									}
-								]
+							"declined": [
+								{
+									"cmd": "text",
+									"speaker": "",
+									"text": "I understand."
+								}
 							]
 						}
 					]
@@ -414,9 +404,9 @@
 							"cmd": "if",
 							"conditions": [
 								{
-									"type": "item",
-									"item": "bandit_insignia",
-									"count": 3
+									"type": "quest",
+									"id": "bandit_insignias",
+									"state": "ready"
 								}
 							],
 							"then": [
@@ -426,29 +416,14 @@
 									"text": "You found them! Here, take this."
 								},
 								{
-									"cmd": "take_item",
-									"item": "bandit_insignia",
-									"count": 3
-								},
-								{
-									"cmd": "gold",
-									"op": "add",
-									"value": 50,
-									"silent": false
-								},
-								{
-									"cmd": "xp",
-									"value": 120
+									"cmd": "quest",
+									"id": "bandit_insignias",
+									"op": "complete"
 								},
 								{
 									"cmd": "switch",
 									"id": "insignia_done",
 									"value": true
-								},
-								{
-									"cmd": "quest",
-									"id": "bandit_insignias",
-									"op": "complete"
 								},
 								{
 									"cmd": "achievement",

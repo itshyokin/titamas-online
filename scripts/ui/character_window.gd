@@ -425,7 +425,15 @@ func _show_details(slot: ItemSlot) -> void:
 
 ## Changes against what this item would replace: green better, red worse, yellow even.
 func _compare_text(d: Dictionary, slot: ItemSlot) -> String:
-	if slot == null or slot.where != "bag" or String(d.get("slot", "")).is_empty():
+	if slot == null or slot.where != "bag":
+		return ""
+	return compare_text(d, inventory, combat)
+
+
+## How item `d` compares with what's equipped in the slot it would go to (also used by
+## quest reward tooltips).
+static func compare_text(d: Dictionary, inventory: Inventory, combat: PlayerCombat) -> String:
+	if inventory == null or String(d.get("slot", "")).is_empty():
 		return ""
 	var id := String(d.get("id", ""))
 	var target := inventory.target_slot(id)

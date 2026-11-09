@@ -101,6 +101,36 @@ func add_item(id: String, count := 1) -> int:
 	return left
 
 
+## Whether every {item, count} in `items` would fit in the backpack together.
+func has_room_for(items: Array) -> bool:
+	var sim: Array = []
+	for s in bag:
+		sim.append(s.duplicate() if s else null)
+	for e: Dictionary in items:
+		var id := String(e.get("item", ""))
+		var left := maxi(int(e.get("count", 1)), 1)
+		if item(id).is_empty():
+			continue
+		var cap := Database.stack_size(id)
+		for i in SIZE:
+			if left <= 0:
+				break
+			if sim[i] and sim[i].id == id and sim[i].count < cap:
+				var n := mini(cap - int(sim[i].count), left)
+				sim[i].count += n
+				left -= n
+		for i in SIZE:
+			if left <= 0:
+				break
+			if sim[i] == null:
+				var n := mini(cap, left)
+				sim[i] = {"id": id, "count": n}
+				left -= n
+		if left > 0:
+			return false
+	return true
+
+
 func count_of(id: String) -> int:
 	var n := 0
 	for s in bag:

@@ -16,7 +16,9 @@ extends Node
 ##   teleport {scene, marker, position, fade}   set_home {name}   fade_out / fade_in {seconds}
 ##   follower {npc, op join/leave}           call {event}   erase {}   stop {}
 ##   achievement {id}                        (Achievements.unlock)
-##   quest {id, op start/complete/fail/reset} (Quests)
+##   quest {id, op offer/start/complete/fail/reset} (Quests; offer shows QuestOffer and runs
+##        its accepted[] or declined[] branch; complete stops the event if the backpack
+##        has no room for the reward items)
 ##   weather {type, minutes}                 (Weather.force; 0 minutes = until the next change)
 ## Text can use {player} and pronouns (DialogueBox), {var:id}, {gold} and {item:id} (its name).
 
@@ -209,8 +211,16 @@ func _execute(c: Dictionary, list: Array, top: Dictionary) -> void:
 				Effects.burst(Combat.world_root(at), at.global_position + Vector3.UP, Color.from_string(String(c.get("color", "#ffd76a")), Color.WHITE), float(c.get("size", 1.0)))
 		"quest":
 			match String(c.get("op", "start")):
+				"offer":
+					_choice = {"branches": [c.get("accepted", []), c.get("declined", [])]}
+					_picked = -2
+					QuestOffer.open(self, String(c.get("id", "")), func(accepted: bool) -> void: _picked = 0 if accepted else 1)
 				"start": Quests.start(String(c.get("id", "")))
-				"complete": Quests.complete(String(c.get("id", "")))
+				"complete":
+					var why := Quests.complete(String(c.get("id", "")))
+					if why != "":
+						_box = DialogueBox.open(self, "", "", [why], Callable())
+						_stack.clear()
 				"fail": Quests.fail(String(c.get("id", "")))
 				"reset": Quests.reset(String(c.get("id", "")))
 		"weather":

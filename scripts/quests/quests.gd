@@ -11,8 +11,12 @@ extends RefCounted
 ##   kill      defeat `count` of `enemy` ("" = any) after the quest starts
 ##   switch    switch `switch` is on
 ##   variable  variable `variable` >= count
-## Events start / complete / fail quests (command "quest") and test them (condition
-## "quest": not_started / active / ready / done / failed).
+## Rewards: reward_gold, reward_xp, reward_items [{item, count}] (given by complete();
+## take_items = the carried "item" objectives are handed over first) and `rewards` (extra
+## text). Events offer quests (command "quest" op "offer": the QuestOffer window with
+## accepted / declined branches), start / complete / fail them and test them (condition
+## "quest": not_started / active / ready / done / failed). start_sound / complete_sound
+## (top of quests.json, Database → Quest Settings) play on accept and hand-in.
 
 static var _unsaved := {}
 ## The tracker and markers listen to this (any quest changed state or progress).
@@ -22,6 +26,13 @@ static var revision := 0
 static func all() -> Array:
 	var db := _db()
 	return db.get("quests") if db else []
+
+
+## The top of quests.json (sounds).
+static func settings() -> Dictionary:
+	var db := _db()
+	var s = db.get("quest_settings") if db else null
+	return s if s is Dictionary else {}
 
 
 static func get_quest(id: String) -> Dictionary:
@@ -72,18 +83,95 @@ static func start(id: String) -> void:
 		return
 	_store()[id] = {"state": "active", "kills": {}}
 	_changed()
+	_play("start_sound")
 	_announce("Quest accepted: %s" % q.get("name", id), Color(1.0, 0.85, 0.35))
 
 
-static func complete(id: String) -> void:
+## Hands the quest in: takes the carried quest items (take_items), gives gold, XP and
+## items. Returns "" when done, or why not (no room in the backpack for the reward items).
+static func complete(id: String) -> String:
 	var q := get_quest(id)
 	if q.is_empty() or state(id) == "done":
-		return
+		return ""
+	var player := _player()
+	var inv := player.get_node_or_null("Inventory") if player else null
+	var items := reward_items(q)
+	var taken: Array = []
+	if inv:
+		if bool(q.get("take_items", false)):
+			for o: Dictionary in q.get("objectives", []):
+				if String(o.get("type", "item")) == "item":
+					var item_id := String(o.get("item", ""))
+					var n := mini(int(inv.call("count_of", item_id)), maxi(int(o.get("count", 1)), 1))
+					if n > 0:
+						inv.call("remove_item", item_id, n)
+						taken.append({"item": item_id, "count": n})
+		if not items.is_empty() and not bool(inv.call("has_room_for", items)):
+			for t: Dictionary in taken:
+				inv.call("add_item", t.item, t.count)
+			var why := "Make room in your backpack for the reward first."
+			_announce(why, Color(1.0, 0.75, 0.6))
+			return why
 	var e: Dictionary = _store().get(id, {})
 	e["state"] = "done"
 	_store()[id] = e
-	_changed()
+	_play("complete_sound")
 	_announce("Quest complete: %s" % q.get("name", id), Color(0.6, 1.0, 0.55))
+	if inv:
+		var gold := int(q.get("reward_gold", 0))
+		if gold > 0:
+			inv.call("add_gold", gold)
+			GameLog.post("You receive %d gold." % gold, Color(1.0, 0.85, 0.35))
+		for r: Dictionary in items:
+			inv.call("add_item", r.item, r.count)
+			var name := String(_item(r.item).get("name", r.item))
+			GameLog.post("Received %s." % (("%d x %s" % [r.count, name]) if int(r.count) > 1 else name), Color(0.75, 1.0, 0.6))
+	var xp := int(q.get("reward_xp", 0))
+	var progress := player.get_node_or_null("Progress") if player else null
+	if xp > 0 and progress:
+		progress.call("add_xp", xp, String(q.get("name", id)))
+	_changed()
+	return ""
+
+
+## Reward items that exist: [{item, count}].
+static func reward_items(q: Dictionary) -> Array:
+	var out: Array = []
+	for r in q.get("reward_items", []):
+		if r is Dictionary and not _item(String(r.get("item", ""))).is_empty():
+			out.append({"item": String(r.item), "count": maxi(int(r.get("count", 1)), 1)})
+	return out
+
+
+## "120 XP · 50 gold" plus the extra rewards text (items are listed separately).
+static func rewards_line(q: Dictionary) -> String:
+	var parts: Array[String] = []
+	if int(q.get("reward_xp", 0)) > 0:
+		parts.append("%d XP" % int(q.reward_xp))
+	if int(q.get("reward_gold", 0)) > 0:
+		parts.append("%d gold" % int(q.reward_gold))
+	if String(q.get("rewards", "")) != "":
+		parts.append(String(q.rewards))
+	return "  ·  ".join(parts)
+
+
+static func _item(id: String) -> Dictionary:
+	var db := _db()
+	return db.call("item", id) if db and id != "" else {}
+
+
+static func _play(key: String) -> void:
+	var path := String(settings().get(key, ""))
+	var loop := Engine.get_main_loop() as SceneTree
+	if path == "" or loop == null or not ResourceLoader.exists(path):
+		return
+	var p := AudioStreamPlayer.new()
+	p.stream = load(path)
+	p.bus = &"SFX"
+	p.volume_db = float(settings().get("sound_db", -4.0))
+	loop.root.add_child(p)
+	p.finished.connect(p.queue_free)
+	p.play()
 
 
 static func fail(id: String) -> void:

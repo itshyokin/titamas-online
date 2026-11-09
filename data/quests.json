@@ -1,4 +1,7 @@
 {
+	"start_sound": "res://assets/audio/sfx/quest_start.ogg",
+	"complete_sound": "res://assets/audio/sfx/quest_complete.ogg",
+	"sound_db": -4,
 	"quests": [
 		{
 			"id": "bandit_insignias",
@@ -8,7 +11,7 @@
 			"giver_npc": "",
 			"available": [],
 			"description": "Bandits took the villager's brother's cart. Bring back 3 bandit insignias from the bandits on the road.",
-			"rewards": "50 gold, 120 experience",
+			"rewards": "",
 			"objectives": [
 				{
 					"text": "Bandit Insignias",
@@ -16,7 +19,20 @@
 					"item": "bandit_insignia",
 					"count": 3
 				}
-			]
+			],
+			"reward_gold": 50,
+			"reward_xp": 120,
+			"reward_items": [
+				{
+					"item": "iron_helm",
+					"count": 1
+				},
+				{
+					"item": "minor_healing_potion",
+					"count": 2
+				}
+			],
+			"take_items": true
 		}
 	]
 }

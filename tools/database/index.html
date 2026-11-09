@@ -840,7 +840,7 @@ const TABS = {
 	},
 	quests: {
 		title: "Quests", file: "quests", listKey: "quests", idKey: "id", nameKey: "name",
-		blank: () => ({ id: "new_quest", name: "New Quest", giver: "", giver_event: "", giver_npc: "", available: [], description: "", rewards: "", objectives: [] }),
+		blank: () => ({ id: "new_quest", name: "New Quest", giver: "", giver_event: "", giver_npc: "", available: [], description: "", reward_xp: 0, reward_gold: 0, reward_items: [], take_items: true, rewards: "", objectives: [] }),
 		groups: [
 			["General", [
 				{ key: "id", label: "ID", type: "text", help: "Events start and complete it with the Quest command, and test it with the \"Quest is\" condition." },
@@ -849,11 +849,27 @@ const TABS = {
 				{ key: "giver_event", label: "Giver event (shows ! / ?)", type: "event", help: "The event (MapEvent) whose head shows ! while the quest can be taken and ? when it's ready to hand in." },
 				{ key: "giver_npc", label: "…or giver NPC", type: "select", empty: true, options: () => (((data.npcs || {}).npcs) || []).map(n => [n.id, n.name || n.id]) },
 				{ key: "description", label: "Story (quest log)", type: "textarea", wide: true },
-				{ key: "rewards", label: "Rewards (text for the log)", type: "text", wide: true, help: "Give the actual rewards with event commands when it's handed in." },
 				{ key: "available", label: "Offered only when", type: "conditions", wide: true },
+			]],
+			["Rewards", [
+				{ key: "reward_xp", label: "Experience", type: "int" },
+				{ key: "reward_gold", label: "Gold", type: "int" },
+				{ key: "reward_items", label: "Items", type: "itemcounts", wide: true, help: "Shown in the offer and the quest log (pointing at one compares it with what's equipped). Given when the quest is completed; if the backpack has no room, the hand-in waits." },
+				{ key: "take_items", label: "Hand over the carried objective items on completion", type: "bool" },
+				{ key: "rewards", label: "Extra rewards text", type: "text", wide: true, help: "Anything else to mention (e.g. \"The villager's gratitude\"). Rewards above are given by the Quest command's Complete." },
 			]],
 			["Objectives", [
 				{ key: "objectives", label: "", type: "objectives", wide: true },
+			]],
+		],
+	},
+	quest_settings: {
+		title: "Quest Settings", file: "quests", single: true,
+		groups: [
+			["Sounds", [
+				{ key: "start_sound", label: "Quest accepted", type: "sound" },
+				{ key: "complete_sound", label: "Quest complete", type: "sound" },
+				{ key: "sound_db", label: "Volume (dB)", type: "number" },
 			]],
 		],
 	},
@@ -1535,6 +1551,27 @@ function fieldControl(t, entry, f) {
 			});
 			break;
 		}
+		case "itemcounts": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const s = selectOf(itemOptions(), r.item, false);
+				s.onchange = () => { list[i].item = s.value; set(list.map(x => Object.assign({}, x))); };
+				const n = el("input", { type: "number", value: r.count ?? 1, min: 1, title: "How many" });
+				n.style.width = "60px";
+				n.oninput = () => { const v = parseInt(n.value); if (!Number.isNaN(v)) { list[i].count = v; set(list.map(x => Object.assign({}, x))); } };
+				const rm = el("button", { textContent: "✕", title: "Remove" });
+				rm.onclick = () => { list.splice(i, 1); set(list.map(x => Object.assign({}, x)), true); };
+				row.append(s, el("span", { textContent: "×" }), n, rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Add item" });
+			add.onclick = () => { const o = itemOptions(); if (o.length) { list.push({ item: o[0][0], count: 1 }); set(list, true); } };
+			wrap.appendChild(add);
+			break;
+		}
 		case "itemlist": {
 			wrap.className += " list-field";
 			wrap.appendChild(label);
@@ -1757,8 +1794,8 @@ const CMDS = {
 		fields: [["type", "Weather", "select", () => (((data.weather || {}).types) || []).map(t => [t.id, t.name || t.id])], ["minutes", "For (minutes, 0 = until it changes)", "number"]],
 		show: c => "Weather: " + c.type + (c.minutes ? " for " + c.minutes + " min" : "") },
 	quest: { label: "Quest", make: () => ({ cmd: "quest", id: "", op: "start" }),
-		fields: [["id", "Quest", "select", questOptions], ["op", "Do", "select", [["start", "Start (accept)"], ["complete", "Complete"], ["fail", "Fail"], ["reset", "Reset (not started)"]]]],
-		show: c => "Quest: " + ({ start: "start", complete: "complete", fail: "fail", reset: "reset" }[c.op] || c.op) + " " + nameOf(questOptions(), c.id) },
+		fields: [["id", "Quest", "select", questOptions], ["op", "Do", "select", [["offer", "Offer (Accept / Decline window)"], ["start", "Start (accept)"], ["complete", "Complete (gives the rewards)"], ["fail", "Fail"], ["reset", "Reset (not started)"]]]],
+		show: c => "Quest: " + ({ offer: "offer", start: "start", complete: "complete", fail: "fail", reset: "reset" }[c.op] || c.op) + " " + nameOf(questOptions(), c.id) },
 	achievement: { label: "Unlock achievement", make: () => ({ cmd: "achievement", id: "" }),
 		fields: [["id", "Achievement", "select", achievementOptions]], show: c => "Achievement: " + nameOf(achievementOptions(), c.id) },
 	text: { label: "Show text", make: () => ({ cmd: "text", speaker: "", text: "" }),
@@ -1874,6 +1911,15 @@ function flattenCommands(list, depth, out) {
 			out.push({ label: ": Else", depth });
 			flattenCommands(c.else, depth + 1, out);
 			out.push({ list: c.else, i: c.else.length, depth: depth + 1, insert: true });
+			out.push({ label: ": End", depth });
+		} else if (c.cmd === "quest" && c.op === "offer") {
+			c.accepted = c.accepted || []; c.declined = c.declined || [];
+			out.push({ label: ": If accepted", depth });
+			flattenCommands(c.accepted, depth + 1, out);
+			out.push({ list: c.accepted, i: c.accepted.length, depth: depth + 1, insert: true });
+			out.push({ label: ": If declined", depth });
+			flattenCommands(c.declined, depth + 1, out);
+			out.push({ list: c.declined, i: c.declined.length, depth: depth + 1, insert: true });
 			out.push({ label: ": End", depth });
 		} else if (c.cmd === "choice") {
 			c.options = c.options || [];

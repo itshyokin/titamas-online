@@ -9,6 +9,7 @@ var _window: PanelContainer
 var _list: VBoxContainer
 var _detail: RichTextLabel
 var _picked := ""
+var _rewards: HBoxContainer
 
 
 func _ready() -> void:
@@ -57,7 +58,14 @@ func _ready() -> void:
 	_detail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_detail.add_theme_font_size_override("normal_font_size", 15)
 	_detail.add_theme_font_size_override("bold_font_size", 15)
-	cols.add_child(_detail)
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 6)
+	right.add_child(_detail)
+	_rewards = HBoxContainer.new()
+	_rewards.add_theme_constant_override("separation", 6)
+	right.add_child(_rewards)
+	cols.add_child(right)
 
 
 func is_open() -> bool:
@@ -146,6 +154,12 @@ func _show(id: String) -> void:
 		var p := Quests.progress(id, o)
 		var done := p.x >= p.y
 		t += "  %s %s%s\n" % ["✓" if done else "•", o.get("text", ""), ("  %d / %d" % [p.x, p.y]) if p.y > 1 else ""]
-	if String(q.get("rewards", "")) != "":
-		t += "\n[b]Rewards[/b]\n  %s\n" % q.rewards
+	for c in _rewards.get_children():
+		c.queue_free()
+	var line := Quests.rewards_line(q)
+	var items := Quests.reward_items(q)
+	if line != "" or not items.is_empty():
+		t += "\n[b]Rewards[/b]\n  %s\n" % line
+	for r: Dictionary in items:
+		_rewards.add_child(RewardItem.new(String(r.item), int(r.count)))
 	_detail.text = t
