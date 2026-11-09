@@ -30,8 +30,9 @@ const ABILITY_FIELDS := [
 	"id", "display_name", "description", "delivery", "color", "icon", "power", "mana_cost", "stamina_cost",
 	"cooldown", "reach", "arc", "staggers", "knockback", "cast_time", "charge_time", "windup_time", "charge_power", "max_charge_level", "ticks",
 	"tick_interval", "projectile_speed", "projectile_color", "projectile_style", "animation",
-	"animation_speed", "hit_time", "recovery_time", "move_scale", "sounds", "hit_sound",
+	"animation_speed", "hit_time", "recovery_time", "move_scale", "sounds", "hit_sound", "cast_loop_sound", "release_sound",
 ]
+const ABILITY_STREAMS := ["hit_sound", "cast_loop_sound", "release_sound"]
 const REGION_COLORS := ["fog_color", "sky_top", "sky_horizon", "sky_ground", "cloud_color", "cloud_shade", "sun_color", "grass_base", "grass_tip"]
 ## Region fields that are sounds (res:// paths in the file).
 const REGION_STREAMS := ["ambient_loop", "ambient_loop_night", "music", "music_night"]
@@ -96,7 +97,7 @@ static func ability_to_dict(ab: Ability) -> Dictionary:
 			v = ABILITY_ENUMS[field][int(v)]
 		elif field == "sounds":
 			v = (v as Array).map(func(s: AudioStream) -> String: return stream_to(s))
-		elif field == "hit_sound":
+		elif field in ABILITY_STREAMS:
 			v = stream_to(v)
 		d[field] = v
 	return d
@@ -119,8 +120,8 @@ static func apply_ability(ab: Ability, d: Dictionary) -> void:
 				if s:
 					list.append(s)
 			ab.sounds = list
-		elif field == "hit_sound":
-			ab.hit_sound = stream_from(v)
+		elif field in ABILITY_STREAMS:
+			ab.set(field, stream_from(v))
 		elif field in ["max_charge_level", "ticks"]:
 			ab.set(field, int(v))
 		else:

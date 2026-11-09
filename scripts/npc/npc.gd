@@ -67,6 +67,10 @@ var leader: Node3D = null
 var _since_hurt := 99.0
 var _stuck_time := 0.0
 var _stuck_from := Vector3.ZERO
+## Its spells and skills (data "abilities"), their cooldowns, and the one going off.
+var _spells: Array[Ability] = []
+var _spell_cooldowns := {}  # Ability -> seconds left
+var _casting: Ability = null
 
 
 func _ready() -> void:
@@ -115,6 +119,7 @@ func _apply_data(refill: bool) -> void:
 		add_to_group(Combat.GROUP)
 	elif not fights and is_in_group(Combat.GROUP):
 		remove_from_group(Combat.GROUP)
+	_spells = Database.abilities_for(data.get("abilities", []))
 	if fights and _plate == null:
 		_plate = Nameplate.attach(self)
 		Combat.show_numbers(self)
@@ -232,6 +237,8 @@ func _physics_process(delta: float) -> void:
 		return
 	_regen(delta)
 	_cooldown = maxf(_cooldown - delta, 0.0)
+	for ab: Ability in _spell_cooldowns:
+		_spell_cooldowns[ab] = maxf(float(_spell_cooldowns[ab]) - delta, 0.0)
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	else:
@@ -298,7 +305,7 @@ func _look_for_threats() -> void:
 	if nearest == null:
 		return
 	target = nearest
-	if bool(data.get("can_fight", false)) and armed:
+	if bool(data.get("can_fight", false)) and (armed or not _spells.is_empty()):
 		ai = AI.FIGHT
 	else:
 		ai = AI.FLEE
@@ -358,17 +365,94 @@ func _fight(delta: float) -> Vector3:
 		return Vector3.ZERO
 	var to := target.global_position - global_position
 	to.y = 0.0
-	if to.length() <= _f("attack_range", 2.0):
+	var spell := _pick_spell(to.length())
+	if spell:
+		_face(target.global_position, delta)
+		_start_spell(spell)
+		return Vector3.ZERO
+	if to.length() <= _f("attack_range", 2.0) and armed:
 		_face(target.global_position, delta)
 		if _cooldown <= 0.0:
 			_attack_time = 0.0
 			_attack_hit = false
+			_casting = null
 			character.play_from(String(data.get("attack_animation", "attack_light_1")), 0.0, 0.1, _f("attack_animation_speed", 1.0))
+		return Vector3.ZERO
+	# Casters without a weapon keep their distance.
+	if not armed and _has_ranged() and to.length() <= _ranged_reach() * 0.85:
+		_face(target.global_position, delta)
 		return Vector3.ZERO
 	return to.normalized() * _f("run_speed", 4.0)
 
 
+## A spell or skill it can use now: heals when hurt, projectiles in range (melee
+## fighters use them from beyond arm's reach), ready and off cooldown.
+func _pick_spell(distance: float) -> Ability:
+	for ab: Ability in _spells:
+		if float(_spell_cooldowns.get(ab, 0.0)) > 0.0 or _cooldown > 0.0:
+			continue
+		match ab.delivery:
+			Ability.Delivery.HEAL_OVER_TIME:
+				if stats.health < stats.max_health * 0.5:
+					return ab
+			Ability.Delivery.PROJECTILE:
+				if distance <= ab.reach and (not armed or distance > _f("attack_range", 2.0) * 1.5):
+					return ab
+			Ability.Delivery.MELEE:
+				if distance <= ab.reach:
+					return ab
+	return null
+
+
+func _has_ranged() -> bool:
+	for ab: Ability in _spells:
+		if ab.delivery == Ability.Delivery.PROJECTILE:
+			return true
+	return false
+
+
+func _ranged_reach() -> float:
+	var r := 0.0
+	for ab: Ability in _spells:
+		if ab.delivery == Ability.Delivery.PROJECTILE:
+			r = maxf(r, ab.reach)
+	return r
+
+
+func _start_spell(ab: Ability) -> void:
+	_casting = ab
+	_attack_time = 0.0
+	_attack_hit = false
+	# Spells with a cast time play the casting loop first, then their own clip.
+	var anim := ab.animation if ab.animation != "" else "cast_channel"
+	character.play_from(anim, 0.0, 0.1, ab.animation_speed)
+	if ab.cast_loop_sound and ab.cast_time > 0.0:
+		Combat.play_sound(self, ab.cast_loop_sound, -8.0)
+
+
+func _spell_goes_off(ab: Ability) -> void:
+	var power := ab.power * (1.0 + 0.1 * (stats.level - 1))
+	if ab.release_sound:
+		Combat.play_sound(self, ab.release_sound, -4.0)
+	elif ab.sounds.size() > 0:
+		Combat.play_sound(self, ab.sounds.pick_random(), -4.0)
+	match ab.delivery:
+		Ability.Delivery.HEAL_OVER_TIME:
+			stats.add_heal_over_time(power, ab.ticks, ab.tick_interval, ab)
+			Effects.heal_glow(self, ab.ticks * ab.tick_interval)
+		Ability.Delivery.PROJECTILE:
+			if _target_valid():
+				var from := global_position + Vector3.UP * 1.4 - model.global_basis.z * 0.5
+				Projectile.launch(from, self, target, ab, power, Combat.aim_point(target) - from)
+		Ability.Delivery.MELEE:
+			if _target_valid() and target.global_position.distance_to(global_position) <= ab.reach + 0.6:
+				Combat.hit(self, target, power, ab.staggers, ab.knockback)
+
+
 func _attacking(delta: float) -> void:
+	if _casting:
+		_spell_step(delta)
+		return
 	var anim := String(data.get("attack_animation", "attack_light_1"))
 	_attack_time += delta * _f("attack_animation_speed", 1.0)
 	if not _attack_hit and _target_valid():
@@ -380,6 +464,23 @@ func _attacking(delta: float) -> void:
 	if _attack_time >= maxf(character.get_animation_length(anim), _f("attack_hit_time", 0.32) + 0.2):
 		_attack_time = -1.0
 		_cooldown = _f("attack_cooldown", 1.5) * randf_range(0.8, 1.2)
+
+
+func _spell_step(delta: float) -> void:
+	var ab := _casting
+	var anim := ab.animation if ab.animation != "" else "cast_channel"
+	_attack_time += delta * ab.animation_speed
+	if _target_valid() and ab.delivery != Ability.Delivery.HEAL_OVER_TIME:
+		_face(target.global_position, delta)
+	var fire_at := ab.cast_time + ab.hit_time
+	if not _attack_hit and _attack_time >= fire_at:
+		_attack_hit = true
+		_spell_goes_off(ab)
+	if _attack_time >= maxf(fire_at + 0.3, minf(character.get_animation_length(anim), fire_at + ab.recovery_time + 0.4)):
+		_attack_time = -1.0
+		_casting = null
+		_spell_cooldowns[ab] = maxf(ab.cooldown, 1.5)
+		_cooldown = _f("attack_cooldown", 1.5) * randf_range(0.6, 1.0)
 
 
 func _flee(_delta: float) -> Vector3:
@@ -398,6 +499,7 @@ func _calm_down() -> void:
 	angry_at_player = false
 	target = null
 	_attack_time = -1.0
+	_casting = null
 	ai = AI.FOLLOW if leader else AI.RETURN
 	_show_weapon()
 
@@ -423,6 +525,7 @@ func stagger(seconds := 0.6) -> void:
 	if ai == AI.FIGHT:
 		_stagger = seconds
 		_attack_time = -1.0
+		_casting = null
 		character.play_from("hit_react", 0.0, 0.05, 0.9)
 
 
@@ -438,7 +541,7 @@ func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
 	# Hit by an enemy: fight back (or run).
 	if ai in [AI.IDLE, AI.RETURN, AI.TALK, AI.FOLLOW] and source is Node3D and Combat.is_enemy_of(self, source):
 		target = source
-		ai = AI.FIGHT if bool(data.get("can_fight", false)) and armed else AI.FLEE
+		ai = AI.FIGHT if bool(data.get("can_fight", false)) and (armed or not _spells.is_empty()) else AI.FLEE
 		_show_weapon()
 
 
@@ -449,6 +552,10 @@ func _on_died() -> void:
 	collision_layer = 0
 	_walk = Vector3.ZERO
 	character.play_from("death", 0.0, 0.15, 1.0)
+	_casting = null
+	# Its loot (gold, items it carries), like an enemy's.
+	if int(data.get("gold_max", 0)) > 0 or not (data.get("loot", []) as Array).is_empty():
+		LootBag.drop_for(data, Combat.world_root(self), global_position, self)
 	await get_tree().create_timer(6.0).timeout
 	model.visible = false
 	await get_tree().create_timer(maxf(_f("respawn_time", 30.0) - 6.0, 0.0)).timeout

@@ -1,6 +1,6 @@
 class_name ScreenFade
 extends CanvasLayer
-## A black screen fading in or out over everything (events' fades and teleports). It lives
+## A black (or coloured) screen fading in or out over everything (events' fades and teleports). It lives
 ## under the root, so it stays while the level changes underneath.
 
 static var _instance: ScreenFade
@@ -16,9 +16,22 @@ static func _layer(from: Node) -> ScreenFade:
 	return _instance
 
 
-## Fades to black over `seconds`.
-static func to_black(from: Node, seconds := 0.6) -> void:
-	_layer(from)._fade(1.0, seconds)
+## Fades to black (or `color`) over `seconds`.
+static func to_black(from: Node, seconds := 0.6, color := Color.BLACK) -> void:
+	var l := _layer(from)
+	if l._rect.color.a < 0.01:
+		l._rect.color = Color(color, 0.0)
+	else:
+		l._rect.color = Color(color, l._rect.color.a)
+	l._fade(1.0, seconds)
+
+
+## Covers the screen with `color` at once (to fade in from it with clear()).
+static func cover(from: Node, color := Color.BLACK) -> void:
+	var l := _layer(from)
+	if l._tween:
+		l._tween.kill()
+	l._rect.color = Color(color, 1.0)
 
 
 ## Fades back in over `seconds`.

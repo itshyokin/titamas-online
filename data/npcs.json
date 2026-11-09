@@ -45,7 +45,12 @@
 				"Stay sharp, {player}. Bandits have been creeping up from the shore.",
 				"If they follow you here, lead them my way. I'll handle it."
 			],
-			"can_follow": false
+			"can_follow": false,
+			"kind": "guard",
+			"abilities": [],
+			"gold_min": 3,
+			"gold_max": 8,
+			"loot": []
 		},
 		{
 			"id": "katrina",
@@ -90,7 +95,12 @@
 			],
 			"can_follow": true,
 			"follow_line": "Lead the way, {player}. I've got your back.",
-			"wait_line": "I'll wait here. Don't be long."
+			"wait_line": "I'll wait here. Don't be long.",
+			"kind": "story",
+			"abilities": [],
+			"gold_min": 0,
+			"gold_max": 0,
+			"loot": []
 		},
 		{
 			"id": "villager",
@@ -133,7 +143,64 @@
 				"Lovely weather, isn't it?",
 				"Mind the bandits down by the water. I don't go past the old stones anymore."
 			],
-			"can_follow": false
+			"can_follow": false,
+			"kind": "villager",
+			"abilities": [],
+			"gold_min": 0,
+			"gold_max": 0,
+			"loot": []
+		},
+		{
+			"id": "hedge_mage",
+			"name": "Orrin",
+			"title": "Hedge Mage",
+			"level": 3,
+			"max_health": 90,
+			"immortal": true,
+			"can_fight": true,
+			"behaviour": "wander",
+			"wander_radius": 5.0,
+			"walk_speed": 1.1,
+			"run_speed": 4.6,
+			"aggro_radius": 10.0,
+			"leash_distance": 30.0,
+			"attack_power": 0,
+			"attack_range": 2.0,
+			"attack_cooldown": 1.5,
+			"attack_animation": "attack_light_1",
+			"attack_animation_speed": 1.0,
+			"attack_hit_time": 0.32,
+			"respawn_time": 30.0,
+			"look": {
+				"body": "masc",
+				"skin": "#dcab86",
+				"hair": "swept",
+				"hair_color": "#9a9894",
+				"facial_hair": "mustache",
+				"facial_color": "#9a9894",
+				"eyes": "sleepy",
+				"eye_color": "#7a8e9c",
+				"height": "short",
+				"build": "heavy"
+			},
+			"equipment": {
+				"chest": "leather_jerkin",
+				"legs": "travelers_trousers",
+				"feet": "worn_boots"
+			},
+			"dialogue": [
+				"Fire answers to anyone who asks politely, {player}.",
+				"Mind the bandits on the road. I'll cover you if they come."
+			],
+			"can_follow": false,
+			"kind": "story",
+			"abilities": [
+				"firebolt",
+				"mend"
+			],
+			"gold_min": 0,
+			"gold_max": 0,
+			"loot": []
 		}
 	]
 }

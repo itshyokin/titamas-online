@@ -113,6 +113,10 @@ const WATER_MASK := 8  # layer 4
 
 var state := State.NORMAL
 var is_sprinting := false
+## Movement speed multiplier (Weakened slows you; PlayerProgress sets it).
+var speed_scale := 1.0
+var _dying := false
+var _going_home := false
 ## True when the character should keep facing a target (combat lock-on). Dodges
 ## then become left/right/back hops relative to the facing instead of turning to roll.
 var lock_facing := false
@@ -164,6 +168,7 @@ var _push := Vector3.ZERO
 func _ready() -> void:
 	add_to_group("player")
 	add_child(UnderwaterView.new())
+	add_child(ScreenMood.new())
 	_last_safe = global_position
 	stats.died.connect(_on_died)
 
@@ -331,7 +336,7 @@ func _normal_movement(delta: float) -> void:
 		speed = sprint_speed
 	elif Input.is_action_pressed("walk"):
 		speed = walk_speed
-	var target := direction * speed
+	var target := direction * speed * speed_scale
 	var accel := acceleration if is_on_floor() else acceleration * air_control
 	velocity.x = lerpf(velocity.x, target.x, accel * delta)
 	velocity.z = lerpf(velocity.z, target.z, accel * delta)
@@ -440,20 +445,38 @@ func _action_movement(delta: float) -> void:
 
 
 func _on_died() -> void:
+	if _dying:
+		return
+	_dying = true
+	var d: Dictionary = Database.player.get("death", {})
+	var reason := "died"
+	var wait := 0.0
 	if fatigue >= fatigue_max:
-		_respawn("drowned")
+		reason = "drowned"
+		wait = float(d.get("drown_wait", 0.6))
+	elif state in [State.HANG, State.LEDGE_CLIMB, State.WALL_CLIMB, State.LADDER, State.SWIM]:
+		wait = 0.3
+	else:
+		if state == State.ACTION:
+			action_interrupted.emit()
+		state = State.DEAD
+		is_sprinting = false
+		action_animation.emit("death", 0.0, 0.15, 1.0)
+		wait = death_time
+	# The screen fades to black, home, then back in.
+	var fade_out := float(d.get("fade_out", 1.2))
+	await get_tree().create_timer(maxf(wait - fade_out * 0.5, 0.0)).timeout
+	ScreenFade.to_black(self, fade_out)
+	await get_tree().create_timer(fade_out + 0.1).timeout
+	_dying = false
+	if not is_inside_tree():
 		return
-	if state in [State.HANG, State.LEDGE_CLIMB, State.WALL_CLIMB, State.LADDER, State.SWIM]:
-		_respawn("died")
+	if state == State.DEAD or reason == "drowned" or stats.is_dead():
+		_respawn(reason)
+	if not is_inside_tree() or _going_home:
 		return
-	if state == State.ACTION:
-		action_interrupted.emit()
-	state = State.DEAD
-	is_sprinting = false
-	action_animation.emit("death", 0.0, 0.15, 1.0)
-	await get_tree().create_timer(death_time).timeout
-	if state == State.DEAD:
-		_respawn("died")
+	await get_tree().create_timer(0.2).timeout
+	ScreenFade.clear(self, float(d.get("fade_in", 1.0)))
 
 
 # --- Dodge -------------------------------------------------------------------
@@ -841,7 +864,7 @@ func _swim_movement(delta: float) -> void:
 		return
 	var direction := _input_direction()
 	_update_sprint(direction != Vector3.ZERO, delta, true)
-	var target := direction * (swim_sprint_speed if is_sprinting else swim_speed)
+	var target := direction * (swim_sprint_speed if is_sprinting else swim_speed) * speed_scale
 	velocity.x = lerpf(velocity.x, target.x, 3.0 * delta)
 	velocity.z = lerpf(velocity.z, target.z, 3.0 * delta)
 	if direction != Vector3.ZERO:
@@ -920,7 +943,9 @@ func _respawn(reason: String) -> void:
 			spot = Vector3(p[0], p[1], p[2]) + Vector3.UP * 0.3
 		elif not home.is_empty() and not Net.active:
 			stats.restore()
-			GameSession.travel_home.call_deferred()  # home is in another level
+			_going_home = true
+			# Home is in another level: it fades in from black there.
+			GameSession.travel_home.call_deferred(Color.BLACK, 0.0, float(Database.player.get("death", {}).get("fade_in", 1.0)))
 	global_position = spot
 	velocity = Vector3.ZERO
 	state = State.NORMAL

@@ -14,7 +14,7 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 | Action | Controller | Keyboard and mouse |
 | --- | --- | --- |
 | Attack: tap = quick, hold = charge (heavy blow, bow draw) | RT | Left mouse |
-| Block (melee) / aim (ranged), hold | LT | Right mouse |
+| Block (melee) / aim (ranged), hold | LT | Q |
 | Swap primary / secondary weapon | Y | R |
 | Primary / secondary weapon | (Y) | 1 / 2 |
 | Hotbar boxes 3–10 (spells, potions…) | Hold D-pad up: ability wheel | 3–9, 0 (or keypad) |
@@ -25,10 +25,11 @@ A small-group (1–10 player) co-op 3D RPG set in the world of Titamas. Built in
 | Character and backpack | Back | I or B |
 | Spellbook | | P |
 | Danger mode (lets you attack friendly NPCs) | | K |
-| Target + lock on (the enemy nearest the middle of the screen) / clear | RB | Tab |
+| Target an enemy | RB (nearest the middle of the screen) | Left-click it (click another to switch) |
+| Clear target | RB | Tab |
 | Cycle targets | LB | Shift+Tab |
-| Lock on (toggle) | R3 | Q |
-| Camera | Right stick | Hold middle mouse, wheel zoom |
+| Lock on (toggle) | R3 | Middle mouse |
+| Camera | Right stick | Hold right mouse, wheel zoom |
 
 Settings → **How to play** lists the controls as currently bound.
 
@@ -191,7 +192,7 @@ The page only works while Godot is open (Godot serves it, on your own computer o
 - **Patrols:** add a `Node3D` named `Patrol` under the NPC with `Marker3D` children; it walks them in order.
 - **Fighting:** NPCs that fight and hold a weapon (primary) take on enemies that come within their notice range, and enemies fight back. The rest shout "Help!" and run, then come home when it's safe. They ignore training dummies.
 - **Followers:** NPCs with **Can follow the player** (Katrina) offer **Follow me** / **Wait here** after their lines. A follower stays beside you, runs to catch up, fights whatever is fighting you (or what you attack), waits at the edge while you swim or climb, and turns up behind you if you get far ahead or it gets stuck. Its health shows under yours. Out of a fight, NPCs heal back up. Followers are saved with your character.
-- **Talking:** walk up to an NPC and press **Jump / talk** (Space, A). Each paragraph of its lines is one page; the same button shows the whole line, then the next. Esc or B closes. Lines can use `{player}` and the player's pronouns: `{they}`, `{them}`, `{their}`, `{theirs}`, `{themself}`.
+- **Talking:** walk up to an NPC and press **Interact** (E, A). Each paragraph of its lines is one page; the same button shows the whole line, then the next. Esc or B closes. Lines can use `{player}` and the player's pronouns: `{they}`, `{them}`, `{their}`, `{theirs}`, `{themself}`.
 
 ## Events
 
@@ -201,7 +202,7 @@ Events work like Saturn's (and RPG Maker's): a box placed in a level, with pages
 - **Database → Events:** each event has pages. The page in use is the **last one whose conditions all hold**: switches, self switches (A–D), variables, carrying an item, gold, level, class. A page sets:
   - **Trigger:** Action (press Jump / talk next to it), Touch (step into the box), Leave (step out), Autorun (as soon as the page turns on; turn a self switch on at the end so it runs once), None (only by **Call event**).
   - **Shows:** nothing (an invisible area), a built-in stand-in (`builtin:chest`, `chest_open`, `sign`, `standing_stone`, `crate`, `barrel`, `orb`, `lever`, `lever_on`), a prop (`prop:rock2`), an NPC (`npc:villager`: talking to the NPC runs the page) or any `res://` scene.
-  - **Blocks the way**, **Sparkles** (so it can be spotted), **Prompt** ("Space  Examine"), **Speaker**, and whether the player waits while it runs.
+  - **Blocks the way**, **Sparkles** (so it can be spotted), **Prompt** ("E  Examine"), **Speaker**, and whether the player waits while it runs.
   - **Commands**, in an RPG Maker-style list: Show text, Show choices (each choice gets a branch; pick what Esc does), Game log line, Conditional branch (with Else), Wait, Call event, Exit event, Erase event, Comment, Control switch / self switch / variable (set, add, subtract, multiply, random), Give / take item, Change gold, Give experience, Full recovery, Follower joins / leaves, Player animation, Teleport (to a Marker3D or x, y, z, in this level or another, with a fade), Set home, Fade out / in, Play sound, Sparkle effect. Select a line and use **+ Insert command** (it goes above the line; select a ◆ line to add at the end of a list or branch), ↑ ↓, Copy / Paste and Delete.
   - Text can use `{player}`, the pronoun tokens, `{var:id}`, `{item:id}` and `{gold}`. Texts in a row share one box; a choice right after a text shows under it. Giving an item that doesn't fit says so and stops the event (so a chest stays closed).
 - **Database → Switches:** names for switches and variables. Their values (and self switches) are saved with the character.

@@ -126,6 +126,7 @@ var _drawing_for_action := false  # msec: the draw clip hasn't reached the weapo
 var _buffer_until := 0  # msec: an attack tapped during a dodge (-1 while it lasts)
 # A plain channel (hearthstone and the like): a cast bar, then a callback.
 var _channel: Ability = null
+var _loop_player: AudioStreamPlayer3D
 var _channel_time := 0.0
 var _channel_done: Callable
 var _channel_play_at := -1.0  # timed channels: when the held pose starts playing
@@ -717,6 +718,11 @@ func _land(ab: Ability) -> void:
 			if landed and _flourish:
 				FloatingText.spawn(player, "Flourish!", Color(1.0, 0.8, 0.3), 1.3)
 				TimeFX.hit_stop(player, 0.14)
+			if not landed and bool(_world_settings().get("world_bounce", true)):
+				var wall := WorldStrike.find(player, fwd, ab.reach * float(_world_settings().get("world_check", 0.8)))
+				if not wall.is_empty():
+					WorldStrike.strike(player, wall, _world_settings())
+					_bounce.call_deferred()
 		Ability.Delivery.PROJECTILE:
 			var weapon_move := _is_weapon_move(ab)
 			var bolt := ab.projectile_style == Ability.ProjectileStyle.BOLT
@@ -733,6 +739,8 @@ func _land(ab: Ability) -> void:
 				Combat.play_sound(player, load(fire), -3.0)
 			elif not bolt and weapon_move:
 				Combat.play_sound(player, SHOT_SOUND, -4.0)
+			elif ab.release_sound:
+				Combat.play_sound(player, ab.release_sound, -2.0)
 			elif ab.sounds.size() > 0:
 				Combat.play_sound(player, ab.sounds[0], -3.0)
 			if ab.projectile_style == Ability.ProjectileStyle.BULLET:
@@ -748,8 +756,25 @@ func _land(ab: Ability) -> void:
 			if s:
 				s.add_heal_over_time(_power, ab.ticks, ab.tick_interval, ab)
 				Effects.heal_glow(who, ab.ticks * ab.tick_interval)
-				if ab.sounds.size() > 0:
+				if ab.release_sound:
+					Combat.play_sound(player, ab.release_sound, -3.0)
+				elif ab.sounds.size() > 0:
 					Combat.play_sound(who, ab.sounds[0], -4.0)
+
+
+func _world_settings() -> Dictionary:
+	return Database.player.get("combat", {})
+
+
+## The blade bounced off something solid: the swing stops short with a recoil.
+func _bounce() -> void:
+	if _current == null:
+		return
+	_queued = null
+	_attack_down = false
+	_flourish = false
+	_finish_action()
+	player.action_animation.emit("hit_react", 0.0, 0.05, 1.3)
 
 
 ## Hand-aimed shot: at the crosshair, or (locked on, not aiming) at the target with
@@ -909,6 +934,7 @@ func cast(ab: Ability) -> bool:
 	_cast_time = 0.0
 	_enter_combat()
 	player.action_animation.emit("cast_channel", 0.0, 0.2, 1.0)
+	_start_loop(ab.cast_loop_sound)
 	_cast_glow = Effects.hand_glow(ab.projectile_color)
 	character.attach_to_hand(_cast_glow)
 	return true
@@ -930,6 +956,7 @@ func _update_cast(delta: float) -> void:
 
 func _end_cast() -> void:
 	_casting = null
+	_stop_loop()
 	if _cast_glow and is_instance_valid(_cast_glow):
 		_cast_glow.get_parent().queue_free()  # the BoneAttachment holding it
 	_cast_glow = null
@@ -940,7 +967,7 @@ func _end_cast() -> void:
 ## `anim`: the animation role/clip played while the bar fills. `timed`: the clip holds
 ## a pose (animations.json "drink" hold_at) while the bar fills, then plays out so it
 ## ends with the bar (faster if the bar is shorter than the clip).
-func channel(display: String, seconds: float, on_done: Callable, anim := "cast_channel", timed := false) -> bool:
+func channel(display: String, seconds: float, on_done: Callable, anim := "cast_channel", timed := false, loop: AudioStream = null) -> bool:
 	if _channel or _current or _charging or _blocking or _casting:
 		notice.emit("You're busy")
 		return false
@@ -955,6 +982,7 @@ func channel(display: String, seconds: float, on_done: Callable, anim := "cast_c
 	_channel_time = 0.0
 	_channel_done = on_done
 	_channel_play_at = -1.0
+	_start_loop(loop)
 	if timed:
 		var model := player.get_node_or_null("Model/Character") as CharacterModel
 		var settings: Dictionary = Database.animations.get("drink", {})
@@ -987,6 +1015,7 @@ func _update_channel(delta: float) -> void:
 	if _channel_time >= _channel.cast_time:
 		var done := _channel_done
 		_channel = null
+		_stop_loop()
 		player.end_action()
 		if done.is_valid():
 			done.call()
@@ -995,7 +1024,37 @@ func _update_channel(delta: float) -> void:
 func _stop_channel() -> void:
 	if _channel:
 		_channel = null
+		_stop_loop()
 		player.end_action()
+
+
+## A sound looping on the player while a cast or channel fills (null = none).
+func _start_loop(stream: AudioStream) -> void:
+	_stop_loop()
+	if stream == null:
+		return
+	var s := stream.duplicate() as AudioStream
+	if s is AudioStreamOggVorbis:
+		(s as AudioStreamOggVorbis).loop = true
+	elif s is AudioStreamWAV:
+		(s as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
+		(s as AudioStreamWAV).loop_end = int((s as AudioStreamWAV).get_length() * (s as AudioStreamWAV).mix_rate)
+	_loop_player = AudioStreamPlayer3D.new()
+	_loop_player.stream = s
+	_loop_player.bus = &"SFX"
+	_loop_player.volume_db = -4.0
+	player.add_child(_loop_player)
+	_loop_player.position = Vector3.UP * 1.2
+	_loop_player.play()
+
+
+func _stop_loop() -> void:
+	if _loop_player and is_instance_valid(_loop_player):
+		var p := _loop_player
+		var t := p.create_tween()
+		t.tween_property(p, "volume_db", -40.0, 0.15)
+		t.tween_callback(p.queue_free)
+	_loop_player = null
 
 
 ## Spells and channels: still filling the cast bar.
@@ -1249,6 +1308,7 @@ func _set_combat(value: bool) -> void:
 
 
 func _cancel_all() -> void:
+	_stop_loop()
 	if _channel:
 		cast_interrupted.emit("Cancelled")
 		_channel = null

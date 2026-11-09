@@ -374,10 +374,51 @@ func _use_hearthstone(d: Dictionary) -> bool:
 	if combat == null:
 		return false
 	var home: Dictionary = GameSession.data.get("home", {})
-	return combat.channel("Hearthstone: %s" % home.get("name", "Home"), float(d.get("cast_time", 8.0)), func() -> void:
+	var seconds := float(d.get("cast_time", 8.0))
+	var loop := DataFiles.stream_from(d.get("hearth_sound", "")) if String(d.get("hearth_sound", "")) != "" else null
+	var glow := Color.from_string(String(d.get("hearth_light", "#5fc8ff")), Color(0.37, 0.78, 1.0))
+	var fade := Color.from_string(String(d.get("hearth_fade", "#e4f6ff")), Color(0.9, 0.97, 1.0))
+	var started: bool = combat.channel("Hearthstone: %s" % home.get("name", "Home"), seconds, func() -> void:
 		GameSession.data["hearth_ready_at"] = Time.get_unix_time_from_system() + float(d.get("cooldown", 600.0))
-		Effects.burst(Combat.world_root(player), (player as Node3D).global_position + Vector3.UP, Color(0.45, 0.75, 1.0), 1.4)
-		GameSession.travel_home())
+		Effects.burst(Combat.world_root(player), (player as Node3D).global_position + Vector3.UP, glow, 1.4)
+		var boom := String(d.get("teleport_sound", ""))
+		if boom != "":
+			Combat.play_sound(player, DataFiles.stream_from(boom), 0.0)
+		GameSession.travel_home(fade, float(d.get("hearth_fade_out", 0.7)), float(d.get("hearth_fade_in", 1.2))), "cast_channel", false, loop)
+	if started:
+		_hearth_glow(player as Node3D, combat, seconds, glow, float(d.get("hearth_light_energy", 3.0)))
+	return started
+
+
+## The azure light around the player while the hearthstone channels: it swells with the
+## cast bar and goes out if the cast stops.
+func _hearth_glow(player: Node3D, combat: Node, seconds: float, color: Color, energy: float) -> void:
+	var light := OmniLight3D.new()
+	light.light_color = color
+	light.light_energy = 0.0
+	light.omni_range = 4.5
+	light.position = Vector3.UP * 1.1
+	player.add_child(light)
+	var swirl := Effects.hand_glow(color)
+	var hand := (player.get_node_or_null("Model/Character") as CharacterModel)
+	if hand:
+		hand.attach_to_hand(swirl)
+	var t := light.create_tween()
+	t.tween_property(light, "light_energy", energy, seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	var stop := func(_reason := "") -> void:
+		if is_instance_valid(light):
+			var out := light.create_tween()
+			out.tween_property(light, "light_energy", 0.0, 0.25)
+			out.tween_callback(light.queue_free)
+		if is_instance_valid(swirl) and swirl.get_parent():
+			swirl.get_parent().queue_free()
+	combat.connect("cast_interrupted", stop, CONNECT_ONE_SHOT)
+	# Done (or the level is reloading): it goes out with the bar.
+	await get_tree().create_timer(seconds + 0.05).timeout
+	if combat.is_connected("cast_interrupted", stop):
+		combat.disconnect("cast_interrupted", stop)
+	if is_instance_valid(light) and not combat.call("is_casting"):
+		stop.call()
 
 
 ## Uses an item by id (from its first stack in the backpack), as the hotbar does.

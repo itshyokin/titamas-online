@@ -724,7 +724,14 @@
 			"use_hearth": true,
 			"cast_time": 8.0,
 			"cooldown": 600.0,
-			"keep": true
+			"keep": true,
+			"hearth_sound": "res://assets/audio/sfx/hearth_channel_loop.ogg",
+			"teleport_sound": "res://assets/audio/sfx/hearth_teleport.ogg",
+			"hearth_light": "#5fc8ff",
+			"hearth_light_energy": 3.0,
+			"hearth_fade": "#e4f6ff",
+			"hearth_fade_out": 0.7,
+			"hearth_fade_in": 1.2
 		},
 		{
 			"description": "Quick and light. Fast stabs, small damage.",

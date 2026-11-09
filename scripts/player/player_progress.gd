@@ -183,6 +183,8 @@ func _apply_weakened() -> void:
 	var on := is_weakened()
 	stats.damage_scale = float(d.get("weakened_damage", 0.8)) if on else 1.0
 	stats.set_max_health_scale(float(d.get("weakened_health", 0.8)) if on else 1.0)
+	if "speed_scale" in player:
+		player.set("speed_scale", float(d.get("weakened_speed", 0.85)) if on else 1.0)
 	weakened_changed.emit(weakened_left())
 
 

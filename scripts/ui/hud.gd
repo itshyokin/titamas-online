@@ -308,7 +308,8 @@ func _build_combat_hud() -> void:
 
 
 func _build_hotbar() -> void:
-	add_child(GameLog.new())
+	var game_log := GameLog.new()
+	add_child(game_log)
 	_hotbar = Hotbar.new(_inventory, _combat)
 	stamina_bar.visible = false  # stamina is box 11 on the hotbar
 	_hotbar.anchor_left = 0.5
@@ -317,8 +318,15 @@ func _build_hotbar() -> void:
 	_hotbar.anchor_bottom = 1.0
 	add_child(_hotbar)
 	# Bottom centre once its size is known.
-	_hotbar.resized.connect(func() -> void: _hotbar.position = Vector2(get_viewport().get_visible_rect().size.x * 0.5 - _hotbar.size.x * 0.5,
-		get_viewport().get_visible_rect().size.y - _hotbar.size.y - 16))
+	_hotbar.resized.connect(func() -> void:
+		var view := get_viewport().get_visible_rect().size
+		_hotbar.position = Vector2(view.x * 0.5 - _hotbar.size.x * 0.5, view.y - _hotbar.size.y - 16)
+		# The game log sits just above the hotbar and XP bar when they'd overlap.
+		var lift := 52.0
+		if game_log.offset_right > _hotbar.position.x:
+			lift = _hotbar.size.y + 16.0 + 12.0
+		game_log.offset_bottom = -lift
+		game_log.offset_top = -lift - GameLog.HEIGHT)
 	get_viewport().size_changed.connect(func() -> void: _hotbar.resized.emit())
 	_wheel = AbilityWheel.new(_hotbar)
 	add_child(_wheel)

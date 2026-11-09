@@ -122,11 +122,27 @@ func hearth_cooldown_left() -> float:
 	return maxf(float(data.get("hearth_ready_at", 0.0)) - Time.get_unix_time_from_system(), 0.0)
 
 
-## Hearthstone: reload at home (its level, its spot).
-func travel_home() -> void:
+## Hearthstone / death: reload at home (its level, its spot). With `fade_out` > 0 the
+## screen first fades to `color`; the new level fades in from it over `fade_in`.
+func travel_home(color := Color.BLACK, fade_out := 0.0, fade_in := 0.0) -> void:
 	var home: Dictionary = data.get("home", {})
 	if home.is_empty():
 		return
+	var tree := get_tree()
+	if fade_out > 0.0:
+		ScreenFade.to_black(self, fade_out, color)
+		await tree.create_timer(fade_out + 0.05).timeout
+	elif fade_in > 0.0:
+		ScreenFade.cover(self, color)
+	_go_home(home)
+	if fade_in > 0.0:
+		await tree.process_frame
+		await tree.process_frame
+		await tree.create_timer(0.25).timeout
+		ScreenFade.clear(self, fade_in)
+
+
+func _go_home(home: Dictionary) -> void:
 	save_game()
 	data["scene"] = home.get("scene", START_SCENE)
 	data["position"] = home.get("position")

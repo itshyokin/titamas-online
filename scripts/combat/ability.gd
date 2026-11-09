@@ -73,3 +73,7 @@ enum ProjectileStyle { BOLT, ARROW, BULLET }
 @export_group("Sound")
 @export var sounds: Array[AudioStream] = []
 @export var hit_sound: AudioStream
+## Spells: loops while the cast bar fills.
+@export var cast_loop_sound: AudioStream
+## Spells: plays when it goes off (instead of the first of `sounds`).
+@export var release_sound: AudioStream

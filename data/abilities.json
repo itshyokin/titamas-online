@@ -208,7 +208,9 @@
 			"knockback": 3.5,
 			"cast_time": 1.1,
 			"icon": "fire",
-			"windup_time": 0.45
+			"windup_time": 0.45,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg"
 		},
 		{
 			"animation": "cast_heal",
@@ -243,7 +245,9 @@
 			"knockback": 0.0,
 			"cast_time": 1.4,
 			"icon": "heal",
-			"windup_time": 0.45
+			"windup_time": 0.45,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg"
 		},
 		{
 			"animation": "gunplay",
