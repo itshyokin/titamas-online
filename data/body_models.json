@@ -1,94 +1,242 @@
 {
-	"source": "res://assets/models/characters/src/lowpoly_guy.glb",
-	"height": 1.86,
-	"body_meshes": [
-		"bare_body",
-		"head_human"
-	],
 	"body_extra": [
 		{
 			"material": "leather",
 			"part": "underwear"
 		}
 	],
+	"body_meshes": [
+		"bare_body",
+		"head_human"
+	],
+	"height": 1.86,
 	"pieces": [
 		{
 			"id": "chainmail_shirt",
-			"mesh": "chainmail",
 			"material": "chainmail",
-			"min_y": -1,
-			"max_y": -1
+			"max_y": -1.0,
+			"mesh": "chainmail",
+			"min_y": -1.0
 		},
 		{
 			"id": "cloth_leggings",
-			"mesh": "chainmail",
 			"material": "tan_cloth",
-			"min_y": -1,
-			"max_y": -1
+			"max_y": -1.0,
+			"mesh": "chainmail",
+			"min_y": -1.0
 		},
 		{
 			"id": "leather_tunic",
-			"mesh": "leatherarmor",
 			"material": "tan_cloth",
-			"min_y": -1,
-			"max_y": -1
+			"max_y": -1.0,
+			"mesh": "leatherarmor",
+			"min_y": -1.0
 		},
 		{
 			"id": "dark_leggings",
-			"mesh": "leatherarmor",
 			"material": "leggings",
-			"min_y": -1,
-			"max_y": -1
+			"max_y": -1.0,
+			"mesh": "leatherarmor",
+			"min_y": -1.0
 		},
 		{
 			"id": "leather_gloves",
-			"mesh": "leatherarmor",
 			"material": "leather",
-			"min_y": 0.62,
-			"max_y": -1
+			"max_y": -1.0,
+			"mesh": "leatherarmor",
+			"min_y": 0.62
 		},
 		{
 			"id": "leather_boots",
-			"mesh": "leatherarmor",
 			"material": "leather",
-			"min_y": -1,
-			"max_y": 0.62
+			"max_y": 0.62,
+			"mesh": "leatherarmor",
+			"min_y": -1.0
 		},
 		{
 			"id": "head_elf",
-			"mesh": "head_elf",
 			"material": "",
-			"min_y": -1,
-			"max_y": -1
+			"max_y": -1.0,
+			"mesh": "head_elf",
+			"min_y": -1.0
 		},
 		{
 			"id": "face_default",
-			"mesh": "face_default",
 			"material": "",
-			"min_y": -1,
-			"max_y": -1
+			"max_y": -1.0,
+			"mesh": "face_default",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_short",
-			"mesh": "hair_short",
 			"material": "",
-			"min_y": -1,
-			"max_y": -1
+			"max_y": -1.0,
+			"mesh": "hair_short",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_balding",
-			"mesh": "hair_balding",
 			"material": "",
-			"min_y": -1,
-			"max_y": -1
+			"max_y": -1.0,
+			"mesh": "hair_balding",
+			"min_y": -1.0
 		},
 		{
+			"bone": "mixamorig_Head",
 			"id": "tin_hat",
-			"mesh": "hat_tin",
 			"material": "",
-			"min_y": -1,
-			"max_y": -1,
-			"bone": "mixamorig_Head"
+			"max_y": -1.0,
+			"mesh": "hat_tin",
+			"min_y": -1.0
+		},
+		{
+			"id": "cloak_blue",
+			"mesh": "cloak_blue",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_backbraid",
+			"mesh": "hair_backbraid",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_backswept",
+			"mesh": "hair_backswept",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_bob",
+			"mesh": "hair_bob",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_bun",
+			"mesh": "hair_bun",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_burns",
+			"mesh": "hair_burns",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_elegant",
+			"mesh": "hair_elegant",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_leftswept",
+			"mesh": "hair_leftswept",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_long",
+			"mesh": "hair_long",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_longpony",
+			"mesh": "hair_longpony",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_manbun",
+			"mesh": "hair_manbun",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_messy",
+			"mesh": "hair_messy",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_neat",
+			"mesh": "hair_neat",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_part",
+			"mesh": "hair_part",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_pixie",
+			"mesh": "hair_pixie",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_ponytail",
+			"mesh": "hair_ponytail",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_princely",
+			"mesh": "hair_princely",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_shoulder",
+			"mesh": "hair_shoulder",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_swept",
+			"mesh": "hair_swept",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "hair_tied",
+			"mesh": "hair_tied",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "shield_wooden",
+			"mesh": "shield_wooden",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0,
+			"bone": "mixamorig:LeftForeArm"
 		}
-	]
+	],
+	"source": "res://assets/models/characters/src/lowpoly_guy.glb"
 }
