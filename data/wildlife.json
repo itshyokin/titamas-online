@@ -86,5 +86,29 @@
 			"lifetime": 2.0,
 			"size": 1.0
 		}
-	]
+	],
+	"falling_leaves": {
+		"enabled": true,
+		"every_seconds": 6,
+		"per_tree_minutes": 3,
+		"burst": [
+			3,
+			6
+		],
+		"range": 30,
+		"fall_speed": 0.7,
+		"leaf_size": 0.2,
+		"lie_seconds": 25,
+		"fade_seconds": 4,
+		"trees": {
+			"maple_tree": "#4f8f2c",
+			"maple_tree_autumn": "#e0702a",
+			"birch_tree": "#b3cf55"
+		},
+		"knock": {
+			"leaves": 12,
+			"sticks": 2,
+			"seeds": 2
+		}
+	}
 }

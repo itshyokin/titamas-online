@@ -70,7 +70,34 @@
 				}
 			],
 			"weather_minutes_min": 6.0,
-			"weather_minutes_max": 14.0
+			"weather_minutes_max": 14.0,
+			"random_sounds": [
+				{
+					"sound": "res://assets/audio/ambience/train_distant.ogg",
+					"when": "time",
+					"hours": "5, 17",
+					"volume_db": -6,
+					"distance": 120,
+					"only": ""
+				},
+				{
+					"sound": "res://assets/audio/ambience/cicadas.ogg",
+					"when": "weather",
+					"weather": "clear",
+					"volume_db": -8,
+					"distance": 30,
+					"only": "day"
+				},
+				{
+					"sound": "res://assets/audio/ambience/birds_flutter.ogg",
+					"when": "random",
+					"min_minutes": 2,
+					"max_minutes": 6,
+					"volume_db": -4,
+					"distance": 25,
+					"only": "day"
+				}
+			]
 		},
 		{
 			"ambient_energy": 0.9,

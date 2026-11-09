@@ -152,6 +152,7 @@ static func region_to_dict(r: RegionAtmosphere, id: String, is_default := false)
 
 static func region_from_dict(d: Dictionary) -> RegionAtmosphere:
 	var r := RegionAtmosphere.new()
+	r.set_meta("id", String(d.get("id", "")))
 	var c: Array = d.get("chunks", [0, 0, 1, 1])
 	if c.size() == 4:
 		r.chunks = Rect2i(int(c[0]), int(c[1]), int(c[2]), int(c[3]))

@@ -940,6 +940,20 @@ const TABS = {
 				{ key: "min_distance", label: "…but no closer than (m)", type: "number" },
 				{ key: "despawn_radius", label: "Removed beyond (m)", type: "number" },
 			]],
+			["Falling leaves", [
+				{ key: "falling_leaves.enabled", label: "Leaves fall from trees", type: "bool" },
+				{ key: "falling_leaves.every_seconds", label: "A tree drops leaves every (s)", type: "number" },
+				{ key: "falling_leaves.per_tree_minutes", label: "The same tree again after (min)", type: "number" },
+				{ key: "falling_leaves.range", label: "Trees within (m)", type: "number" },
+				{ key: "falling_leaves.fall_speed", label: "Fall speed (m/s)", type: "number" },
+				{ key: "falling_leaves.leaf_size", label: "Leaf size (m)", type: "number" },
+				{ key: "falling_leaves.lie_seconds", label: "Lie on the ground for (s)", type: "number" },
+				{ key: "falling_leaves.fade_seconds", label: "Then fade over (s)", type: "number" },
+				{ key: "falling_leaves.trees", label: "Which trees, and their leaf colour", type: "colormap", wide: true, help: "Prop names (or the start of them: maple_tree covers maple_tree_small and _tall; the longest match wins). Dead trees never drop leaves." },
+				{ key: "falling_leaves.knock.leaves", label: "Leaves knocked off by a hit", type: "int" },
+				{ key: "falling_leaves.knock.sticks", label: "Twigs knocked off", type: "int" },
+				{ key: "falling_leaves.knock.seeds", label: "Seeds / acorns knocked off", type: "int" },
+			]],
 		],
 	},
 	lore: {
@@ -1158,6 +1172,7 @@ const TABS = {
 			]],
 			["Weather", [
 				{ key: "weather", label: "Weather here (weights)", type: "weatherlist", wide: true, help: "One is picked by weight each time the weather changes. Types are in the Weather tab." },
+				{ key: "random_sounds", label: "Random ambience (up to 5)", type: "randomsounds", wide: true, help: "One-off sounds off in the distance. At hours: \"5, 17\" = 5am and 5pm (game clock). Weather: when the weather turns to that type (Clear = the sun coming out). Random: every few minutes. Distance 0 = not placed (plain stereo)." },
 				{ key: "weather_minutes_min", label: "Each spell lasts at least (min)", type: "number" },
 				{ key: "weather_minutes_max", label: "…and at most (min)", type: "number" },
 			]],
@@ -1753,6 +1768,68 @@ function fieldControl(t, entry, f) {
 			add.onclick = () => { if (pick.value) { obj[pick.value] = /tree|log|stump/.test(pick.value) ? "chop" : "smash"; set(Object.assign({}, obj), true); } };
 			addRow.append(pick, add);
 			wrap.appendChild(addRow);
+			break;
+		}
+		case "colormap": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const obj = (value && typeof value === "object" && !Array.isArray(value)) ? Object.assign({}, value) : {};
+			for (const name of Object.keys(obj).sort()) {
+				const row = el("div", { className: "row" });
+				row.append(el("span", { textContent: name }));
+				const c = el("input", { type: "color", value: obj[name] || "#4f8f2c" });
+				c.oninput = () => { obj[name] = c.value; set(Object.assign({}, obj)); };
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { delete obj[name]; set(Object.assign({}, obj), true); };
+				row.append(c, rm);
+				wrap.appendChild(row);
+			}
+			const addRow = el("div", { className: "row" });
+			const pick = selectOf((assets.props || []).filter(p => !(p in obj)).map(p => [p, p]), "", true);
+			const add = el("button", { textContent: "+ Add tree" });
+			add.onclick = () => { if (pick.value) { obj[pick.value] = "#4f8f2c"; set(Object.assign({}, obj), true); } };
+			addRow.append(pick, add);
+			wrap.appendChild(addRow);
+			break;
+		}
+		case "randomsounds": {
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
+			const save = (redraw) => set(list.map(x => Object.assign({}, x)), redraw);
+			const weatherOpts = () => (((data.weather || {}).types) || []).map(t => [t.id, t.name || t.id]);
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const snd = selectOf(assets.sounds.map(p => [p, soundLabel(p)]), r.sound, true);
+				snd.onchange = () => { list[i].sound = snd.value; save(); };
+				const when = selectOf([["time", "At hours"], ["weather", "When weather turns"], ["random", "Randomly"]], r.when || "random", false);
+				when.onchange = () => { list[i].when = when.value; save(true); };
+				row.append(snd, when);
+				const num = (k, w, title, step) => { const n = el("input", { type: "number", step: step || 1, value: r[k] ?? "", title }); n.style.width = w; n.oninput = () => { const v = parseFloat(n.value); if (!Number.isNaN(v)) { list[i][k] = v; save(); } }; return n; };
+				if ((r.when || "random") === "time") {
+					const hrs = el("input", { type: "text", value: r.hours || "", placeholder: "5, 17", title: "Hours, comma separated" }); hrs.style.width = "70px";
+					hrs.oninput = () => { list[i].hours = hrs.value; save(); };
+					row.append(hrs);
+				} else if (r.when === "weather") {
+					const w = selectOf(weatherOpts(), r.weather || "clear", false);
+					w.onchange = () => { list[i].weather = w.value; save(); };
+					row.append(w);
+				} else {
+					row.append(el("span", { textContent: "every" }), num("min_minutes", "50px", "Minutes at least"), el("span", { textContent: "–" }), num("max_minutes", "50px", "Minutes at most"), el("span", { textContent: "min" }));
+				}
+				const only = selectOf([["", "Day and night"], ["day", "Day only"], ["night", "Night only"]], r.only || "", false);
+				only.onchange = () => { list[i].only = only.value; save(); };
+				row.append(only, el("span", { textContent: "dB" }), num("volume_db", "50px", "Volume (dB)"), el("span", { textContent: "m" }), num("distance", "55px", "How far away (m, 0 = stereo)"));
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); save(true); };
+				row.append(rm);
+				wrap.appendChild(row);
+			});
+			if (list.length < 5) {
+				const add = el("button", { textContent: "+ Add sound" });
+				add.onclick = () => { list.push({ sound: "", when: "random", min_minutes: 2, max_minutes: 6, volume_db: 0, distance: 60, only: "" }); save(true); };
+				wrap.appendChild(add);
+			}
 			break;
 		}
 		case "racials": {

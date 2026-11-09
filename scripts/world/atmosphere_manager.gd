@@ -84,6 +84,13 @@ func _ready() -> void:
 	weather = Weather.new()
 	weather.name = "Weather"
 	add_child(weather)
+	var random_sounds := RandomAmbience.new()
+	random_sounds.name = "RandomAmbience"
+	random_sounds.atmosphere = self
+	add_child(random_sounds)
+	var leaves := LeafFall.new()
+	leaves.name = "LeafFall"
+	add_child(leaves)
 	var wildlife := Wildlife.new()
 	wildlife.name = "Wildlife"
 	add_child(wildlife)

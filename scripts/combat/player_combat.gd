@@ -735,6 +735,8 @@ func _land(ab: Ability) -> void:
 				var tool := Harvest.is_tool(wt)
 				var wall := WorldStrike.find(player, fwd, ab.reach * float(_world_settings().get("world_check", 0.8)) * (1.25 if tool else 1.0), tool)
 				if not wall.is_empty():
+					if wall.has("collider"):
+						get_tree().call_group("leaf_fall", "knock", wall.collider, wall.position)
 					if wall.has("collider") and Harvest.hit(player, wall.collider, wt, wall.position, wall.normal):
 						pass
 					elif bool(_world_settings().get("world_bounce", true)):
