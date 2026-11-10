@@ -26,6 +26,8 @@ var _file_time := -1
 var _sound: AudioStreamPlayer
 var _sound_path := ""
 var _rain: GPUParticles3D
+var _splash: GPUParticles3D
+var _splash_tex: Texture2D
 var _lightning := 0.0
 var _flash := 0.0
 var _shadows: Array[Decal] = []
@@ -42,6 +44,7 @@ func _ready() -> void:
 	_sound.volume_db = -60.0
 	add_child(_sound)
 	_build_rain()
+	_build_splashes()
 	_build_shadows()
 
 
@@ -150,6 +153,7 @@ func _process(delta: float) -> void:
 		values[f] = lerpf(float(values.get(f, 0.0)), float(_goal.get(f, 0.0)), k)
 	RenderingServer.global_shader_parameter_set("wetness", clampf(float(values.wetness), 0.0, 1.0))
 	_update_rain()
+	_update_splashes()
 	_update_lightning(delta)
 	_update_shadows()
 
@@ -214,6 +218,87 @@ func _update_rain() -> void:
 	var pm := _rain.process_material as ParticleProcessMaterial
 	var wind := float(values.wind_add)
 	pm.direction = Vector3(wind * 0.25, -1, wind * 0.1).normalized()
+
+
+## Rings of spray where the rain lands, on the ground and on water around the player.
+func _build_splashes() -> void:
+	_splash = GPUParticles3D.new()
+	_splash.amount = 260
+	_splash.lifetime = 0.45
+	_splash.visibility_aabb = AABB(Vector3(-14, -2, -14), Vector3(28, 6, 28))
+	_splash.local_coords = false
+	_splash.emitting = false
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(11, 0.05, 11)
+	pm.direction = Vector3(0, 1, 0)
+	pm.spread = 0.0
+	pm.initial_velocity_min = 0.0
+	pm.initial_velocity_max = 0.0
+	pm.gravity = Vector3.ZERO
+	pm.scale_min = 0.35
+	pm.scale_max = 1.0
+	var curve := Curve.new()  # the ring spreads out as it fades
+	curve.add_point(Vector2(0.0, 0.25))
+	curve.add_point(Vector2(1.0, 1.0))
+	var ct := CurveTexture.new()
+	ct.curve = curve
+	pm.scale_curve = ct
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1, 1, 1, 0.55))
+	grad.set_color(1, Color(1, 1, 1, 0.0))
+	var gt := GradientTexture1D.new()
+	gt.gradient = grad
+	pm.color_ramp = gt
+	_splash.process_material = pm
+	var q := QuadMesh.new()
+	q.size = Vector2(0.3, 0.3)
+	q.orientation = PlaneMesh.FACE_Y  # lies flat on the ground
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0.85, 0.92, 1.0)
+	mat.albedo_texture = _ring_texture()
+	mat.vertex_color_use_as_albedo = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	q.material = mat
+	_splash.draw_pass_1 = q
+	_splash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_splash)
+
+
+func _update_splashes() -> void:
+	if _splash == null:
+		return
+	var amount := clampf(float(values.rain), 0.0, 1.0)
+	var on: bool = amount > 0.08 and GameSettings.get("weather_effects") != false
+	_splash.emitting = on
+	if not on:
+		return
+	_splash.amount_ratio = amount
+	# Sits on whatever the player is standing in (ground, shallows, the sea surface).
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var cam := get_viewport().get_camera_3d()
+	if player == null or cam == null:
+		return
+	_splash.global_position = Vector3(cam.global_position.x, player.global_position.y + 0.06, cam.global_position.z) \
+		- Vector3(cam.global_basis.z.x, 0.0, cam.global_basis.z.z).normalized() * 4.0
+
+
+## A soft ring, drawn in code.
+func _ring_texture() -> Texture2D:
+	if _splash_tex:
+		return _splash_tex
+	var n := 32
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	for y in n:
+		for x in n:
+			var p := Vector2(x + 0.5, y + 0.5) / n * 2.0 - Vector2.ONE
+			var d := p.length()
+			var a := clampf(1.0 - absf(d - 0.78) / 0.22, 0.0, 1.0)
+			img.set_pixel(x, y, Color(1, 1, 1, a * a))
+	_splash_tex = ImageTexture.create_from_image(img)
+	return _splash_tex
 
 
 # --- Lightning ------------------------------------------------------------------------

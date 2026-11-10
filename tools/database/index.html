@@ -405,6 +405,7 @@ const TABS = {
 				{ key: "skin_color", label: "Skin colour", type: "color" },
 				{ key: "weapon", label: "Weapon", type: "select", options: [["sword", "Sword"], ["none", "None"]] },
 				{ key: "boss", label: "Boss", type: "bool", help: "No finisher kill-cams on it." },
+				{ key: "blood_color", label: "Blood colour", type: "color", help: "What it bleeds when hit: dark red by default, oil for machines. Empty or \"none\" = no blood (dummies, ghosts)." },
 			]],
 			["Beast body (scenes/enemies/beast.tscn: not a humanoid)", [
 				{ key: "beast.body", label: "Body", type: "select", options: [["", "(humanoid: use bandit.tscn)"], ["bat", "Bat (flies)"], ["dragon", "Dragon (boss)"]], help: "Place scenes/enemies/beast.tscn in a level and set its Enemy Id to this entry." },
@@ -515,6 +516,9 @@ const TABS = {
 			["Movement", [
 				{ key: "movement.walk_speed", label: "Walk speed (m/s)", type: "number" },
 				{ key: "movement.injured_speed", label: "Injured: limping speed (m/s)", type: "number", help: "Below the injured health share, poisoned (or any status marked injured) or weakened: the injured walk (role injured_walk; a slow walk until that clip exists)." },
+				{ key: "movement.fall_safe_height", label: "Falls hurt past (m)", type: "number", help: "Drop further than this and you take damage on landing. 0 = never." },
+				{ key: "movement.fall_damage", label: "Fall damage per metre past that", type: "number" },
+				{ key: "movement.fall_fatal_height", label: "Deadly fall (m)", type: "number", help: "A drop this long always kills." },
 				{ key: "movement.injured_sprint_speed", label: "Injured: sprinting speed (m/s)", type: "number", help: "Sprinting while injured or weakened is a pained jog up to this speed." },
 				{ key: "movement.injured_health", label: "Injured below this share of health (0–1)", type: "number" },
 				{ key: "movement.run_speed", label: "Run speed (m/s)", type: "number" },
@@ -564,6 +568,9 @@ const TABS = {
 				{ key: "combat.world_check", label: "Bounce check reach (share of weapon reach)", type: "number" },
 				{ key: "combat.gash_time", label: "Gash in wood lasts (s)", type: "number" },
 				{ key: "combat.heal_color", label: "Healing motes colour", type: "color", help: "The circles and diamonds rising around anyone healed (spells, potions, bandages)." },
+				{ key: "combat.require_target", label: "Shots need a target (1 = yes)", type: "number", help: "Bows, guns and projectile spells won't fire with nothing targeted. Weapons with auto-aim off, and holding aim, still shoot at the crosshair." },
+				{ key: "combat.blood_color", label: "Your blood colour", type: "color", help: "Hits spray blood that splatters on the ground and walls. Empty or \"none\" = no blood." },
+				{ key: "combat.blood_seconds", label: "Blood splatters last (s)", type: "number" },
 				{ key: "combat.spark_size", label: "Sparks off stone / metal (size)", type: "number", help: "1 = normal; scales how many sparks fly and how fast." },
 				{ key: "combat.tab_range", label: "Target button reach (m)", type: "number" },
 				{ key: "combat.lock_range", label: "Lock-on breaks beyond (m)", type: "number", help: "Keep it at least the target button's reach." },
@@ -713,6 +720,7 @@ const TABS = {
 			]],
 			["Talking", [
 				{ key: "can_follow", label: "Can follow the player", type: "bool", help: "Talking to it offers Follow me / Wait here." },
+				{ key: "blood_color", label: "Blood colour", type: "color", help: "What they bleed when hit. Empty or \"none\" = no blood." },
 				{ key: "keeps_distance", label: "Keeps its distance (archers)", type: "bool", help: "Stays back and shoots even with a weapon in hand (bows)." },
 				{ key: "heal_below", label: "Heals allies below (share of health)", type: "number", help: "With a heal ability: heals itself, its leader or fellow followers once they drop below this (0.6 = 60%)." },
 				{ key: "follow_line", label: "Says when asked to follow", type: "text" },
@@ -1284,7 +1292,7 @@ const TABS = {
 			]],
 			["Weather", [
 				{ key: "weather", label: "Weather here (weights)", type: "weatherlist", wide: true, help: "One is picked by weight each time the weather changes. Types are in the Weather tab." },
-				{ key: "random_sounds", label: "Random ambience (up to 5)", type: "randomsounds", wide: true, help: "One-off sounds off in the distance. At hours: \"5, 17\" = 5am and 5pm (game clock). Weather: when the weather turns to that type (Clear = the sun coming out). Random: every few minutes. Distance 0 = not placed (plain stereo)." },
+				{ key: "random_sounds", label: "Random ambience (up to 8)", type: "randomsounds", wide: true, help: "One-off sounds off in the distance. At hours: \"5, 17\" = 5am and 5pm (game clock). Weather: when the weather turns to that type (Clear = the sun coming out). Random: every few minutes. Distance 0 = not placed (plain stereo)." },
 				{ key: "weather_minutes_min", label: "Each spell lasts at least (min)", type: "number" },
 				{ key: "weather_minutes_max", label: "…and at most (min)", type: "number" },
 			]],
@@ -2121,6 +2129,7 @@ function fieldControl(t, entry, f) {
 			head.style.cssText = "font-size:12px;opacity:.7;display:grid;grid-template-columns:150px 1fr 1fr 140px;gap:6px";
 			head.append(el("span", { textContent: "piece id (file name)" }), el("span", { textContent: "mesh" }), el("span", { textContent: "material (all)" }), el("span", { textContent: "above / below (m)" }));
 			wrap.appendChild(head);
+			const sections = new Map();
 			list.forEach((r, i) => {
 				const row = el("div", { className: "row" });
 				const id = el("input", { type: "text", value: r.id || "" });
@@ -2170,8 +2179,26 @@ function fieldControl(t, entry, f) {
 					row.append(bone);
 				}
 				row.append(rm);
-				wrap.appendChild(row);
+				const cat = pieceCategory(r);
+				if (!sections.has(cat)) sections.set(cat, []);
+				sections.get(cat).push(row);
 			});
+			// One collapsible section per category (open ones stay open while you edit).
+			const cats = [...sections.keys()].sort((a, b) => a === "other" ? 1 : b === "other" ? -1 : a.localeCompare(b));
+			if (cats.length === 1) {
+				for (const row of sections.get(cats[0])) wrap.appendChild(row);
+			} else for (const cat of cats) {
+				const rows = sections.get(cat);
+				const det = el("details");
+				det.style.cssText = "border-left:2px solid #3a3a46;padding-left:8px;margin:4px 0";
+				det.open = PIECE_OPEN.has(cat);
+				const sum = el("summary", { textContent: cat.replace(/\b\w/g, c => c.toUpperCase()) + "  (" + rows.length + ")" });
+				sum.style.cssText = "cursor:pointer;padding:3px 0;font-weight:600";
+				det.appendChild(sum);
+				for (const row of rows) det.appendChild(row);
+				det.ontoggle = () => { if (det.open) PIECE_OPEN.add(cat); else PIECE_OPEN.delete(cat); };
+				wrap.appendChild(det);
+			}
 			const add = el("button", { textContent: "+ Add piece" });
 			add.onclick = () => { const m = unused[0] || meshes[0]; list.push({ id: m ? m.name.toLowerCase().replace(/[^a-z0-9_]/g, "_") : "new_piece", mesh: m ? m.name : "", material: "", min_y: -1, max_y: -1 }); set(list, true); };
 			wrap.appendChild(add);
@@ -2310,6 +2337,17 @@ function pieceUse(p) {
 	if (id.startsWith("hair") || id.endsWith("_hair") || id.includes("hairstyle")) return "hair";
 	if (["beard", "mustache", "moustache", "goatee", "stubble", "sideburn"].some(w => id.includes(w))) return "facial_hair";
 	return "";
+}
+// Pieces are grouped into collapsible sections by the start of their id (hair_long,
+// hair_bun → "hair"), falling back to what they're for, so long lists stay readable.
+const PIECE_OPEN = new Set();
+function pieceCategory(p) {
+	const id = String(p.id || "").toLowerCase();
+	const i = id.indexOf("_");
+	if (i > 0) return id.slice(0, i);
+	const u = pieceUse(p);
+	if (u) return (PIECE_USES.find(x => x[0] === u) || ["", u])[1].toLowerCase();
+	return id || "other";
 }
 function pieceName(p) {
 	if (p.name) return p.name;

@@ -96,6 +96,32 @@
 					"volume_db": -4,
 					"distance": 25,
 					"only": "day"
+				},
+				{
+					"sound": "res://assets/audio/ambience/peepers.ogg",
+					"when": "random",
+					"min_minutes": 2,
+					"max_minutes": 5,
+					"volume_db": -9,
+					"distance": 22,
+					"only": "night"
+				},
+				{
+					"sound": "res://assets/audio/ambience/owl_hoot.ogg",
+					"when": "random",
+					"min_minutes": 3,
+					"max_minutes": 8,
+					"volume_db": -7,
+					"distance": 35,
+					"only": "night"
+				},
+				{
+					"sound": "res://assets/audio/ambience/rooster_crow.ogg",
+					"when": "time",
+					"hours": "6",
+					"volume_db": -9,
+					"distance": 80,
+					"only": ""
 				}
 			]
 		},

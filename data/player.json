@@ -21,7 +21,10 @@
 		"grab_any_ledge": 0.0,
 		"injured_speed": 1.25,
 		"injured_health": 0.2,
-		"injured_sprint_speed": 4.6
+		"injured_sprint_speed": 4.6,
+		"fall_safe_height": 4.5,
+		"fall_damage": 7.0,
+		"fall_fatal_height": 22.0
 	},
 	"combat": {
 		"tap_time": 0.22,
@@ -61,7 +64,10 @@
 		"heal_threat": 0.5,
 		"player_threat": 1.0,
 		"threat_switch": 1.1,
-		"lock_on_target": 1.0
+		"lock_on_target": 1.0,
+		"blood_color": "#7e0d10",
+		"blood_seconds": 30.0,
+		"require_target": 1.0
 	},
 	"loadout": {
 		"light_combo": [

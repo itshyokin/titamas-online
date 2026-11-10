@@ -977,7 +977,48 @@ func _step(key: String, list: String, dir: int) -> void:
 	_apply_look()
 
 
-func _swatch_grid(key: String, colors: Array, columns: int) -> GridContainer:
+## A row of preset colours plus "More colours…", which opens a full picker.
+func _swatch_grid(key: String, colors: Array, columns: int) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 5)
+	box.add_child(_swatch_row(key, colors, columns))
+	var face := key in ["hair_color", "facial_color", "eye_color"]
+	var more := Button.new()
+	more.text = "More colours…"
+	more.custom_minimum_size = Vector2(0, 26)
+	more.pressed.connect(func() -> void: _pick_color(key, face, more))
+	box.add_child(more)
+	return box
+
+
+## The picker window: changing the colour shows on the character as you drag.
+func _pick_color(key: String, face: bool, from: Control) -> void:
+	var popup := PopupPanel.new()
+	var picker := ColorPicker.new()
+	picker.edit_alpha = false
+	picker.color = Color.html(String(_look.get(key, "#ffffff")))
+	picker.custom_minimum_size = Vector2(300, 0)
+	# Applying the look rebuilds the model, so wait for a pause in the dragging.
+	var settle := Timer.new()
+	settle.wait_time = 0.12
+	settle.one_shot = true
+	settle.timeout.connect(func() -> void:
+		if face:
+			_shot = "face"
+		_apply_look())
+	picker.add_child(settle)
+	picker.color_changed.connect(func(c: Color) -> void:
+		_look[key] = "#" + c.to_html(false)
+		settle.start())
+	popup.add_child(picker)
+	add_child(popup)
+	popup.popup_hide.connect(popup.queue_free)
+	popup.popup_centered()
+	if from and from.is_inside_tree():
+		popup.position = Vector2i(from.get_screen_position()) + Vector2i(-320, -120)
+
+
+func _swatch_row(key: String, colors: Array, columns: int) -> GridContainer:
 	var grid := GridContainer.new()
 	grid.columns = columns
 	grid.add_theme_constant_override("h_separation", 6)

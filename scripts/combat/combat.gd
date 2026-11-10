@@ -181,6 +181,7 @@ static func impact(source: Node3D, target: Node3D, heavy: bool, blocked := false
 	Effects.sparks(world_root(target), at, color, 1.6 if heavy else 1.0, -dir + Vector3.UP * 0.6)
 	if not blocked:
 		Effects.flash(target, Color(1, 1, 1), 0.14 if heavy else 0.1, 0.8 if heavy else 0.6)
+		Effects.blood(world_root(target), at, -dir + Vector3.UP * 0.4, blood_color_of(target), 1.5 if heavy else 1.0)
 	if knockback > 0.0 and dir != Vector3.ZERO and target.has_method("apply_knockback"):
 		target.apply_knockback(dir * knockback * (0.3 if blocked else 1.0))
 	var player_hit := target is PlayerController
@@ -190,6 +191,26 @@ static func impact(source: Node3D, target: Node3D, heavy: bool, blocked := false
 		if cam:
 			var strength := (0.45 if heavy else 0.25) if player_hit else (0.35 if heavy else 0.12)
 			cam.call("shake", strength * (0.5 if blocked else 1.0))
+
+
+## What a creature bleeds (enemies.json / npcs.json `blood_color`, player.json combat
+## `blood_color`; "" or "none" = nothing, for dummies, ghosts and the like).
+static func blood_color_of(node: Node) -> Color:
+	if node == null:
+		return Color(0, 0, 0, 0)
+	var text := ""
+	var own = node.get("blood_color")
+	if own != null and own is String:
+		text = own
+	elif node.is_in_group("player") or node.is_in_group("remote_players"):
+		text = String(Database.player.get("combat", {}).get("blood_color", "#7e0d10"))
+	elif node.get("enemy_id") != null:
+		text = String(Database.enemy(String(node.get("enemy_id"))).get("blood_color", "#7e0d10"))
+	elif node.get("npc_id") != null:
+		text = String(Database.npc(String(node.get("npc_id"))).get("blood_color", "#7e0d10"))
+	if text == "" or text == "none":
+		return Color(0, 0, 0, 0)
+	return Color.html(text)
 
 
 ## A one-shot 3D sound at a node's position (the player frees itself when done).

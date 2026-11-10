@@ -576,7 +576,11 @@ func _start(ab: Ability, power: float, anim_start := 0.0) -> bool:
 	if ab.delivery != Ability.Delivery.BUFF and ab.delivery != Ability.Delivery.MELEE:
 		_break_stealth()  # (melee breaks it when the blow lands: a sneak attack)
 	var target := _pick_target(ab, weapon_move)
-	if ab.delivery == Ability.Delivery.PROJECTILE and not weapon_move and target == null:
+	# Nothing to shoot at: don't waste the arrow / shot / bolt. Aiming by hand (a weapon
+	# with auto-aim off, or while holding aim) still fires wherever the crosshair points.
+	if ab.delivery == Ability.Delivery.PROJECTILE and target == null \
+			and not (weapon_move and (is_manual_aim() or _aiming)) \
+			and float(_world_settings().get("require_target", 1.0)) >= 0.5:
 		notice.emit("No target")
 		return false
 	if _blocking:

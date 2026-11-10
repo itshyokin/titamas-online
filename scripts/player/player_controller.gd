@@ -27,6 +27,12 @@ const WATER_MASK := 8  # layer 4
 @export var walk_speed := 1.8
 ## Hurt (health under injured_health of max, poisoned, or weakened): a limp no faster than
 ## injured_speed (player.json movement).
+## A fall longer than this many metres hurts (0 = never).
+@export var fall_safe_height := 4.5
+## Damage per metre past the safe height.
+@export var fall_damage := 7.0
+## A fall of this many metres is certain death (damage ramps up to it).
+@export var fall_fatal_height := 22.0
 @export var injured_speed := 2.2
 ## Sprinting while injured or weakened still helps, up to this speed (m/s).
 @export var injured_sprint_speed := 4.6
@@ -131,6 +137,7 @@ var skill_speed := 1.0
 var _dying := false
 var _going_home := false
 var _stuck_air := 0.0
+var _air_peak := -INF
 ## True when the character should keep facing a target (combat lock-on). Dodges
 ## then become left/right/back hops relative to the facing instead of turning to roll.
 var lock_facing := false
@@ -193,6 +200,7 @@ func _physics_process(delta: float) -> void:
 	_update_survival(delta)
 	_dodge_cooldown_left = maxf(_dodge_cooldown_left - delta, 0.0)
 	_grab_cooldown = maxf(_grab_cooldown - delta, 0.0)
+	_watch_fall()
 	match state:
 		State.NORMAL:
 			_normal_movement(delta)
@@ -219,6 +227,39 @@ func _physics_process(delta: float) -> void:
 			velocity.z = move_toward(velocity.z, 0.0, 10.0 * delta)
 			velocity.y -= gravity * delta
 			move_and_slide()
+
+
+## Remembers the highest point of a fall and hurts you when you land from too far up
+## (player.json movement fall_safe_height / fall_damage / fall_fatal_height). Climbing,
+## hanging, swimming and dying don't count.
+func _watch_fall() -> void:
+	if state == State.HANG or state == State.LEDGE_CLIMB or state == State.WALL_CLIMB \
+			or state == State.LADDER or state == State.SWIM or state == State.DEAD:
+		_air_peak = -INF
+		return
+	if not is_on_floor():
+		_air_peak = maxf(_air_peak, global_position.y)
+		return
+	if _air_peak == -INF:
+		return
+	var drop := _air_peak - global_position.y
+	_air_peak = -INF
+	if fall_safe_height <= 0.0 or drop <= fall_safe_height or stats.is_dead():
+		return
+	var over := drop - fall_safe_height
+	var amount := over * fall_damage
+	if fall_fatal_height > fall_safe_height and drop >= fall_fatal_height:
+		amount = maxf(amount, stats.health + stats.max_health)  # a killing fall
+	amount = maxf(roundf(amount), 1.0)
+	stats.take_damage(amount, null)
+	FloatingText.spawn(self, "-%d" % int(amount), Color(0.95, 0.4, 0.35), 1.1)
+	Effects.flash(model, Color(1.0, 0.4, 0.35), 0.18, 0.7)
+	var cam := get_tree().get_first_node_in_group("player_camera")
+	if cam:
+		cam.call("shake", clampf(over / 10.0, 0.2, 0.8))
+	GameLog.post("You hit the ground hard (%d)." % int(amount), Color(1.0, 0.6, 0.5))
+	if state == State.NORMAL and not stats.is_dead():
+		action_animation.emit("hit_react", 0.0, 0.15, 1.1)
 
 
 func _apply_push(delta: float) -> void:

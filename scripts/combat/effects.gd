@@ -502,3 +502,166 @@ static func enchant_glow(weapon: Node3D, color: Color) -> Node3D:
 	wisps.position = Vector3.UP * 0.5
 	holder.add_child(wisps)
 	return holder
+
+
+# --- Blood -----------------------------------------------------------------------------
+
+const MAX_SPLATTERS := 60
+static var _splatters: Array = []
+static var _splatter_tex := {}  # seed -> Texture2D
+
+
+## A spray of blood from a hit: drops fly out, fall, and leave splatters where they land
+## (on the ground, a wall or a prop). `color` is the creature's blood (oil for machines).
+static func blood(parent: Node, at: Vector3, away: Vector3, color: Color, size := 1.0) -> void:
+	if parent == null or color.a <= 0.0:
+		return
+	var spray := BloodSpray.new()
+	spray.count = clampi(int(9 * size), 4, 22)
+	spray.out = away.normalized() if away.length() > 0.01 else Vector3.UP
+	spray.color = color
+	spray.size = size
+	parent.add_child(spray)
+	spray.global_position = at
+
+
+## One splatter on a surface, fading after a while.
+static func blood_splatter(parent: Node, at: Vector3, normal: Vector3, color: Color, size := 0.5) -> void:
+	if parent == null or not parent.is_inside_tree():
+		return
+	var up := normal.normalized() if normal.length() > 0.01 else Vector3.UP
+	var decals := String(ProjectSettings.get_setting("rendering/renderer/rendering_method", "forward_plus")) != "gl_compatibility" \
+		and RenderingServer.get_current_rendering_method() != "gl_compatibility"
+	var tex := _splatter_texture(randi() % 4)
+	var node: Node3D
+	if decals:
+		var d := Decal.new()
+		d.texture_albedo = tex
+		d.modulate = color
+		d.size = Vector3(size, 0.4, size)
+		d.cull_mask = 1
+		node = d
+	else:
+		# (Renderers without decals: a flat quad just off the surface.)
+		var mi := MeshInstance3D.new()
+		var q := QuadMesh.new()
+		q.size = Vector2(size, size)
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = tex
+		m.albedo_color = color
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		q.material = m
+		mi.mesh = q
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node = mi
+	node.top_level = true
+	parent.add_child(node)
+	var side := Vector3.RIGHT if absf(up.dot(Vector3.RIGHT)) < 0.9 else Vector3.FORWARD
+	var z := side.cross(up).normalized()
+	var basis := Basis(up.cross(z).normalized(), up, z).rotated(up, randf() * TAU)
+	if node is MeshInstance3D:
+		basis = basis * Basis(Vector3.RIGHT, -PI * 0.5)  # the quad faces +Z, a decal points down -Y
+	node.global_transform = Transform3D(basis, at + up * 0.02)
+	_splatters.append(node)
+	while _splatters.size() > MAX_SPLATTERS:
+		var old = _splatters.pop_front()
+		if is_instance_valid(old):
+			old.queue_free()
+	var seconds := float(Database.player.get("combat", {}).get("blood_seconds", 30.0))
+	var tween := node.create_tween()
+	tween.tween_interval(seconds * randf_range(0.7, 1.3))
+	tween.tween_property(node, "modulate:a" if node is Decal else "mesh:material:albedo_color:a", 0.0, 4.0)
+	tween.tween_callback(func() -> void:
+		_splatters.erase(node)
+		node.queue_free())
+
+
+## A few blobs of blood, drawn in code: each one a big spot with smaller specks round it.
+static func _splatter_texture(variant: int) -> Texture2D:
+	if _splatter_tex.has(variant):
+		return _splatter_tex[variant]
+	var n := 64
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1000 + variant
+	var blobs: Array = [[Vector2(0.5, 0.5), 0.2 + rng.randf() * 0.08]]
+	for i in 7:
+		var a := rng.randf() * TAU
+		var r := 0.18 + rng.randf() * 0.26
+		blobs.append([Vector2(0.5, 0.5) + Vector2(cos(a), sin(a)) * r, 0.03 + rng.randf() * 0.07])
+	for y in n:
+		for x in n:
+			var p := Vector2(x + 0.5, y + 0.5) / n
+			var a := 0.0
+			for b: Array in blobs:
+				var d: float = p.distance_to(b[0]) / float(b[1])
+				a = maxf(a, clampf(1.0 - d * d * d, 0.0, 1.0))
+			img.set_pixel(x, y, Color(1, 1, 1, a))
+	var tex := ImageTexture.create_from_image(img)
+	_splatter_tex[variant] = tex
+	return tex
+
+
+## Drops of blood flying out, moved by hand so they show in every renderer; each one
+## leaves a splatter where it meets the world.
+class BloodSpray:
+	extends Node3D
+	var count := 9
+	var out := Vector3.UP
+	var color := Color(0.55, 0.05, 0.07)
+	var size := 1.0
+	var _drops: Array = []  # [MeshInstance3D, velocity, age]
+	var _age := 0.0
+
+	func _ready() -> void:
+		top_level = true
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = color
+		mat.roughness = 0.35
+		mat.metallic = 0.1
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.035 * size
+		mesh.height = 0.07 * size
+		mesh.radial_segments = 6
+		mesh.rings = 3
+		mesh.material = mat
+		var side := out.cross(Vector3.UP if absf(out.y) < 0.9 else Vector3.RIGHT).normalized()
+		var up := side.cross(out).normalized()
+		for i in count:
+			var mi := MeshInstance3D.new()
+			mi.mesh = mesh
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mi.scale = Vector3.ONE * randf_range(0.6, 1.5)
+			add_child(mi)
+			var a := randf() * TAU
+			var spread := randf() * 0.9
+			var dir := (out + (side * cos(a) + up * sin(a)) * spread + Vector3.UP * 0.45).normalized()
+			_drops.append([mi, dir * randf_range(2.0, 5.5) * size, 0.0])
+
+	func _process(delta: float) -> void:
+		_age += delta
+		var space := get_world_3d().direct_space_state
+		for i in range(_drops.size() - 1, -1, -1):
+			var d: Array = _drops[i]
+			var mi: MeshInstance3D = d[0]
+			var v: Vector3 = d[1]
+			v.y -= 14.0 * delta
+			var step := v * delta
+			var from := mi.global_position
+			var q := PhysicsRayQueryParameters3D.create(from, from + step, 1)
+			var hit := space.intersect_ray(q)
+			if not hit.is_empty():
+				Effects.blood_splatter(get_parent(), hit.position, hit.normal, color, randf_range(0.25, 0.7) * size)
+				mi.queue_free()
+				_drops.remove_at(i)
+				continue
+			mi.global_position = from + step
+			d[1] = v
+			d[2] = float(d[2]) + delta
+			if float(d[2]) > 2.5:
+				mi.queue_free()
+				_drops.remove_at(i)
+		if _drops.is_empty() or _age > 3.0:
+			queue_free()

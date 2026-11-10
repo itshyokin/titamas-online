@@ -9,7 +9,7 @@ extends Node
 ## Optional: only "day" / "night", volume_db, distance (m; 0 = not placed, plain stereo).
 ## Made by AtmosphereManager.
 
-const MAX_SOUNDS := 5
+const MAX_SOUNDS := 8
 
 var atmosphere: Node
 var _file_time := -1

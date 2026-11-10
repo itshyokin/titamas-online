@@ -109,3 +109,59 @@ for c in range(5):
     fl[i:i + len(ch)] += ch * 0.5
 fl = reverb(fade(fl, 0.01, 1.0), 0.3)
 save("birds_flutter", fl, np.roll(fl, 300))
+
+# Peepers (spring frogs): a chorus of short high whistles, dozens overlapping, at dusk.
+x = t(12.0)
+pp = np.zeros(len(x))
+for frog in range(26):
+    f0 = rng.uniform(2300, 3400)
+    rate = rng.uniform(0.9, 1.6)
+    phase = rng.uniform(0, 3)
+    loud = rng.uniform(0.25, 1.0)
+    k = 0
+    while True:
+        start = phase + k / rate + rng.uniform(-0.05, 0.05)
+        k += 1
+        i = int(start * SR)
+        if i >= len(x):
+            break
+        h = t(rng.uniform(0.11, 0.17))
+        swell = np.clip(np.sin(np.pi * h / h[-1]), 0, None) ** 1.4
+        peep = np.sin(2 * np.pi * np.cumsum(f0 * (1 + 0.1 * h / h[-1])) / SR) * swell
+        peep += 0.3 * np.sin(2 * np.pi * np.cumsum(2 * f0 * (1 + 0.1 * h / h[-1])) / SR) * swell
+        n = min(len(peep), len(x) - i)
+        pp[i:i + n] += peep[:n] * loud
+pp = reverb(fade(pp, 2.0, 2.5), 0.3, 1.4)
+save("peepers", pp, np.roll(pp, 1100))
+
+# Owl: two or three soft hoots, each a breathy low whistle that dips.
+x = t(5.0)
+ow = np.zeros(len(x))
+for start, loud in [(0.3, 1.0), (1.15, 0.9), (2.6, 0.75)]:
+    h = t(0.55)
+    f0 = 390 * (1 - 0.12 * (h / h[-1]) ** 2)
+    swell = np.clip(np.sin(np.pi * (h / h[-1]) ** 0.7), 0, None) ** 1.6
+    hoot = (np.sin(2 * np.pi * np.cumsum(f0) / SR) + 0.25 * np.sin(2 * np.pi * np.cumsum(2 * f0) / SR)) * swell
+    hoot += bandnoise(len(h), 300, 1400) * swell * 0.12
+    i = int(start * SR)
+    ow[i:i + len(hoot)] += hoot * loud
+ow = reverb(fade(lowpass(ow, 2600), 0.05, 1.5), 0.55, 2.2)
+save("owl_hoot", ow, np.roll(ow, 1500))
+
+# Rooster at dawn: the classic four-part crow, far off and echoing.
+x = t(4.0)
+rc = np.zeros(len(x))
+for start, loud in [(0.25, 1.0), (2.1, 0.6)]:
+    parts = [(0.0, 0.16, 620, 900), (0.17, 0.12, 980, 980), (0.3, 0.3, 880, 620), (0.62, 0.45, 700, 430)]
+    for off, dur, fa, fb in parts:
+        h = t(dur)
+        k = h / h[-1]
+        f0 = fa + (fb - fa) * k
+        swell = np.minimum(k / 0.12, 1) * np.minimum((1 - k) / 0.25, 1)
+        voice = sum(np.sin(2 * np.pi * np.cumsum(f0 * m) / SR) / (m ** 0.8) for m in range(1, 9))
+        rasp = 0.7 + 0.3 * np.sign(np.sin(2 * np.pi * 42 * h))
+        i = int((start + off) * SR)
+        n = min(len(h), len(x) - i)
+        rc[i:i + n] += (voice * rasp * swell)[:n] * loud * 0.3
+rc = reverb(fade(lowpass(rc, 3000), 0.02, 1.2), 0.5, 2.4)
+save("rooster_crow", rc, np.roll(rc, 1300))
