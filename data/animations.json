@@ -1057,62 +1057,6 @@
 			"yaw_fix": 0.0,
 			"height_match": "",
 			"note": "Sidestep right: the left sidestep mirrored."
-		},
-		{
-			"kind": "file",
-			"from": "",
-			"start": 0.0,
-			"end": 0.0,
-			"loop": true,
-			"in_place": true,
-			"root_motion": false,
-			"no_hip_rise": false,
-			"yaw_fix": 0.0,
-			"height_match": "",
-			"note": "limp: low health, poisoned, weakened",
-			"name": "injured_walk"
-		},
-		{
-			"kind": "file",
-			"from": "",
-			"start": 0.0,
-			"end": 0.0,
-			"loop": false,
-			"in_place": false,
-			"root_motion": true,
-			"no_hip_rise": false,
-			"yaw_fix": 0.0,
-			"height_match": "",
-			"note": "weapon enchants (Frost Edge) and other buffs",
-			"name": "enchant_weapon"
-		},
-		{
-			"kind": "file",
-			"from": "",
-			"start": 0.0,
-			"end": 0.0,
-			"loop": false,
-			"in_place": false,
-			"root_motion": true,
-			"no_hip_rise": false,
-			"yaw_fix": 0.0,
-			"height_match": "",
-			"note": "Burst Quake: punches the ground",
-			"name": "ground_quake"
-		},
-		{
-			"kind": "file",
-			"from": "",
-			"start": 0.0,
-			"end": 0.0,
-			"loop": false,
-			"in_place": false,
-			"root_motion": true,
-			"no_hip_rise": false,
-			"yaw_fix": 0.0,
-			"height_match": "",
-			"note": "enemies getting up after a knockdown",
-			"name": "getting_up"
 		}
 	],
 	"roles": {
@@ -1151,10 +1095,7 @@
 		"talk_4": "talk_4",
 		"loot": "loot_kneel",
 		"drink": "drinking",
-		"injured_walk": "injured_walk",
-		"getting_up": "getting_up",
-		"enchant": "enchant_weapon",
-		"ground_quake": "ground_quake"
+		"injured_walk": "injured_walk"
 	},
 	"look": {
 		"range": 6.0,
@@ -1175,6 +1116,6 @@
 		"speed": 1.0
 	},
 	"injured": {
-		"speed": 0.8
+		"speed": 1.6
 	}
 }

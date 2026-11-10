@@ -83,7 +83,7 @@ func _ground_animation(h_speed: float) -> void:
 	elif player.is_injured() and not player.is_sprinting:
 		# Limping: the injured walk if there is one, else a slow walk.
 		if character.has_animation("injured_walk"):
-			character.play("injured_walk", 0.25, clampf(h_speed / float(Database.animations.get("injured", {}).get("speed", 0.8)), 0.6, 1.8))
+			character.play("injured_walk", 0.25, clampf(h_speed / float(Database.animations.get("injured", {}).get("speed", 1.6)), 0.6, 1.4))
 		else:
 			character.play("walking", 0.25, clampf(h_speed / walk_anim_speed * 0.8, 0.5, 1.2))
 	elif h_speed < walk_max:

@@ -19,7 +19,7 @@
 		"double_tap_time": 0.3,
 		"lock_on_hops": 0.0,
 		"grab_any_ledge": 0.0,
-		"injured_speed": 1.25,
+		"injured_speed": 2.2,
 		"injured_health": 0.2,
 		"injured_sprint_speed": 4.6
 	},
