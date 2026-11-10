@@ -10,6 +10,13 @@
 		"size": 96.0,
 		"color": "#1d2738"
 	},
+	"indoors": {
+		"roof_check": true,
+		"roof_height": 30.0,
+		"muffle_db": -9.0,
+		"muffle_cutoff": 1200.0,
+		"fade_seconds": 0.6
+	},
 	"types": [
 		{
 			"id": "clear",

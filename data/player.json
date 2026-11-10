@@ -298,5 +298,14 @@
 		"recover_after": 4.0,
 		"downed_speed": 1.6,
 		"wait_for_player": true
+	},
+	"safe_areas": {
+		"notices": true,
+		"enter_text": "You are safe here.",
+		"leave_text": "You are no longer safe.",
+		"blocked_text": "You can't fight from a safe area.",
+		"notice_seconds": 2.5,
+		"enter_color": "#9be8a8",
+		"leave_color": "#f0c27a"
 	}
 }

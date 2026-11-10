@@ -9,8 +9,13 @@ extends Node3D
 ## Events set it with the command "weather" {type, minutes} (Weather.force).
 ## Cloud shadows: a 3x3 grid of decals (dark patches from a seamless noise texture) that
 ## drifts with the sky's clouds (global cloud_offset) and follows the camera.
+## Under cover (`shelter`, 0–1): when the camera is inside an indoors SafeArea box or has a
+## roof over it (a ray straight up against the world), the rain stops and the weather's
+## sounds are quieter and muffled; the splashes stop when the player is under cover.
+## Settings: weather.json "indoors" (Database → Weather Settings → Indoors).
 
 const FILE := "res://data/weather.json"
+const BUS := &"Weather"
 const FIELDS := ["cloud_coverage", "cloud_darken", "sun_scale", "ambient_scale", "fog_add", "saturation_scale",
 	"rain", "wetness", "wind_add", "cloud_shadows"]
 
@@ -33,14 +38,24 @@ var _flash := 0.0
 var _shadows: Array[Decal] = []
 var _shadow_size := 96.0
 var _thunder: Array[AudioStream] = []
+## How far under cover the camera is (0 = open sky, 1 = indoors), blended over time.
+var shelter := 0.0
+## The same for the player's own spot (rain splashes at their feet).
+var player_shelter := 0.0
+var _cam_covered := false
+var _player_covered := false
+var _shelter_check := 0.0
+var _bus := -1
+var _lowpass: AudioEffectLowPassFilter
 
 
 func _ready() -> void:
 	_load()
 	values = _type_values("clear")
 	_goal = values.duplicate()
+	_build_bus()
 	_sound = AudioStreamPlayer.new()
-	_sound.bus = &"Ambience"
+	_sound.bus = BUS if _bus >= 0 else &"Ambience"
 	_sound.volume_db = -60.0
 	add_child(_sound)
 	_build_rain()
@@ -152,6 +167,7 @@ func _process(delta: float) -> void:
 	for f: String in FIELDS:
 		values[f] = lerpf(float(values.get(f, 0.0)), float(_goal.get(f, 0.0)), k)
 	RenderingServer.global_shader_parameter_set("wetness", clampf(float(values.wetness), 0.0, 1.0))
+	_update_shelter(delta)
 	_update_rain()
 	_update_splashes()
 	_update_lightning(delta)
@@ -207,7 +223,7 @@ func _build_rain() -> void:
 
 func _update_rain() -> void:
 	var amount := clampf(float(values.rain), 0.0, 1.0)
-	var on: bool = amount > 0.03 and GameSettings.get("weather_effects") != false
+	var on: bool = amount > 0.03 and GameSettings.get("weather_effects") != false and shelter < 0.5
 	_rain.emitting = on
 	if not on:
 		return
@@ -271,7 +287,7 @@ func _update_splashes() -> void:
 	if _splash == null:
 		return
 	var amount := clampf(float(values.rain), 0.0, 1.0)
-	var on: bool = amount > 0.08 and GameSettings.get("weather_effects") != false
+	var on: bool = amount > 0.08 and GameSettings.get("weather_effects") != false and shelter < 0.5 and player_shelter < 0.5
 	_splash.emitting = on
 	if not on:
 		return
@@ -301,6 +317,77 @@ func _ring_texture() -> Texture2D:
 	return _splash_tex
 
 
+# --- Under cover -----------------------------------------------------------------------
+
+## The weather's own bus (feeds Ambience, so that volume slider still rules it), with a
+## low-pass filter that closes as the camera goes under cover.
+func _build_bus() -> void:
+	_bus = AudioServer.get_bus_index(BUS)
+	if _bus < 0:
+		AudioServer.add_bus()
+		_bus = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(_bus, BUS)
+		AudioServer.set_bus_send(_bus, &"Ambience")
+	for i in AudioServer.get_bus_effect_count(_bus):
+		if AudioServer.get_bus_effect(_bus, i) is AudioEffectLowPassFilter:
+			_lowpass = AudioServer.get_bus_effect(_bus, i) as AudioEffectLowPassFilter
+	if _lowpass == null:
+		_lowpass = AudioEffectLowPassFilter.new()
+		AudioServer.add_bus_effect(_bus, _lowpass)
+	_apply_shelter_sound()
+
+
+func _exit_tree() -> void:
+	# Leave the bus open for whatever plays next (another level's weather).
+	shelter = 0.0
+	_apply_shelter_sound()
+
+
+func _update_shelter(delta: float) -> void:
+	var cfg: Dictionary = data.get("indoors", {})
+	_shelter_check -= delta
+	if _shelter_check <= 0.0:
+		_shelter_check = 0.15
+		var cam := get_viewport().get_camera_3d()
+		var player := get_tree().get_first_node_in_group("player") as Node3D
+		_cam_covered = cam != null and covered_at(cam.global_position, cfg)
+		_player_covered = player != null and covered_at(player.global_position + Vector3.UP * 1.9, cfg)
+	var step := delta / maxf(float(cfg.get("fade_seconds", 0.6)), 0.01)
+	shelter = move_toward(shelter, 1.0 if _cam_covered else 0.0, step)
+	player_shelter = move_toward(player_shelter, 1.0 if _player_covered else 0.0, step)
+	_apply_shelter_sound()
+
+
+## `point` is under cover: inside an indoors SafeArea box, or (roof check) something of
+## the world is straight above it within roof_height metres.
+func covered_at(point: Vector3, cfg: Dictionary = {}) -> bool:
+	if cfg.is_empty():
+		cfg = data.get("indoors", {})
+	if SafeArea.indoors_at(point):
+		return true
+	if not bool(cfg.get("roof_check", true)) or not is_inside_tree():
+		return false
+	var q := PhysicsRayQueryParameters3D.create(point, point + Vector3.UP * float(cfg.get("roof_height", 30.0)), 1)
+	return not get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
+func _apply_shelter_sound() -> void:
+	if _bus < 0 or _bus >= AudioServer.bus_count or _lowpass == null:
+		return
+	var cfg: Dictionary = data.get("indoors", {})
+	var k := smoothstep(0.0, 1.0, shelter)
+	AudioServer.set_bus_volume_db(_bus, float(cfg.get("muffle_db", -9.0)) * k)
+	var index := -1
+	for i in AudioServer.get_bus_effect_count(_bus):
+		if AudioServer.get_bus_effect(_bus, i) == _lowpass:
+			index = i
+	if index < 0:
+		return
+	AudioServer.set_bus_effect_enabled(_bus, index, k > 0.01)
+	# The filter closes from wide open down to the muffled cutoff (heard as pitch, so in octaves).
+	_lowpass.cutoff_hz = 16000.0 * pow(clampf(float(cfg.get("muffle_cutoff", 1200.0)), 100.0, 16000.0) / 16000.0, k)
+
+
 # --- Lightning ------------------------------------------------------------------------
 
 func _update_lightning(delta: float) -> void:
@@ -318,7 +405,7 @@ func _update_lightning(delta: float) -> void:
 	if not _thunder.is_empty():
 		var p := AudioStreamPlayer.new()
 		p.stream = _thunder.pick_random()
-		p.bus = &"Ambience"
+		p.bus = BUS if _bus >= 0 else &"Ambience"
 		p.volume_db = randf_range(-6.0, 0.0)
 		add_child(p)
 		p.finished.connect(p.queue_free)

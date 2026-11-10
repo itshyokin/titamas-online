@@ -11,6 +11,10 @@
 		{
 			"id": "insignia_done",
 			"name": "Quest: insignias (done)"
+		},
+		{
+			"id": "village_attacked",
+			"name": "Village under attack (safe area off)"
 		}
 	],
 	"variables": [

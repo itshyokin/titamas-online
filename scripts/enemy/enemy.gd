@@ -350,6 +350,8 @@ func _target_valid() -> bool:
 		var pc = target.get_node_or_null("PlayerCombat")
 		if pc and pc.call("is_stealthed") and target.global_position.distance_to(global_position) > 4.0:
 			return false  # slipped away in stealth
+		if SafeArea.protects(target):
+			return false  # stepped into a safe area
 	return target != null and is_instance_valid(target) and Combat.is_alive(target) \
 		and (not target.has_method("is_alive") or target.is_alive())
 
@@ -360,6 +362,8 @@ func _nearest_player(radius: float) -> Node3D:
 	for n in Combat.enemies_near(self, global_position, radius):
 		if n.has_method("is_alive") and not n.is_alive():
 			continue
+		if SafeArea.protects(n):
+			continue  # left alone in safe areas
 		var d := n.global_position.distance_to(global_position)
 		# A stealthed player goes unnoticed unless right next to it.
 		var pc = n.get_node_or_null("PlayerCombat")
@@ -382,7 +386,7 @@ var _threat_check := 0.0
 
 
 func add_threat(who: Node, amount: float) -> void:
-	if who == null or not who is Node3D or ai == AI.DEAD:
+	if who == null or not who is Node3D or ai == AI.DEAD or SafeArea.protects(who):
 		return
 	threat[who] = float(threat.get(who, 0.0)) + amount
 	if target == null and ai != AI.RETURN:

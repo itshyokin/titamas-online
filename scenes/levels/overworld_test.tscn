@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/beast.tscn" id="97_beast"]
 [ext_resource type="PackedScene" path="res://scenes/world/loot_chest.tscn" id="97_chest"]
 [ext_resource type="PackedScene" path="res://scenes/world/map_event.tscn" id="98_event"]
+[ext_resource type="PackedScene" path="res://scenes/world/safe_area.tscn" id="99_safe"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
@@ -207,3 +208,16 @@ size = Vector3(1, 2, 1)
 
 [node name="LookoutPoint" type="Marker3D" parent="Events" unique_id=593464410]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 7, 60)
+
+[node name="Areas" type="Node3D" parent="."]
+
+[node name="VillageSafeArea" parent="Areas" instance=ExtResource("99_safe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, -4, 73)
+size = Vector3(34, 24, 34)
+off_switch = "village_attacked"
+
+[node name="InnIndoors" parent="Areas" instance=ExtResource("99_safe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 2, 82)
+size = Vector3(7, 5, 7)
+safe = false
+indoors = true

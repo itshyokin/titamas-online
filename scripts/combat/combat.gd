@@ -98,6 +98,9 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 	var ts := stats_of(target)
 	if ts == null or ts.is_dead():
 		return 0.0
+	if safe_between(source, target):
+		_safe_notice(source, target)
+		return 0.0
 	# Co-op: some targets are worked out on another machine (see Net).
 	if target.has_method("forward_hit") and target.forward_hit(source, power, stagger, knockback):
 		if source is PlayerController:
@@ -151,6 +154,35 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 			else:
 				ts.add_status(String(a.get("status", "")), float(a.get("seconds", 8.0)), source)
 	return amount
+
+
+## Safe areas (SafeArea boxes): no blow lands between the two sides while the one on the
+## players' side stands in one, whichever of them swings. Practice targets still take hits.
+static func safe_between(source: Node, target: Node) -> bool:
+	if source == null or not is_instance_valid(source) or target.is_in_group("practice_targets"):
+		return false
+	var ss := stats_of(source)
+	var ts := stats_of(target)
+	if ss == null or ts == null or ss.team == ts.team:
+		return false
+	return SafeArea.protects(source) or SafeArea.protects(target)
+
+
+static var _safe_notice_at := 0
+
+
+## Tells the player why their blow did nothing (at most every few seconds).
+static func _safe_notice(source: Node, target: Node3D) -> void:
+	if not source.is_in_group("player"):
+		return
+	var now := Time.get_ticks_msec()
+	if now - _safe_notice_at < 3000:
+		return
+	_safe_notice_at = now
+	var cfg: Dictionary = Database.player.get("safe_areas", {})
+	var text := String(cfg.get("blocked_text", "You can't fight from a safe area."))
+	if not text.is_empty() and target.is_inside_tree():
+		target.get_tree().call_group("hud", "show_message", text, 2.0, Color(0.85, 0.85, 0.9))
 
 
 ## Remembers that this game's player (or a follower) fought an enemy, so its death gives

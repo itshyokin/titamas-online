@@ -446,6 +446,8 @@ func _pick_spell(distance: float) -> Ability:
 ##   half health, it's a boss, or it's the only threat and it's attacking us;
 ## - not one that's nearly dead (the player should land the kill), unless it's on us.
 func _choose_target() -> Node3D:
+	if SafeArea.protects(self):
+		return null  # nothing can be fought from a safe area
 	var cfg: Dictionary = Database.player.get("companions", {})
 	var help_below := float(cfg.get("help_below", 0.5))
 	var leave_below := float(cfg.get("leave_kill_below", 0.25))
