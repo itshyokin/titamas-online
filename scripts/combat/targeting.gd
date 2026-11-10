@@ -22,7 +22,10 @@ signal lock_changed(locked: bool)
 @export var snap_range := 2.5
 ## Keyboard and mouse: Tab picks the enemy you're looking at when nothing is targeted
 ## (1), or only clears the target (0; click enemies to target them).
-@export var tab_selects := 0.0
+@export var tab_selects := 1.0
+## When the target dies, pick the next nearest enemy on screen after this many seconds.
+@export var auto_next := 1.0  # 1 = yes
+@export var auto_next_delay := 0.6
 ## Attacking with nothing targeted makes the enemy you swing at / shoot the target (1).
 ## 0: only clicking (or Tab / lock-on) picks targets.
 @export var attack_selects := 0.0
@@ -164,6 +167,30 @@ func best_in_view() -> Node3D:
 	return best
 
 
+## The nearest living enemy on screen (within range), skipping `except`.
+func nearest_on_screen(except: Node3D = null) -> Node3D:
+	var best: Node3D = null
+	var best_d := INF
+	for n in Combat.enemies_near(player, player.global_position, pick_range()):
+		if n == except or not Combat.is_alive(n) or not selectable(n):
+			continue
+		var d := n.global_position.distance_to(player.global_position)
+		if d < best_d:
+			best_d = d
+			best = n
+	return best
+
+
+## Tab: targets the nearest enemy on screen; Tab again lets go.
+func tab_target() -> void:
+	if has_target():
+		set_target(null)
+		return
+	var n := nearest_on_screen()
+	if n:
+		set_target(n)
+
+
 ## Next enemy in view; stays locked if it was.
 func cycle_keeping_lock(step: int) -> void:
 	var was_locked := locked
@@ -271,7 +298,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event is InputEventKey and (event as InputEventKey).shift_pressed:
 			cycle_keeping_lock(-1)
 		elif event is InputEventKey and tab_selects < 0.5:
-			set_target(null)  # Tab clears; click an enemy to target it
+			set_target(null)  # Tab only clears; click an enemy to target it
+		elif event is InputEventKey:
+			tab_target()
 		else:
 			toggle_target()
 		get_viewport().set_input_as_handled()
@@ -305,8 +334,14 @@ func _process(_delta: float) -> void:
 
 
 func _on_target_died() -> void:
-	# Leave the ring up for a moment so the kill registers, then clear.
+	# Leave the ring up for a moment so the kill registers, then move on to the next
+	# nearest enemy on screen (keeping the lock if there was one).
 	var dead := target
-	await get_tree().create_timer(1.0).timeout
-	if target == dead:
-		set_target(null)
+	var was_locked := locked
+	await get_tree().create_timer(auto_next_delay).timeout
+	if target != dead:
+		return
+	var next := nearest_on_screen(dead) if auto_next >= 0.5 else null
+	set_target(next)
+	if next and was_locked:
+		set_locked(true)

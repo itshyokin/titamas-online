@@ -16,6 +16,9 @@ var _trail := {}
 var _list: Array[Node3D] = []
 
 
+var bosses_only := true
+
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -36,6 +39,7 @@ func _process(delta: float) -> void:
 	visible = bool(cfg.get("enabled", true))
 	if not visible:
 		return
+	bosses_only = bool(cfg.get("bosses_only", true))
 	_list = _engaged(int(cfg.get("max_bars", 3)))
 	var view := get_viewport_rect().size
 	position = Vector2(0, float(cfg.get("top", 50.0)))
@@ -58,6 +62,13 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+static func _is_boss(e: Node) -> bool:
+	var id = e.get("enemy_id")
+	if id == null or String(id) == "":
+		return false
+	return bool(Database.enemy(String(id)).get("boss", false))
+
+
 ## Enemies fighting the player (or a follower), plus the hostile target, toughest first.
 func _engaged(limit: int) -> Array[Node3D]:
 	var player := get_tree().get_first_node_in_group("player") as Node3D
@@ -69,6 +80,9 @@ func _engaged(limit: int) -> Array[Node3D]:
 		var e := n as Node3D
 		var st := Combat.stats_of(e)
 		if e == null or st == null or st.is_dead() or not Combat.is_enemy_of(player, e):
+			continue
+		# Ordinary enemies only have the bar over their heads; bosses get the big one.
+		if bosses_only and not _is_boss(e):
 			continue
 		var fighting: bool = e.get("target") == player or (e.get("target") is Node and (e.get("target") as Node).is_in_group("followers"))
 		if fighting or e == target:

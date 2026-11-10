@@ -502,6 +502,8 @@ const TABS = {
 			]],
 			["HUD: enemy health bars (top of the screen)", [
 				{ key: "hud.enemy_bars.enabled", label: "Show enemy bars", type: "bool" },
+				{ key: "hud.enemy_bars.bosses_only", label: "Only bosses get a HUD bar", type: "bool", help: "Other enemies just have the bar over their heads. Mark bosses with Boss in the Enemies tab." },
+				{ key: "hud.target_frame", label: "Show the target frame", type: "bool", help: "A name + health panel at the top for whatever you've targeted (bosses use their big bar instead)." },
 				{ key: "hud.enemy_bars.min_width", label: "Weakest enemy's bar (% of screen)", type: "number" },
 				{ key: "hud.enemy_bars.max_width", label: "Toughest enemy's bar (% of screen)", type: "number" },
 				{ key: "hud.enemy_bars.hp_at_max", label: "Health that gets the widest bar", type: "number", help: "Bars grow with max health between the two widths; an enemy can set its own Bar width (Enemies tab)." },
@@ -513,6 +515,7 @@ const TABS = {
 			["Movement", [
 				{ key: "movement.walk_speed", label: "Walk speed (m/s)", type: "number" },
 				{ key: "movement.injured_speed", label: "Injured: limping speed (m/s)", type: "number", help: "Below the injured health share, poisoned (or any status marked injured) or weakened: the injured walk (role injured_walk; a slow walk until that clip exists)." },
+				{ key: "movement.injured_sprint_speed", label: "Injured: sprinting speed (m/s)", type: "number", help: "Sprinting while injured or weakened is a pained jog up to this speed." },
 				{ key: "movement.injured_health", label: "Injured below this share of health (0–1)", type: "number" },
 				{ key: "movement.run_speed", label: "Run speed (m/s)", type: "number" },
 				{ key: "movement.sprint_speed", label: "Sprint speed (m/s)", type: "number" },
@@ -556,7 +559,9 @@ const TABS = {
 				{ key: "combat.lose_range", label: "Target dropped beyond (m)", type: "number" },
 				{ key: "combat.snap_range", label: "Swings turn to enemies within (m)", type: "number", help: "Even behind you." },
 				{ key: "combat.click_radius", label: "Click picks enemies within (px)", type: "number", help: "Clicking this close to an enemy on screen targets it." },
-				{ key: "combat.tab_selects", label: "Tab picks a target when there's none (1 = yes)", type: "number", help: "0: Tab only clears the target; click enemies to target them." },
+				{ key: "combat.tab_selects", label: "Tab targets the nearest enemy (1 = yes)", type: "number", help: "1: Tab targets the nearest enemy on screen, Tab again clears it. 0: Tab only clears; click enemies to target them." },
+				{ key: "combat.auto_next", label: "Next target when it dies (1 = yes)", type: "number", help: "When your target dies, target the next nearest enemy on screen." },
+				{ key: "combat.auto_next_delay", label: "…after (s)", type: "number" },
 				{ key: "combat.attack_selects", label: "Attacking picks a target (1 = yes)", type: "number", help: "0: swinging or shooting at someone doesn't make them your target (controllers always do)." },
 			]],
 			["Loadout", [

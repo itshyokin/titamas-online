@@ -24,12 +24,12 @@ const ENEMY_FIELDS := [
 	"heavy_animation", "heavy_animation_speed", "heavy_hit_time", "ragdoll", "death_push", "fade_time", "turn_speed",
 ]
 const PLAYER_STATS := ["max_health", "max_mana", "max_stamina", "stamina_regen", "stamina_regen_delay", "mana_regen"]
-const PLAYER_MOVEMENT := ["injured_speed", "injured_health", "run_speed", "walk_speed", "sprint_speed", "jump_velocity", "sprint_stamina_cost", "swim_speed",
+const PLAYER_MOVEMENT := ["injured_speed", "injured_sprint_speed", "injured_health", "run_speed", "walk_speed", "sprint_speed", "jump_velocity", "sprint_stamina_cost", "swim_speed",
 	"swim_sprint_speed", "swim_sprint_stamina_cost", "double_tap_time", "lock_on_hops", "grab_any_ledge"]
 const PLAYER_COMBAT := ["tap_time", "quick_shot_power", "block_reduction", "lunge_range", "parry_window",
 	"counter_window", "perfect_dodge_window", "cast_pushback", "interrupt_share", "proficiency_damage", "proficiency_speed",
 	"arrow_gravity", "combat_linger", "block_arc"]  # world_* / gash_time are read from Database.player directly
-const PLAYER_TARGETING := ["tab_range", "lock_range", "lose_range", "snap_range", "tab_selects", "attack_selects", "click_radius"]
+const PLAYER_TARGETING := ["tab_range", "lock_range", "lose_range", "snap_range", "tab_selects", "attack_selects", "click_radius", "auto_next", "auto_next_delay"]
 
 var abilities := {}  # id -> Ability (the same objects for the whole session)
 var enemies := {}  # id -> Dictionary

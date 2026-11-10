@@ -28,6 +28,8 @@ const WATER_MASK := 8  # layer 4
 ## Hurt (health under injured_health of max, poisoned, or weakened): a limp no faster than
 ## injured_speed (player.json movement).
 @export var injured_speed := 2.2
+## Sprinting while injured or weakened still helps, up to this speed (m/s).
+@export var injured_sprint_speed := 4.6
 @export var injured_health := 0.2
 @export var sprint_speed := 8.0
 @export var acceleration := 12.0
@@ -382,7 +384,8 @@ func _normal_movement(delta: float) -> void:
 	elif Input.is_action_pressed("walk"):
 		speed = walk_speed
 	if is_injured():
-		speed = minf(speed, injured_speed)
+		# Hobbled: limping, or a pained jog when sprinting.
+		speed = minf(speed, injured_sprint_speed if is_sprinting else injured_speed)
 	var target := direction * speed * speed_scale * skill_speed * stats.status_product("move_scale")
 	var accel := acceleration if is_on_floor() else acceleration * air_control
 	velocity.x = lerpf(velocity.x, target.x, accel * delta)

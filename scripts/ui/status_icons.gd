@@ -84,8 +84,12 @@ class StatusIcon:
 		left = l
 		duration = maxf(dur, 0.01)
 		kind = k
-		tooltip_text = "%s\n%s\n%s" % [title, text, _time_text()]
 		queue_redraw()
+
+	# Built when shown, so the text stays the same and the hover timer isn't restarted
+	# every time the countdown changes.
+	func _get_tooltip(_at: Vector2) -> String:
+		return "%s\n%s\n%s" % [title, text, _time_text()]
 
 	func _time_text() -> String:
 		if left >= 60.0:

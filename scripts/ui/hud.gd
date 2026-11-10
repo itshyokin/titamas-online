@@ -401,7 +401,7 @@ func _process(delta: float) -> void:
 		_target_bar.max_value = _target_stats.max_health
 		_target_bar.value = _target_stats.health
 		# Hostile targets get a big bar at the top instead; others sit below the bars.
-		_target_frame.visible = not _enemy_bars.shows(_targeting.target)
+		_target_frame.visible = _target_frame_on() and not _enemy_bars.shows(_targeting.target)
 		_target_frame.position.y = _enemy_bars.position.y + (_enemy_bars.size.y if _enemy_bars.visible else 0.0) + 6.0
 	# Cast / charge / reload bar.
 	if _cast_flash > 0.0:
@@ -432,10 +432,15 @@ func _process(delta: float) -> void:
 			_weakened.text = "Weakened  %d:%02d" % [int(left) / 60, int(left) % 60]
 
 
+## The target frame at the top (off by default: targets have their bar over their heads).
+func _target_frame_on() -> bool:
+	return bool(Database.player.get("hud", {}).get("target_frame", false))
+
+
 func _refresh_target() -> void:
 	var target := _targeting.target if _targeting.has_target() else null
 	_target_stats = Combat.stats_of(target)
-	_target_frame.visible = _target_stats != null
+	_target_frame.visible = _target_stats != null and _target_frame_on()
 	if _target_stats:
 		var lock := "  [locked]" if _targeting.is_locked() else ""
 		_target_name.text = "%s   Level %d%s" % [_target_stats.display_name, _target_stats.level, lock]

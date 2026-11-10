@@ -767,7 +767,7 @@ func _land(ab: Ability) -> void:
 				# Trees / stones: an axe or hammer chops or breaks them (Harvest);
 				# anything else solid bounces the weapon off.
 				var wt := String(weapon_type.get("id", ""))
-				var tool := Harvest.is_tool(wt)
+				var tool := Harvest.is_harvest_tool(wt)
 				var wall := WorldStrike.find(player, fwd, ab.reach * float(_world_settings().get("world_check", 0.8)) * (1.25 if tool else 1.0), tool)
 				if not wall.is_empty():
 					if wall.has("collider"):

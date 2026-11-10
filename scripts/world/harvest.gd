@@ -20,7 +20,7 @@ static func data() -> Dictionary:
 
 
 ## Whether a weapon type harvests anything (axe, hammer...).
-static func is_tool(weapon_type: String) -> bool:
+static func is_harvest_tool(weapon_type: String) -> bool:
 	for k: Dictionary in (data().get("kinds", {}) as Dictionary).values():
 		if weapon_type in (k.get("weapon_types", []) as Array):
 			return true
