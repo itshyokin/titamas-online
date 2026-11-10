@@ -1524,4 +1524,3 @@ func _harvests(weapon_type_id: String) -> bool:
 		if k is Dictionary and weapon_type_id in (k.get("weapon_types", []) as Array):
 			return true
 	return false
-
