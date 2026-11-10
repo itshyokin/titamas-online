@@ -374,13 +374,6 @@ func _fill_grid() -> void:
 		_grid.add_child(filler)
 	if focus_index >= 0 and not _bag_slots.is_empty():
 		_bag_slots[mini(focus_index, _bag_slots.size() - 1)].grab_focus.call_deferred()
-	# Count per tab on the buttons.
-	for j in TABS.size():
-		var n := 0
-		for s in inventory.bag:
-			if s and tab_of(Database.item(s.id)) == TABS[j][0]:
-				n += 1
-		_tabs.set_tab_title(j, TABS[j][1] + ((" %d" % n) if n > 0 else ""))
 
 
 # --- Contents ----------------------------------------------------------------------
