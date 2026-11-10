@@ -41,6 +41,7 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Snow: two new weather types, **Snow** and **Blizzard** (an event's Weather command, or add them to a region's weather list in Database → Regions). Flakes drift and none fall under roofs; snow lies in patches on open ground and frosts the grass, not under roofs or trees; a quiet wind loop plays. Check the look of the flakes and the white patches in Forward+.
 - Effect sprites: Database → Abilities → **Effect sprites**. Four places per ability (on the caster, with the projectile, where it lands, on the ground), each a built-in picture, one of yours, or **Load PNG…**. Examples are set on Firebolt (flame + burst), Mend (rune circle on the ground), Frost Edge (snowflake) and Burst Quake (ring on the ground).
 - Your own pictures: drop PNGs in `assets/effects/custom/` or use Load PNG…; frames side by side in one row for animation. See the README in that folder.
+- Insects are sprites now (Database → Wildlife → a swarm → Picture of one insect, with frames for the wing beat). Flies no longer appear over enemies you kill: place a **Swarm Spot** (`scenes/world/swarm_spot.tscn`) where a body is left lying for the story, a rubbish heap and so on (one is by the road in the test level). Mosquitos hang about water at any time of day.
 
 ## Backlog (agreed, not started)
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.

@@ -2,7 +2,9 @@ class_name Wildlife
 extends Node3D
 ## Ambient creatures around the player (made by AtmosphereManager): squirrels near trees
 ## that scamper off when you come close, flocks of birds circling overhead, fireflies over
-## the grass at night, mosquitos by the water at dusk and flies over bodies.
+## the grass at night and mosquitos by the water. Swarms set to "only where placed" (flies)
+## never appear by themselves: put a SwarmSpot node where they belong (a body left lying
+## for the story, a rubbish heap, a stagnant pool).
 ## data/wildlife.json (Database → Wildlife): each type has a kind (critter / birds /
 ## swarm), how many at once, when (day / night / dusk / any), near what (trees / grass /
 ## water / corpses / any), colour and size. Spawns out of sight range-wise (beyond
@@ -15,7 +17,10 @@ var _data := {}
 var _file_time := -1
 var _check := 0.0
 var _live := {}  # type id -> Array[Node3D]
-var _corpse_flies := {}  # corpse -> swarm
+
+
+func _ready() -> void:
+	add_to_group("wildlife")
 
 
 func _load() -> void:
@@ -70,9 +75,8 @@ func _manage(t: Dictionary, player: Node3D) -> void:
 		if not ok or n.global_position.distance_to(player.global_position) > far or n.get_meta("gone", false):
 			list.erase(n)
 			_fade_out(n)
-	if String(t.get("near", "")) == "corpses":
-		_live[id] = list
-		_manage_corpse_flies(t, ok)
+	if String(t.get("near", "")) in ["placed", "corpses"]:
+		_live[id] = list  # only at SwarmSpot nodes
 		return
 	if ok and list.size() < int(t.get("max", 3)) and randf() < 0.6:
 		var spot := _find_spot(t, player)
@@ -189,25 +193,17 @@ func _make(t: Dictionary, at: Vector3) -> Node3D:
 	return null
 
 
-func _manage_corpse_flies(t: Dictionary, ok: bool) -> void:
-	for c in _corpse_flies.keys():
-		if not is_instance_valid(c) or not is_instance_valid(_corpse_flies[c]) or not c.is_visible_in_tree():
-			if is_instance_valid(_corpse_flies.get(c)):
-				_fade_out(_corpse_flies[c])
-			_corpse_flies.erase(c)
-	if not ok:
-		return
-	for n in get_tree().get_nodes_in_group(Combat.GROUP):
-		var e := n as Node3D
-		var st := Combat.stats_of(e)
-		if e == null or st == null or not st.is_dead() or _corpse_flies.has(e) or _corpse_flies.size() >= int(t.get("max", 4)):
-			continue
-		var swarm := Swarm.new(t)
-		add_child(swarm)
-		var model = e.get("character")
-		var hips = Ragdoll.hips_of(model) if model is CharacterModel else null
-		swarm.global_position = (hips as Vector3 if hips is Vector3 else e.global_position) + Vector3.UP * 0.4
-		_corpse_flies[e] = swarm
+## The entry for a type id in wildlife.json ({} if there is none).
+func type_data(id: String) -> Dictionary:
+	for t in _data.get("types", []):
+		if t is Dictionary and String(t.get("id", "")) == id:
+			return t
+	return {}
+
+
+## Whether a type's "when" (any / day / dusk / night) holds now.
+func time_ok(when: String) -> bool:
+	return _time_ok(when)
 
 
 static func _mat(color: Color, glow := false) -> StandardMaterial3D:
@@ -386,6 +382,7 @@ class Flock:
 ## A cloud of small insects: fireflies (glowing, blinking), mosquitos, flies.
 class Swarm:
 	extends GPUParticles3D
+	const DEFAULT_SPRITE := "res://assets/effects/builtin/insect_fly_2.png"
 	var cfg := {}
 
 	func _init(t: Dictionary) -> void:
@@ -430,15 +427,35 @@ class Swarm:
 		process_material = pm
 		var q := QuadMesh.new()
 		var s := float(cfg.get("size", 1.0))
-		q.size = Vector2.ONE * (0.06 if glow else 0.025) * s
 		var m := StandardMaterial3D.new()
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.vertex_color_use_as_albedo = true
 		m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		# Each insect is a picture (`sprite`; frames side by side flap as it flies), tinted
+		# with the swarm's colour. Without one: a soft glowing dot, or the built-in fly.
+		var path := String(cfg.get("sprite", ""))
+		if path.is_empty() and not glow:
+			path = DEFAULT_SPRITE
+		var tex: Texture2D = AbilityFX.texture(path) if not path.is_empty() else null
+		var frames := maxi(int(cfg.get("frames", 2 if path == DEFAULT_SPRITE else 1)), 1)
+		if tex:
+			m.albedo_texture = tex
+			m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+			m.particles_anim_h_frames = frames
+			m.particles_anim_v_frames = 1
+			m.particles_anim_loop = true
+			# One run through the frames = one wing beat; the speed counts runs per lifetime.
+			pm.anim_speed_min = float(cfg.get("flap_speed", 12.0)) * lifetime
+			pm.anim_speed_max = pm.anim_speed_min * 1.3
+			pm.anim_offset_max = 1.0
+			var shape := (float(tex.get_width()) / frames) / maxf(float(tex.get_height()), 1.0)
+			q.size = Vector2(shape, 1.0) * (0.09 if not glow else 0.12) * s
+		else:
+			q.size = Vector2.ONE * 0.06 * s
+			m.albedo_texture = Effects._mote_texture(false)
 		if glow:
 			m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-			m.albedo_texture = Effects._mote_texture(false)
 		q.material = m
 		draw_pass_1 = q
 		cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

@@ -1,7 +1,8 @@
 """Built-in effect sprites for spells and skills (Database → Abilities → Effect sprites).
     python3 tools/art/make_effect_sprites.py
 Writes assets/effects/builtin/*.png: white shapes on a see-through background, so the
-"Glow" look can tint them with the ability's colour. Names ending in _N (burst_4) are
+"Glow" look can tint them with the ability's colour (insect_* are for Wildlife swarms,
+tinted with the swarm's colour). Names ending in _N (burst_4) are
 strips of N frames side by side, played left to right.
 Your own drawings go in assets/effects/custom/ (or use "Load PNG…" on the Database page)."""
 import math, pathlib, random
@@ -141,7 +142,36 @@ def burst_strip(frames=4):
     return img
 
 
+def insect_strip(body_len, wing, frames=2, n=16):
+    # A tiny insect seen from the side, wings up then flat: frames side by side.
+    img = blank(n * frames, n)
+    px = img.load()
+    for f in range(frames):
+        ang = -1.15 if f == 0 else -0.35
+        for y in range(n):
+            for x in range(n):
+                u = (x + 0.5 - n / 2) / (n / 2)
+                v = (y + 0.5 - n / 2) / (n / 2)
+                a = 0.0
+                if (u / body_len) ** 2 + ((v - 0.15) / 0.22) ** 2 <= 1:
+                    a = 1.0
+                if ((u - body_len * 0.95) / 0.16) ** 2 + ((v - 0.12) / 0.16) ** 2 <= 1:
+                    a = 1.0
+                for side in (-1, 1):
+                    wx = (u - side * 0.05) * side
+                    wy = v - 0.05
+                    lx = wx * math.cos(ang) + wy * math.sin(ang)
+                    ly = -wx * math.sin(ang) + wy * math.cos(ang)
+                    if 0 <= lx <= wing and abs(ly) <= 0.16 * (1 - lx / wing) + 0.04:
+                        a = max(a, 0.55)
+                if a > 0:
+                    px[f * n + x, y] = (255, 255, 255, int(a * 255))
+    return img
+
+
 if __name__ == "__main__":
+    save("insect_fly_2", insect_strip(0.42, 0.75))
+    save("insect_mosquito_2", insect_strip(0.55, 0.6))
     save("glow", from_alpha(glow))
     save("ring", from_alpha(ring))
     save("spark", from_alpha(star))

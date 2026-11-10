@@ -62,7 +62,7 @@
 			"name": "Mosquitos",
 			"kind": "swarm",
 			"max": 3,
-			"when": "dusk",
+			"when": "any",
 			"near": "water",
 			"color": "#1c1c1c",
 			"count": 30,
@@ -70,21 +70,27 @@
 			"speed": 1.2,
 			"lifetime": 2.0,
 			"hover": 1.2,
-			"size": 1.0
+			"size": 1.0,
+			"sprite": "res://assets/effects/builtin/insect_mosquito_2.png",
+			"frames": 2,
+			"flap_speed": 16.0
 		},
 		{
 			"id": "flies",
-			"name": "Flies over bodies",
+			"name": "Flies (placed with Swarm Spot nodes)",
 			"kind": "swarm",
 			"max": 4,
 			"when": "any",
-			"near": "corpses",
+			"near": "placed",
 			"color": "#121212",
 			"count": 12,
 			"spread": 0.5,
 			"speed": 1.0,
 			"lifetime": 2.0,
-			"size": 1.0
+			"size": 1.0,
+			"sprite": "res://assets/effects/builtin/insect_fly_2.png",
+			"frames": 2,
+			"flap_speed": 12.0
 		}
 	],
 	"falling_leaves": {

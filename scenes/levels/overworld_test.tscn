@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/loot_chest.tscn" id="97_chest"]
 [ext_resource type="PackedScene" path="res://scenes/world/map_event.tscn" id="98_event"]
 [ext_resource type="PackedScene" path="res://scenes/world/safe_area.tscn" id="99_safe"]
+[ext_resource type="PackedScene" path="res://scenes/world/swarm_spot.tscn" id="100_swarm"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
@@ -221,3 +222,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 2, 82)
 size = Vector3(7, 5, 7)
 safe = false
 indoors = true
+
+[node name="FliesByTheRoad" parent="Areas" instance=ExtResource("100_swarm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51, 2.1, 74)
