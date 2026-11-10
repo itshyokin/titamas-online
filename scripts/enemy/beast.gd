@@ -50,6 +50,9 @@ func _ready() -> void:
 	fly_height = float(cfg.get("fly_height", 2.6))
 	airborne = flying
 	hide_disc = flying
+	# Flyers only bump into the world: never land on (and stick to) heads.
+	if flying:
+		collision_mask = 1
 	_alt = fly_height if airborne else 0.0
 	_alt_goal = _alt
 	body_radius = float(cfg.get("radius", 2.2 if big else 0.3))

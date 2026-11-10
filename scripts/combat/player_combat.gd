@@ -629,6 +629,14 @@ func _base_gear_power(ab: Ability) -> float:
 			return stats.spell_power
 
 
+## A heal's target: a targeted ally (follower / co-op player) or yourself.
+func _friendly_target() -> Node3D:
+	var t: Node3D = targeting.target if targeting and targeting.has_target() else null
+	if t and t != player and not Combat.is_enemy_of(player, t):
+		return t
+	return player
+
+
 func _pick_target(ab: Ability, weapon_move: bool) -> Node3D:
 	match ab.delivery:
 		Ability.Delivery.MELEE:
@@ -637,8 +645,10 @@ func _pick_target(ab: Ability, weapon_move: bool) -> Node3D:
 			if weapon_move and is_manual_aim():
 				return targeting.target if targeting.is_locked() else null
 			return targeting.pick_for_attack(ab.reach)
+		Ability.Delivery.HEAL_OVER_TIME:
+			return _friendly_target()
 		_:
-			return player  # heals: allies come with co-op
+			return player
 
 
 ## Plays the ability's clip; the effect lands at its hit_time.
@@ -809,7 +819,8 @@ func _land(ab: Ability) -> void:
 		Ability.Delivery.BUFF:
 			_land_buff(ab)
 		Ability.Delivery.HEAL_OVER_TIME:
-			var who: Node3D = _target if _target else player
+			# Heals never go to an enemy: the targeted friend (follower, co-op player), else you.
+			var who: Node3D = _target if _target and Combat.is_alive(_target) and not Combat.is_enemy_of(player, _target) else player
 			var s := Combat.stats_of(who)
 			if s:
 				s.add_heal_over_time(_power, ab.ticks, ab.tick_interval, ab)

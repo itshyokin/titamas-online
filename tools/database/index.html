@@ -701,6 +701,8 @@ const TABS = {
 			]],
 			["Talking", [
 				{ key: "can_follow", label: "Can follow the player", type: "bool", help: "Talking to it offers Follow me / Wait here." },
+				{ key: "keeps_distance", label: "Keeps its distance (archers)", type: "bool", help: "Stays back and shoots even with a weapon in hand (bows)." },
+				{ key: "heal_below", label: "Heals allies below (share of health)", type: "number", help: "With a heal ability: heals itself, its leader or fellow followers once they drop below this (0.6 = 60%)." },
 				{ key: "follow_line", label: "Says when asked to follow", type: "text" },
 				{ key: "wait_line", label: "Says when asked to wait", type: "text" },
 				{ key: "dialogue", label: "Lines", type: "lines", wide: true, help: "One line per paragraph (leave an empty line between them). {player} = the player's name; {they} {them} {their} use the player's pronouns." },
@@ -750,6 +752,11 @@ const TABS = {
 				{ key: "roles.drink", label: "Drinking / using an item", type: "anim", help: "Items can pick their own (Items → When used)." },
 				{ key: "drink.hold_at", label: "Using an item: hold the pose at (s)", type: "number", help: "The clip holds here while the cast bar fills, then plays out to end with the bar. 0 = the first frame." },
 				{ key: "drink.speed", label: "Using an item: play-out speed", type: "number", help: "1 = the clip's own speed. It plays faster when the item takes less time than the clip." },
+				{ key: "sway.movement", label: "Hair/cape sway: swing per m/s of movement", type: "number", help: "How far hair and capes trail behind as you move (0.02 = 2 cm per m/s)." },
+				{ key: "sway.max_swing", label: "Hair/cape sway: most swing (m)", type: "number" },
+				{ key: "sway.stiffness", label: "Hair/cape sway: stiffness", type: "number", help: "Higher = snaps back faster." },
+				{ key: "sway.damping", label: "Hair/cape sway: damping", type: "number", help: "Higher = less bounce." },
+				{ key: "sway.flutter", label: "Hair/cape sway: wind flutter (m)", type: "number" },
 				{ key: "injured.speed", label: "Injured walk: m/s at normal speed", type: "number", help: "How fast the injured_walk clip moves when played at speed 1 (it is sped up or slowed to match the limping speed). About 0.8 for the Mixamo Injured Walk." },
 				{ key: "loot.pause_at", label: "Looting: hold the kneel at (s)", type: "number", help: "Where the clip pauses while the loot window is open (frame 40 = 1.33 s)." },
 				{ key: "roles.bow_aim", label: "Aiming (default)", type: "anim", help: "Weapon types can pick their own." },
@@ -2136,9 +2143,18 @@ function fieldControl(t, entry, f) {
 					}
 				}
 				if (mesh && !mesh.skinned) {
-					const bone = el("input", { type: "text", value: r.bone || "mixamorig_Head", title: "Bone a rigid mesh follows" });
+					// Dropdown of the armature's bones (from the .glb); old "mixamorig:" names read as "mixamorig_".
+					const cur = String(r.bone || "mixamorig_Head").replace(":", "_");
+					const names = [...(assets.glb_bones || [])];
+					if (!names.includes(cur)) names.unshift(cur);
+					const bone = el("select", { title: "Bone a rigid mesh follows" });
+					for (const n of names) {
+						const o = el("option", { value: n, textContent: n.replace(/^mixamorig_/, "") });
+						if (n === cur) o.selected = true;
+						bone.append(o);
+					}
 					bone.style.width = "150px";
-					bone.oninput = () => { list[i].bone = bone.value; set(list); };
+					bone.onchange = () => { list[i].bone = bone.value; set(list); };
 					row.append(bone);
 				}
 				row.append(rm);

@@ -1176,5 +1176,12 @@
 	},
 	"injured": {
 		"speed": 0.8
+	},
+	"sway": {
+		"movement": 0.02,
+		"max_swing": 0.18,
+		"stiffness": 110.0,
+		"damping": 16.0,
+		"flutter": 0.012
 	}
 }

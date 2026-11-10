@@ -796,6 +796,43 @@
 					"seconds": 2.0
 				}
 			]
+		},
+		{
+			"animation": "cast_release",
+			"animation_speed": 1.2,
+			"arc": 120.0,
+			"charge_power": 1.5,
+			"charge_time": 0.8,
+			"color": "#ffe9a0",
+			"cooldown": 0.0,
+			"delivery": "projectile",
+			"description": "A bolt of holy light.",
+			"display_name": "Smite",
+			"hit_sound": "",
+			"hit_time": 0.37,
+			"id": "smite",
+			"mana_cost": 8.0,
+			"max_charge_level": 3.0,
+			"move_scale": 0.2,
+			"power": 10.0,
+			"projectile_color": "#fff1b0",
+			"projectile_speed": 18.0,
+			"projectile_style": "bolt",
+			"reach": 30.0,
+			"recovery_time": 0.7,
+			"sounds": [
+				"res://assets/audio/combat/fireball_throw.ogg"
+			],
+			"staggers": false,
+			"stamina_cost": 0.0,
+			"tick_interval": 2.0,
+			"ticks": 4.0,
+			"knockback": 3.5,
+			"cast_time": 0.8,
+			"icon": "heal",
+			"windup_time": 0.45,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg"
 		}
 	]
 }

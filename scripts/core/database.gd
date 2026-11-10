@@ -135,6 +135,7 @@ func _load(which: String) -> void:
 		"animations":
 			animations = data
 			CharacterModel.roles = data.get("roles", {})
+			CharacterModel.sway_settings = data.get("sway", {})
 		"weapon_types":
 			weapon_types.clear()
 			for d in data.get("types", []):

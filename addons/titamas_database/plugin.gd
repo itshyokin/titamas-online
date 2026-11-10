@@ -224,7 +224,7 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 			var levels := _files("res://scenes/levels", ["tscn"])
 			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"]), "fbx": fbx,
 				"props": props, "levels": levels, "markers": _markers(levels),
-				"glbs": _files("res://assets/models/characters/src", ["glb"]), "glb_meshes": _glb_meshes(),
+				"glbs": _files("res://assets/models/characters/src", ["glb"]), "glb_meshes": _glb_meshes(), "glb_bones": _glb_bones(),
 				"pieces": _files("res://assets/characters/lowpoly", ["scn"])})
 		["POST", "/api/rebuild_animations"]:
 			_json(peer, 200, {"ok": _start_rebuild()})
@@ -275,6 +275,30 @@ func _glb_meshes() -> Array:
 			if prim.has("material"):
 				mats.append(String(materials[int(prim.material)].get("name", "")))
 		out.append({"name": String(node.get("name", "")), "materials": mats, "skinned": node.has("skin")})
+	return out
+
+
+## The armature's bone names in the body .glb, as Godot names them (":" → "_"), for the
+## Body Models bone dropdown of rigid pieces.
+func _glb_bones() -> Array:
+	var settings = JSON.parse_string(FileAccess.get_file_as_string("res://data/body_models.json")) if FileAccess.file_exists("res://data/body_models.json") else {}
+	var path := String(settings.get("source", "")) if settings is Dictionary else ""
+	var f := FileAccess.open(path, FileAccess.READ) if path != "" else null
+	if f == null:
+		return []
+	f.seek(12)
+	var length := f.get_32()
+	f.get_32()
+	var gltf = JSON.parse_string(f.get_buffer(length).get_string_from_utf8())
+	if not gltf is Dictionary:
+		return []
+	var nodes: Array = gltf.get("nodes", [])
+	var out := []
+	for skin: Dictionary in gltf.get("skins", []):
+		for j in skin.get("joints", []):
+			var n := String((nodes[int(j)] as Dictionary).get("name", "")).replace(":", "_")
+			if n != "" and not out.has(n):
+				out.append(n)
 	return out
 
 

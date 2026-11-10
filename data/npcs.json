@@ -202,6 +202,163 @@
 			"title": "Hedge Mage",
 			"walk_speed": 1.1,
 			"wander_radius": 5.0
+		},
+		{
+			"abilities": [
+				"arrow_shot"
+			],
+			"aggro_radius": 12.0,
+			"attack_animation": "attack_light_2",
+			"attack_animation_speed": 0.9,
+			"attack_cooldown": 1.3,
+			"attack_hit_time": 0.3,
+			"attack_power": 6.0,
+			"attack_range": 1.5,
+			"behaviour": "stand",
+			"can_fight": true,
+			"can_follow": true,
+			"dialogue": [
+				"Need a bow at your back? Say the word and I'll come along."
+			],
+			"equipment": {
+				"chest": "leather_jerkin",
+				"legs": "travelers_trousers",
+				"feet": "worn_boots",
+				"primary": "hunting_bow"
+			},
+			"follow_line": "Lead on. I'll follow.",
+			"gold_max": 0.0,
+			"gold_min": 0.0,
+			"id": "guard_archer",
+			"immortal": false,
+			"kind": "companion",
+			"leash_distance": 35.0,
+			"level": 5.0,
+			"look": {
+				"body": "masc",
+				"build": "",
+				"eye_color": "#3f8a3c",
+				"eyes": "",
+				"facial_hair": "",
+				"hair": "",
+				"hair_color": "#3a2a1c",
+				"height": "",
+				"skin": "#c99a76"
+			},
+			"loot": [],
+			"max_health": 120.0,
+			"name": "Wren",
+			"respawn_time": 120.0,
+			"run_speed": 4.4,
+			"title": "Guard Archer",
+			"wait_line": "I'll hold here.",
+			"walk_speed": 1.3,
+			"wander_radius": 3.0,
+			"keeps_distance": true
+		},
+		{
+			"abilities": [
+				"firebolt"
+			],
+			"aggro_radius": 12.0,
+			"attack_animation": "attack_light_2",
+			"attack_animation_speed": 0.9,
+			"attack_cooldown": 1.3,
+			"attack_hit_time": 0.3,
+			"attack_power": 9.0,
+			"attack_range": 2.0,
+			"behaviour": "stand",
+			"can_fight": true,
+			"can_follow": true,
+			"dialogue": [
+				"Fire solves most problems. Want me along for yours?"
+			],
+			"equipment": {
+				"chest": "leather_jerkin",
+				"legs": "linen_leggings",
+				"feet": "worn_boots"
+			},
+			"follow_line": "Lead on. I'll follow.",
+			"gold_max": 0.0,
+			"gold_min": 0.0,
+			"id": "guard_mage",
+			"immortal": false,
+			"kind": "companion",
+			"leash_distance": 35.0,
+			"level": 5.0,
+			"look": {
+				"body": "masc",
+				"build": "",
+				"eye_color": "#3f8a3c",
+				"eyes": "",
+				"facial_hair": "",
+				"hair": "",
+				"hair_color": "#d9d4c8",
+				"height": "",
+				"skin": "#e0b896"
+			},
+			"loot": [],
+			"max_health": 95.0,
+			"name": "Orrin",
+			"respawn_time": 120.0,
+			"run_speed": 4.4,
+			"title": "Guard Battlemage",
+			"wait_line": "I'll hold here.",
+			"walk_speed": 1.3,
+			"wander_radius": 3.0
+		},
+		{
+			"abilities": [
+				"mend",
+				"smite"
+			],
+			"aggro_radius": 12.0,
+			"attack_animation": "attack_light_2",
+			"attack_animation_speed": 0.9,
+			"attack_cooldown": 1.3,
+			"attack_hit_time": 0.3,
+			"attack_power": 9.0,
+			"attack_range": 2.0,
+			"behaviour": "stand",
+			"can_fight": true,
+			"can_follow": true,
+			"dialogue": [
+				"Keep your blade up, I'll keep you standing. Shall I come with you?"
+			],
+			"equipment": {
+				"chest": "leather_jerkin",
+				"legs": "linen_leggings",
+				"feet": "worn_boots"
+			},
+			"follow_line": "Lead on. I'll follow.",
+			"gold_max": 0.0,
+			"gold_min": 0.0,
+			"id": "guard_healer",
+			"immortal": false,
+			"kind": "companion",
+			"leash_distance": 35.0,
+			"level": 5.0,
+			"look": {
+				"body": "masc",
+				"build": "",
+				"eye_color": "#3f8a3c",
+				"eyes": "",
+				"facial_hair": "",
+				"hair": "",
+				"hair_color": "#c9a04a",
+				"height": "",
+				"skin": "#f0cdb0"
+			},
+			"loot": [],
+			"max_health": 100.0,
+			"name": "Maelis",
+			"respawn_time": 120.0,
+			"run_speed": 4.4,
+			"title": "Guard Healer",
+			"wait_line": "I'll hold here.",
+			"walk_speed": 1.3,
+			"wander_radius": 3.0,
+			"heal_below": 0.7
 		}
 	]
 }

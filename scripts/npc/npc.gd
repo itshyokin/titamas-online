@@ -66,6 +66,8 @@ var _weapon: Node3D
 var leader: Node3D = null
 var _since_hurt := 99.0
 var _stuck_time := 0.0
+var _heal_who: Node3D = null
+var _fight_stuck := 0.0
 var _stuck_from := Vector3.ZERO
 ## Its spells and skills (data "abilities"), their cooldowns, and the one going off.
 var _spells: Array[Ability] = []
@@ -272,6 +274,7 @@ func _physics_process(delta: float) -> void:
 	if move.length() > 0.1:
 		_face(global_position + move, delta)
 	move_and_slide()
+	_unstick_in_fight(move, delta)
 	_animate()
 	_update_prompt()
 	_update_head(delta)
@@ -381,8 +384,8 @@ func _fight(delta: float) -> Vector3:
 			_casting = null
 			character.play_from(String(data.get("attack_animation", "attack_light_1")), 0.0, 0.1, _f("attack_animation_speed", 1.0))
 		return Vector3.ZERO
-	# Casters without a weapon keep their distance.
-	if not armed and _has_ranged() and to.length() <= _ranged_reach() * 0.85:
+	# Casters without a weapon (and archers: npcs.json keeps_distance) keep their distance.
+	if (not armed or bool(data.get("keeps_distance", false))) and _has_ranged() and to.length() <= _ranged_reach() * 0.85:
 		_face(target.global_position, delta)
 		return Vector3.ZERO
 	return to.normalized() * _f("run_speed", 4.0)
@@ -396,7 +399,9 @@ func _pick_spell(distance: float) -> Ability:
 			continue
 		match ab.delivery:
 			Ability.Delivery.HEAL_OVER_TIME:
-				if stats.health < stats.max_health * 0.5:
+				var who := _heal_target(ab)
+				if who:
+					_heal_who = who
 					return ab
 			Ability.Delivery.PROJECTILE:
 				if distance <= ab.reach and (not armed or distance > _f("attack_range", 2.0) * 1.5):
@@ -405,6 +410,29 @@ func _pick_spell(distance: float) -> Ability:
 				if distance <= ab.reach:
 					return ab
 	return null
+
+
+## Who a heal should go to: the most hurt of itself, its leader and the leader's other
+## followers within the spell's reach, once they're below npcs.json `heal_below` (0.6).
+func _heal_target(ab: Ability) -> Node3D:
+	var below := _f("heal_below", 0.6)
+	var group: Array = [self]
+	if leader and is_instance_valid(leader):
+		group.append(leader)
+		for f in get_tree().get_nodes_in_group("followers"):
+			if f != self and f.get("leader") == leader:
+				group.append(f)
+	var best: Node3D = null
+	var best_share := below
+	for n in group:
+		var st := Combat.stats_of(n)
+		if st == null or st.is_dead() or (n as Node3D).global_position.distance_to(global_position) > maxf(ab.reach, 4.0):
+			continue
+		var share := st.health / maxf(st.max_health, 1.0)
+		if share < best_share:
+			best_share = share
+			best = n
+	return best
 
 
 func _has_ranged() -> bool:
@@ -441,8 +469,12 @@ func _spell_goes_off(ab: Ability) -> void:
 		Combat.play_sound(self, ab.sounds.pick_random(), -4.0)
 	match ab.delivery:
 		Ability.Delivery.HEAL_OVER_TIME:
-			stats.add_heal_over_time(power, ab.ticks, ab.tick_interval, ab)
-			Effects.heal_glow(self, ab.ticks * ab.tick_interval)
+			var who: Node3D = _heal_who if _heal_who and is_instance_valid(_heal_who) and Combat.is_alive(_heal_who) else self
+			var st := Combat.stats_of(who)
+			if st:
+				st.add_heal_over_time(power, ab.ticks, ab.tick_interval, ab)
+				Effects.heal_glow(who, ab.ticks * ab.tick_interval)
+			_heal_who = null
 		Ability.Delivery.PROJECTILE:
 			if _target_valid():
 				var from := global_position + Vector3.UP * 1.4 - model.global_basis.z * 0.5
@@ -661,6 +693,31 @@ func _follow(delta: float) -> Vector3:
 	if far > 7.0 or to.length() > 4.0:
 		speed = _f("run_speed", 4.2) * 1.25  # catching up
 	return to.normalized() * minf(speed, to.length() * 4.0)
+
+
+## Running at a fight but not getting anywhere (caught on a rock): after a moment, appear
+## a little way from the target on the open side.
+func _unstick_in_fight(move: Vector3, delta: float) -> void:
+	if ai != AI.FIGHT or move.length() < 0.5 or not _target_valid():
+		_fight_stuck = 0.0
+		return
+	if Vector2(get_real_velocity().x, get_real_velocity().z).length() > 0.6:
+		_fight_stuck = 0.0
+		return
+	_fight_stuck += delta
+	if _fight_stuck < 2.0:
+		return
+	_fight_stuck = 0.0
+	var keep := _ranged_reach() * 0.6 if (not armed or bool(data.get("keeps_distance", false))) and _has_ranged() else _f("attack_range", 2.0) + 0.5
+	var from_dir := global_position - target.global_position
+	from_dir.y = 0.0
+	from_dir = from_dir.normalized().rotated(Vector3.UP, randf_range(-1.2, 1.2)) if from_dir.length() > 0.1 else Vector3.BACK
+	var spot := target.global_position + from_dir * (keep + Combat.radius_of(target))
+	var q := PhysicsRayQueryParameters3D.create(spot + Vector3.UP * 6.0, spot + Vector3.DOWN * 12.0, 1)
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	if not hit.is_empty():
+		global_position = hit.position + Vector3.UP * 0.05
+		_walk = Vector3.ZERO
 
 
 ## Puts a follower just behind the player, on the ground.

@@ -15,14 +15,17 @@ uniform float hang = 0.6;
 uniform float amount = 1.0;
 // Movement trail, in mesh space (set each frame by CharacterModel, spring-smoothed).
 uniform vec3 trail = vec3(0.0);
-uniform float flutter = 0.03;
+uniform float flutter = 0.012;
 
 void vertex() {
 	float w = clamp((top - VERTEX.y) / max(hang, 0.01), 0.0, 1.0);
 	w = w * w;
 	float t = TIME * (2.0 + wind_strength * 2.0) + VERTEX.y * 4.0 + VERTEX.x * 3.0;
 	vec3 wave = vec3(sin(t) * 0.6, sin(t * 0.7) * 0.2, sin(t * 1.3 + 1.7)) * flutter * (0.35 + wind_strength);
-	VERTEX += (trail + wave) * w * amount;
+	vec3 move = (trail + wave) * w * amount;
+	// Never swing forward into the body (models face -Z): only back and to the sides.
+	move.z = max(move.z, -0.005);
+	VERTEX += move;
 }
 
 void fragment() {

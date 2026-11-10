@@ -243,7 +243,7 @@
 			"material": "",
 			"min_y": -1.0,
 			"max_y": -1.0,
-			"bone": "mixamorig:LeftForeArm"
+			"bone": "mixamorig_LeftForeArm"
 		}
 	],
 	"source": "res://assets/models/characters/src/lowpoly_guy.glb"

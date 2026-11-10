@@ -605,7 +605,7 @@ func _apply_look_parts() -> void:
 				item["tint"] = Color.html(String(entry.get("color", "#cbbd9f")))
 			else:
 				item["tint"] = _look.get("facial_color" if tag == "facial_hair" else "hair_color", Color(0.3, 0.2, 0.1))
-				item["sway"] = float(entry.get("sway", 0.35 if tag == "hair" else 0.15))
+				item["sway"] = float(entry.get("sway", 0.25 if tag == "hair" else 0.1))
 				if entry.has("sway_anchors"):
 					item["sway_anchors"] = entry.sway_anchors
 			var nodes := wear(item, tag)
@@ -831,6 +831,10 @@ func _armature_name(type: BodyType) -> String:
 
 const SWAY_SHADER := preload("res://assets/materials/cloth_sway.gdshader")
 
+## Hair/cape sway tuning (animations.json "sway", set by Database): movement, max_swing,
+## stiffness, damping, flutter.
+static var sway_settings := {}
+
 var _sway: Array = []  # [MeshInstance3D, [ShaderMaterial...]]
 var _sway_last := Vector3.INF
 var _sway_off := Vector3.ZERO  # world-space trail (spring)
@@ -884,6 +888,7 @@ func _add_sway(nodes: Array, amount: float, anchors := SWAY_ANCHORS) -> void:
 				sm.set_shader_parameter("top", top)
 				sm.set_shader_parameter("hang", maxf(top - bottom, 0.05))
 				sm.set_shader_parameter("amount", amount)
+				sm.set_shader_parameter("flutter", float(sway_settings.get("flutter", 0.012)))
 				mats.append([i, sm])
 			if mats.is_empty():
 				continue
@@ -919,10 +924,10 @@ func _process(delta: float) -> void:
 	_sway_last = pos
 	if vel.length() > 30.0:
 		vel = Vector3.ZERO  # teleports
-	var goal := -vel * 0.035
+	var goal := -vel * float(sway_settings.get("movement", 0.02))
 	goal.y = clampf(-vel.y * 0.03, -0.15, 0.15) + minf(Vector2(vel.x, vel.z).length() * 0.012, 0.12)
-	goal = goal.limit_length(0.35)
-	_sway_vel += ((goal - _sway_off) * 60.0 - _sway_vel * 9.0) * delta
+	goal = goal.limit_length(float(sway_settings.get("max_swing", 0.18)))
+	_sway_vel += ((goal - _sway_off) * float(sway_settings.get("stiffness", 110.0)) - _sway_vel * float(sway_settings.get("damping", 16.0))) * delta
 	_sway_off += _sway_vel * delta
 	for i in range(_sway.size() - 1, -1, -1):
 		var e: Array = _sway[i]

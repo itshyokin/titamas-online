@@ -291,6 +291,17 @@ func click_select(screen_pos: Vector2) -> bool:
 	return true
 
 
+## Tab is also the UI's "next focus" key: when a HUD button has focus (after a click) the
+## GUI would eat it, so the keyboard Tab is taken here, before the GUI sees it.
+func _input(event: InputEvent) -> void:
+	if GameSettings.menu_open or not event is InputEventKey:
+		return
+	if event.is_action_pressed("target_next") and not (event as InputEventKey).shift_pressed and tab_selects >= 0.5:
+		tab_target()
+		get_viewport().gui_release_focus()
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if GameSettings.menu_open:
 		return
