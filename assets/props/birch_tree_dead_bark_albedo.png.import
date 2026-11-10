@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c4yn0jfb5y6gp"
-path="res://.godot/imported/birch_tree_dead_bark_albedo.png-22d49c9095a19f2eb34c267a6b00583d.ctex"
+path.s3tc="res://.godot/imported/birch_tree_dead_bark_albedo.png-22d49c9095a19f2eb34c267a6b00583d.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "bfa5face813bb2cb9ac229ff08cc9a61"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/props/birch_tree_dead_bark_albedo.png"
-dest_files=["res://.godot/imported/birch_tree_dead_bark_albedo.png-22d49c9095a19f2eb34c267a6b00583d.ctex"]
+dest_files=["res://.godot/imported/birch_tree_dead_bark_albedo.png-22d49c9095a19f2eb34c267a6b00583d.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

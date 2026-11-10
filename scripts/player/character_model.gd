@@ -933,4 +933,3 @@ func _process(delta: float) -> void:
 		var local := (mi as Node3D).global_basis.inverse() * _sway_off
 		for sm: ShaderMaterial in e[1]:
 			sm.set_shader_parameter("trail", local)
-
