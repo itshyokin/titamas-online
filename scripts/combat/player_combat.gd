@@ -767,7 +767,7 @@ func _land(ab: Ability) -> void:
 				# Trees / stones: an axe or hammer chops or breaks them (Harvest);
 				# anything else solid bounces the weapon off.
 				var wt := String(weapon_type.get("id", ""))
-				var tool := Harvest.is_harvest_tool(wt)
+				var tool := _harvests(wt)
 				var wall := WorldStrike.find(player, fwd, ab.reach * float(_world_settings().get("world_check", 0.8)) * (1.25 if tool else 1.0), tool)
 				if not wall.is_empty():
 					if wall.has("collider"):
@@ -1513,3 +1513,15 @@ func _cancel_all() -> void:
 	_aim_pose = false
 	_attack_down = false
 	player.action_velocity = Vector3.ZERO
+
+
+## Whether the weapon type chops trees / breaks stones (data/harvest.json kinds).
+func _harvests(weapon_type_id: String) -> bool:
+	var kinds = PropLibrary.harvest_data().get("kinds", {})
+	if not kinds is Dictionary:
+		return false
+	for k in (kinds as Dictionary).values():
+		if k is Dictionary and weapon_type_id in (k.get("weapon_types", []) as Array):
+			return true
+	return false
+
