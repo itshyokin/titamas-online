@@ -18,7 +18,8 @@
 		"fade_seconds": 0.6,
 		"cover_map": true,
 		"cover_cell": 0.75,
-		"cover_refresh": 160
+		"cover_refresh": 160,
+		"canopy_cover": true
 	},
 	"types": [
 		{
@@ -104,6 +105,44 @@
 			"wind_add": -0.2,
 			"sound": "",
 			"sound_db": -10.0,
+			"cloud_shadows": 0.0
+		},
+		{
+			"id": "snow",
+			"name": "Snow",
+			"cloud_coverage": 0.45,
+			"cloud_darken": 0.2,
+			"sun_scale": 0.65,
+			"ambient_scale": 1.08,
+			"fog_add": 0.005,
+			"saturation_scale": 0.78,
+			"rain": 0.0,
+			"wetness": 0.0,
+			"snow": 0.55,
+			"frost": 0.65,
+			"lightning_every": 0.0,
+			"wind_add": 0.1,
+			"sound": "res://assets/audio/weather/snow_wind_loop.ogg",
+			"sound_db": -16.0,
+			"cloud_shadows": 0.2
+		},
+		{
+			"id": "blizzard",
+			"name": "Blizzard",
+			"cloud_coverage": 0.7,
+			"cloud_darken": 0.35,
+			"sun_scale": 0.45,
+			"ambient_scale": 1.1,
+			"fog_add": 0.02,
+			"saturation_scale": 0.65,
+			"rain": 0.0,
+			"wetness": 0.0,
+			"snow": 1.0,
+			"frost": 1.0,
+			"lightning_every": 0.0,
+			"wind_add": 0.9,
+			"sound": "res://assets/audio/weather/blizzard_loop.ogg",
+			"sound_db": -8.0,
 			"cloud_shadows": 0.0
 		}
 	]

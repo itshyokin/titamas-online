@@ -718,6 +718,7 @@ func _spell_goes_off(ab: Ability) -> void:
 			if st:
 				st.add_heal_over_time(power, ab.ticks, ab.tick_interval, ab)
 				Effects.heal_glow(who, ab.ticks * ab.tick_interval)
+				AbilityFX.landed(ab, who)
 				Combat.heal_threat(self, power * ab.ticks)
 			_heal_who = null
 		Ability.Delivery.PROJECTILE:

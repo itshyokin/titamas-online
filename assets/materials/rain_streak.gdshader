@@ -9,6 +9,8 @@ render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled;
 uniform vec4 tint : source_color = vec4(0.75, 0.82, 0.95, 0.35);
 // Which way is "up" along the streak (the opposite of where it falls: leans with the wind).
 uniform vec3 streak_up = vec3(0.0, 1.0, 0.0);
+// 0 = the whole quad (a rain streak), 1 = a soft round dot (a snowflake).
+uniform float round_dot : hint_range(0.0, 1.0) = 0.0;
 
 void vertex() {
 	vec3 centre = MODEL_MATRIX[3].xyz;
@@ -24,5 +26,5 @@ void vertex() {
 
 void fragment() {
 	ALBEDO = tint.rgb;
-	ALPHA = tint.a;
+	ALPHA = tint.a * mix(1.0, smoothstep(0.5, 0.28, length(UV - vec2(0.5))), round_dot);
 }

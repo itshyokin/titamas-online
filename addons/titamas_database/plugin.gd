@@ -34,6 +34,8 @@ const FILES := {
 	"achievements": "res://data/achievements.json",
 }
 const MAX_BODY := 4 * 1024 * 1024
+## Effect sprites for abilities (builtin/ from tools/art/make_effect_sprites.py, custom/ yours).
+const SPRITE_DIR := "res://assets/effects"
 
 var _server: TCPServer
 var _port := 0
@@ -204,6 +206,14 @@ func _parse(buffer: PackedByteArray) -> Dictionary:
 
 
 func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
+	# Effect sprite pictures for the page's previews: /sprite/assets/effects/…png
+	if req.method == "GET" and String(req.path).begins_with("/sprite/"):
+		var file := "res://" + String(req.path).trim_prefix("/sprite/").uri_decode()
+		if file.begins_with(SPRITE_DIR) and not file.contains("..") and file.get_extension().to_lower() == "png" and FileAccess.file_exists(file):
+			_send(peer, 200, "image/png", FileAccess.get_file_as_bytes(file))
+		else:
+			_send(peer, 404, "text/plain", "Not found".to_utf8_buffer())
+		return
 	match [req.method, req.path]:
 		["GET", "/"], ["GET", "/index.html"]:
 			var html := FileAccess.get_file_as_string(PAGE)
@@ -225,7 +235,30 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"]), "fbx": fbx,
 				"props": props, "levels": levels, "markers": _markers(levels),
 				"glbs": _files("res://assets/models/characters/src", ["glb"]), "glb_meshes": _glb_meshes(), "glb_bones": _glb_bones(),
-				"pieces": _files("res://assets/characters/lowpoly", ["scn"])})
+				"pieces": _files("res://assets/characters/lowpoly", ["scn"]), "sprites": _files(SPRITE_DIR, ["png"])})
+		["POST", "/api/upload_sprite"]:
+			# "Load PNG…" on an effect sprite field: {name, data (base64)} → assets/effects/custom/<name>.png
+			var up = JSON.parse_string(req.body)
+			var bytes := Marshalls.base64_to_raw(String(up.get("data", ""))) if up is Dictionary else PackedByteArray()
+			var img := Image.new()
+			if bytes.is_empty() or img.load_png_from_buffer(bytes) != OK:
+				_json(peer, 400, {"ok": false, "error": "That isn't a PNG picture"})
+				return
+			var clean := ""
+			for ch in String(up.get("name", "sprite")).get_basename().to_lower():
+				clean += ch if (ch >= "a" and ch <= "z") or (ch >= "0" and ch <= "9") or ch == "_" else "_"
+			if clean.is_empty():
+				clean = "sprite"
+			DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SPRITE_DIR.path_join("custom")))
+			var target := SPRITE_DIR.path_join("custom").path_join(clean + ".png")
+			var out_file := FileAccess.open(target, FileAccess.WRITE)
+			if out_file == null:
+				_json(peer, 500, {"ok": false, "error": "Couldn't write %s" % target})
+				return
+			out_file.store_buffer(bytes)
+			out_file.close()
+			EditorInterface.get_resource_filesystem().scan()
+			_json(peer, 200, {"ok": true, "path": target, "width": img.get_width(), "height": img.get_height()})
 		["POST", "/api/rebuild_animations"]:
 			_json(peer, 200, {"ok": _start_rebuild()})
 		["POST", "/api/rebuild_bodies"]:

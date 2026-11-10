@@ -91,6 +91,7 @@ func _ready() -> void:
 			add_child(streak)
 		_:
 			var core := MeshInstance3D.new()
+			core.visible = not AbilityFX.has(ability, "projectile")  # its own sprite instead
 			var sphere := SphereMesh.new()
 			sphere.radius = 0.14
 			sphere.height = 0.28
@@ -110,6 +111,7 @@ func _ready() -> void:
 			light.omni_range = 4.0
 			add_child(light)
 			add_child(Effects.trail(color))
+	AbilityFX.attach(ability, "projectile", self)
 	_last_aim = Combat.aim_point(target) if is_instance_valid(target) else global_position + direction * MAX_RANGE
 
 
@@ -193,6 +195,8 @@ func _combatant(node: Node) -> Node3D:
 func _hit(who: Node3D) -> void:
 	if who and Combat.is_alive(who) and is_instance_valid(source):
 		Combat.hit(source, who, power, ability.staggers, ability.knockback, Ability.applies_of(ability))
+	if who and is_instance_valid(who):
+		AbilityFX.landed(ability, who, global_position)
 	match _style:
 		Ability.ProjectileStyle.ARROW:
 			Combat.play_sound(self, ARROW_HIT_SOUND, -6.0)
@@ -207,6 +211,7 @@ func _hit(who: Node3D) -> void:
 
 
 func _hit_world(at: Vector3, normal: Vector3, what: Node) -> void:
+	AbilityFX.burst(ability, "impact", Combat.world_root(self), at + normal * 0.1)
 	match _style:
 		Ability.ProjectileStyle.ARROW:
 			Combat.play_sound(self, ARROW_HIT_SOUND, -6.0)

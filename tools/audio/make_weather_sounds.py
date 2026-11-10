@@ -1,4 +1,4 @@
-"""Weather sounds (generated, no samples): light and heavy rain loops and thunder.
+"""Weather sounds (generated, no samples): light and heavy rain loops, thunder and winter wind loops.
     python3 tools/audio/make_weather_sounds.py
 Writes assets/audio/weather/*.ogg (numpy + ffmpeg)."""
 import pathlib, subprocess
@@ -62,6 +62,21 @@ def rain(secs, drops_per_sec, body):
     return chans
 
 
+def snow_wind(secs, strength):
+    """A soft, hollow winter wind that swells and fades (snow, blizzards)."""
+    n = int(secs * RATE)
+    chans = []
+    for c in range(2):
+        t = np.arange(n) / RATE
+        noise = rng.standard_normal(n)
+        low = onepole(noise, 500) - onepole(noise, 90)
+        whistle = onepole(rng.standard_normal(n), 1500) - onepole(rng.standard_normal(n), 900)
+        swell = 0.55 + 0.3 * np.sin(t * 2 * np.pi * rng.uniform(0.07, 0.11) + rng.uniform(0, 6)) \
+            + 0.15 * np.sin(t * 2 * np.pi * rng.uniform(0.19, 0.27) + rng.uniform(0, 6))
+        chans.append(seamless((low * 1.6 + whistle * 0.35 * strength) * swell, 3.0))
+    return chans
+
+
 def thunder(seed, secs=7.0):
     r = np.random.default_rng(seed)
     n = int(secs * RATE)
@@ -85,3 +100,6 @@ write("heavy_rain_loop.ogg", l, r)
 for i, s in enumerate([3, 11]):
     a = thunder(s)
     write("thunder_%d.ogg" % (i + 1), a, onepole(a, 3000))
+# Winter (added after the rest, so the files above come out the same as before).
+write("snow_wind_loop.ogg", *snow_wind(24.0, 0.6))
+write("blizzard_loop.ogg", *snow_wind(24.0, 1.6))

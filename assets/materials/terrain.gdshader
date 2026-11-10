@@ -99,6 +99,10 @@ void fragment() {
 	ROUGHNESS = mix(1.0, 0.35, wet * (1.0 - w.b * 0.5));
 	ALBEDO *= 1.0 - 0.32 * wet;
 	SPECULAR = 0.5 * wet;
+	// Snow lying in patches (Weather "frost"): white, soft, not under roofs or trees.
+	float snow = snow_at(world_pos, normalize(world_normal)) * wet_look;
+	ALBEDO = mix(ALBEDO, vec3(0.9, 0.94, 1.0), snow * 0.92);
+	ROUGHNESS = mix(ROUGHNESS, 0.8, snow);
 	AO = 1.0;
 	AO_LIGHT_AFFECT = ao_light_affect;
 }

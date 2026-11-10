@@ -7,6 +7,8 @@ shader_type spatial;
 // away with distance.
 render_mode cull_disabled, diffuse_lambert, specular_disabled;
 
+#include "res://assets/materials/rain_cover.gdshaderinc"
+
 global uniform float wind_strength;
 global uniform vec3 player_position;
 global uniform vec4 grass_base : source_color;
@@ -29,6 +31,7 @@ uniform vec2 wind_direction = vec2(1.0, 0.35);
 varying float tip;
 varying vec3 root_world;
 varying float shade;
+varying float frosted;
 
 float hash(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -42,6 +45,7 @@ void vertex() {
 	tip = 1.0 - UV.y;
 	float bend = tip * tip;
 	shade = 0.9 + 0.2 * hash(root.xz);
+	frosted = snow_at(root, vec3(0.0, 1.0, 0.0));
 	VERTEX.y *= max(grass_height, 0.05);
 
 	// Shrink away with distance (no pop).
@@ -78,6 +82,8 @@ void fragment() {
 	vec3 region = mix(grass_base.rgb, grass_tip.rgb, tip);
 	vec3 base = mix(region, ground * mix(0.95, 1.2, tip), clamp(grass_ground_match, 0.0, 1.0));
 	ALBEDO = base * pic.r * 1.15 * shade;
+	// Frost: whitens from the tips down as more snow lies.
+	ALBEDO = mix(ALBEDO, vec3(0.9, 0.94, 1.0) * mix(0.8, 1.0, pic.r), frosted * mix(0.45, 1.0, tip));
 	// Up, on both sides of the card (a back face would otherwise be lit from below).
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	ROUGHNESS = 1.0;

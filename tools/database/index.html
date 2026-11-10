@@ -152,6 +152,7 @@
 	textarea { min-height: 54px; resize: vertical; }
 	input[type=color] { width: 54px; height: 28px; padding: 0 2px; border: 1px solid #a69f90; background: #fff; }
 	.color-row { display: flex; gap: 8px; align-items: center; }
+	.sprite-preview { width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; background: #1e2230; border: 1px solid #444; border-radius: 4px; flex: none; }
 	.color-row input[type=text] { width: 100px; font-family: monospace; }
 	.check { flex-direction: row; align-items: center; gap: 8px; padding-top: 18px; }
 	.list-field .row { display: flex; gap: 6px; margin-bottom: 4px; }
@@ -241,6 +242,16 @@ const isMelee = e => e.delivery === "melee";
 const isProjectile = e => e.delivery === "projectile";
 const isHeal = e => e.delivery === "heal_over_time";
 const isBuff = e => e.delivery === "buff";
+// Effect sprite pictures: built-in ones first, then yours.
+const spriteOptions = () => (assets.sprites || []).slice().sort((a, b) => (a.includes("/custom/") - b.includes("/custom/")) || a.localeCompare(b))
+	.map(p => [p, (p.includes("/custom/") ? "Yours: " : "Built-in: ") + p.split("/").pop().replace(/\.png$/, "").replace(/_/g, " ")]);
+const fxFields = (slot, what, sizeHelp) => [
+	{ key: "fx." + slot + ".sprite", label: what, type: "sprite", wide: true },
+	{ key: "fx." + slot + ".size", label: "Size (m)", type: "number", def: 1, help: sizeHelp, show: e => !!(((e.fx || {})[slot] || {}).sprite) },
+	{ key: "fx." + slot + ".seconds", label: "Lasts / loops every (s)", type: "number", def: 0.5, help: "How long it shows, or how long one run through its frames takes when it loops.", show: e => !!(((e.fx || {})[slot] || {}).sprite) },
+	{ key: "fx." + slot + ".frames", label: "Frames", type: "int", def: 1, help: "For an animated picture: frames side by side in one row, all the same size. 1 = a still picture.", show: e => !!(((e.fx || {})[slot] || {}).sprite) },
+	{ key: "fx." + slot + ".look", label: "Look", type: "select", options: [["glow", "Glow (shines, tinted with the ability's colour)"], ["drawn", "As drawn (your colours and outlines)"]], show: e => !!(((e.fx || {})[slot] || {}).sprite) },
+];
 
 const TABS = {
 	abilities: {
@@ -298,6 +309,12 @@ const TABS = {
 				{ key: "enchant.color", label: "Weapon glow colour", type: "color" },
 				{ key: "enchant.applies", label: "Enchanted hits give", type: "applies", wide: true },
 			], isBuff],
+			["Effect sprites (on top of the usual effects)", [
+				...fxFields("cast", "On the caster", "Shown at chest height: looping while a spell with a cast time is cast, or as a flash when an instant one goes off."),
+				...fxFields("projectile", "Flying with the projectile", "Replaces the glowing ball; always faces the camera."),
+				...fxFields("impact", "Where it lands", "On whoever is hit, healed or buffed."),
+				...fxFields("ground", "On the ground under them (decal)", "Laid flat on the ground: under the target, or under you for area moves and buffs. Draw it as seen from above."),
+			]],
 			["Projectile", [
 				{ key: "projectile_style", label: "Looks like", type: "select", options: [["bolt", "Glowing bolt"], ["arrow", "Arrow / bolt (sticks)"], ["bullet", "Bullet (fast, leaves holes)"]] },
 				{ key: "projectile_speed", label: "Speed (m/s)", type: "number" },
@@ -1196,7 +1213,7 @@ const TABS = {
 	},
 	weather: {
 		title: "Weather", file: "weather", listKey: "types", idKey: "id", nameKey: "name",
-		blank: () => ({ id: "new_weather", name: "New Weather", cloud_coverage: 0.2, cloud_darken: 0.2, sun_scale: 0.8, ambient_scale: 1, fog_add: 0, saturation_scale: 1, rain: 0, wetness: 0, lightning_every: 0, wind_add: 0, sound: "", sound_db: -8, cloud_shadows: 0.6 }),
+		blank: () => ({ id: "new_weather", name: "New Weather", cloud_coverage: 0.2, cloud_darken: 0.2, sun_scale: 0.8, ambient_scale: 1, fog_add: 0, saturation_scale: 1, rain: 0, wetness: 0, snow: 0, frost: 0, lightning_every: 0, wind_add: 0, sound: "", sound_db: -8, cloud_shadows: 0.6 }),
 		groups: [
 			["General", [
 				{ key: "id", label: "ID", type: "text", help: "Regions list these with weights; events set one with the Weather command." },
@@ -1211,9 +1228,11 @@ const TABS = {
 				{ key: "saturation_scale", label: "Colour saturation ×", type: "number" },
 				{ key: "cloud_shadows", label: "Cloud shadows on the ground (0–1)", type: "number", help: "How strongly drifting cloud shadows show (×the strength in Weather Settings)." },
 			]],
-			["Rain, wind and sound", [
+			["Rain, snow, wind and sound", [
 				{ key: "rain", label: "Rain (0–1)", type: "number" },
-				{ key: "wetness", label: "Wet ground (0–1)", type: "number", help: "Ground gets darker and shinier." },
+				{ key: "wetness", label: "Wet ground (0–1)", type: "number", help: "Ground gets darker and shinier, under open sky only." },
+				{ key: "snow", label: "Snowfall (0–1)", type: "number", help: "Flakes drifting down around the camera. Like rain, none falls under roofs." },
+				{ key: "frost", label: "Snow lying on the ground (0–1)", type: "number", help: "White patches on the ground and frosted grass: scattered at 0.3, joined up at 0.7, nearly everywhere at 1. Not under roofs or trees, not on steep ground. Builds up as the weather changes over." },
 				{ key: "lightning_every", label: "Lightning about every (s, 0 = none)", type: "number" },
 				{ key: "wind_add", label: "Extra wind", type: "number" },
 				{ key: "sound", label: "Looping sound", type: "sound" },
@@ -1242,6 +1261,7 @@ const TABS = {
 				{ key: "indoors.fade_seconds", label: "Sound changes over (s)", type: "number", help: "How quickly the sound changes when you step in or out." },
 				{ key: "indoors.cover_map", label: "Cover map (rain outside doors, dry floors)", type: "bool", help: "Keeps a map of the highest solid thing at each spot around the camera: rain only falls above it (so from indoors you see it outside the door), splashes land on it, and the ground only looks wet under open sky. Off = rain simply stops when the camera is under cover, and wet ground shows everywhere." },
 				{ key: "indoors.cover_cell", label: "Cover map detail (m per cell)", type: "number", help: "The map is 64 × 64 cells around the camera. 0.75 covers 48 m; smaller follows doorways and eaves more closely but reaches less far (rain falls up to 22 m away)." },
+				{ key: "indoors.canopy_cover", label: "No snow lying under trees", type: "bool", help: "Tree canopies count as cover for snow on the ground and frosted grass (rain and snowflakes still fall through)." },
 				{ key: "indoors.cover_refresh", label: "Cover map upkeep (cells per frame)", type: "int", help: "How many cells are checked again each frame (doors opening, new terrain). Higher = quicker to notice, a little more work." },
 			]],
 		],
@@ -1362,7 +1382,7 @@ const TABS = {
 // ---------------------------------------------------------------------------
 let data = {};       // file -> JSON
 let saved = {};      // file -> JSON string as last saved
-let assets = { animations: [], sounds: [], fbx: [] };
+let assets = { animations: [], sounds: [], fbx: [], sprites: [] };
 let tab = "abilities";
 let selected = { abilities: 0, enemies: 0, regions: 0 };
 
@@ -1675,7 +1695,7 @@ function fieldControl(t, entry, f) {
 		}
 		case "number":
 		case "int": {
-			const i = el("input", { type: "number", value: value ?? 0, step: f.step || (f.type === "int" ? 1 : "any") });
+			const i = el("input", { type: "number", value: value ?? f.def ?? 0, step: f.step || (f.type === "int" ? 1 : "any") });
 			i.oninput = () => {
 				const n = f.type === "int" ? parseInt(i.value, 10) : parseFloat(i.value);
 				if (!Number.isNaN(n)) set(n);
@@ -1704,6 +1724,35 @@ function fieldControl(t, entry, f) {
 			const s = selectOf(assets.animations, value, true);
 			s.onchange = () => set(s.value);
 			wrap.append(label, s);
+			break;
+		}
+		case "sprite": {
+			// An effect picture: a built-in one, one of yours (assets/effects/custom), or load a PNG.
+			const s = selectOf(spriteOptions(), value, true);
+			s.onchange = () => set(s.value, true);
+			const row = el("div", { className: "row" });
+			const img = el("img", { className: "sprite-preview", alt: "" });
+			if (value) img.src = "/sprite/" + value.replace("res://", "").split("/").map(encodeURIComponent).join("/");
+			else img.style.visibility = "hidden";
+			const pick = el("input", { type: "file", accept: "image/png" });
+			pick.style.display = "none";
+			const load = el("button", { textContent: "Load PNG…", title: "Copies a PNG from your computer into assets/effects/custom and uses it." });
+			load.onclick = () => pick.click();
+			pick.onchange = async () => {
+				const file = pick.files[0];
+				if (!file) return;
+				const buf = new Uint8Array(await file.arrayBuffer());
+				let bin = "";
+				for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+				const res = await fetch("/api/upload_sprite", { method: "POST", body: JSON.stringify({ name: file.name, data: btoa(bin) }) }).then(r => r.json()).catch(() => null);
+				if (!res || !res.ok) { toast((res && res.error) || "Couldn't load that picture", true); return; }
+				if (!assets.sprites) assets.sprites = [];
+				if (!assets.sprites.includes(res.path)) assets.sprites.push(res.path);
+				toast("Loaded " + res.path.split("/").pop() + " (" + res.width + " × " + res.height + ")");
+				set(res.path, true);
+			};
+			row.append(img, s, load, pick);
+			wrap.append(label, row);
 			break;
 		}
 		case "sound": {

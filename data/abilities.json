@@ -217,7 +217,23 @@
 			"icon": "fire",
 			"windup_time": 0.45,
 			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg"
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
+			"fx": {
+				"projectile": {
+					"sprite": "res://assets/effects/builtin/flame.png",
+					"size": 0.6,
+					"seconds": 0.4,
+					"frames": 1,
+					"look": "glow"
+				},
+				"impact": {
+					"sprite": "res://assets/effects/builtin/burst_4.png",
+					"size": 1.6,
+					"seconds": 0.35,
+					"frames": 4,
+					"look": "glow"
+				}
+			}
 		},
 		{
 			"animation": "cast_heal",
@@ -254,7 +270,16 @@
 			"icon": "heal",
 			"windup_time": 0.45,
 			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg"
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
+			"fx": {
+				"ground": {
+					"sprite": "res://assets/effects/builtin/rune_circle.png",
+					"size": 2.4,
+					"seconds": 1.6,
+					"frames": 1,
+					"look": "glow"
+				}
+			}
 		},
 		{
 			"animation": "gunplay",
@@ -751,6 +776,15 @@
 						"seconds": 4
 					}
 				]
+			},
+			"fx": {
+				"impact": {
+					"sprite": "res://assets/effects/builtin/snowflake.png",
+					"size": 1.0,
+					"seconds": 0.7,
+					"frames": 1,
+					"look": "glow"
+				}
 			}
 		},
 		{
@@ -795,7 +829,16 @@
 					"chance": 1.0,
 					"seconds": 2.0
 				}
-			]
+			],
+			"fx": {
+				"ground": {
+					"sprite": "res://assets/effects/builtin/ring.png",
+					"size": 6.0,
+					"seconds": 0.8,
+					"frames": 1,
+					"look": "glow"
+				}
+			}
 		},
 		{
 			"animation": "cast_release",

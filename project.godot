@@ -286,6 +286,10 @@ rain_cover={
 "type": "sampler2D",
 "value": ""
 }
+snow_cover={
+"type": "float",
+"value": 0.0
+}
 rain_cover_window={
 "type": "vec4",
 "value": Vector4(0, 0, 1, 0)

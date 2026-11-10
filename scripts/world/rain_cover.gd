@@ -8,6 +8,10 @@ extends Node
 ## indoors you still see rain outside the door), splashes sit on it, and the terrain only
 ## looks wet where nothing is over it.
 ##
+## The map has a second layer for snow on the ground: the same heights, raised to the tops
+## of trees within their canopies (props named *tree*, not *dead*; `canopy_cover`), so
+## snow doesn't lie and grass doesn't frost under trees while rain still falls through.
+##
 ## 64 x 64 cells of `cell` metres. The texture wraps: a world cell always lives in the
 ## same texel, so walking only costs rays for the row of cells that came into view.
 ## The rest is checked again a few cells per frame (doors, chunks streaming in).
@@ -22,7 +26,10 @@ var cell := 0.75
 var refresh_per_frame := 160
 var active := false
 
-var _heights := PackedFloat32Array()
+var _heights := PackedFloat32Array()  # two per cell: solid cover, cover with tree canopies
+var _canopies: Array = []  # [x, z, radius, top] of trees near the window
+var _canopy_check := 0.0
+var _use_canopies := true
 var _image: Image
 var _texture: ImageTexture
 var _min := Vector2i(1 << 30, 1 << 30)  # lowest world cell in the window
@@ -33,9 +40,9 @@ var _dirty := false
 
 
 func _ready() -> void:
-	_heights.resize(CELLS * CELLS)
+	_heights.resize(CELLS * CELLS * 2)
 	_heights.fill(NONE)
-	_image = Image.create_from_data(CELLS, CELLS, false, Image.FORMAT_RF, _heights.to_byte_array())
+	_image = Image.create_from_data(CELLS, CELLS, false, Image.FORMAT_RGF, _heights.to_byte_array())
 	_texture = ImageTexture.create_from_image(_image)
 	_query = PhysicsRayQueryParameters3D.new()
 	_query.collision_mask = 1 | 8  # world, water
@@ -66,6 +73,11 @@ func update(centre: Vector3, world: World3D, on: bool, settings: Dictionary) -> 
 		active = true
 		cell = new_cell
 		_min = Vector2i(1 << 30, 1 << 30)  # start again
+	_use_canopies = bool(settings.get("canopy_cover", true))
+	_canopy_check -= get_process_delta_time()
+	if _canopy_check <= 0.0:
+		_canopy_check = 1.5
+		_find_canopies(centre)
 	var lowest := Vector2i(floori(centre.x / cell), floori(centre.z / cell)) - Vector2i(CELLS / 2, CELLS / 2)
 	_scroll(lowest)
 	var space := world.direct_space_state
@@ -86,7 +98,7 @@ func update(centre: Vector3, world: World3D, on: bool, settings: Dictionary) -> 
 		_look(Vector2i(_min.x + posmod(sx - _min.x, CELLS), _min.y + posmod(sz - _min.y, CELLS)), space, top, bottom, sea)
 	if _dirty:
 		_dirty = false
-		_image.set_data(CELLS, CELLS, false, Image.FORMAT_RF, _heights.to_byte_array())
+		_image.set_data(CELLS, CELLS, false, Image.FORMAT_RGF, _heights.to_byte_array())
 		_texture.update(_image)
 	_set_window(centre, true)
 
@@ -94,7 +106,58 @@ func update(centre: Vector3, world: World3D, on: bool, settings: Dictionary) -> 
 ## The height stored for the cell over `point` (NONE if not looked up). For tests.
 func height_at(point: Vector3) -> float:
 	var c := Vector2i(floori(point.x / cell), floori(point.z / cell))
-	return _heights[_slot(c)] if active and _in_window(c) else NONE
+	return _heights[_slot(c) * 2] if active and _in_window(c) else NONE
+
+
+## The same with tree canopies counted (the snow layer).
+func canopy_height_at(point: Vector3) -> float:
+	var c := Vector2i(floori(point.x / cell), floori(point.z / cell))
+	return _heights[_slot(c) * 2 + 1] if active and _in_window(c) else NONE
+
+
+## Trees whose canopy could reach into the map: [x, z, radius, top], from the placed
+## props (worked out once per tree and kept on it).
+func _find_canopies(centre: Vector3) -> void:
+	_canopies.clear()
+	if not _use_canopies:
+		return
+	var streamer := get_tree().get_first_node_in_group("chunk_streamer")
+	if streamer == null:
+		return
+	var reach := cell * CELLS * 0.5
+	for chunk in streamer.get_children():
+		var holder := chunk.get_node_or_null("Props")
+		if holder == null:
+			continue
+		for prop in holder.get_children():
+			var prop_name := String(prop.get_meta("prop_name", "")).to_lower()
+			if not prop_name.contains("tree") or prop_name.contains("dead"):
+				continue
+			if not prop.has_meta("canopy"):
+				prop.set_meta("canopy", _canopy_of(prop as Node3D))
+			var c: Array = prop.get_meta("canopy")
+			if c.is_empty():
+				continue
+			if absf(float(c[0]) - centre.x) < reach + float(c[2]) and absf(float(c[1]) - centre.z) < reach + float(c[2]):
+				_canopies.append(c)
+
+
+## [x, z, radius, top] of a tree's leaves, from its meshes' bounds ([] if it has none).
+func _canopy_of(prop: Node3D) -> Array:
+	var box := AABB()
+	var first := true
+	for n in prop.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		var b := mi.global_transform * mi.get_aabb()
+		box = b if first else box.merge(b)
+		first = false
+	if first:
+		return []
+	var centre := box.get_center()
+	# Leaves fill most, not all, of the box around a tree.
+	return [centre.x, centre.z, maxf(box.size.x, box.size.z) * 0.4, box.end.y]
 
 
 func _slot(c: Vector2i) -> int:
@@ -124,7 +187,8 @@ func _scroll(lowest: Vector2i) -> void:
 			if x >= old.x and x < old.x + CELLS and z >= old.y and z < old.y + CELLS:
 				continue  # was already in view
 			var c := Vector2i(x, z)
-			_heights[_slot(c)] = NONE
+			_heights[_slot(c) * 2] = NONE
+			_heights[_slot(c) * 2 + 1] = NONE
 			_pending.append(c)
 	_dirty = true
 
@@ -139,9 +203,16 @@ func _look(c: Vector2i, space: PhysicsDirectSpaceState3D, top: float, bottom: fl
 	h = maxf(h, sea)
 	if not SafeArea._areas.is_empty():
 		h = maxf(h, SafeArea.cover_height(Vector3(x, 0.0, z)))
-	var slot := _slot(c)
-	if not is_equal_approx(_heights[slot], h):
+	var with_trees := h
+	for t: Array in _canopies:
+		var dx := x - float(t[0])
+		var dz := z - float(t[1])
+		if dx * dx + dz * dz <= float(t[2]) * float(t[2]):
+			with_trees = maxf(with_trees, float(t[3]))
+	var slot := _slot(c) * 2
+	if not is_equal_approx(_heights[slot], h) or not is_equal_approx(_heights[slot + 1], with_trees):
 		_heights[slot] = h
+		_heights[slot + 1] = with_trees
 		_dirty = true
 
 

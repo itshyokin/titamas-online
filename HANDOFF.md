@@ -37,9 +37,14 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Settings → Graphics: View distance, Shadows, Render scale, Frame limit, VSync.
 - Not done: shader warm-up (the very first spark / blood / rain of a session can still hitch while the graphics card compiles it), batching props into shared draws, cheaper far-away characters.
 
+## To test in the editor (done 10 Nov, batch N: snow + effect sprites)
+- Snow: two new weather types, **Snow** and **Blizzard** (an event's Weather command, or add them to a region's weather list in Database → Regions). Flakes drift and none fall under roofs; snow lies in patches on open ground and frosts the grass, not under roofs or trees; a quiet wind loop plays. Check the look of the flakes and the white patches in Forward+.
+- Effect sprites: Database → Abilities → **Effect sprites**. Four places per ability (on the caster, with the projectile, where it lands, on the ground), each a built-in picture, one of yours, or **Load PNG…**. Examples are set on Firebolt (flame + burst), Mend (rune circle on the ground), Frost Edge (snowflake) and Burst Quake (ring on the ground).
+- Your own pictures: drop PNGs in `assets/effects/custom/` or use Load PNG…; frames side by side in one row for animation. See the README in that folder.
+
 ## Backlog (agreed, not started)
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
-- Snow weather (use `Weather.shelter` so it stops indoors like rain): snowfall, frost on grass in patches but not under trees, icicles on branches.
+- Icicles on branches in snow (needs a small icicle model or sprite).
 - Wet rain look: more saturation, darker colours, drips from trees.
 - Menu navigation sounds (hover, click, tab, open/close).
 - Collectables: hidden cats to pet (Codex page "Cats found n/N", achievement), coin caches, XP shrines; counts on the region map.
@@ -57,6 +62,8 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Dragon / bat models from the owner: .glb, unrigged in named parts with origins at the joints (`wing_L`, `wing_R`, `jaw`, `neck_1..4`, `tail_1..8`) is the easy route.
 
 ## Loose ends
+- Effect sprites on the ground are hidden by tall grass standing on them.
+- Snow isn't in any region's weather list yet (owner's choice which regions get it).
 - Cover map: roofs need collision to count (visual-only meshes don't keep rain out); tree canopies have none, so rain falls through trees (a small dry ring shows at each trunk). It reaches 24 m from the camera: covered floors further away than that look wet.
 - Credits: the second Vincent Freelance hair collection ("FREE 21 Realtime man Hairstyles collection") has no link yet.
 - The shield's bone name was fixed in the data (`mixamorig_LeftForeArm`); it needs **Rebuild** in Body Models to take effect.
@@ -64,4 +71,4 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Not checkable in Claude's test renderer (verify in the editor): decals (blood on slopes, leaves, cloud shadows), SSAO, the finisher kill-cam.
 
 ## Latest work (all pushed)
-Batches L–M on 10 Nov: safe areas (SafeArea box, off switch), indoor weather (roof check, muffled sound, cover map: rain outside doors, dry floors), performance (smoother streaming, sleeping AI, prop ranges, occlusion, quality settings, F3 overlay). Batches E–K on 9–10 Nov: falling leaves, random ambience, statuses and icons, injured walk, rarity, stealth / Frost Edge / Burst Quake, finisher cam, bats and the dragon, hair and cape sway by material, threat and smarter companions (wait for the player, never steal kills, go down and take cover), recruitable archer / mage / healer, Tab targeting with lock-on, region map (M), fall damage, blood, rain splashes, colour picker, Body Models categories, night and dawn sounds.
+Batches L–N on 10 Nov: safe areas (SafeArea box, off switch), indoor weather (roof check, muffled sound, cover map: rain outside doors, dry floors), performance (smoother streaming, sleeping AI, prop ranges, occlusion, quality settings, F3 overlay), snow and blizzards, effect sprites for abilities. Batches E–K on 9–10 Nov: falling leaves, random ambience, statuses and icons, injured walk, rarity, stealth / Frost Edge / Burst Quake, finisher cam, bats and the dragon, hair and cape sway by material, threat and smarter companions (wait for the player, never steal kills, go down and take cover), recruitable archer / mage / healer, Tab targeting with lock-on, region map (M), fall damage, blood, rain splashes, colour picker, Body Models categories, night and dawn sounds.

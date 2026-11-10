@@ -725,6 +725,7 @@ func _update_action(delta: float) -> void:
 
 
 func _land(ab: Ability) -> void:
+	AbilityFX.cast_flash(ab, player)
 	match ab.delivery:
 		Ability.Delivery.MELEE:
 			var fwd := -player.model.global_basis.z
@@ -772,6 +773,7 @@ func _land(ab: Ability) -> void:
 			for n in in_reach:
 				if Combat.hit(player, n, power, staggers, push, Ability.applies_of(ab)) > 0.0:
 					landed = true
+					AbilityFX.landed(ab, n)
 					_use_enchant(n)
 					_maybe_finisher(n, ab)
 					if countering:
@@ -832,6 +834,7 @@ func _land(ab: Ability) -> void:
 			if s:
 				s.add_heal_over_time(_power, ab.ticks, ab.tick_interval, ab)
 				Effects.heal_glow(who, ab.ticks * ab.tick_interval)
+				AbilityFX.landed(ab, who)
 				Combat.heal_threat(player, _power * ab.ticks)
 				if ab.release_sound:
 					Combat.play_sound(player, ab.release_sound, -3.0)
@@ -846,6 +849,7 @@ func _land_area(ab: Ability) -> void:
 	var at := player.global_position
 	var color := ab.color
 	Effects.shockwave(Combat.world_root(player), at, ab.reach, color)
+	AbilityFX.ground(ab, Combat.world_root(player), at)
 	if ab.release_sound:
 		Combat.play_sound(player, ab.release_sound, 0.0, 0.8)
 	elif ab.sounds.size() > 0:
@@ -856,7 +860,8 @@ func _land_area(ab: Ability) -> void:
 	for n in Combat.enemies_near(player, at, ab.reach):
 		if absf(n.global_position.y - at.y) > 2.5:
 			continue
-		Combat.hit(player, n, _power, true, ab.knockback, Ability.applies_of(ab))
+		if Combat.hit(player, n, _power, true, ab.knockback, Ability.applies_of(ab)) > 0.0:
+			AbilityFX.burst(ab, "impact", Combat.world_root(player), Combat.aim_point(n))
 
 
 ## Buffs on yourself: a status (data "self_status": {status, seconds, rank_key,
@@ -875,6 +880,7 @@ func _land_buff(ab: Ability) -> void:
 		stats.add_status(String(en.get("status", "enchanted")), 600.0, player)
 		_show_enchant()
 	Effects.burst(Combat.world_root(player), player.global_position + Vector3.UP * 1.2, ab.color, 0.8)
+	AbilityFX.landed(ab, player)
 	if ab.release_sound:
 		Combat.play_sound(player, ab.release_sound, -3.0)
 
@@ -1138,6 +1144,12 @@ func cast(ab: Ability) -> bool:
 	_start_loop(ab.cast_loop_sound)
 	_cast_glow = Effects.hand_glow(ab.projectile_color)
 	character.attach_to_hand(_cast_glow)
+	# The ability's own cast sprite loops on the caster until the cast ends (it goes with the glow).
+	var cast_sprite := AbilityFX.attach(ab, "cast", player, Vector3.UP * 1.3)
+	if cast_sprite:
+		_cast_glow.tree_exited.connect(func() -> void:
+			if is_instance_valid(cast_sprite):
+				cast_sprite.queue_free())
 	return true
 
 

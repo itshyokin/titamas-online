@@ -4,7 +4,9 @@ extends Node3D
 ## weights (Database → Regions → Weather); a spell of weather lasts weather_minutes_min..max
 ## and then another is picked. Types are data/weather.json (Database → Weather): how they
 ## change clouds, sun, ambient light, fog and colour, plus rain (streaks around the camera,
-## wet ground through the global `wetness`), lightning with thunder, a looping sound and
+## wet ground through the global `wetness`), snow (flakes around the camera; `frost` = snow
+## lying in patches and frosted grass through the global `snow_cover`, not under roofs or
+## trees), lightning with thunder, a looping sound and
 ## how strong cloud shadows are. Changes blend over transition_seconds.
 ## Events set it with the command "weather" {type, minutes} (Weather.force).
 ## Cloud shadows: a 3x3 grid of decals (dark patches from a seamless noise texture) that
@@ -20,7 +22,7 @@ extends Node3D
 const FILE := "res://data/weather.json"
 const BUS := &"Weather"
 const FIELDS := ["cloud_coverage", "cloud_darken", "sun_scale", "ambient_scale", "fog_add", "saturation_scale",
-	"rain", "wetness", "wind_add", "cloud_shadows"]
+	"rain", "wetness", "snow", "frost", "wind_add", "cloud_shadows"]
 
 var data := {}
 var type_id := "clear"
@@ -53,6 +55,8 @@ var _bus := -1
 ## The cover map (see RainCover).
 var cover: RainCover
 var _rain_mat: ShaderMaterial
+var _snow: GPUParticles3D
+var _snow_mat: ShaderMaterial
 var _splash_mat: ShaderMaterial
 var _lowpass: AudioEffectLowPassFilter
 
@@ -70,6 +74,7 @@ func _ready() -> void:
 	cover.name = "RainCover"
 	add_child(cover)
 	_build_rain()
+	_build_snow()
 	_build_splashes()
 	_build_shadows()
 
@@ -181,9 +186,11 @@ func _process(delta: float) -> void:
 	for f: String in FIELDS:
 		values[f] = lerpf(float(values.get(f, 0.0)), float(_goal.get(f, 0.0)), k)
 	RenderingServer.global_shader_parameter_set("wetness", clampf(float(values.wetness), 0.0, 1.0))
+	RenderingServer.global_shader_parameter_set("snow_cover", clampf(float(values.frost), 0.0, 1.0))
 	_update_shelter(delta)
 	_update_cover()
 	_update_rain()
+	_update_snow()
 	_update_splashes()
 	_update_lightning(delta)
 	_update_shadows()
@@ -249,6 +256,66 @@ func _update_rain() -> void:
 	var wind := float(values.wind_add)
 	pm.direction = Vector3(wind * 0.25, -1, wind * 0.1).normalized()
 	_rain_mat.set_shader_parameter("streak_up", -pm.direction)
+
+
+# --- Snow -----------------------------------------------------------------------------
+
+## Flakes drifting down around the camera: slow, wandering, leaning with the wind. They
+## use the rain's shader as round dots, so none are drawn under roofs.
+func _build_snow() -> void:
+	_snow = GPUParticles3D.new()
+	_snow.amount = 2600
+	_snow.lifetime = 7.0
+	_snow.preprocess = 3.0
+	_snow.visibility_aabb = AABB(Vector3(-24, -24, -24), Vector3(48, 40, 48))
+	_snow.local_coords = false
+	_snow.emitting = false
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(16, 5, 16)
+	pm.direction = Vector3(0, -1, 0)
+	pm.spread = 22.0
+	pm.initial_velocity_min = 1.3
+	pm.initial_velocity_max = 2.4
+	pm.gravity = Vector3.ZERO
+	pm.scale_min = 0.6
+	pm.scale_max = 1.5
+	pm.turbulence_enabled = true
+	pm.turbulence_noise_strength = 0.6
+	pm.turbulence_noise_scale = 3.0
+	pm.turbulence_influence_min = 0.05
+	pm.turbulence_influence_max = 0.14
+	_snow.process_material = pm
+	var q := QuadMesh.new()
+	q.size = Vector2(0.06, 0.06)
+	_snow_mat = ShaderMaterial.new()
+	_snow_mat.shader = preload("res://assets/materials/rain_streak.gdshader")
+	_snow_mat.set_shader_parameter("tint", Color(0.96, 0.98, 1.0, 0.9))
+	_snow_mat.set_shader_parameter("round_dot", 1.0)
+	q.material = _snow_mat
+	_snow.draw_pass_1 = q
+	_snow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_snow)
+
+
+func _update_snow() -> void:
+	if _snow == null:
+		return
+	var amount := clampf(float(values.snow), 0.0, 1.0)
+	var on: bool = amount > 0.03 and GameSettings.get("weather_effects") != false and (cover.active or shelter < 0.5)
+	_snow.emitting = on
+	if not on:
+		return
+	_snow.amount_ratio = amount
+	var cam := get_viewport().get_camera_3d()
+	if cam:
+		_snow.global_position = cam.global_position + Vector3.UP * 7.0 - cam.global_basis.z * 5.0
+	var pm := _snow.process_material as ParticleProcessMaterial
+	var wind := float(values.wind_add)
+	# Blizzards drive the flakes sideways and faster.
+	pm.direction = Vector3(wind * 1.4, -1, wind * 0.6).normalized()
+	pm.initial_velocity_min = 1.3 + wind * 3.0
+	pm.initial_velocity_max = 2.4 + wind * 5.0
 
 
 ## Rings of spray where the rain lands, on the ground and on water around the player.
@@ -361,7 +428,7 @@ func _update_cover() -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return
-	var needed: bool = float(values.rain) > 0.03 or float(values.wetness) > 0.02
+	var needed: bool = float(values.rain) > 0.03 or float(values.wetness) > 0.02 or float(values.snow) > 0.03 or float(values.frost) > 0.01
 	cover.update(cam.global_position, get_world_3d(), needed, data.get("indoors", {}))
 
 
