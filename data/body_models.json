@@ -2,15 +2,15 @@
 	"body_extra": [
 		{
 			"material": "leather",
-			"part": "underwear",
-			"min_y": -1,
-			"max_y": 1.14
+			"max_y": 1.14,
+			"min_y": -1.0,
+			"part": "underwear"
 		},
 		{
 			"material": "leather",
-			"part": "underwear_top",
+			"max_y": -1.0,
 			"min_y": 1.14,
-			"max_y": -1
+			"part": "underwear_top"
 		}
 	],
 	"body_meshes": [
@@ -99,151 +99,152 @@
 		},
 		{
 			"id": "cloak_blue",
-			"mesh": "cloak_blue",
 			"material": "",
+			"max_y": -1.0,
+			"mesh": "cloak_blue",
 			"min_y": -1.0,
-			"max_y": -1.0
+			"bone": "mixamorig_Spine"
 		},
 		{
 			"id": "hair_backbraid",
-			"mesh": "hair_backbraid",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_backbraid",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_backswept",
-			"mesh": "hair_backswept",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_backswept",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_bob",
-			"mesh": "hair_bob",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_bob",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_bun",
-			"mesh": "hair_bun",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_bun",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_burns",
-			"mesh": "hair_burns",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_burns",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_elegant",
-			"mesh": "hair_elegant",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_elegant",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_leftswept",
-			"mesh": "hair_leftswept",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_leftswept",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_long",
-			"mesh": "hair_long",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_long",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_longpony",
-			"mesh": "hair_longpony",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_longpony",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_manbun",
-			"mesh": "hair_manbun",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_manbun",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_messy",
-			"mesh": "hair_messy",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_messy",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_neat",
-			"mesh": "hair_neat",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_neat",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_part",
-			"mesh": "hair_part",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_part",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_pixie",
-			"mesh": "hair_pixie",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_pixie",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_ponytail",
-			"mesh": "hair_ponytail",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_ponytail",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_princely",
-			"mesh": "hair_princely",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_princely",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_shoulder",
-			"mesh": "hair_shoulder",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_shoulder",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_swept",
-			"mesh": "hair_swept",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_swept",
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_tied",
-			"mesh": "hair_tied",
 			"material": "",
-			"min_y": -1.0,
-			"max_y": -1.0
+			"max_y": -1.0,
+			"mesh": "hair_tied",
+			"min_y": -1.0
 		},
 		{
+			"bone": "mixamorig_LeftForeArm",
 			"id": "shield_wooden",
-			"mesh": "shield_wooden",
 			"material": "",
-			"min_y": -1.0,
 			"max_y": -1.0,
-			"bone": "mixamorig_LeftForeArm"
+			"mesh": "shield_wooden",
+			"min_y": -1.0
 		}
 	],
 	"source": "res://assets/models/characters/src/lowpoly_guy.glb"
