@@ -379,7 +379,8 @@ const TABS = {
 				{ key: "hides", label: "Hides these body parts", type: "parts", wide: true },
 				{ key: "material", label: "Material (equip sound)", type: "select", options: [["", "Guess from the id"], ["cloth", "Cloth"], ["leather", "Leather / wood"], ["metal", "Metal"], ["jewelry", "Jewellery"]] },
 				{ key: "equip_sound", label: "Equip sound (overrides)", type: "sound" },
-				{ key: "sway", label: "Sways (capes, cloaks)", type: "number", help: "0 = still. How much the worn piece swings behind you as you move and flutters in the wind (1 = a cape; it hangs from its top edge)." },
+				{ key: "sway", label: "Sways (capes, cloaks)", type: "number", help: "0 = still. How much the worn piece swings behind you as you move and flutters in the wind (1 = a cape). Each swaying material hangs from its own top edge." },
+				{ key: "sway_anchors", label: "Materials that stay still", type: "text", help: "Comma list of Blender material names (or parts of names) that don't sway: the anchors, e.g. gold for a cloak's pauldrons. Empty = hair_clip, hat_clip, gold, metal, anchor." },
 				{ key: "head_clip", label: "Head clipping (hats / helmets)", type: "select", options: [["", "None (sits clear of the hair)"], ["hat", "Hat clip: hide the hair's hat-clip parts"], ["total", "Total clip: hide the whole head (masked helmets)"]], help: "Hat clip hides the parts of a hair style given a \"hat_clip\" material in Blender (hair without one is hidden whole). Total clip hides head, face, eyes, hair and beard." },
 				{ key: "fit", label: "Fit", type: "fitnote", wide: true },
 			], e => e.slot !== ""],
@@ -2122,6 +2123,10 @@ function fieldControl(t, entry, f) {
 						sw.style.width = "64px";
 						sw.oninput = () => { const v = parseFloat(sw.value); if (Number.isNaN(v)) delete list[i].sway; else list[i].sway = v; set(list); };
 						row.append(sw);
+						const an = el("input", { type: "text", value: r.sway_anchors || "", placeholder: "hair_clip", title: "Materials that stay still (comma list). Empty = hair_clip, hat_clip, gold, metal, anchor." });
+						an.style.width = "90px";
+						an.oninput = () => { if (an.value.trim()) list[i].sway_anchors = an.value; else delete list[i].sway_anchors; set(list); };
+						row.append(an);
 					}
 				}
 				if (mesh && !mesh.skinned) {

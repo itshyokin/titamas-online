@@ -311,7 +311,7 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 		_tint(nodes, item.tint)
 	var sway := float(item.get("sway", 0.0))
 	if sway > 0.0 and not Engine.is_editor_hint():
-		_add_sway(nodes, sway)
+		_add_sway(nodes, sway, String(item.get("sway_anchors", SWAY_ANCHORS)))
 	var hides: Array = _hides_of(item)
 	for part in hides:
 		_hidden_parts[part] = int(_hidden_parts.get(part, 0)) + 1
@@ -606,6 +606,8 @@ func _apply_look_parts() -> void:
 			else:
 				item["tint"] = _look.get("facial_color" if tag == "facial_hair" else "hair_color", Color(0.3, 0.2, 0.1))
 				item["sway"] = float(entry.get("sway", 0.35 if tag == "hair" else 0.15))
+				if entry.has("sway_anchors"):
+					item["sway_anchors"] = entry.sway_anchors
 			var nodes := wear(item, tag)
 			if tag == "head":
 				for n in nodes:
@@ -835,9 +837,20 @@ var _sway_off := Vector3.ZERO  # world-space trail (spring)
 var _sway_vel := Vector3.ZERO
 
 
+## Materials that stay put when a piece sways (unless an item lists its own "sway_anchors"):
+## hair clips (the part against the scalp) and metal fittings on capes.
+const SWAY_ANCHORS := "hair_clip,hat_clip,gold,metal,anchor"
+
+
 ## Swaps worn meshes' materials for cloth_sway.gdshader (same colour/texture) so they
-## swing with movement and flutter in the wind (items/looks with "sway" > 0).
-func _add_sway(nodes: Array, amount: float) -> void:
+## swing with movement and flutter in the wind (items/looks with "sway" > 0). Surfaces whose
+## material (or mesh) name contains one of `anchors` (comma list) stay still: a cape's metal
+## pauldrons, a hair style's hair_clip. Each swaying surface hangs from its own top edge.
+func _add_sway(nodes: Array, amount: float, anchors := SWAY_ANCHORS) -> void:
+	var keys: Array[String] = []
+	for k in anchors.split(",", false):
+		if k.strip_edges() != "":
+			keys.append(k.strip_edges().to_lower())
 	for node in nodes:
 		var meshes: Array = (node as Node).find_children("*", "MeshInstance3D", true, false)
 		if node is MeshInstance3D:
@@ -845,9 +858,17 @@ func _add_sway(nodes: Array, amount: float) -> void:
 		for mi: MeshInstance3D in meshes:
 			if mi.mesh == null:
 				continue
-			var box := mi.mesh.get_aabb()
 			var mats: Array = []
 			for i in mi.mesh.get_surface_count():
+				var own := mi.mesh.surface_get_material(i)
+				var label := (String(own.resource_name) if own else "") + " " + String(mi.name)
+				if _sway_anchor(label.to_lower(), keys):
+					continue  # the anchor keeps its material and doesn't move
+				var top := -INF
+				var bottom := INF
+				for v: Vector3 in mi.mesh.surface_get_arrays(i)[Mesh.ARRAY_VERTEX]:
+					top = maxf(top, v.y)
+					bottom = minf(bottom, v.y)
 				var src := mi.get_active_material(i)
 				var sm := ShaderMaterial.new()
 				sm.shader = SWAY_SHADER
@@ -860,14 +881,33 @@ func _add_sway(nodes: Array, amount: float) -> void:
 						sm.set_shader_parameter("use_tex", true)
 					if b.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR:
 						sm.set_shader_parameter("alpha_cut", b.alpha_scissor_threshold)
-				sm.set_shader_parameter("top", box.end.y)
-				sm.set_shader_parameter("hang", maxf(box.size.y, 0.05))
+				sm.set_shader_parameter("top", top)
+				sm.set_shader_parameter("hang", maxf(top - bottom, 0.05))
 				sm.set_shader_parameter("amount", amount)
-				mi.set_surface_override_material(i, sm)
-				mats.append(sm)
+				mats.append([i, sm])
+			if mats.is_empty():
+				continue
+			# A tinted plain piece has one material_override for every surface: move it onto
+			# the anchor surfaces so clearing it doesn't strip their colour.
+			var shared := mi.material_override
 			mi.material_override = null
-			_sway.append([mi, mats])
+			var swaying := {}
+			for e in mats:
+				swaying[e[0]] = true
+				mi.set_surface_override_material(e[0], e[1])
+			if shared:
+				for i in mi.mesh.get_surface_count():
+					if not swaying.has(i):
+						mi.set_surface_override_material(i, shared)
+			_sway.append([mi, mats.map(func(e: Array) -> ShaderMaterial: return e[1])])
 	set_process(true)
+
+
+static func _sway_anchor(label: String, keys: Array[String]) -> bool:
+	for k in keys:
+		if label.contains(k):
+			return true
+	return false
 
 
 func _process(delta: float) -> void:

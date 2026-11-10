@@ -254,6 +254,8 @@ func _merge_pieces() -> void:
 			opt["hides"] = ["head"]
 		if piece.has("sway"):
 			opt["sway"] = float(piece.sway)
+		if String(piece.get("sway_anchors", "")) != "":
+			opt["sway_anchors"] = String(piece.sway_anchors)
 		list.append(opt)
 		appearance[list_key] = list
 
