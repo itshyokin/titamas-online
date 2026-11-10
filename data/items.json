@@ -297,7 +297,7 @@
 				]
 			},
 			"fitted_femme": "",
-			"fitted_masc": "",
+			"fitted_masc": "res://assets/characters/lowpoly/tin_hat_masc.scn",
 			"head_clip": "hat",
 			"hides": [],
 			"icon": "helm",
@@ -1158,26 +1158,26 @@
 			"spell_power": 0.0,
 			"stack_max": 0.0,
 			"use_anim": "",
+			"use_cures": [
+				"poison"
+			],
 			"use_heal": 0.0,
 			"use_hot_per_tick": 0.0,
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
 			"use_time": 2.5,
-			"value": 8.0,
-			"use_cures": [
-				"poison"
-			]
+			"value": 8.0
 		},
 		{
-			"armor": 3,
-			"attack": 0,
-			"block": 0,
-			"bonus_health": 0,
-			"bonus_mana": 0,
+			"armor": 3.0,
+			"attack": 0.0,
+			"block": 0.0,
+			"bonus_health": 0.0,
+			"bonus_mana": 0.0,
 			"description": "A travelling cloak pinned with gold pauldrons.",
 			"fit": {
-				"masc": [],
-				"femme": []
+				"femme": [],
+				"masc": []
 			},
 			"fitted_femme": "",
 			"fitted_masc": "res://assets/characters/lowpoly/cloak_blue_masc.scn",
@@ -1186,20 +1186,20 @@
 			"icon_color": "#3a5aa8",
 			"id": "blue_cloak",
 			"kind": "armor",
+			"material": "cloth",
 			"model": "",
 			"name": "Blue Cloak",
 			"rarity": "uncommon",
 			"slot": "shoulders",
-			"spell_power": 0,
+			"spell_power": 0.0,
 			"stack_max": 0.0,
+			"sway": 1.0,
+			"sway_anchors": "gold",
 			"use_heal": 0.0,
 			"use_hot_per_tick": 0.0,
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
-			"value": 25,
-			"sway": 1.0,
-			"sway_anchors": "gold",
-			"material": "cloth"
+			"value": 25.0
 		}
 	]
 }
