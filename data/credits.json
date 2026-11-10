@@ -1,11 +1,55 @@
 {
 	"sections": [
-		{"title": "Titamas Online", "lines": ["Created by itshyokin", "Set in the world of Titamas"]},
-		{"title": "Design, world and art", "lines": ["itshyokin"]},
-		{"title": "Programming help", "lines": ["Claude (Anthropic)"]},
-		{"title": "Sound", "lines": ["Footsteps and combat sounds from itshyokin's Saturn project", "Ambience and effects generated for this project", "Full list: assets/audio/CREDITS.md"]},
-		{"title": "Animation", "lines": ["Mixamo (Adobe)"]},
-		{"title": "Engine", "lines": ["Godot Engine (godotengine.org), MIT licence"]},
-		{"title": "Thank you for playing!", "lines": []}
+		{
+			"title": "Titamas Online",
+			"lines": [
+				"Created by itshyokin",
+				"Set in the world of Titamas"
+			]
+		},
+		{
+			"title": "Design, world and art",
+			"lines": [
+				"itshyokin"
+			]
+		},
+		{
+			"title": "Programming help",
+			"lines": [
+				"Claude (Anthropic)"
+			]
+		},
+		{
+			"title": "Sound",
+			"lines": [
+				"Footsteps and combat sounds from itshyokin's Saturn project",
+				"Ambience and effects generated for this project",
+				"Full list: assets/audio/CREDITS.md"
+			]
+		},
+		{
+			"title": "3D models",
+			"lines": [
+				"\"Low-poly Male Base Mesh\" (https://skfb.ly/SESK) by decodigo, licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/)",
+				"\"FREE Male Fashion Hair collection 02 lowpoly\" (https://skfb.ly/oVr9P) by Vincent Freelance, licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/)",
+				"\"FREE 21 Realtime man Hairstyles collection\" by Vincent Freelance, licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/)"
+			]
+		},
+		{
+			"title": "Animation",
+			"lines": [
+				"Mixamo (Adobe)"
+			]
+		},
+		{
+			"title": "Engine",
+			"lines": [
+				"Godot Engine (godotengine.org), MIT licence"
+			]
+		},
+		{
+			"title": "Thank you for playing!",
+			"lines": []
+		}
 	]
 }
