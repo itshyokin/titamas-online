@@ -143,15 +143,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -4)
 [node name="Point3" type="Marker3D" parent="NPCs/VillageGuard/Patrol" unique_id=1226507129]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 6)
 
-[node name="GuardArcher" parent="NPCs" instance=ExtResource("95_npc")]
+[node name="GuardArcher" parent="NPCs" unique_id=1485815995 instance=ExtResource("95_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -46, 3, 66)
 npc_id = "guard_archer"
 
-[node name="GuardMage" parent="NPCs" instance=ExtResource("95_npc")]
+[node name="GuardMage" parent="NPCs" unique_id=204765442 instance=ExtResource("95_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 3, 68)
 npc_id = "guard_mage"
 
-[node name="GuardHealer" parent="NPCs" instance=ExtResource("95_npc")]
+[node name="GuardHealer" parent="NPCs" unique_id=2075688443 instance=ExtResource("95_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 3, 70)
 npc_id = "guard_healer"
 
