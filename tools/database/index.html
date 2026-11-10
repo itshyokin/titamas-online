@@ -1264,6 +1264,18 @@ const TABS = {
 				{ key: "ambient_occlusion.light_affect", label: "In sunlight too (0–1)", type: "number", help: "0 = only shaded areas darken; 1 = sunlit ones as much." },
 				{ key: "ambient_occlusion.terrain_light_affect", label: "On sunlit ground (0–1)", type: "number", help: "The same for the terrain, which is mostly in sunlight: higher = contact shadows under rocks, trees and grass show on lit ground." },
 			]],
+			["Performance", [
+				{ key: "performance.ai_sleep_distance", label: "Idle enemies / NPCs sleep beyond (m)", type: "number", help: "Further than this from every player, idle enemies and NPCs stop thinking, moving and animating until someone comes back. Anything fighting, chasing, following or talking stays awake. 0 = never sleep." },
+				{ key: "performance.ai_wake_margin", label: "…and wake this much sooner (m)", type: "number", help: "They wake at the sleep distance minus this, so they don't flick on and off at the edge." },
+				{ key: "performance.prop_range_per_metre", label: "Props drawn to (m per metre of size)", type: "number", help: "A prop is drawn out to its longest side × this: a 1 m stone to 24 m… but never less than the minimum below. Big trees and rocks stay visible across the loaded world. The player's View distance setting scales it." },
+				{ key: "performance.prop_range_min", label: "Smallest prop draw distance (m)", type: "number" },
+				{ key: "performance.prop_range_fade", label: "Props fade out over (m)", type: "number", help: "0 = they simply stop being drawn at the limit." },
+				{ key: "performance.grass_range", label: "Grass drawn to (m)", type: "number", help: "Scaled by View distance too. Takes effect as grass regrows (change the Grass setting or reload)." },
+				{ key: "performance.occlusion", label: "Hills hide what's behind them", type: "bool", help: "Each chunk gets a coarse, slightly sunken copy of its ground that hides props, grass and characters behind it from being drawn." },
+				{ key: "performance.occluder_step", label: "Occluder detail (terrain squares per face)", type: "int", help: "4 = one face per 8 m. Lower follows the ground more closely (hides more, costs a little more). New chunks only." },
+				{ key: "performance.occluder_sink", label: "Occluder sunk by (m)", type: "number", help: "Extra safety so nothing that should be seen is ever hidden." },
+				{ key: "performance.props_per_frame", label: "Props placed per frame while walking", type: "int", help: "A new chunk's props go down a few per frame instead of all at once. Lower = smoother, but far props take a moment longer to appear." },
+			]],
 			["Wind", [
 				{ key: "wind.calm", label: "Calmest", type: "number", help: "0 = still, 1 = normal breeze." },
 				{ key: "wind.gusty", label: "Windiest", type: "number", help: "2 = very windy." },

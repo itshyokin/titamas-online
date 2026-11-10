@@ -20,6 +20,15 @@ const DEFAULT_PIXEL := "Chunky"
 ## Grass: label -> share of each region's grass density.
 const GRASS_OPTIONS := {"Off": 0.0, "Low": 0.4, "Medium": 0.7, "High": 1.0}
 const DEFAULT_GRASS := "High"
+## View distance: label -> share of how far props and grass are drawn (world.json performance).
+const VIEW_OPTIONS := {"Near": 0.6, "Medium": 0.8, "Far": 1.0}
+const DEFAULT_VIEW := "Far"
+## Shadows: label -> [shadow map size (0 = no shadows), share of the level's shadow distance].
+const SHADOW_OPTIONS := {"Off": [0, 0.0], "Low": [2048, 0.5], "Medium": [4096, 0.75], "High": [4096, 1.0]}
+const DEFAULT_SHADOWS := "High"
+## Frame limit: label -> frames per second (0 = no limit).
+const FPS_OPTIONS := {"No limit": 0, "30": 30, "60": 60, "90": 90, "120": 120, "144": 144}
+const DEFAULT_FPS := "No limit"
 
 ## Actions shown in the controls menu, in order: [action, label].
 const REBINDABLE := [
@@ -45,6 +54,12 @@ var god_rays := true
 var ssao := true
 ## Trees, cliffs and characters reflected in water (costs a little on slower PCs).
 var water_reflections := true
+var view_distance := DEFAULT_VIEW
+var shadows := DEFAULT_SHADOWS
+## The 3D picture is drawn at this share of the window's size, then stretched (0.5–1).
+var render_scale := 1.0
+var fps_limit := DEFAULT_FPS
+var vsync := true
 ## Camera shake on hits: 0 = off, 1 = full.
 var screen_shake := 1.0
 var camera_sensitivity := 1.0
@@ -78,6 +93,51 @@ func apply_all() -> void:
 		set_volume(key, volumes.get(key, 1.0), false)
 	set_pixel(pixel, false)
 	set_water_reflections(water_reflections, false)
+	apply_display()
+
+
+## Render scale, frame limit and vsync (the window's own settings).
+func apply_display() -> void:
+	var root := get_tree().root if is_inside_tree() else null
+	if root:
+		root.scaling_3d_scale = clampf(render_scale, 0.5, 1.0)
+	Engine.max_fps = int(FPS_OPTIONS.get(fps_limit, 0))
+	if DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)
+
+
+func set_render_scale(value: float) -> void:
+	render_scale = clampf(value, 0.5, 1.0)
+	apply_display()
+	save_settings()
+
+
+func set_fps_limit(option: String) -> void:
+	fps_limit = option if FPS_OPTIONS.has(option) else DEFAULT_FPS
+	apply_display()
+	save_settings()
+
+
+func set_vsync(on: bool) -> void:
+	vsync = on
+	apply_display()
+	save_settings()
+
+
+func set_view_distance(option: String) -> void:
+	view_distance = option if VIEW_OPTIONS.has(option) else DEFAULT_VIEW
+	save_settings()
+	graphics_changed.emit()
+
+
+func view_distance_scale() -> float:
+	return float(VIEW_OPTIONS.get(view_distance, 1.0))
+
+
+func set_shadows(option: String) -> void:
+	shadows = option if SHADOW_OPTIONS.has(option) else DEFAULT_SHADOWS
+	save_settings()
+	graphics_changed.emit()
 
 
 func set_volume(key: String, value: float, save := true) -> void:
@@ -246,6 +306,11 @@ func save_settings() -> void:
 	cfg.set_value("graphics", "screen_shake", screen_shake)
 	cfg.set_value("graphics", "water_reflections", water_reflections)
 	cfg.set_value("graphics", "ssao", ssao)
+	cfg.set_value("graphics", "view_distance", view_distance)
+	cfg.set_value("graphics", "shadows", shadows)
+	cfg.set_value("graphics", "render_scale", render_scale)
+	cfg.set_value("graphics", "fps_limit", fps_limit)
+	cfg.set_value("graphics", "vsync", vsync)
 	cfg.set_value("controls", "camera_sensitivity", camera_sensitivity)
 	cfg.set_value("controls", "invert_camera_y", invert_camera_y)
 	for entry in REBINDABLE:
@@ -271,6 +336,11 @@ func load_settings() -> void:
 	screen_shake = float(cfg.get_value("graphics", "screen_shake", 1.0))
 	water_reflections = bool(cfg.get_value("graphics", "water_reflections", true))
 	ssao = bool(cfg.get_value("graphics", "ssao", true))
+	view_distance = String(cfg.get_value("graphics", "view_distance", DEFAULT_VIEW))
+	shadows = String(cfg.get_value("graphics", "shadows", DEFAULT_SHADOWS))
+	render_scale = clampf(float(cfg.get_value("graphics", "render_scale", 1.0)), 0.5, 1.0)
+	fps_limit = String(cfg.get_value("graphics", "fps_limit", DEFAULT_FPS))
+	vsync = bool(cfg.get_value("graphics", "vsync", true))
 	camera_sensitivity = float(cfg.get_value("controls", "camera_sensitivity", 1.0))
 	invert_camera_y = bool(cfg.get_value("controls", "invert_camera_y", false))
 	# Bindings saved before a default changed keep the new default for those actions.

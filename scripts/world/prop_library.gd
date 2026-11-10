@@ -26,6 +26,7 @@ const WIND_SHADER := preload("res://assets/materials/foliage_wind.gdshader")
 var prop_dir := "res://assets/props"
 var _cache := {}  # name -> {scene, materials: {Material: ShaderMaterial}, shape, shape_xform} or null
 var _warned := {}
+var _requested := {}  # name -> path being loaded on a thread
 
 
 func _init(dir := "res://assets/props") -> void:
@@ -60,6 +61,29 @@ func instantiate(prop_name: String) -> Node3D:
 			body.add_to_group(info.group)
 		node.add_child(body)
 	return node
+
+
+## Starts loading the prop's model on a background thread (streaming chunks ask ahead,
+## so the first tree of a kind doesn't stall a frame).
+func request(prop_name: String) -> void:
+	if _cache.has(prop_name) or _requested.has(prop_name):
+		return
+	var path := prop_dir.path_join(prop_name + ".glb")
+	if ResourceLoader.exists(path) and ResourceLoader.load_threaded_request(path) == OK:
+		_requested[prop_name] = path
+
+
+## The model is in memory (or will never be): instantiate() won't wait for the disk.
+func is_ready(prop_name: String) -> bool:
+	if _cache.has(prop_name) or not _requested.has(prop_name):
+		return true
+	return ResourceLoader.load_threaded_get_status(_requested[prop_name]) != ResourceLoader.THREAD_LOAD_IN_PROGRESS
+
+
+## The prop's longest side (m, unscaled); 1 if unknown.
+func size_of(prop_name: String) -> float:
+	var info = _info(prop_name)
+	return float(info.size) if info != null else 1.0
 
 
 ## Footstep surface for a prop name: "wood", "metal", "grass" or (rocks and the rest) "stone".
@@ -107,7 +131,12 @@ func _info(prop_name: String):
 			push_warning("PropLibrary: no model for prop '%s' (expected %s)" % [prop_name, path])
 		_cache[prop_name] = null
 		return null
-	var scene := load(path) as PackedScene
+	var scene: PackedScene = null
+	if _requested.has(prop_name):
+		scene = ResourceLoader.load_threaded_get(path) as PackedScene  # waits if it isn't done yet
+		_requested.erase(prop_name)
+	if scene == null:
+		scene = load(path) as PackedScene
 	var probe := scene.instantiate() as Node3D
 	var lower := prop_name.to_lower()
 	var foliage := FOLIAGE_WORDS.any(func(w: String) -> bool: return lower.contains(w))
@@ -130,7 +159,8 @@ func _info(prop_name: String):
 		first = false
 
 	var info := {"scene": scene, "materials": {}, "shape": null, "shape_xform": Transform3D.IDENTITY,
-		"group": "ladder" if ladder else ("climbable" if climbable else "")}
+		"group": "ladder" if ladder else ("climbable" if climbable else ""),
+		"size": maxf(bounds.get_longest_axis_size(), 0.1)}
 
 	# Every prop gets the shared prop shader (pixel textures setting); foliage also sways.
 	for m in meshes:

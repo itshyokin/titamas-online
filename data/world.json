@@ -16,5 +16,17 @@
 		"calm": 0.4,
 		"gust_seconds": 25.0,
 		"gusty": 1.5
+	},
+	"performance": {
+		"ai_sleep_distance": 90.0,
+		"ai_wake_margin": 12.0,
+		"prop_range_per_metre": 24.0,
+		"prop_range_min": 45.0,
+		"prop_range_fade": 6.0,
+		"grass_range": 50.0,
+		"occlusion": true,
+		"occluder_step": 4,
+		"occluder_sink": 1.0,
+		"props_per_frame": 12
 	}
 }

@@ -138,7 +138,7 @@ static func _tile(xforms: Array[Transform3D]) -> MultiMeshInstance3D:
 	mmi.multimesh = mm
 	mmi.material_override = _shared_material()
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mmi.visibility_range_end = 50.0
+	mmi.visibility_range_end = WorldPerf.grass_range()
 	return mmi
 
 

@@ -198,6 +198,20 @@ func _page(page_name: String) -> VBoxContainer:
 	return page
 
 
+## A labelled drop-down of `options`, with `current` picked.
+func _option_row(label_text: String, options: Array, current: String, picked: Callable, tip := "") -> HBoxContainer:
+	var box := OptionButton.new()
+	for i in options.size():
+		box.add_item(String(options[i]))
+		if String(options[i]) == current:
+			box.select(i)
+	box.item_selected.connect(func(i: int) -> void: picked.call(String(options[i])))
+	var row := _row(label_text, box)
+	row.tooltip_text = tip
+	box.tooltip_text = tip
+	return row
+
+
 func _row(label_text: String, control: Control) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	var l := Label.new()
@@ -279,6 +293,34 @@ func _graphics_tab() -> Control:
 			grass.select(i)
 	grass.item_selected.connect(func(i: int) -> void: GameSettings.set_grass(grass_options[i]))
 	page.add_child(_row("Grass", grass))
+	page.add_child(_option_row("View distance", GameSettings.VIEW_OPTIONS.keys(), GameSettings.view_distance,
+		func(o: String) -> void: GameSettings.set_view_distance(o),
+		"How far away grass and props (bushes, stones, trees) are drawn. Nearer = faster."))
+	page.add_child(_option_row("Shadows", GameSettings.SHADOW_OPTIONS.keys(), GameSettings.shadows,
+		func(o: String) -> void: GameSettings.set_shadows(o),
+		"Lower = shadows reach less far and are less sharp. Off = none."))
+	var scale := HSlider.new()
+	scale.min_value = 0.5
+	scale.max_value = 1.0
+	scale.step = 0.05
+	scale.value = GameSettings.render_scale
+	var scale_text := Label.new()
+	scale_text.custom_minimum_size = Vector2(52, 0)
+	scale_text.text = "%d%%" % int(round(GameSettings.render_scale * 100.0))
+	scale.value_changed.connect(func(v: float) -> void:
+		GameSettings.set_render_scale(v)
+		scale_text.text = "%d%%" % int(round(v * 100.0)))
+	var scale_row := _row("Render scale", scale)
+	scale_row.tooltip_text = "Draws the 3D picture smaller and stretches it to the window. The biggest speed-up on slower graphics cards; the HUD stays sharp."
+	scale_row.add_child(scale_text)
+	page.add_child(scale_row)
+	page.add_child(_option_row("Frame limit", GameSettings.FPS_OPTIONS.keys(), GameSettings.fps_limit,
+		func(o: String) -> void: GameSettings.set_fps_limit(o), "Caps frames per second (quieter fans, steadier pacing)."))
+	var sync := CheckBox.new()
+	sync.text = "VSync (no tearing; frames wait for the screen)"
+	sync.button_pressed = GameSettings.vsync
+	sync.toggled.connect(func(on: bool) -> void: GameSettings.set_vsync(on))
+	page.add_child(sync)
 	var rays := CheckBox.new()
 	rays.text = "God rays (light shafts through the air)"
 	rays.button_pressed = GameSettings.god_rays
@@ -309,7 +351,7 @@ func _graphics_tab() -> Control:
 	shake.value_changed.connect(func(v: float) -> void: GameSettings.set_screen_shake(v))
 	page.add_child(_row("Screen shake", shake))
 	var note := Label.new()
-	note.text = "Off = smooth textures. Fine, Chunky and Retro show textures as bigger and bigger square pixels."
+	note.text = "Pixel textures: Off = smooth; Fine, Chunky and Retro show textures as bigger and bigger square pixels. F3 in game shows frame times and what is being drawn."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD
 	note.modulate = Color(1, 1, 1, 0.7)
 	page.add_child(note)

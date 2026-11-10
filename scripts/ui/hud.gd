@@ -572,10 +572,19 @@ func _process_party(delta: float) -> void:
 		label.modulate = Color(1.0, 0.85, 0.4) if picked else (Color(1.0, 0.55, 0.5) if downed else Color.WHITE)
 
 
+var _perf: PerfOverlay
+
 ## F9: show what ambient occlusion is doing (the AO buffer: white = none, dark = shaded),
 ## then back to normal. A quick check that it's on and how strong it is.
 func _unhandled_key_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
+	if key and key.pressed and not key.echo and key.physical_keycode == KEY_F3:
+		# F3: frame times and what is being drawn.
+		if _perf == null:
+			_perf = PerfOverlay.new()
+			add_child(_perf)
+		_perf.toggle()
+		return
 	if key and key.pressed and not key.echo and key.physical_keycode == KEY_F9:
 		var vp := get_viewport()
 		var showing := vp.debug_draw == Viewport.DEBUG_DRAW_SSAO

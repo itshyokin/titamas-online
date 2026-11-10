@@ -91,6 +91,9 @@ func _ready() -> void:
 	var leaves := LeafFall.new()
 	leaves.name = "LeafFall"
 	add_child(leaves)
+	var perf := WorldPerf.new()
+	perf.name = "WorldPerf"
+	add_child(perf)
 	var wildlife := Wildlife.new()
 	wildlife.name = "Wildlife"
 	add_child(wildlife)

@@ -29,6 +29,14 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - New nodes: instance `scenes/world/safe_area.tscn`, set Size, tick Safe and/or Indoors, pick an Off Switch if wanted.
 - Tunables: Database → Player → Safe areas; Database → Weather Settings → Indoors (sound, roof check, cover map).
 
+## To test in the editor (done 10 Nov, batch M: performance)
+- **F3** shows frame times (average and worst of the last second), draw calls, triangles, enemies/NPCs awake vs asleep, chunks and props still loading. Note the numbers standing still, walking across chunk borders and in rain, and say where it's worst.
+- Hiccups while walking: chunks now go in one per frame and their props a few per frame, with prop models loaded in the background. Trees and rocks of a new chunk pop in over a moment at the far edge.
+- Far-off enemies and NPCs (90 m+, idle) stand frozen until you come within about 78 m. The dragon never sleeps.
+- Props fade out by size (small things sooner); every prop in the test level is big, so nothing changes there yet. Hills hide what's behind them (watch for anything vanishing that shouldn't: Database → World → Performance → "Hills hide what's behind them" turns it off).
+- Settings → Graphics: View distance, Shadows, Render scale, Frame limit, VSync.
+- Not done: shader warm-up (the very first spark / blood / rain of a session can still hitch while the graphics card compiles it), batching props into shared draws, cheaper far-away characters.
+
 ## Backlog (agreed, not started)
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
 - Snow weather (use `Weather.shelter` so it stops indoors like rain): snowfall, frost on grass in patches but not under trees, icicles on branches.
@@ -56,4 +64,4 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Not checkable in Claude's test renderer (verify in the editor): decals (blood on slopes, leaves, cloud shadows), SSAO, the finisher kill-cam.
 
 ## Latest work (all pushed)
-Batch L on 10 Nov: safe areas (SafeArea box, off switch) and indoor weather (roof check, muffled sound). Batches E–K on 9–10 Nov: falling leaves, random ambience, statuses and icons, injured walk, rarity, stealth / Frost Edge / Burst Quake, finisher cam, bats and the dragon, hair and cape sway by material, threat and smarter companions (wait for the player, never steal kills, go down and take cover), recruitable archer / mage / healer, Tab targeting with lock-on, region map (M), fall damage, blood, rain splashes, colour picker, Body Models categories, night and dawn sounds.
+Batches L–M on 10 Nov: safe areas (SafeArea box, off switch), indoor weather (roof check, muffled sound, cover map: rain outside doors, dry floors), performance (smoother streaming, sleeping AI, prop ranges, occlusion, quality settings, F3 overlay). Batches E–K on 9–10 Nov: falling leaves, random ambience, statuses and icons, injured walk, rarity, stealth / Frost Edge / Burst Quake, finisher cam, bats and the dragon, hair and cape sway by material, threat and smarter companions (wait for the player, never steal kills, go down and take cover), recruitable archer / mage / healer, Tab targeting with lock-on, region map (M), fall damage, blood, rain splashes, colour picker, Body Models categories, night and dawn sounds.

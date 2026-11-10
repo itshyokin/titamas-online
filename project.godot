@@ -330,3 +330,7 @@ grass_height={
 "type": "float",
 "value": 0.8
 }
+
+[rendering]
+
+occlusion_culling/use_occlusion_culling=true

@@ -31,6 +31,7 @@ var _left := 0.0
 var _region: RegionAtmosphere
 var _forced := false
 var _file_time := -1
+var _file_check := 0.0
 var _sound: AudioStreamPlayer
 var _sound_path := ""
 var _rain: GPUParticles3D
@@ -166,9 +167,12 @@ func _crossfade(stream: AudioStream, db: float) -> void:
 
 
 func _process(delta: float) -> void:
-	if DataFiles.modified_time(FILE) != _file_time:
-		_load()
-		_goal = _type_values(type_id)
+	_file_check -= delta
+	if _file_check <= 0.0:
+		_file_check = 1.0  # the Database page saves into it: look once a second
+		if DataFiles.modified_time(FILE) != _file_time:
+			_load()
+			_goal = _type_values(type_id)
 	_left -= delta
 	if _left <= 0.0:
 		_forced = false
