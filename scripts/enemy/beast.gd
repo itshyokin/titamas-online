@@ -116,6 +116,7 @@ func _physics_process(delta: float) -> void:
 	var g := _ground_below(global_position)
 	if g != INF:
 		_ground_y = g
+	_update_threat(delta)
 	var move := _ai_move(delta)
 	_walk.x = lerpf(_walk.x, move.x, 6.0 * delta)
 	_walk.z = lerpf(_walk.z, move.z, 6.0 * delta)
@@ -428,6 +429,7 @@ func stagger(seconds := 0.7) -> void:
 
 
 func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
+	_note_damage(_amount, source)
 	if source is Node3D:
 		var away := global_position - (source as Node3D).global_position
 		away.y = 0.0

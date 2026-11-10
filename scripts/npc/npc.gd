@@ -68,6 +68,7 @@ var _since_hurt := 99.0
 var _stuck_time := 0.0
 var _heal_who: Node3D = null
 var _fight_stuck := 0.0
+var _rethink := 0.0
 var _stuck_from := Vector3.ZERO
 ## Its spells and skills (data "abilities"), their cooldowns, and the one going off.
 var _spells: Array[Ability] = []
@@ -263,7 +264,11 @@ func _physics_process(delta: float) -> void:
 		AI.RETURN:
 			move = _return_home()
 		AI.FOLLOW:
-			move = _follow(delta)
+			if _attack_time >= 0.0:
+				_attacking(delta)  # a heal cast while following
+			else:
+				move = _follow(delta)
+				_heal_while_following()
 		AI.TALK, AI.DEAD:
 			pass
 	_walk.x = lerpf(_walk.x, move.x, 10.0 * delta)
@@ -281,6 +286,13 @@ func _physics_process(delta: float) -> void:
 
 
 func _look_for_threats() -> void:
+	if leader and is_instance_valid(leader):
+		var pick := _choose_target()
+		if pick:
+			target = pick
+			ai = AI.FIGHT
+			_show_weapon()
+		return
 	var radius := _f("aggro_radius", 12.0)
 	var nearest: Node3D = null
 	var best := radius
@@ -366,6 +378,15 @@ func _fight(delta: float) -> Vector3:
 		_attacking(delta)
 		return Vector3.ZERO
 	var anchor := leader.global_position if leader and is_instance_valid(leader) else _home
+	if leader and is_instance_valid(leader):
+		_rethink -= delta
+		if _rethink <= 0.0 or not _target_valid():
+			_rethink = 0.5
+			var pick := _choose_target()
+			if pick == null:
+				_calm_down()  # nothing that needs us: back to the player's side
+				return Vector3.ZERO
+			target = pick
 	if not _target_valid() or global_position.distance_to(anchor) > _f("leash_distance", 30.0):
 		_calm_down()
 		return Vector3.ZERO
@@ -410,6 +431,93 @@ func _pick_spell(distance: float) -> Ability:
 				if distance <= ab.reach:
 					return ab
 	return null
+
+
+## How companions pick fights (npcs.json party settings in player.json "companions"):
+## - only enemies the player has struck, or that are attacking the player or the party;
+## - not the one the player is fighting (let them have it), unless the player is below
+##   half health, it's a boss, or it's the only threat and it's attacking us;
+## - not one that's nearly dead (the player should land the kill), unless it's on us.
+func _choose_target() -> Node3D:
+	var cfg: Dictionary = Database.player.get("companions", {})
+	var help_below := float(cfg.get("help_below", 0.5))
+	var leave_below := float(cfg.get("leave_kill_below", 0.25))
+	var lstats := Combat.stats_of(leader)
+	var leader_hurt := lstats != null and lstats.health / maxf(lstats.max_health, 1.0) < help_below
+	var focus := _leader_focus()
+	var best: Node3D = null
+	var best_score := INF
+	for n in get_tree().get_nodes_in_group(Combat.GROUP):
+		var e := n as Node3D
+		var st := Combat.stats_of(e)
+		if e == null or st == null or st.is_dead() or st.team != Stats.Team.ENEMIES or e.is_in_group("practice_targets"):
+			continue
+		if e.has_method("is_alive") and not e.is_alive():
+			continue
+		if e.global_position.distance_to(leader.global_position) > float(cfg.get("range", 20.0)):
+			continue
+		var their_target = e.get("target")
+		var on_us: bool = their_target == self
+		var on_party: bool = on_us or their_target == leader or (their_target is Node and (their_target as Node).is_in_group("followers"))
+		var struck := e.has_meta("player_struck")
+		if not on_party and not struck:
+			continue  # wait for the player to start it
+		var boss := bool(Database.enemy(String(e.get("enemy_id"))).get("boss", false)) if e.get("enemy_id") != null else false
+		var share := st.health / maxf(st.max_health, 1.0)
+		if share < leave_below and not on_us and not leader_hurt and not boss:
+			continue  # nearly dead: the player's kill
+		var score := e.global_position.distance_to(global_position)
+		if e == focus and not boss and not leader_hurt:
+			if not on_us:
+				continue  # the player's fight
+			score += 50.0
+		if their_target != null and their_target != leader and their_target != self:
+			score -= 3.0  # help a friend first
+		if score < best_score:
+			best_score = score
+			best = e
+	return best
+
+
+## The enemy the player is fighting: their target, else what they hit last.
+func _leader_focus() -> Node3D:
+	var tg := leader.get_node_or_null("Targeting")
+	var t = tg.get("target") if tg else null
+	if t is Node3D and is_instance_valid(t) and Combat.is_alive(t):
+		return t
+	var pc := leader.get_node_or_null("PlayerCombat")
+	var last = pc.get("last_struck") if pc else null
+	if last is Node3D and is_instance_valid(last) and Combat.is_alive(last):
+		return last
+	return null
+
+
+## Combat.hit asks this: a companion never lands the killing blow while the player is
+## around and doing fine (it leaves the enemy on 1 health).
+func spares_kill(victim: Node) -> bool:
+	if leader == null or not is_instance_valid(leader) or not bool(Database.player.get("companions", {}).get("leave_kills", true)):
+		return false
+	var lstats := Combat.stats_of(leader)
+	if lstats == null or lstats.is_dead():
+		return false
+	if victim is Node3D and (victim as Node3D).global_position.distance_to(leader.global_position) > 25.0:
+		return false
+	return lstats.health / maxf(lstats.max_health, 1.0) >= float(Database.player.get("companions", {}).get("help_below", 0.5)) * 0.6
+
+
+## Following with a heal ready: patch up whoever needs it.
+func _heal_while_following() -> void:
+	if _cooldown > 0.0:
+		return
+	for ab: Ability in _spells:
+		if ab.delivery != Ability.Delivery.HEAL_OVER_TIME or float(_spell_cooldowns.get(ab, 0.0)) > 0.0:
+			continue
+		var who := _heal_target(ab)
+		if who:
+			_heal_who = who
+			_face(who.global_position, 1.0)
+			_start_spell(ab)
+			return
 
 
 ## Who a heal should go to: the most hurt of itself, its leader and the leader's other
@@ -474,6 +582,7 @@ func _spell_goes_off(ab: Ability) -> void:
 			if st:
 				st.add_heal_over_time(power, ab.ticks, ab.tick_interval, ab)
 				Effects.heal_glow(who, ab.ticks * ab.tick_interval)
+				Combat.heal_threat(self, power * ab.ticks)
 			_heal_who = null
 		Ability.Delivery.PROJECTILE:
 			if _target_valid():

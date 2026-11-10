@@ -57,7 +57,10 @@
 		"finisher_chance": 0.35,
 		"finisher_seconds": 1.4,
 		"auto_next": 1.0,
-		"auto_next_delay": 0.6
+		"auto_next_delay": 0.6,
+		"heal_threat": 0.5,
+		"player_threat": 1.0,
+		"threat_switch": 1.1
 	},
 	"loadout": {
 		"light_combo": [
@@ -278,5 +281,11 @@
 		"rare": "#5999ff",
 		"epic": "#bf73ff",
 		"legendary": "#ff9926"
+	},
+	"companions": {
+		"help_below": 0.5,
+		"leave_kill_below": 0.25,
+		"leave_kills": true,
+		"range": 20.0
 	}
 }

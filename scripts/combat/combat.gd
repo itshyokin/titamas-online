@@ -125,6 +125,11 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 	if amount <= 0.0:
 		return 0.0
 	amount = maxf(roundf(amount), 1.0)
+	# Companions leave the killing blow to the player.
+	if source and source.has_method("spares_kill") and amount >= ts.health and source.spares_kill(target):
+		if ts.health <= 1.0:
+			return 0.0
+		amount = ts.health - 1.0
 	_tag(source, target)
 	ts.take_damage(amount, source, crit)
 	var blocked := amount < before * 0.75
@@ -150,6 +155,11 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 ## Remembers that this game's player (or a follower) fought an enemy, so its death gives
 ## them experience.
 static func _tag(source: Node, target: Node) -> void:
+	if source and source.is_in_group("player"):
+		target.set_meta("player_struck", true)  # companions join in once the player has
+		var pc := source.get_node_or_null("PlayerCombat")
+		if pc:
+			pc.set("last_struck", target)
 	if source and (source.is_in_group("player") or source.is_in_group("followers")) and "tagged_by_player" in target:
 		target.set("tagged_by_player", true)
 
@@ -228,3 +238,16 @@ static func _trickle(node: Node3D, kind: String, amount: float, color: Color, fm
 		total -= floorf(total)
 		node.set_meta(key + "_at", now)
 	node.set_meta(key, total)
+
+
+## Healing draws enemies' attention: every enemy already fighting the healer's side
+## within 40 m gains threat on the healer (player.json combat heal_threat, × healing).
+static func heal_threat(healer: Node3D, amount: float) -> void:
+	if healer == null or not healer.is_inside_tree():
+		return
+	var k := float(Database.player.get("combat", {}).get("heal_threat", 0.5))
+	for n in healer.get_tree().get_nodes_in_group(GROUP):
+		if n.has_method("add_threat") and is_enemy_of(n, healer) and (n as Node3D).global_position.distance_to(healer.global_position) < 40.0 \
+				and n.get("target") != null:
+			n.call("add_threat", healer, amount * k)
+

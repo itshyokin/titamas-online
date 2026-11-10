@@ -157,6 +157,7 @@ func _physics_process(delta: float) -> void:
 		move = Vector3(cos(t), 0, sin(t * 1.3)) * walk_speed
 		ai = AI.CHASE
 	else:
+		_update_threat(delta)
 		move = _ai_move(delta)
 	_walk.x = lerpf(_walk.x, move.x, 10.0 * delta)
 	_walk.z = lerpf(_walk.z, move.z, 10.0 * delta)
@@ -332,13 +333,14 @@ func _engage(who: Node3D) -> void:
 		return
 	target = who
 	var s := Combat.stats_of(who)
-	if s and not s.died.is_connected(_on_target_died):
-		s.died.connect(_on_target_died)
+	if s and not s.died.is_connected(_on_target_died.bind(who)):
+		s.died.connect(_on_target_died.bind(who))
 	if ai == AI.IDLE:
 		ai = AI.CHASE
 
 
 func _give_up() -> void:
+	threat.clear()
 	target = null
 	ai = AI.RETURN
 
@@ -371,7 +373,54 @@ func _nearest_player(radius: float) -> Node3D:
 
 # --- Events -------------------------------------------------------------------
 
+# --- Threat ---------------------------------------------------------------------------
+## Who it's angriest at: damage (and healing of its foes) adds threat; it goes after the
+## biggest threat, switching when someone passes the current target by `threat_switch`
+## (player.json combat, 1.1 = 10 % more). The player's damage counts × player_threat.
+var threat := {}  # Node3D -> float
+var _threat_check := 0.0
+
+
+func add_threat(who: Node, amount: float) -> void:
+	if who == null or not who is Node3D or ai == AI.DEAD:
+		return
+	threat[who] = float(threat.get(who, 0.0)) + amount
+	if target == null and ai != AI.RETURN:
+		_engage(who)
+
+
+func _note_damage(amount: float, source: Node) -> void:
+	if source is Node3D:
+		var k := float(Database.player.get("combat", {}).get("player_threat", 1.0)) if source.is_in_group("player") else 1.0
+		add_threat(source, amount * k)
+
+
+## Every half second: turn on whoever has built up more threat than the current target.
+func _update_threat(delta: float) -> void:
+	_threat_check -= delta
+	if _threat_check > 0.0 or threat.is_empty():
+		return
+	_threat_check = 0.5
+	for who in threat.keys():
+		if not is_instance_valid(who) or not Combat.is_alive(who) or (who as Node3D).global_position.distance_to(global_position) > leash_distance + 10.0:
+			threat.erase(who)
+	if ai != AI.CHASE:
+		return
+	var best: Node3D = null
+	var best_t := 0.0
+	for who in threat:
+		if float(threat[who]) > best_t:
+			best_t = float(threat[who])
+			best = who
+	if best == null or best == target:
+		return
+	var cur := float(threat.get(target, 0.0)) if _target_valid() else 0.0
+	if best_t > cur * float(Database.player.get("combat", {}).get("threat_switch", 1.1)):
+		_engage(best)
+
+
 func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
+	_note_damage(_amount, source)
 	if source is Node3D:
 		var away := global_position - (source as Node3D).global_position
 		away.y = 0.0
@@ -384,8 +433,25 @@ func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
 		character.play_from("hit_react", 0.0, 0.05, 1.0)
 
 
-func _on_target_died() -> void:
-	if ai != AI.DEAD:
+func _on_target_died(who: Node = null) -> void:
+	if ai == AI.DEAD:
+		return
+	threat.erase(who)
+	if who != null and who != target:
+		return  # someone it fought earlier
+	# Next angriest-at, else the nearest foe, else go home.
+	var next: Node3D = null
+	var best_t := 0.0
+	for foe in threat:
+		if is_instance_valid(foe) and Combat.is_alive(foe) and float(threat[foe]) > best_t:
+			best_t = float(threat[foe])
+			next = foe
+	if next == null:
+		next = _nearest_player(aggro_radius)
+	if next:
+		target = null
+		_engage(next)
+	else:
 		_give_up()
 
 

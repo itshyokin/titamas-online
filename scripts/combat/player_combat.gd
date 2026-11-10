@@ -83,6 +83,8 @@ const SHOT_SOUND := preload("res://assets/audio/combat/arrow_fire.ogg")
 const RELOAD_SOUND := preload("res://assets/audio/weapons/gun_reload.ogg")
 
 var in_combat := false
+## The enemy this player hit last (companions leave it to you).
+var last_struck: Node3D = null
 ## The weapon in use: its item ({} = bare hands) and family (data/weapon_types.json).
 var weapon := {}
 var weapon_type := {}
@@ -825,6 +827,7 @@ func _land(ab: Ability) -> void:
 			if s:
 				s.add_heal_over_time(_power, ab.ticks, ab.tick_interval, ab)
 				Effects.heal_glow(who, ab.ticks * ab.tick_interval)
+				Combat.heal_threat(player, _power * ab.ticks)
 				if ab.release_sound:
 					Combat.play_sound(player, ab.release_sound, -3.0)
 				elif ab.sounds.size() > 0:
