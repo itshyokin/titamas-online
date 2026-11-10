@@ -280,6 +280,11 @@ zoom_out={
 3d_physics/layer_3="enemies"
 3d_physics/layer_4="water"
 
+[rendering]
+
+textures/decals/filter=2
+occlusion_culling/use_occlusion_culling=true
+
 [shader_globals]
 
 rain_cover={
@@ -334,8 +339,3 @@ grass_height={
 "type": "float",
 "value": 0.8
 }
-
-[rendering]
-
-textures/decals/filter=2
-occlusion_culling/use_occlusion_culling=true
