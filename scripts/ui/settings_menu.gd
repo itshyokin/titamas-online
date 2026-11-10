@@ -228,7 +228,7 @@ func _help_tab() -> Control:
 			"%s attack: tap to swing (tap again to combo), hold for a heavy blow or to draw a bow" % k.call("attack"),
 			"%s block with melee weapons (start just before a hit to parry) · aim with ranged weapons" % k.call("block"),
 			"%s…%s use hotbar boxes 1–10 (spells, abilities, potions) · %s ability wheel (controller)" % [k.call("hotbar_1"), k.call("hotbar_10"), k.call("ability_wheel")],
-			"%s target and lock on (again to clear) · %s cycle targets · %s lock on / off" % [k.call("target_next"), k.call("target_prev"), k.call("lock_on")],
+			("%s target the nearest enemy (again to clear) · Shift+%s next enemy · click an enemy to target it · %s lock on (camera follows the target)" % [k.call("target_next"), k.call("target_next"), k.call("lock_on")]) if not g.gamepad else ("%s target / lock on (again to clear) · %s next target · %s lock on" % [k.call("target_next"), k.call("target_prev"), k.call("lock_on")]),
 			"",
 			"[b]Windows[/b]",
 			"%s character and backpack · %s spellbook · %s quests · %s skills · %s chat · Esc / %s / the book: the Codex (character, quests, skills, achievements, lore, settings)" % [k.call("inventory"), k.call("spellbook"), k.call("quest_log"), k.call("skills"), k.call("chat"), k.call("menu")],

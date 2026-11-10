@@ -31,7 +31,7 @@ const REBINDABLE := [
 	["hotbar_5", "Hotbar 5"], ["hotbar_6", "Hotbar 6"], ["hotbar_7", "Hotbar 7"], ["hotbar_8", "Hotbar 8"],
 	["hotbar_9", "Hotbar 9"], ["hotbar_10", "Hotbar 10"], ["ability_wheel", "Ability wheel (hold)"],
 	["inventory", "Character / backpack"], ["spellbook", "Spellbook"], ["skills", "Skill trees"], ["quest_log", "Quest log"], ["danger_mode", "Danger mode (attack NPCs)"], ["chat", "Chat"],
-	["target_prev", "Cycle targets"], ["target_next", "Target + lock / clear"], ["lock_on", "Lock on"], ["target_clear", "Clear target"],
+	["target_next", "Target nearest / clear (Shift: next target)"], ["target_prev", "Next target (controller)"], ["lock_on", "Lock on (camera follows target)"], ["target_clear", "Clear target"],
 	["camera_look", "Hold to look (mouse)"], ["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["menu", "Settings menu"],
 ]
 
@@ -255,7 +255,7 @@ func save_settings() -> void:
 			if not d.is_empty():
 				list.append(d)
 		cfg.set_value("bindings", entry[0], list)
-	cfg.set_value("controls", "bindings_version", 3)
+	cfg.set_value("controls", "bindings_version", 4)
 	cfg.save(PATH)
 
 
@@ -281,6 +281,8 @@ func load_settings() -> void:
 				continue
 			if version < 3 and action in ["block", "camera_look", "lock_on", "interact"]:
 				continue  # defaults changed: block Q, look right mouse, lock-on middle mouse, interact E
+			if version < 4 and action in ["target_next", "target_prev", "target_clear", "lock_on"]:
+				continue  # targeting defaults restored: Tab, Shift+Tab, Esc, middle mouse
 			InputMap.action_erase_events(action)
 			for d in cfg.get_value("bindings", action, []):
 				var e := _from_dict(d)

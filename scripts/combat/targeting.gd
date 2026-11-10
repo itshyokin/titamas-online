@@ -129,6 +129,12 @@ func pick_range() -> float:
 	return weapon_range if weapon_range > 0.0 else tab_range
 
 
+## How far Tab / Shift+Tab reach: the full tab range (player.json combat tab_range), or a
+## ranged weapon's longer reach. A sword's short range only limits auto-picks for swings.
+func tab_reach() -> float:
+	return maxf(tab_range, pick_range())
+
+
 ## Can be picked as a target: on screen and in front of the player (never behind them).
 func selectable(n: Node3D) -> bool:
 	var cam := get_viewport().get_camera_3d()
@@ -171,7 +177,7 @@ func best_in_view() -> Node3D:
 func nearest_on_screen(except: Node3D = null) -> Node3D:
 	var best: Node3D = null
 	var best_d := INF
-	for n in Combat.enemies_near(player, player.global_position, pick_range()):
+	for n in Combat.enemies_near(player, player.global_position, tab_reach()):
 		if n == except or not Combat.is_alive(n) or not selectable(n):
 			continue
 		var d := n.global_position.distance_to(player.global_position)
@@ -208,7 +214,7 @@ func has_target() -> bool:
 ## Picks the next (or previous) enemy in view. Repeated presses walk through them in order.
 func cycle(step := 1) -> void:
 	var cam := get_viewport().get_camera_3d()
-	var candidates := Combat.enemies_near(player, player.global_position, pick_range()).filter(selectable)
+	var candidates := Combat.enemies_near(player, player.global_position, tab_reach()).filter(selectable)
 	if candidates.is_empty():
 		set_target(null)
 		return
@@ -296,10 +302,16 @@ func click_select(screen_pos: Vector2) -> bool:
 func _input(event: InputEvent) -> void:
 	if GameSettings.menu_open or not event is InputEventKey:
 		return
-	if event.is_action_pressed("target_next") and not (event as InputEventKey).shift_pressed and tab_selects >= 0.5:
-		tab_target()
-		get_viewport().gui_release_focus()
-		get_viewport().set_input_as_handled()
+	if not event.is_action_pressed("target_next"):
+		return
+	if (event as InputEventKey).shift_pressed:
+		cycle_keeping_lock(-1)  # Shift+Tab: the next enemy on screen
+	elif tab_selects >= 0.5:
+		tab_target()  # Tab: the nearest enemy on screen; again to clear
+	else:
+		set_target(null)
+	get_viewport().gui_release_focus()
+	get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
