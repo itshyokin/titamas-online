@@ -72,9 +72,17 @@ class StatusIcon:
 	var duration := 1.0
 	var kind := "ailment"
 
+	## Draws only the glyph (the copy PixelIcons draws small).
+	var raw := false
+
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		tooltip_text = " "
+
+	func _ready() -> void:
+		if not raw:
+			add_to_group("pixel_icons")
+		texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # big crisp pixels when scaled up
 
 	func set_status(t: String, d: String, g: String, c: Color, l: float, dur: float, k: String) -> void:
 		title = t
@@ -99,6 +107,10 @@ class StatusIcon:
 	func _draw() -> void:
 		var r := minf(size.x, size.y) * 0.5
 		var c := size * 0.5
+		if raw:
+			# The glyph reaches ±0.4 of the picture, so it fills it with a little room.
+			_draw_glyph(c, minf(size.x, size.y) * 0.4)
+			return
 		var ring := Color(0.9, 0.3, 0.25) if kind == "ailment" else (Color(0.85, 0.55, 0.3) if kind == "debuff" else Color(0.95, 0.85, 0.4))
 		draw_circle(c, r, Color(0, 0, 0, 0.75))
 		draw_circle(c, r - 2.0, color.darkened(0.55))
@@ -112,7 +124,19 @@ class StatusIcon:
 			pts.append(c + Vector2(cos(a), sin(a)) * (r - 2.0))
 		if frac > 0.01 and pts.size() >= 3:
 			draw_colored_polygon(pts, color.darkened(0.1))
-		_draw_glyph(c, r * 0.55)
+		if PixelIcons.pixels() > 0:
+			var g := glyph
+			var tex := PixelIcons.get_texture("status:" + g, func() -> Control:
+				var icon := StatusIcon.new()
+				icon.raw = true
+				icon.glyph = g
+				return icon)
+			if tex:
+				# Same size as the smooth glyph (it reaches ±0.55 of the radius).
+				var side := r * 0.55 / 0.4
+				draw_texture_rect(tex, Rect2(c - Vector2(side, side) * 0.5, Vector2(side, side)), false)
+		else:
+			_draw_glyph(c, r * 0.55)
 		draw_arc(c, r - 1.0, 0.0, TAU, 32, ring, 2.0)
 
 	func _draw_glyph(c: Vector2, s: float) -> void:

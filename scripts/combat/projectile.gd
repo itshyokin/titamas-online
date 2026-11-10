@@ -274,7 +274,7 @@ func _bullet_hole(at: Vector3, normal: Vector3) -> void:
 static func _hole() -> Texture2D:
 	if _hole_texture:
 		return _hole_texture
-	var size := 32
+	var size := 8  # a few big pixels
 	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	var c := Vector2(size, size) * 0.5
 	for y in size:
@@ -282,6 +282,6 @@ static func _hole() -> Texture2D:
 			var d := Vector2(x + 0.5, y + 0.5).distance_to(c) / (size * 0.5)
 			var a := clampf(1.0 - smoothstep(0.25, 0.95, d), 0.0, 1.0)
 			var dark := 0.04 if d < 0.35 else 0.18
-			img.set_pixel(x, y, Color(dark, dark * 0.9, dark * 0.8, a))
+			img.set_pixel(x, y, Color(dark, dark * 0.9, dark * 0.8, PixelArt.step_alpha(a)))
 	_hole_texture = ImageTexture.create_from_image(img)
 	return _hole_texture

@@ -5,7 +5,7 @@ render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled;
 
 #include "res://assets/materials/rain_cover.gdshaderinc"
 
-uniform sampler2D ring : source_color, filter_linear;
+uniform sampler2D ring : source_color, filter_nearest;
 uniform vec4 tint : source_color = vec4(0.85, 0.92, 1.0, 1.0);
 // 0 = stay at the height the emitter put them (no cover map).
 uniform float on_cover = 1.0;

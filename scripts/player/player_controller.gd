@@ -460,6 +460,8 @@ func _update_sprint(moving: bool, delta: float, swimming := false) -> void:
 ## Starts a combat action (PlayerCombat drives it). Only from normal movement on the
 ## ground, or chaining from another action.
 func start_action(move_scale := 0.0) -> bool:
+	if knocked_down:
+		return false  # on the ground: nothing until back up
 	if state == State.ACTION:
 		action_move_scale = move_scale
 		return true
@@ -486,6 +488,75 @@ func face_toward(point: Vector3, delta := 0.0) -> void:
 		return
 	var yaw := _yaw_of(dir.normalized())
 	model.rotation.y = yaw if delta <= 0.0 else lerp_angle(model.rotation.y, yaw, turn_speed * delta)
+
+
+## Knocked off your feet (a troll's ground smash, a dragon's tail; abilities.json /
+## enemies.json "applies" with status "knockdown"): limp on the ground for `seconds`,
+## thrown along `push`, then the getting_up clip. Can't act or dodge meanwhile; still
+## takes hits. Dodging through the blow (i-frames) avoids it altogether.
+var knocked_down := false
+var _down_left := 0.0
+var _getting_up := 0.0
+
+
+func knock_down(push: Vector3, seconds := 1.6) -> void:
+	if knocked_down or state not in [State.NORMAL, State.ACTION]:
+		return
+	if state == State.ACTION:
+		action_interrupted.emit()  # whatever was being done stops
+	state = State.ACTION
+	action_move_scale = 0.0
+	action_velocity = Vector3.ZERO
+	is_sprinting = false
+	knocked_down = true
+	_down_left = maxf(seconds, 0.3)
+	_getting_up = 0.0
+	_push = Vector3.ZERO
+	if Ragdoll.start(character, push + Vector3.UP * 2.5) == null:
+		action_animation.emit("death", 0.0, 0.1, 1.4)  # no ragdoll: fall over
+	FloatingText.spawn(self, "Knocked down!", Color(1.0, 0.7, 0.35), 1.1)
+
+
+func _knocked_movement(delta: float) -> void:
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+	if _getting_up > 0.0:
+		velocity.x = move_toward(velocity.x, 0.0, 20.0 * delta)
+		velocity.z = move_toward(velocity.z, 0.0, 20.0 * delta)
+		_getting_up -= delta
+		if _getting_up <= 0.0:
+			knocked_down = false
+			end_action()
+		return
+	_down_left -= delta
+	# The body (and the camera) follows where the limp body went.
+	var hips = Ragdoll.hips_of(character)
+	if hips is Vector3:
+		velocity.x = ((hips as Vector3).x - global_position.x) * 6.0
+		velocity.z = ((hips as Vector3).z - global_position.z) * 6.0
+	else:
+		velocity.x = move_toward(velocity.x, 0.0, 10.0 * delta)
+		velocity.z = move_toward(velocity.z, 0.0, 10.0 * delta)
+	if _down_left > 0.0:
+		return
+	if hips is Vector3:
+		global_position = Vector3((hips as Vector3).x, global_position.y, (hips as Vector3).z)
+	Ragdoll.stop(character)
+	velocity = Vector3(0, velocity.y, 0)
+	if character.has_animation("getting_up"):
+		action_animation.emit("getting_up", 0.0, 0.05, 1.0)
+		_getting_up = character.get_animation_length("getting_up") * 0.85
+	else:
+		_getting_up = 0.3
+
+
+## Up again at once (respawning, travelling).
+func _clear_knockdown() -> void:
+	if knocked_down:
+		knocked_down = false
+		Ragdoll.stop(character)
+		if state == State.ACTION:
+			end_action()
 
 
 ## Pushed by a hit (m/s, flat). Only while on foot.
@@ -520,6 +591,9 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 
 
 func _action_movement(delta: float) -> void:
+	if knocked_down:
+		_knocked_movement(delta)
+		return
 	var direction := _input_direction()
 	var dodge_dir := _dodge_requested(direction)
 	if is_on_floor() and dodge_dir != Vector3.INF and _try_dodge(Vector3(dodge_dir.x, 0.0, dodge_dir.z)):
@@ -1042,6 +1116,7 @@ func _update_survival(delta: float) -> void:
 
 
 func _respawn(reason: String) -> void:
+	_clear_knockdown()
 	var spot := _last_safe + Vector3.UP * 0.3
 	if reason in ["died", "drowned"]:
 		# Dying: penalties, then home (where the hearthstone goes).

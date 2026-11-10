@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/map_event.tscn" id="98_event"]
 [ext_resource type="PackedScene" path="res://scenes/world/safe_area.tscn" id="99_safe"]
 [ext_resource type="PackedScene" path="res://scenes/world/swarm_spot.tscn" id="100_swarm"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="101_troll"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
@@ -119,9 +120,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.70174, 2.795746, 10)
 [node name="Bandit3" parent="Enemies" unique_id=808439722 instance=ExtResource("90_bandit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.0862, 4.603443, 10.822014)
 
-[node name="Dragon" parent="Enemies" unique_id=1051827906 instance=ExtResource("97_beast")]
+[node name="Troll" parent="Enemies" instance=ExtResource("101_troll")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 6, 52)
-enemy_id = "dragon"
 
 [node name="CaveBat" parent="Enemies" unique_id=10845968 instance=ExtResource("97_beast")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 4, 45)

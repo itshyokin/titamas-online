@@ -5,6 +5,15 @@ extends Control
 ## frost, shield, lightning), or its first letter.
 
 var ability: Ability
+## Draws the vector picture itself (the copy PixelIcons draws small); off = shows the
+## pixel version.
+var raw := false
+
+
+func _ready() -> void:
+	if not raw:
+		add_to_group("pixel_icons")
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # big crisp pixels when scaled up
 
 
 func show_ability(ab: Ability) -> void:
@@ -14,6 +23,17 @@ func show_ability(ab: Ability) -> void:
 
 func _draw() -> void:
 	if ability == null:
+		return
+	if not raw and PixelIcons.pixels() > 0:
+		var ab := ability
+		var tex := PixelIcons.get_texture("ability:%s:%s:%s" % [ab.id, ab.icon, ab.color.to_html()], func() -> Control:
+			var c := AbilityIcon.new()
+			c.raw = true
+			c.ability = ab
+			return c)
+		if tex:
+			var s := minf(size.x, size.y)
+			draw_texture_rect(tex, Rect2((size - Vector2(s, s)) * 0.5, Vector2(s, s)), false)
 		return
 	var s := minf(size.x, size.y)
 	var o := (size - Vector2(s, s)) * 0.5

@@ -154,6 +154,7 @@ func _spawn(tree: Node3D, kind: String, delay := 0.0, knocked := false) -> void:
 	mat.roughness = 0.9
 	# Tiny and tumbling: lit evenly so their colour reads from both sides.
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	PixelArt.crisp(mat)
 	var size := 0.12
 	match kind:
 		"leaf":
@@ -258,7 +259,7 @@ func _land(p: Dictionary) -> void:
 func _texture(kind: String) -> Texture2D:
 	if _tex.has(kind):
 		return _tex[kind]
-	var n := 32
+	var n := 12  # big pixels, like the grass
 	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
 	for y in n:
 		for x in n:
@@ -291,6 +292,7 @@ func _texture(kind: String) -> Texture2D:
 				_:
 					a = 1.0 if (u * u) / 0.45 + (v * v) / 0.7 < 1.0 else 0.0
 					shade = 1.0 if v > -0.4 else 0.6  # cap
+			shade = snappedf(shade, 0.25)  # a couple of flat tones
 			img.set_pixel(x, y, Color(shade, shade, shade, a))
 	var tex := ImageTexture.create_from_image(img)
 	_tex[kind] = tex

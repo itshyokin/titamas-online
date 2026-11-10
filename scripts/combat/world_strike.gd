@@ -108,8 +108,8 @@ static func _gash(root: Node, at: Vector3, normal: Vector3, seconds: float) -> v
 static func _texture() -> Texture2D:
 	if _gash_tex:
 		return _gash_tex
-	var w := 64
-	var h := 32
+	var w := 20
+	var h := 10
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	for y in h:
 		for x in w:
@@ -123,7 +123,7 @@ static func _texture() -> Texture2D:
 				c = Color(0.12, 0.07, 0.04, 0.95)
 			elif d < 1.0:
 				var lip := (d - 0.55) / 0.45
-				c = Color(0.62, 0.48, 0.32, 0.85 * (1.0 - lip))
+				c = Color(0.62, 0.48, 0.32, PixelArt.step_alpha(0.85 * (1.0 - lip)))
 			img.set_pixel(x, y, c)
 	_gash_tex = ImageTexture.create_from_image(img)
 	return _gash_tex

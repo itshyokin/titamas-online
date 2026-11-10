@@ -385,14 +385,14 @@ func _update_splashes() -> void:
 func _ring_texture() -> Texture2D:
 	if _splash_tex:
 		return _splash_tex
-	var n := 32
+	var n := 10  # a few big pixels
 	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
 	for y in n:
 		for x in n:
 			var p := Vector2(x + 0.5, y + 0.5) / n * 2.0 - Vector2.ONE
 			var d := p.length()
-			var a := clampf(1.0 - absf(d - 0.78) / 0.22, 0.0, 1.0)
-			img.set_pixel(x, y, Color(1, 1, 1, a * a))
+			var a := clampf(1.0 - absf(d - 0.72) / 0.26, 0.0, 1.0)
+			img.set_pixel(x, y, Color(1, 1, 1, PixelArt.step_alpha(a)))
 	_splash_tex = ImageTexture.create_from_image(img)
 	return _splash_tex
 

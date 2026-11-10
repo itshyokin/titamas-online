@@ -1,7 +1,8 @@
 """Creature sounds for Beast enemies (bats, the dragon boss):
     python3 tools/audio/make_beast_sounds.py
 Writes assets/audio/creatures/dragon_roar.ogg, wing_flap.ogg, fire_breath.ogg, bat_screech.ogg,
-dragon_land.ogg."""
+dragon_land.ogg, and for the troll troll_roar.ogg, troll_grunt.ogg, rock_whoosh.ogg,
+rock_impact.ogg, ground_smash.ogg."""
 import numpy as np, subprocess, os
 SR = 44100
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "audio", "creatures")
@@ -71,4 +72,45 @@ save("bat_screech.ogg", x)
 tt = t(1.0)
 x = bandnoise(len(tt), 20, 220) * np.exp(-tt * 4) + bandnoise(len(tt), 200, 1500) * np.exp(-tt * 12) * 0.3
 save("dragon_land.ogg", x)
+# --- Troll (added after the rest, so the files above come out the same as before) ---
+
+# Roar: deeper and rougher than the dragon's, a gravelly bellow.
+tt = t(2.4)
+f0 = 48 + 22 * np.sin(np.pi * tt / 2.4) + 4 * np.sin(2 * np.pi * 6 * tt)
+ph = 2 * np.pi * np.cumsum(f0) / SR
+voice = sum(np.sin(ph * k) / k ** 0.6 for k in range(1, 18))
+gravel = 0.55 + 0.45 * (rng.random(len(tt)) > 0.5)
+gravel = np.convolve(gravel, np.ones(220) / 220, "same")
+breath = bandnoise(len(tt), 120, 1800) * 0.4
+save("troll_roar.ogg", (voice * gravel * 0.3 + breath) * env(len(tt), 0.2, 0.9))
+
+# Grunt: a short heave of effort.
+tt = t(0.55)
+f0 = 75 - 25 * tt / 0.55
+ph = 2 * np.pi * np.cumsum(f0) / SR
+voice = sum(np.sin(ph * k) / k for k in range(1, 10))
+save("troll_grunt.ogg", (voice * 0.4 + bandnoise(len(tt), 150, 1200) * 0.3) * env(len(tt), 0.03, 0.3))
+
+# Whoosh: a rock flung through the air.
+tt = t(0.7)
+sweep = np.sin(np.pi * tt / 0.7) ** 2
+save("rock_whoosh.ogg", bandnoise(len(tt), 150, 1400) * sweep)
+
+# Impact: a heavy crunch with gravel rattling after.
+tt = t(1.1)
+thud = bandnoise(len(tt), 25, 260) * np.exp(-tt * 7)
+crack = bandnoise(len(tt), 800, 5000) * np.exp(-tt * 30) * 0.6
+rattle = np.zeros(len(tt))
+for i in range(40):
+    at = int(rng.uniform(0.05, 0.8) * SR)
+    n = int(0.02 * SR)
+    rattle[at:at + n] += bandnoise(n, 1500, 6000) * np.exp(-np.arange(n) / (n / 4)) * rng.uniform(0.1, 0.35)
+save("rock_impact.ogg", thud + crack + rattle)
+
+# Ground smash: a deep boom, a crack of breaking ground and a long rumble.
+tt = t(2.2)
+boom = np.sin(2 * np.pi * (55 - 20 * tt) * tt) * np.exp(-tt * 3.0)
+low = bandnoise(len(tt), 20, 180) * np.exp(-tt * 1.6)
+crack = bandnoise(len(tt), 600, 4500) * np.exp(-tt * 18) * 0.7
+save("ground_smash.ogg", boom * 1.2 + low + crack)
 print("done")

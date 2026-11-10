@@ -1,7 +1,8 @@
 class_name BeastModel
 extends Node3D
 ## A creature body built from simple shapes and animated in code (no skeleton or clips):
-## "bat" (a small flyer) and "dragon" (a boss with neck, jaw, four legs, wings and tail).
+## "bat" (a small flyer), "dragon" (a boss with neck, jaw, four legs, wings and tail) and
+## "troll" (a hunched giant on two legs with long arms: throws rocks, smashes the ground).
 ## Beast sets the animation inputs each frame: flapping, moving, pose, look_point.
 ## Faces -Z like the other models.
 
@@ -12,9 +13,17 @@ var color := Color(0.35, 0.25, 0.22)
 var flapping := true
 var flap_speed := 1.0
 var moving := 0.0         # 0..1 how much the legs walk
-var pose := ""            # "", "bite", "breath", "tail", "roar", "hurt", "dead", "swoop"
+var pose := ""            # "", "bite", "breath", "tail", "roar", "hurt", "dead", "swoop", "throw", "smash"
 var pose_t := 0.0         # 0..1 through the pose
 var look_point := Vector3.INF
+## Troll: where in its pose (0..1) the rock leaves the hand / the fists hit the ground.
+var release_at := 0.68
+var slam_at := 0.55
+## Troll: a rock in the right hand (picked up during "throw").
+var holding_rock := false
+## Troll: the right hand (where a thrown rock starts) and one stride each time `steps` goes up.
+var hand_r: Node3D
+var steps := 0
 
 var mouth: Node3D          # where breath and fireballs come from
 var head: Node3D
@@ -28,6 +37,13 @@ var _t := 0.0
 var _flap := 0.0
 var _walk := 0.0
 var _dead := 0.0
+# Troll parts.
+var _torso: Node3D
+var _shoulders: Array[Node3D] = []
+var _elbows: Array[Node3D] = []
+var _knees: Array[Node3D] = []
+var _held: MeshInstance3D
+var _last_step := 0
 
 
 static func create(body_kind: String, body_color: Color, body_scale := 1.0) -> BeastModel:
@@ -38,6 +54,8 @@ static func create(body_kind: String, body_color: Color, body_scale := 1.0) -> B
 	m.scale = Vector3.ONE * body_scale
 	if body_kind == "dragon":
 		m._build_dragon()
+	elif body_kind == "troll":
+		m._build_troll()
 	else:
 		m._build_bat()
 	return m
@@ -229,10 +247,203 @@ func _build_dragon() -> void:
 		_add_wing(Vector3(0.85 * s, 3.1, -0.9) - Vector3(0, 2.3, 0) + Vector3(0, 2.3, 0), 6.5, 3.8, s, skin, horn)
 
 
+## A lumpy boulder (troll rocks): a low sphere squashed a little out of round.
+static func rock_mesh(radius := 0.55) -> Mesh:
+	var s := SphereMesh.new()
+	s.radius = radius
+	s.height = radius * 1.7
+	s.radial_segments = 7
+	s.rings = 4
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.46, 0.43, 0.38)
+	mat.roughness = 1.0
+	s.material = mat
+	return s
+
+
+func _build_troll() -> void:
+	var skin := _mat(color)
+	var dark := _mat(color.darkened(0.3))
+	var cloth := _mat(Color(0.36, 0.26, 0.17))
+	var bone := _mat(Color(0.86, 0.82, 0.68))
+	var eye := _mat(Color(1.0, 0.72, 0.2), true)
+	_body = _pivot(self, Vector3(0, 2.2, 0), "Body")
+	_part(_body, _sphere(0.9), Vector3.ZERO, skin, Vector3.ZERO, Vector3(1.15, 0.8, 0.95))
+	_part(_body, _box(Vector3(1.5, 0.95, 0.12)), Vector3(0, -0.5, -0.82), cloth, Vector3(0.12, 0, 0))
+	_part(_body, _box(Vector3(1.9, 0.22, 1.7)), Vector3(0, 0.1, 0), cloth)
+	# Torso: hunched forward over the hips.
+	_torso = _pivot(_body, Vector3(0, 0.45, 0), "Torso")
+	_part(_torso, _sphere(1.15), Vector3(0, 0.7, -0.1), skin, Vector3.ZERO, Vector3(1.15, 1.0, 1.0))
+	_part(_torso, _sphere(1.05), Vector3(0, 1.65, -0.2), skin, Vector3.ZERO, Vector3(1.35, 0.9, 1.0))
+	for i in 3:
+		_part(_torso, _cone(0.16, 0.45), Vector3(-0.3 + i * 0.3, 2.35, 0.45), dark, Vector3(0.9, 0, 0))
+	# Head low between the shoulders, with a heavy brow, tusks and a big nose.
+	head = _pivot(_torso, Vector3(0, 2.25, -0.75), "Head")
+	_part(head, _sphere(0.55), Vector3.ZERO, skin, Vector3.ZERO, Vector3(1.05, 0.9, 1.0))
+	_part(head, _box(Vector3(0.95, 0.2, 0.35)), Vector3(0, 0.25, -0.38), dark)
+	_part(head, _cone(0.16, 0.45), Vector3(0, 0.0, -0.62), skin, Vector3(-PI * 0.5, 0, 0))
+	for s in [-1.0, 1.0]:
+		_part(head, _sphere(0.08), Vector3(0.22 * s, 0.12, -0.48), eye)
+		_part(head, _cone(0.14, 0.5), Vector3(0.55 * s, 0.1, 0.0), skin, Vector3(0, 0, -1.3 * s))
+	_jaw = _pivot(head, Vector3(0, -0.2, -0.15), "Jaw")
+	_part(_jaw, _box(Vector3(0.85, 0.3, 0.6)), Vector3(0, -0.12, -0.25), skin)
+	for s in [-1.0, 1.0]:
+		_part(_jaw, _cone(0.07, 0.35), Vector3(0.28 * s, 0.12, -0.5), bone, Vector3(0, 0, 0.15 * s))
+	mouth = _pivot(head, Vector3(0, -0.25, -0.6), "Mouth")
+	# Long arms: knuckles nearly drag on the ground.
+	for s in [-1.0, 1.0]:
+		var sh := _pivot(_torso, Vector3(1.4 * s, 1.85, -0.15), "Shoulder" + ("L" if s < 0 else "R"))
+		_part(sh, _sphere(0.55), Vector3.ZERO, skin)
+		_part(sh, _capsule(0.42, 1.7), Vector3(0, -0.8, 0), skin)
+		var el := _pivot(sh, Vector3(0, -1.6, 0))
+		_part(el, _capsule(0.4, 1.6), Vector3(0, -0.75, 0), skin)
+		_part(el, _box(Vector3(0.6, 0.3, 0.6)), Vector3(0, -0.4, 0), cloth)
+		var hand := _pivot(el, Vector3(0, -1.6, 0), "Hand" + ("L" if s < 0 else "R"))
+		_part(hand, _sphere(0.5), Vector3.ZERO, dark, Vector3.ZERO, Vector3(1.0, 0.9, 1.1))
+		_shoulders.append(sh)
+		_elbows.append(el)
+		if s > 0.0:
+			hand_r = hand
+	_held = _part(hand_r, rock_mesh(), Vector3(0, -0.55, -0.2), null)
+	_held.visible = false
+	# Short, thick legs.
+	for s in [-1.0, 1.0]:
+		var hip := _pivot(_body, Vector3(0.62 * s, -0.3, 0))
+		_part(hip, _capsule(0.52, 1.3), Vector3(0, -0.5, 0), skin)
+		var knee := _pivot(hip, Vector3(0, -1.0, 0))
+		_part(knee, _capsule(0.44, 0.9), Vector3(0, -0.4, 0), skin)
+		_part(knee, _box(Vector3(0.8, 0.3, 1.15)), Vector3(0, -0.78, -0.2), dark)
+		_legs.append(hip)
+		_knees.append(knee)
+
+
+## Eases `node`'s rotation toward `to` (x, y, z) at `rate`.
+func _ease_rot(node: Node3D, to: Vector3, rate: float, delta: float) -> void:
+	var k := 1.0 - exp(-rate * delta)
+	node.rotation = node.rotation.lerp(to, k)
+
+
+func _process_troll(delta: float) -> void:
+	_walk += delta * moving * 1.3
+	var phase := _walk * TAU
+	var stride := int(floor(_walk * 2.0))
+	if stride != _last_step:
+		_last_step = stride
+		if moving > 0.3:
+			steps += 1
+	var breathe := sin(_t * 1.4) * 0.03
+	# Rest pose, walking.
+	var torso := Vector3(-0.35 + breathe, 0, 0)
+	var head_rot := Vector3(0.25, 0, 0)
+	var body_y := 2.2 + absf(sin(phase)) * 0.1 * moving + breathe
+	var jaw := 0.05
+	var sh := [Vector3(-sin(phase) * 0.35 * moving + 0.05, 0, -0.15), Vector3(sin(phase) * 0.35 * moving + 0.05, 0, 0.15)]
+	var el := [Vector3(0.35, 0, 0), Vector3(0.35, 0, 0)]
+	var legs := [Vector3(sin(phase) * 0.5 * moving, 0, 0), Vector3(-sin(phase) * 0.5 * moving, 0, 0)]
+	var knees := [Vector3(maxf(0.0, -sin(phase)) * 0.7 * moving, 0, 0), Vector3(maxf(0.0, sin(phase)) * 0.7 * moving, 0, 0)]
+	var rate := 8.0
+	var k := pose_t
+	match pose:
+		"roar":
+			var r := sin(clampf(k, 0.0, 1.0) * PI)
+			torso.x = lerpf(torso.x, 0.15, r)
+			head_rot.x = lerpf(head_rot.x, -0.35, r)
+			sh[0] = Vector3(0.2, 0, -1.25 * r)
+			sh[1] = Vector3(0.2, 0, 1.25 * r)
+			el[0] = Vector3(0.9 * r, 0, 0)
+			el[1] = Vector3(0.9 * r, 0, 0)
+			jaw = 0.6 * r
+		"throw":
+			var rel := release_at
+			if k < 0.35:
+				# Stoops and reaches down for a rock.
+				var a := smoothstep(0.0, 0.35, k)
+				torso.x = lerpf(-0.35, -1.0, a)
+				body_y -= 0.55 * a
+				sh[1] = Vector3(lerpf(0.05, -0.9, a), 0, 0.2)
+				el[1] = Vector3(0.15, 0, 0)
+				knees[0].x = 0.5 * a
+				knees[1].x = 0.5 * a
+			elif k < rel:
+				# Straightens up, rock raised behind the head.
+				var a := smoothstep(0.35, rel, k)
+				torso.x = lerpf(-1.0, 0.05, a)
+				body_y -= 0.55 * (1.0 - a)
+				sh[1] = Vector3(lerpf(-0.9, 3.5, a), 0, 0.25)
+				el[1] = Vector3(lerpf(0.15, 0.9, a), 0, 0)
+				sh[0] = Vector3(-0.6 * a, 0, -0.5 * a)
+				head_rot.x = -0.1
+			elif k < rel + 0.12:
+				# Hurls it: the arm comes over the top.
+				var a := smoothstep(rel, rel + 0.12, k)
+				torso.x = lerpf(0.05, -0.75, a)
+				sh[1] = Vector3(lerpf(3.5, -0.5, a), 0, 0.2)
+				el[1] = Vector3(lerpf(0.9, 0.1, a), 0, 0)
+				sh[0] = Vector3(-0.6 + 0.8 * a, 0, -0.5)
+				rate = 30.0
+			else:
+				torso.x = -0.6
+				sh[1] = Vector3(-0.4, 0, 0.2)
+			jaw = 0.35 if k > rel - 0.1 and k < rel + 0.15 else 0.05
+		"smash":
+			var s := slam_at
+			if k < s:
+				# Both fists raised high, leaning back, trembling as it's about to come down.
+				var a := smoothstep(0.0, s * 0.55, k)
+				var shake := sin(_t * 40.0) * 0.05 * smoothstep(s * 0.6, s, k)
+				torso.x = lerpf(-0.35, 0.18, a) + shake
+				body_y += 0.25 * a
+				sh[0] = Vector3(lerpf(0.05, 3.1, a), 0, lerpf(-0.15, -0.65, a))
+				sh[1] = Vector3(lerpf(0.05, 3.1, a), 0, lerpf(0.15, 0.65, a))
+				el[0] = Vector3(0.5 * a, 0, 0)
+				el[1] = Vector3(0.5 * a, 0, 0)
+				head_rot.x = -0.3 * a
+				jaw = 0.45 * a
+			else:
+				# Down onto the ground in front, then slowly back up.
+				var hold := 1.0 - smoothstep(0.85, 1.0, k)
+				torso.x = lerpf(-0.35, -1.05, hold)
+				body_y -= 0.7 * hold
+				sh[0] = Vector3(lerpf(0.05, -1.05, hold), 0, -0.25)
+				sh[1] = Vector3(lerpf(0.05, -1.05, hold), 0, 0.25)
+				el[0] = Vector3(0.1, 0, 0)
+				el[1] = Vector3(0.1, 0, 0)
+				knees[0].x = 0.6 * hold
+				knees[1].x = 0.6 * hold
+				jaw = 0.3 * hold
+				rate = 34.0 if k < s + 0.08 else 6.0
+		"hurt":
+			torso.x += sin(clampf(k, 0.0, 1.0) * PI) * 0.3
+	# Looks toward what it's fighting.
+	if look_point != Vector3.INF and head and _torso:
+		var local := _torso.global_transform.affine_inverse() * look_point
+		head_rot.y = clampf(atan2(-local.x, -local.z), -0.8, 0.8)
+	_body.position.y = lerpf(_body.position.y, body_y, 1.0 - exp(-rate * delta))
+	_ease_rot(_torso, torso, rate, delta)
+	_ease_rot(head, head_rot, 8.0, delta)
+	for i in 2:
+		_ease_rot(_shoulders[i], sh[i], rate, delta)
+		_ease_rot(_elbows[i], el[i], rate, delta)
+		_ease_rot(_legs[i], legs[i], 10.0, delta)
+		_ease_rot(_knees[i], knees[i], 10.0, delta)
+	if _jaw:
+		_jaw.rotation.x = lerp_angle(_jaw.rotation.x, jaw, 1.0 - exp(-14.0 * delta))
+	_held.visible = holding_rock
+	# Dead: topples forward onto its face.
+	if pose == "dead":
+		_dead = minf(_dead + delta * 0.9, 1.0)
+	else:
+		_dead = maxf(_dead - delta * 2.0, 0.0)
+	rotation.x = -smoothstep(0.0, 1.0, _dead) * 1.35
+
+
 # --- Animation ------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
 	_t += delta
+	if kind == "troll":
+		_process_troll(delta)
+		return
 	var big := kind == "dragon"
 	# Wings.
 	if flapping:

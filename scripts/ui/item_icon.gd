@@ -15,6 +15,15 @@ const RARITY_COLORS := {
 var icon := ""
 var color := Color.WHITE
 var count := 0
+## Draws the vector picture itself (the copy PixelIcons draws small); off = shows the
+## pixel version (the stack count stays sharp on top).
+var raw := false
+
+
+func _ready() -> void:
+	if not raw:
+		add_to_group("pixel_icons")
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # big crisp pixels when scaled up
 
 
 ## Grey, green, blue, purple, orange (player.json "rarity_colors" overrides; Database →
@@ -41,6 +50,19 @@ func _draw() -> void:
 		return
 	var s := minf(size.x, size.y)
 	var o := (size - Vector2(s, s)) * 0.5
+	if not raw and PixelIcons.pixels() > 0:
+		var kind := icon
+		var col := color
+		var tex := PixelIcons.get_texture("item:%s:%s" % [kind, col.to_html()], func() -> Control:
+			var c := ItemIcon.new()
+			c.raw = true
+			c.icon = kind
+			c.color = col
+			return c)
+		if tex:
+			draw_texture_rect(tex, Rect2(o, Vector2(s, s)), false)
+		_draw_count(s, o)
+		return
 	var p := func(x: float, y: float) -> Vector2: return o + Vector2(x, y) * s
 	var dark := color.darkened(0.45)
 	var light := color.lightened(0.3)
@@ -128,7 +150,11 @@ func _draw() -> void:
 		_:
 			draw_circle(p.call(0.5, 0.55), s * 0.3, color)
 			draw_rect(Rect2(p.call(0.4, 0.15), Vector2(s * 0.2, s * 0.15)), dark)
-	if count > 1:
+	_draw_count(s, o)
+
+
+func _draw_count(s: float, o: Vector2) -> void:
+	if count > 1 and not raw:
 		var font := get_theme_default_font()
 		var text := str(count)
 		var fs := int(s * 0.3)

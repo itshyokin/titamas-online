@@ -55,14 +55,17 @@
 			"speed": 0.4,
 			"lifetime": 4.0,
 			"hover": 0.9,
-			"size": 1.0
+			"size": 1.0,
+			"sprite": "res://assets/effects/builtin/firefly_2.png",
+			"frames": 2,
+			"flap_speed": 1.5
 		},
 		{
 			"id": "mosquitos",
 			"name": "Mosquitos",
 			"kind": "swarm",
 			"max": 3,
-			"when": "any",
+			"when": "evening",
 			"near": "water",
 			"color": "#1c1c1c",
 			"count": 30,
@@ -91,6 +94,24 @@
 			"sprite": "res://assets/effects/builtin/insect_fly_2.png",
 			"frames": 2,
 			"flap_speed": 12.0
+		},
+		{
+			"id": "ants",
+			"name": "Ants",
+			"kind": "ants",
+			"max": 3,
+			"when": "day",
+			"near": "rocks_trees",
+			"color": "#1a120c",
+			"size": 1.0,
+			"count": 12,
+			"speed": 0.25,
+			"spawn_min": 4.0,
+			"spawn_max": 16.0,
+			"visible_within": 18.0,
+			"ground_too": true,
+			"sprite": "res://assets/effects/builtin/ant_2.png",
+			"frames": 2
 		}
 	],
 	"falling_leaves": {

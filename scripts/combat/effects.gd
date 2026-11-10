@@ -14,7 +14,7 @@ static func _particle_material(color: Color, energy := 3.0) -> StandardMaterial3
 	m.emission_enabled = true
 	m.emission = color
 	m.emission_energy_multiplier = energy
-	return m
+	return PixelArt.crisp(m)
 
 
 static func _quad(size: float, color: Color) -> QuadMesh:
@@ -263,11 +263,12 @@ static func _heal_color() -> Color:
 
 static var _motes := {}
 
-## White soft circle / diamond on transparent (tinted by the particle colour).
+## White round dot / diamond on transparent (tinted by the particle colour), in the pixel
+## look: a few big pixels with stepped edges.
 static func _mote_texture(diamond: bool) -> Texture2D:
 	if _motes.has(diamond):
 		return _motes[diamond]
-	var n := 32
+	var n := 9 if diamond else 8
 	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
 	for y in n:
 		for x in n:
@@ -275,7 +276,7 @@ static func _mote_texture(diamond: bool) -> Texture2D:
 			var v := (y + 0.5) / n * 2.0 - 1.0
 			var d := (absf(u) + absf(v) * 0.75) if diamond else sqrt(u * u + v * v)
 			var a := clampf((1.0 - d) * (6.0 if diamond else 3.0), 0.0, 1.0)
-			img.set_pixel(x, y, Color(1, 1, 1, a))
+			img.set_pixel(x, y, Color(1, 1, 1, PixelArt.step_alpha(a)))
 	var tex := ImageTexture.create_from_image(img)
 	_motes[diamond] = tex
 	return tex
@@ -549,6 +550,7 @@ static func blood_splatter(parent: Node, at: Vector3, normal: Vector3, color: Co
 		var m := StandardMaterial3D.new()
 		m.albedo_texture = tex
 		m.albedo_color = color
+		PixelArt.crisp(m)
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -582,7 +584,7 @@ static func blood_splatter(parent: Node, at: Vector3, normal: Vector3, color: Co
 static func _splatter_texture(variant: int) -> Texture2D:
 	if _splatter_tex.has(variant):
 		return _splatter_tex[variant]
-	var n := 64
+	var n := 20  # big pixels, like the grass
 	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1000 + variant
@@ -598,7 +600,7 @@ static func _splatter_texture(variant: int) -> Texture2D:
 			for b: Array in blobs:
 				var d: float = p.distance_to(b[0]) / float(b[1])
 				a = maxf(a, clampf(1.0 - d * d * d, 0.0, 1.0))
-			img.set_pixel(x, y, Color(1, 1, 1, a))
+			img.set_pixel(x, y, Color(1, 1, 1, 1.0 if a > 0.45 else 0.0))
 	var tex := ImageTexture.create_from_image(img)
 	_splatter_tex[variant] = tex
 	return tex

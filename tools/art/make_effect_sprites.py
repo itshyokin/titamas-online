@@ -4,12 +4,15 @@ Writes assets/effects/builtin/*.png: white shapes on a see-through background, s
 "Glow" look can tint them with the ability's colour (insect_* are for Wildlife swarms,
 tinted with the swarm's colour). Names ending in _N (burst_4) are
 strips of N frames side by side, played left to right.
-Your own drawings go in assets/effects/custom/ (or use "Load PNG…" on the Database page)."""
+Your own drawings go in assets/effects/custom/ (or use "Load PNG…" on the Database page).
+Pixel look, to match the grass: 24 px pictures (48 for the rune circle) with see-through
+steps (0, 35 %, 70 %, 100 %) instead of smooth fades."""
 import math, pathlib, random
 from PIL import Image, ImageDraw, ImageFilter
 
 OUT = pathlib.Path(__file__).resolve().parents[2] / "assets" / "effects" / "builtin"
-S = 64
+S = 24
+STEPS = (0.0, 0.35, 0.7, 1.0)
 
 
 def blank(w=S, h=S):
@@ -26,8 +29,26 @@ def from_alpha(fn, w=S, h=S):
     return img
 
 
+def step(a):
+    """Snap a 0-255 alpha to the pixel-art steps."""
+    f = a / 255
+    if f < 0.18:
+        return 0
+    if f < 0.5:
+        return int(STEPS[1] * 255)
+    if f < 0.85:
+        return int(STEPS[2] * 255)
+    return 255
+
+
 def save(name, img):
     OUT.mkdir(parents=True, exist_ok=True)
+    img = img.convert("RGBA")
+    px = img.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = px[x, y]
+            px[x, y] = (255, 255, 255, step(a))
     img.save(OUT / (name + ".png"))
     print("wrote", OUT / (name + ".png"))
 
@@ -99,7 +120,8 @@ def snowflake(x, y):
 
 
 def rune():
-    # A circle of marks for the ground: two rings, ticks and a six-pointed figure.
+    # A circle of marks for the ground: two rings, ticks and a six-pointed figure (drawn
+    # big, then shrunk to the pixel size so its lines come out one pixel wide).
     n = 128
     img = blank(n, n)
     d = ImageDraw.Draw(img)
@@ -114,7 +136,7 @@ def rune():
         pts = [(c + math.cos(start * math.pi / 3 + k * 2 * math.pi / 3 - math.pi / 2) * 47, c + math.sin(start * math.pi / 3 + k * 2 * math.pi / 3 - math.pi / 2) * 47) for k in range(3)]
         d.polygon(pts, outline=(255, 255, 255, 255))
         d.line(pts + [pts[0]], fill=(255, 255, 255, 255), width=2)
-    return img
+    return img.resize((48, 48), Image.BOX)
 
 
 def burst_strip(frames=4):
@@ -139,6 +161,44 @@ def burst_strip(frames=4):
             return max(core, edge, ray)
 
         img.paste(from_alpha(f), (i * S, 0))
+    return img
+
+
+def firefly_strip(frames=2, n=12):
+    # A beetle with a glowing tail: frame 1 tail lit, frame 2 dimmer (a slow pulse).
+    img = blank(n * frames, n)
+    px = img.load()
+    for f in range(frames):
+        for y in range(n):
+            for x in range(n):
+                u = (x + 0.5 - n / 2) / (n / 2)
+                v = (y + 0.5 - n / 2) / (n / 2)
+                a = 0
+                if ((u + 0.25) / 0.32) ** 2 + (v / 0.22) ** 2 <= 1:
+                    a = 90  # dark body (dim in the additive glow)
+                if ((u - 0.25) / 0.36) ** 2 + ((v - 0.04) / 0.3) ** 2 <= 1:
+                    a = 255 if f == 0 else 170  # the lantern
+                if (((u + 0.05) / 0.38) ** 2 + ((v + 0.38) / 0.14) ** 2 <= 1):
+                    a = max(a, 120)  # wings
+                if a:
+                    px[f * n + x, y] = (255, 255, 255, a)
+    return img
+
+
+def ant_strip(frames=2, n=12):
+    # An ant seen from above, head to the right: three body parts and legs that swap.
+    img = blank(n * frames, n)
+    d = ImageDraw.Draw(img)
+    for f in range(frames):
+        o = f * n
+        for cx, r in [(2.5, 1.6), (5.6, 1.1), (8.3, 1.3)]:
+            d.ellipse([o + cx - r, 6 - r, o + cx + r, 6 + r], fill=(255, 255, 255, 255))
+        for k, lx in enumerate((4.6, 5.6, 6.6)):
+            sway = (1 if (k + f) % 2 == 0 else -1)
+            d.line([o + lx, 6, o + lx + sway, 2.6], fill=(255, 255, 255, 255), width=1)
+            d.line([o + lx, 6, o + lx - sway, 9.4], fill=(255, 255, 255, 255), width=1)
+        d.line([o + 9.4, 5.4, o + 11.2, 4.0], fill=(255, 255, 255, 255), width=1)
+        d.line([o + 9.4, 6.6, o + 11.2, 8.0], fill=(255, 255, 255, 255), width=1)
     return img
 
 
@@ -172,12 +232,14 @@ def insect_strip(body_len, wing, frames=2, n=16):
 if __name__ == "__main__":
     save("insect_fly_2", insect_strip(0.42, 0.75))
     save("insect_mosquito_2", insect_strip(0.55, 0.6))
+    save("firefly_2", firefly_strip())
+    save("ant_2", ant_strip())
     save("glow", from_alpha(glow))
     save("ring", from_alpha(ring))
     save("spark", from_alpha(star))
     save("diamond", from_alpha(diamond))
     save("flame", from_alpha(flame))
-    save("puff", from_alpha(puff).filter(ImageFilter.GaussianBlur(1.2)))
+    save("puff", from_alpha(puff))
     save("slash", from_alpha(slash))
     save("snowflake", from_alpha(snowflake))
     save("rune_circle", rune())

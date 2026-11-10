@@ -62,6 +62,8 @@ func _time_ok(when: String) -> bool:
 			return day < 0.25
 		"dusk":
 			return day > 0.1 and day < 0.75
+		"evening":
+			return day < 0.75  # dusk, night and dawn
 	return true
 
 
@@ -77,6 +79,15 @@ func _manage(t: Dictionary, player: Node3D) -> void:
 			_fade_out(n)
 	if String(t.get("near", "")) in ["placed", "corpses"]:
 		_live[id] = list  # only at SwarmSpot nodes
+		return
+	if String(t.get("kind", "")) == "ants":
+		if ok and list.size() < int(t.get("max", 3)) and randf() < 0.5:
+			var path := _ant_path(t, player)
+			if path.size() >= 4:
+				var trail := AntTrail.new(t, path)
+				add_child(trail)
+				list.append(trail)
+		_live[id] = list
 		return
 	if ok and list.size() < int(t.get("max", 3)) and randf() < 0.6:
 		var spot := _find_spot(t, player)
@@ -160,6 +171,119 @@ func _near_water(at: Vector3, sea: float) -> bool:
 			if r.has_point(Vector2(at.x, at.z)) and absf(at.y - float(w[1])) < 3.0:
 				return true
 	return false
+
+
+# --- Ants -----------------------------------------------------------------------------
+
+## A trail for ants: points [position, surface normal] about 0.2 m apart, over the ground,
+## across a rock (rays from above climb over it) or up a tree trunk. `near`: trees, rocks,
+## rocks_trees (either) or anything else for open ground. Empty if no spot was found.
+func _ant_path(t: Dictionary, player: Node3D) -> Array:
+	var near := String(t.get("near", "rocks_trees"))
+	var lo := float(t.get("spawn_min", 4.0))
+	var hi := float(t.get("spawn_max", 16.0))
+	var props: Array = []
+	if near in ["trees", "rocks_trees"]:
+		props.append_array(_trees_near(player.global_position, hi).filter(func(n: Node3D) -> bool:
+			return true))
+	if near in ["rocks", "rocks_trees"]:
+		props.append_array(_rocks_near(player.global_position, hi))
+	props = props.filter(func(n: Node3D) -> bool: return n.global_position.distance_to(player.global_position) > lo)
+	var space := get_world_3d().direct_space_state
+	if not props.is_empty():
+		var prop: Node3D = props.pick_random()
+		if String(prop.get_meta("prop_name", "")).contains("tree"):
+			return _trunk_path(prop, space)
+		return _over_path(prop.global_position, space, 6.0)
+	if near in ["trees", "rocks", "rocks_trees"] and not bool(t.get("ground_too", true)):
+		return []
+	for attempt in 6:
+		var a := randf() * TAU
+		var r := randf_range(lo, hi)
+		var start := player.global_position + Vector3(cos(a) * r, 0, sin(a) * r)
+		var path := _over_path(start, space, 5.0)
+		if path.size() >= 4:
+			return path
+	return []
+
+
+## Across the ground (and over anything solid on it) through `centre`, wandering a little.
+func _over_path(centre: Vector3, space: PhysicsDirectSpaceState3D, length: float) -> Array:
+	var heading := randf() * TAU
+	var at := centre - Vector3(cos(heading), 0, sin(heading)) * length * 0.5
+	var out: Array = []
+	var q := PhysicsRayQueryParameters3D.new()
+	q.collision_mask = 1
+	var top := centre.y + 6.0
+	for i in int(length / 0.2):
+		q.from = Vector3(at.x, top, at.z)
+		q.to = Vector3(at.x, centre.y - 6.0, at.z)
+		var hit := space.intersect_ray(q)
+		if hit.is_empty():
+			break
+		var n: Vector3 = hit.normal
+		if n.y < 0.25:
+			break  # a sheer face: the trail ends
+		out.append([hit.position, n])
+		heading += randf_range(-0.25, 0.25)
+		at += Vector3(cos(heading), 0, sin(heading)) * 0.2
+	return out
+
+
+## Over the ground to a tree, then straight up its trunk.
+func _trunk_path(tree: Node3D, space: PhysicsDirectSpaceState3D) -> Array:
+	var base := tree.global_position
+	var side := randf() * TAU
+	var out_dir := Vector3(cos(side), 0, sin(side))
+	var q := PhysicsRayQueryParameters3D.new()
+	q.collision_mask = 1
+	# Where the trunk's side is (a ray in towards its middle).
+	q.from = base + out_dir * 2.0 + Vector3.UP * 0.5
+	q.to = base + Vector3.UP * 0.5
+	var side_hit := space.intersect_ray(q)
+	if side_hit.is_empty():
+		return []
+	var radius := Vector2(side_hit.position.x - base.x, side_hit.position.z - base.z).length()
+	var out: Array = []
+	# Along the ground towards it, 1.5 m.
+	for i in 8:
+		var p := base + out_dir * (radius + 1.6 - i * 0.2)
+		q.from = p + Vector3.UP * 3.0
+		q.to = p + Vector3.DOWN * 3.0
+		var hit := space.intersect_ray(q)
+		if not hit.is_empty() and (hit.normal as Vector3).y > 0.5:
+			out.append([hit.position, hit.normal])
+	var ground_y: float = out.back()[0].y if not out.is_empty() else base.y
+	# Up the bark.
+	for i in 10:
+		var h := ground_y + 0.08 + i * 0.2
+		q.from = Vector3(base.x, h, base.z) + out_dir * (radius + 1.0)
+		q.to = Vector3(base.x, h, base.z)
+		var hit := space.intersect_ray(q)
+		if hit.is_empty():
+			break
+		out.append([hit.position, hit.normal])
+	return out
+
+
+func _rocks_near(p: Vector3, radius: float) -> Array:
+	var out := []
+	var streamer := get_tree().get_first_node_in_group("chunk_streamer")
+	if streamer == null:
+		return out
+	var loaded: Dictionary = streamer.get("_loaded")
+	for cell in loaded:
+		var chunk := loaded[cell] as Node3D
+		var holder := chunk.get_node_or_null("Props") if is_instance_valid(chunk) else null
+		if holder == null:
+			continue
+		for prop in holder.get_children():
+			var n := prop as Node3D
+			var prop_name := String(n.get_meta("prop_name", "")) if n else ""
+			if n and n.visible and (prop_name.contains("rock") or prop_name.contains("stone") or prop_name.contains("boulder")) \
+					and n.global_position.distance_to(p) < radius:
+				out.append(n)
+	return out
 
 
 func _trees_near(p: Vector3, radius: float) -> Array:
@@ -377,6 +501,100 @@ class Flock:
 			var flap := sin(t * 14.0 + b[4]) * 0.8 if fmod(t + b[4], 4.0) < 2.2 else 0.15
 			(b[1] as Node3D).rotation.z = flap
 			(b[2] as Node3D).rotation.z = -flap
+
+
+## A line of ants walking along a trail (see Wildlife._ant_path), one way, appearing at
+## the start and slipping away at the end. Small flat pictures lying on the surface
+## (assets/effects/builtin/ant_2.png or the type's `sprite`), drawn as one MultiMesh,
+## only moved while the camera is near.
+class AntTrail:
+	extends MultiMeshInstance3D
+	const SHADER := preload("res://assets/materials/ant.gdshader")
+	const DEFAULT_SPRITE := "res://assets/effects/builtin/ant_2.png"
+	var cfg := {}
+	var points: Array = []  # [position, normal]
+	var _along := PackedFloat32Array()  # distance at each point
+	var _length := 0.0
+	var _count := 12
+	var _speed := 0.25
+	var _size := 0.06
+	var _offsets := PackedFloat32Array()
+	var _time := 0.0
+
+	func _init(t: Dictionary, path: Array) -> void:
+		cfg = t
+		points = path
+
+	func _ready() -> void:
+		top_level = true
+		global_transform = Transform3D.IDENTITY
+		_count = int(cfg.get("count", 12))
+		_speed = float(cfg.get("speed", 0.25))
+		_size = 0.06 * float(cfg.get("size", 1.0))
+		_along.resize(points.size())
+		for i in points.size():
+			if i > 0:
+				_length += (points[i][0] as Vector3).distance_to(points[i - 1][0])
+			_along[i] = _length
+		_offsets.resize(_count)
+		for i in _count:
+			_offsets[i] = _length * float(i) / _count + randf_range(-0.05, 0.05)
+		var q := QuadMesh.new()
+		q.orientation = PlaneMesh.FACE_Y
+		var path := String(cfg.get("sprite", ""))
+		var tex: Texture2D = AbilityFX.texture(path if not path.is_empty() else DEFAULT_SPRITE)
+		var frames := maxi(int(cfg.get("frames", 2)), 1)
+		var shape := (float(tex.get_width()) / frames) / maxf(float(tex.get_height()), 1.0) if tex else 1.0
+		q.size = Vector2(_size * shape, _size)
+		var mat := ShaderMaterial.new()
+		mat.shader = SHADER
+		mat.set_shader_parameter("tex", tex)
+		mat.set_shader_parameter("frames", float(frames))
+		mat.set_shader_parameter("tint", Color.html(String(cfg.get("color", "#1a120c"))))
+		q.material = mat
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = q
+		mm.instance_count = _count
+		multimesh = mm
+		cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		visibility_range_end = float(cfg.get("visible_within", 18.0))
+		_place(0.0)
+
+	## Where along the trail `d` metres in: [position, normal, forward].
+	func _sample(d: float) -> Array:
+		var i := 1
+		while i < points.size() - 1 and _along[i] < d:
+			i += 1
+		var a: Vector3 = points[i - 1][0]
+		var b: Vector3 = points[i][0]
+		var seg := maxf(_along[i] - _along[i - 1], 0.0001)
+		var k := clampf((d - _along[i - 1]) / seg, 0.0, 1.0)
+		var n: Vector3 = (points[i - 1][1] as Vector3).lerp(points[i][1], k).normalized()
+		return [a.lerp(b, k), n, (b - a).normalized()]
+
+	func _place(delta: float) -> void:
+		for i in _count:
+			_offsets[i] = fmod(_offsets[i] + _speed * delta * (0.85 + 0.3 * float(i % 3) / 2.0), _length)
+			var s := _sample(_offsets[i])
+			var n: Vector3 = s[1]
+			var fwd: Vector3 = s[2]
+			fwd = (fwd - n * fwd.dot(n)).normalized()
+			if fwd.length() < 0.1:
+				fwd = n.cross(Vector3.RIGHT).normalized()
+			# Small at the ends, so they seem to come out of the ground and go back in.
+			var ends := clampf(minf(_offsets[i], _length - _offsets[i]) / 0.3, 0.0, 1.0)
+			var wobble := sin(_time * 9.0 + i * 1.7) * 0.15
+			var x := fwd.rotated(n, wobble)
+			var basis := Basis(x, n, x.cross(n)).scaled(Vector3.ONE * maxf(ends, 0.001))
+			multimesh.set_instance_transform(i, Transform3D(basis, (s[0] as Vector3) + n * 0.012))
+
+	func _process(delta: float) -> void:
+		var cam := get_viewport().get_camera_3d()
+		if cam == null or points.is_empty() or cam.global_position.distance_to(points[0][0]) > visibility_range_end + 10.0:
+			return
+		_time += delta
+		_place(delta)
 
 
 ## A cloud of small insects: fireflies (glowing, blinking), mosquitos, flies.

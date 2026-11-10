@@ -206,7 +206,8 @@
 			"damage_color": "#e8c46a",
 			"bosses_only": true
 		},
-		"target_frame": false
+		"target_frame": false,
+		"icon_pixels": 24
 	},
 	"equip_sounds": {
 		"cloth": "res://assets/audio/sfx/equip_cloth.ogg",

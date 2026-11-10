@@ -2,7 +2,10 @@ class_name Beast
 extends Enemy
 ## A non-human enemy with a body built from shapes (BeastModel) instead of the humanoid
 ## rig: flying bats that hover out of sword reach and swoop to bite, and the dragon boss
-## (bite, tail sweep, fire breath, fireballs, and flight phases where it circles overhead).
+## (bite, tail sweep, fire breath, fireballs, and flight phases where it circles overhead),
+## and the troll boss: from afar it hurls rocks (a red ring marks where each will land:
+## dodge it); up close it raises both fists and smashes the ground, knocking everyone near
+## it off their feet. The wind-up is long: hit it a few times, then roll clear.
 ## Everything else (health, loot, respawn, co-op, xp) is Enemy's. Settings are the
 ## enemies.json entry's "beast" block (Database → Enemies → Beast).
 
@@ -11,10 +14,16 @@ const FLAP := preload("res://assets/audio/creatures/wing_flap.ogg")
 const BREATH := preload("res://assets/audio/creatures/fire_breath.ogg")
 const SCREECH := preload("res://assets/audio/creatures/bat_screech.ogg")
 const LAND := preload("res://assets/audio/creatures/dragon_land.ogg")
+const TROLL_ROAR := preload("res://assets/audio/creatures/troll_roar.ogg")
+const TROLL_GRUNT := preload("res://assets/audio/creatures/troll_grunt.ogg")
+const SMASH := preload("res://assets/audio/creatures/ground_smash.ogg")
+const WHOOSH := preload("res://assets/audio/creatures/rock_whoosh.ogg")
+const RING := "res://assets/effects/builtin/ring.png"
 
 var body: BeastModel
 var cfg := {}
-var big := false            # the dragon: no knockback/knockdown, bigger hit radius
+var big := false            # the dragon / troll: no knockback/knockdown, bigger hit radius
+var troll := false
 var flying := false         # always in the air (bats)
 var airborne := false
 var fly_height := 2.6
@@ -38,12 +47,16 @@ var _breath_tick := 0.0
 var _spin_from := 0.0
 var _net_pose_t := 0.0
 var _fireball: Ability
+var _throw_left := 0.0      # troll: seconds until it may throw again
+var _smash_marker: MeshInstance3D
+var _steps_heard := 0
 
 
 func _ready() -> void:
 	cfg = Database.enemy(enemy_id).get("beast", {})
 	var kind := String(cfg.get("body", "bat"))
-	big = kind == "dragon"
+	troll = kind == "troll"
+	big = kind == "dragon" or troll
 	body = BeastModel.create(kind, DataFiles.color_from(cfg.get("color", "#4a3a34")), float(cfg.get("scale", 1.0)))
 	model.add_child(body)
 	flying = bool(cfg.get("flying", not big))
@@ -55,12 +68,12 @@ func _ready() -> void:
 		collision_mask = 1
 	_alt = fly_height if airborne else 0.0
 	_alt_goal = _alt
-	body_radius = float(cfg.get("radius", 2.2 if big else 0.3))
+	body_radius = float(cfg.get("radius", (1.5 if troll else 2.2) if big else 0.3))
 	var shape := get_node_or_null("CollisionShape3D") as CollisionShape3D
 	if shape:
 		var cap := CapsuleShape3D.new()
 		cap.radius = body_radius
-		cap.height = maxf(float(cfg.get("height", 4.6 if big else 0.7)), body_radius * 2.0)
+		cap.height = maxf(float(cfg.get("height", (5.2 if troll else 4.6) if big else 0.7)), body_radius * 2.0)
 		shape.shape = cap
 		shape.position = Vector3.UP * cap.height * 0.5
 	body.position.y = 0.0 if big else 0.35
@@ -87,7 +100,7 @@ func _equip() -> void:
 
 
 func aim_point() -> Vector3:
-	return global_position + Vector3.UP * float(cfg.get("aim_height", 2.6 if big else 0.35))
+	return global_position + Vector3.UP * float(cfg.get("aim_height", (3.2 if troll else 2.6) if big else 0.35))
 
 
 # --- Movement ---------------------------------------------------------------------
@@ -154,6 +167,8 @@ func _chase(delta: float) -> Vector3:
 	var to := target.global_position - global_position
 	to.y = 0.0
 	var d := to.length()
+	if troll:
+		return _troll_chase(delta, to, d)
 	if big:
 		return _dragon_chase(delta, to, d)
 	# Bats: hover over to the target, then swoop.
@@ -202,6 +217,113 @@ func _dragon_chase(delta: float, to: Vector3, d: float) -> Vector3:
 	if d > float(cfg.get("bite_range", 4.5)) + body_radius * 0.6:
 		return to.normalized() * (run_speed if d > 10.0 else walk_speed)
 	return Vector3.ZERO
+
+
+## The troll: rocks from afar, the ground smash up close, lumbering in between.
+func _troll_chase(delta: float, to: Vector3, d: float) -> Vector3:
+	_throw_left = maxf(_throw_left - delta, 0.0)
+	if not _roared:
+		_roared = true
+		_begin("roar", 2.0)
+		return Vector3.ZERO
+	var smash_reach := float(cfg.get("smash_range", 3.5)) + body_radius
+	if _cooldown <= 0.0:
+		if d <= smash_reach:
+			_begin("smash", _smash_length())
+			return Vector3.ZERO
+		if d >= float(cfg.get("throw_min", 9.0)) and d <= float(cfg.get("throw_max", 40.0)) and _throw_left <= 0.0:
+			_begin("throw", float(cfg.get("throw_time", 1.9)))
+			return Vector3.ZERO
+	_face(target.global_position, delta * 0.8)
+	if d > smash_reach * 0.7:
+		return to.normalized() * (run_speed if d > 16.0 else walk_speed)
+	return Vector3.ZERO
+
+
+func _smash_length() -> float:
+	return float(cfg.get("smash_windup", 1.9)) + 0.3 + float(cfg.get("smash_recover", 1.3))
+
+
+## Where the fists come down: in front of it.
+func _smash_point() -> Vector3:
+	var fwd := -model.global_basis.z
+	fwd.y = 0.0
+	return global_position + fwd.normalized() * (body_radius + 1.8)
+
+
+## A red ring on the ground showing how far the smash reaches, filling in as it winds up.
+func _show_smash_marker() -> void:
+	_hide_smash_marker()
+	var radius := float(cfg.get("smash_radius", 6.0))
+	_smash_marker = MeshInstance3D.new()
+	var q := QuadMesh.new()
+	q.orientation = PlaneMesh.FACE_Y
+	q.size = Vector2.ONE * radius * 2.0
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_texture = AbilityFX.texture(RING)
+	mat.albedo_color = Color(1.0, 0.3, 0.15, 0.0)
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	PixelArt.crisp(mat)
+	q.material = mat
+	_smash_marker.mesh = q
+	_smash_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	Combat.world_root(self).add_child(_smash_marker)
+	var at := _smash_point()
+	var g := _ground_below(at)
+	_smash_marker.global_position = Vector3(at.x, (g if g != INF else at.y) + 0.07, at.z)
+
+
+func _hide_smash_marker() -> void:
+	if is_instance_valid(_smash_marker):
+		_smash_marker.queue_free()
+	_smash_marker = null
+
+
+## The fists hit the ground: everyone within the radius is hurt and knocked down.
+func _smash() -> void:
+	_hide_smash_marker()
+	var at := _smash_point()
+	var g := _ground_below(at)
+	if g != INF:
+		at.y = g
+	var radius := float(cfg.get("smash_radius", 6.0))
+	var down := float(cfg.get("smash_down", 1.6))
+	for n in Combat.enemies_near(self, at, radius):
+		if absf(n.global_position.y - at.y) > 3.0:
+			continue
+		Combat.hit(self, n, attack_power * float(cfg.get("smash_power", 2.0)), true, float(cfg.get("smash_knockback", 7.0)),
+			[{"status": "knockdown", "chance": 1.0, "seconds": down}])
+	var root := Combat.world_root(self)
+	Effects.shockwave(root, at, radius, Color(0.75, 0.66, 0.5))
+	for i in 10:
+		var chip := TrollRock.Chip.new()
+		chip.velocity = Vector3(randf_range(-5, 5), randf_range(4, 8), randf_range(-5, 5))
+		root.add_child(chip)
+		chip.global_position = at + Vector3.UP * 0.3
+	Combat.play_sound(self, SMASH, 6.0, randf_range(0.9, 1.05))
+	_shake(0.9)
+
+
+func _throw_rock() -> void:
+	if not _target_valid() or body.hand_r == null:
+		return
+	var from := body.hand_r.global_position
+	var aim := target.global_position
+	var flat := Vector2(aim.x - from.x, aim.z - from.z).length()
+	var seconds := clampf(flat / maxf(float(cfg.get("throw_speed", 18.0)), 1.0), 0.7, 2.4)
+	# Aims where you're heading, a little (throw_lead 1 = exactly where you'll be).
+	if target is CharacterBody3D:
+		var v := (target as CharacterBody3D).velocity
+		aim += Vector3(v.x, 0.0, v.z) * seconds * float(cfg.get("throw_lead", 0.6))
+	var g := _ground_below(aim)
+	if g != INF:
+		aim.y = g
+	TrollRock.throw_at(from, aim + Vector3.UP * 0.3, seconds, self, attack_power * float(cfg.get("throw_power", 1.1)),
+		float(cfg.get("throw_knockback", 6.0)), float(cfg.get("throw_splash", 1.8)))
+	Combat.play_sound(self, WHOOSH, 2.0, randf_range(0.85, 1.0))
+	_throw_left = float(cfg.get("throw_every", 3.5))
 
 
 func _take_off() -> void:
@@ -254,7 +376,18 @@ func _begin(plan: String, seconds: float) -> void:
 		_face(target.global_position, 0.0)
 	match plan:
 		"roar":
-			Combat.play_sound(self, ROAR, 6.0)
+			Combat.play_sound(self, TROLL_ROAR if troll else ROAR, 6.0)
+		"smash":
+			Effects.flash(model, Color(1.0, 0.55, 0.1), 0.6, 0.6)
+			FloatingText.spawn(self, "!", Color(1.0, 0.6, 0.2), 1.6)
+			Combat.play_sound(self, TROLL_GRUNT, 4.0, 0.8)
+			_show_smash_marker()
+			if _target_valid():
+				_face(target.global_position, 0.0)
+			body.slam_at = (float(cfg.get("smash_windup", 1.9)) + 0.15) / _att_len
+		"throw":
+			Combat.play_sound(self, TROLL_GRUNT, 2.0, 1.1)
+			body.release_at = clampf(float(cfg.get("throw_release", 0.68)), 0.4, 0.85)
 		"tail", "breath":
 			# The tell, like a humanoid's heavy swing.
 			Effects.flash(model, Color(1.0, 0.55, 0.1), 0.5, 0.6)
@@ -273,6 +406,24 @@ func _attack_move(delta: float) -> Vector3:
 		"roar":
 			if _attack_time > 0.5 and _attack_time - delta <= 0.5:
 				_shake(0.5)
+		"throw":
+			if _target_valid():
+				_face(target.global_position, delta * 1.5)
+			body.holding_rock = k > 0.3 and not _attack_hit
+			if not _attack_hit and k >= body.release_at:
+				_attack_hit = true
+				body.holding_rock = false
+				_throw_rock()
+		"smash":
+			var windup := float(cfg.get("smash_windup", 1.9))
+			if is_instance_valid(_smash_marker):
+				var m := (_smash_marker.mesh as QuadMesh).material as StandardMaterial3D
+				var fill := clampf(_attack_time / windup, 0.0, 1.0)
+				m.albedo_color.a = 0.25 + 0.6 * fill
+				_smash_marker.scale = Vector3.ONE * lerpf(0.35, 1.0, fill)
+			if not _attack_hit and _attack_time >= windup + 0.15:
+				_attack_hit = true
+				_smash()
 		"bite":
 			if not _attack_hit and _attack_time >= 0.7:
 				_attack_hit = true
@@ -341,6 +492,9 @@ func _attack_move(delta: float) -> Vector3:
 
 
 func _end_attack() -> void:
+	_hide_smash_marker()
+	if body:
+		body.holding_rock = false
 	if _breath_fx:
 		_breath_fx.stop()
 		_breath_fx = null
@@ -449,6 +603,8 @@ func _end_breath() -> void:
 func _on_died() -> void:
 	ai = AI.DEAD
 	_end_breath()
+	_hide_smash_marker()
+	body.holding_rock = false
 	_plan = ""
 	_loot = LootBag.drop_for(Database.enemy(enemy_id), Combat.world_root(self), global_position, self)
 	credit_kill()
@@ -458,7 +614,7 @@ func _on_died() -> void:
 	if not death_sounds.is_empty():
 		Combat.play_sound(self, death_sounds.pick_random(), 2.0, randf_range(0.92, 1.08) * (0.5 if big else 1.6))
 	elif big:
-		Combat.play_sound(self, ROAR, 6.0, 0.75)
+		Combat.play_sound(self, TROLL_ROAR if troll else ROAR, 6.0, 0.75)
 	body.pose = "dead"
 	body.flapping = false
 	airborne = false
@@ -490,12 +646,17 @@ func _respawn() -> void:
 	_alt_goal = _alt
 	_phases_done = 0
 	_roared = false
+	_throw_left = 0.0
 	body.pose = ""
 	_wait = randf_range(1.0, 3.0)
 
 
 func _give_up() -> void:
 	_end_breath()
+	_hide_smash_marker()
+	_plan = ""  # whatever it was in the middle of
+	if body:
+		body.holding_rock = false
 	super._give_up()
 	if big:
 		_roared = false
@@ -560,6 +721,11 @@ func _pose_tick(delta: float) -> void:
 	body.flapping = ai != AI.DEAD and ai != AI.DOWN and (airborne or (big and _alt_goal > 0.1))
 	hide_disc = flying or airborne
 	body.flap_speed = 1.6 if _plan == "swoop" else 1.0
+	# The troll's heavy footsteps: a thud and a little shake each stride.
+	if troll and body.steps != _steps_heard:
+		_steps_heard = body.steps
+		Combat.play_sound(self, LAND, -4.0, randf_range(1.25, 1.45))
+		_shake(0.06)
 	# Wing beats are heard on the big one.
 	if big and body.flapping:
 		_flap_t -= delta

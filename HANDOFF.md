@@ -43,6 +43,14 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Your own pictures: drop PNGs in `assets/effects/custom/` or use Load PNG…; frames side by side in one row for animation. See the README in that folder.
 - Insects are sprites now (Database → Wildlife → a swarm → Picture of one insect, with frames for the wing beat). Flies no longer appear over enemies you kill: place a **Swarm Spot** (`scenes/world/swarm_spot.tscn`) where a body is left lying for the story, a rubbish heap and so on (one is by the road in the test level). Mosquitos hang about water at any time of day.
 
+## To test in the editor (done 10 Nov, batch O: pixel look, wildlife, the troll)
+- Pixel look: effect sprites, heal motes, blood, leaves, rain rings, bullet holes and the hotbar / backpack / spellbook / status icons are all chunky pixels now. Icon grid size: Database → Player → HUD → "Icon pixel grid" (24; 32 finer; 0 = smooth). Decals use nearest pixels too, which also makes cloud shadows a little blocky: say if that bothers you.
+- Mosquitos by water at dusk, night and dawn (new "Dusk, night and dawn" time choice). Fireflies have a little lit-tail sprite.
+- Ants: trails up tree trunks, over rocks and along the ground near you in daytime (Database → Wildlife → Ants). They're small: look down near trees and rocks.
+- **Troll boss** (Old Mossback) stands where the dragon was. From afar it stoops, picks up a rock and hurls it; a red ring marks where it will land. Close in, it raises both fists (red ring on the ground fills in): hit it, then roll clear before the slam, or get knocked off your feet. All timings and damage under Database → Enemies → troll → Beast.
+- You can be knocked down now (troll smash, dragon tail): you flop, then get up; no attacking or dodging while down.
+- The dragon is saved as `scenes/enemies/dragon.tscn` (and the troll as `troll.tscn`): drop it in any level.
+
 ## Backlog (agreed, not started)
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
 - Icicles on branches in snow (needs a small icicle model or sprite).
@@ -72,4 +80,4 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Not checkable in Claude's test renderer (verify in the editor): decals (blood on slopes, leaves, cloud shadows), SSAO, the finisher kill-cam.
 
 ## Latest work (all pushed)
-Batches L–N on 10 Nov: safe areas (SafeArea box, off switch), indoor weather (roof check, muffled sound, cover map: rain outside doors, dry floors), performance (smoother streaming, sleeping AI, prop ranges, occlusion, quality settings, F3 overlay), snow and blizzards, effect sprites for abilities. Batches E–K on 9–10 Nov: falling leaves, random ambience, statuses and icons, injured walk, rarity, stealth / Frost Edge / Burst Quake, finisher cam, bats and the dragon, hair and cape sway by material, threat and smarter companions (wait for the player, never steal kills, go down and take cover), recruitable archer / mage / healer, Tab targeting with lock-on, region map (M), fall damage, blood, rain splashes, colour picker, Body Models categories, night and dawn sounds.
+Batches L–O on 10 Nov: safe areas (SafeArea box, off switch), indoor weather (roof check, muffled sound, cover map: rain outside doors, dry floors), performance (smoother streaming, sleeping AI, prop ranges, occlusion, quality settings, F3 overlay), snow and blizzards, effect sprites for abilities, insect sprites and Swarm Spots, the pixel look for effects and icons, ants, the troll boss and player knockdowns. Batches E–K on 9–10 Nov: falling leaves, random ambience, statuses and icons, injured walk, rarity, stealth / Frost Edge / Burst Quake, finisher cam, bats and the dragon, hair and cape sway by material, threat and smarter companions (wait for the player, never steal kills, go down and take cover), recruitable archer / mage / healer, Tab targeting with lock-on, region map (M), fall damage, blood, rain splashes, colour picker, Body Models categories, night and dawn sounds.
