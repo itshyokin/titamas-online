@@ -97,6 +97,18 @@ static func indoors_at(point: Vector3) -> bool:
 	return false
 
 
+## The top of the highest indoors box over `point`'s spot on the map (its height is
+## ignored); very low if there is none. Boxes are taken as standing upright.
+static func cover_height(point: Vector3) -> float:
+	var best := -100000.0
+	for a in _areas:
+		if is_instance_valid(a) and a.is_inside_tree() and a.indoors:
+			var p := a.to_local(Vector3(point.x, a.global_position.y, point.z))
+			if absf(p.x) <= a.size.x * 0.5 and absf(p.z) <= a.size.z * 0.5:
+				best = maxf(best, a.to_global(Vector3(p.x, a.size.y, p.z)).y)
+	return best
+
+
 ## `node` is on the players' side (the player, companions, townsfolk, other players) and
 ## standing in an area that is safe right now: enemies leave it alone, and it can't
 ## hurt them from in there.

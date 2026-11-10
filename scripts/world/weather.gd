@@ -10,8 +10,11 @@ extends Node3D
 ## Cloud shadows: a 3x3 grid of decals (dark patches from a seamless noise texture) that
 ## drifts with the sky's clouds (global cloud_offset) and follows the camera.
 ## Under cover (`shelter`, 0–1): when the camera is inside an indoors SafeArea box or has a
-## roof over it (a ray straight up against the world), the rain stops and the weather's
-## sounds are quieter and muffled; the splashes stop when the player is under cover.
+## roof over it (a ray straight up against the world), the weather's sounds are quieter
+## and muffled. What is drawn goes by the cover map (`cover`, RainCover): streaks only
+## above the highest solid thing at each spot, so from indoors the rain still falls
+## outside the door; splashes lie on that surface; the ground is only wet under open sky.
+## With the cover map switched off, rain and splashes simply stop under cover.
 ## Settings: weather.json "indoors" (Database → Weather Settings → Indoors).
 
 const FILE := "res://data/weather.json"
@@ -46,6 +49,10 @@ var _cam_covered := false
 var _player_covered := false
 var _shelter_check := 0.0
 var _bus := -1
+## The cover map (see RainCover).
+var cover: RainCover
+var _rain_mat: ShaderMaterial
+var _splash_mat: ShaderMaterial
 var _lowpass: AudioEffectLowPassFilter
 
 
@@ -58,6 +65,9 @@ func _ready() -> void:
 	_sound.bus = BUS if _bus >= 0 else &"Ambience"
 	_sound.volume_db = -60.0
 	add_child(_sound)
+	cover = RainCover.new()
+	cover.name = "RainCover"
+	add_child(cover)
 	_build_rain()
 	_build_splashes()
 	_build_shadows()
@@ -168,6 +178,7 @@ func _process(delta: float) -> void:
 		values[f] = lerpf(float(values.get(f, 0.0)), float(_goal.get(f, 0.0)), k)
 	RenderingServer.global_shader_parameter_set("wetness", clampf(float(values.wetness), 0.0, 1.0))
 	_update_shelter(delta)
+	_update_cover()
 	_update_rain()
 	_update_splashes()
 	_update_lightning(delta)
@@ -210,12 +221,10 @@ func _build_rain() -> void:
 	_rain.process_material = pm
 	var q := QuadMesh.new()
 	q.size = Vector2(0.015, 0.45)
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(0.75, 0.82, 0.95, 0.35)
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
-	q.material = mat
+	_rain_mat = ShaderMaterial.new()
+	_rain_mat.shader = preload("res://assets/materials/rain_streak.gdshader")
+	_rain_mat.set_shader_parameter("tint", Color(0.75, 0.82, 0.95, 0.35))
+	q.material = _rain_mat
 	_rain.draw_pass_1 = q
 	_rain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_rain)
@@ -223,7 +232,8 @@ func _build_rain() -> void:
 
 func _update_rain() -> void:
 	var amount := clampf(float(values.rain), 0.0, 1.0)
-	var on: bool = amount > 0.03 and GameSettings.get("weather_effects") != false and shelter < 0.5
+	# With the cover map the streaks hide themselves under roofs; without it, rain stops under cover.
+	var on: bool = amount > 0.03 and GameSettings.get("weather_effects") != false and (cover.active or shelter < 0.5)
 	_rain.emitting = on
 	if not on:
 		return
@@ -234,6 +244,7 @@ func _update_rain() -> void:
 	var pm := _rain.process_material as ParticleProcessMaterial
 	var wind := float(values.wind_add)
 	pm.direction = Vector3(wind * 0.25, -1, wind * 0.1).normalized()
+	_rain_mat.set_shader_parameter("streak_up", -pm.direction)
 
 
 ## Rings of spray where the rain lands, on the ground and on water around the player.
@@ -270,14 +281,10 @@ func _build_splashes() -> void:
 	var q := QuadMesh.new()
 	q.size = Vector2(0.3, 0.3)
 	q.orientation = PlaneMesh.FACE_Y  # lies flat on the ground
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(0.85, 0.92, 1.0)
-	mat.albedo_texture = _ring_texture()
-	mat.vertex_color_use_as_albedo = true
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	q.material = mat
+	_splash_mat = ShaderMaterial.new()
+	_splash_mat.shader = preload("res://assets/materials/rain_splash.gdshader")
+	_splash_mat.set_shader_parameter("ring", _ring_texture())
+	q.material = _splash_mat
 	_splash.draw_pass_1 = q
 	_splash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_splash)
@@ -287,7 +294,9 @@ func _update_splashes() -> void:
 	if _splash == null:
 		return
 	var amount := clampf(float(values.rain), 0.0, 1.0)
-	var on: bool = amount > 0.08 and GameSettings.get("weather_effects") != false and shelter < 0.5 and player_shelter < 0.5
+	var on: bool = amount > 0.08 and GameSettings.get("weather_effects") != false \
+		and (cover.active or (shelter < 0.5 and player_shelter < 0.5))
+	_splash_mat.set_shader_parameter("on_cover", 1.0 if cover.active else 0.0)
 	_splash.emitting = on
 	if not on:
 		return
@@ -341,6 +350,15 @@ func _exit_tree() -> void:
 	# Leave the bus open for whatever plays next (another level's weather).
 	shelter = 0.0
 	_apply_shelter_sound()
+
+
+## The cover map is kept up while it rains or the ground is wet.
+func _update_cover() -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var needed: bool = float(values.rain) > 0.03 or float(values.wetness) > 0.02
+	cover.update(cam.global_position, get_world_3d(), needed, data.get("indoors", {}))
 
 
 func _update_shelter(delta: float) -> void:

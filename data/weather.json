@@ -15,7 +15,10 @@
 		"roof_height": 30.0,
 		"muffle_db": -9.0,
 		"muffle_cutoff": 1200.0,
-		"fade_seconds": 0.6
+		"fade_seconds": 0.6,
+		"cover_map": true,
+		"cover_cell": 0.75,
+		"cover_refresh": 160
 	},
 	"types": [
 		{

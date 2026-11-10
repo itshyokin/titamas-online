@@ -24,9 +24,10 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Test level: the village is a safe area (green box `Areas/VillageSafeArea`). Lead the bats or bandits to it: they should give up at the edge and walk home; "You are safe here." / "You are no longer safe." show on the way in and out; blows either way do nothing while you stand inside (the training dummy still takes hits).
 - Its off switch is `village_attacked`: an event with Switch → village_attacked ON makes the village unsafe until it's turned off again.
 - `Areas/InnIndoors` (blue box at the inn bed) is indoors: in rain, the streaks stop and the rain sound dulls when the camera is inside; the splashes stop when the character is.
-- Roof check: once a building or cave exists, rain should stop under it without any box. It looks straight up from the camera, so with the camera outside a doorway rain still shows, and from inside you won't see rain falling outside.
+- Roofs: once a building or cave exists (anything with collision), rain stops under it without any box, and from inside you still see it falling outside doors and windows. Splashes land on roofs and ground, not on covered floors. Wet ground only shows under open sky (soft edge about 0.75 m at doorways). Rain is hidden by what is above it, not by walls, so any door or window opening shows it.
+- Per material: terrain materials have **Wet Look** (0–1) in the inspector; a copy of terrain.tres with Wet Look 0 never looks wet (name it after the Blender material so chunks pick it up).
 - New nodes: instance `scenes/world/safe_area.tscn`, set Size, tick Safe and/or Indoors, pick an Off Switch if wanted.
-- Tunables: Database → Player → Safe areas; Database → Weather Settings → Indoors.
+- Tunables: Database → Player → Safe areas; Database → Weather Settings → Indoors (sound, roof check, cover map).
 
 ## Backlog (agreed, not started)
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
@@ -48,7 +49,7 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Dragon / bat models from the owner: .glb, unrigged in named parts with origins at the joints (`wing_L`, `wing_R`, `jaw`, `neck_1..4`, `tail_1..8`) is the easy route.
 
 ## Loose ends
-- Indoors: the wet-ground look is one global value, so floors under a roof still look wet in rain; rain isn't drawn outside a window when the camera is inside.
+- Cover map: roofs need collision to count (visual-only meshes don't keep rain out); tree canopies have none, so rain falls through trees (a small dry ring shows at each trunk). It reaches 24 m from the camera: covered floors further away than that look wet.
 - Credits: the second Vincent Freelance hair collection ("FREE 21 Realtime man Hairstyles collection") has no link yet.
 - The shield's bone name was fixed in the data (`mixamorig_LeftForeArm`); it needs **Rebuild** in Body Models to take effect.
 - Blue Cloak is in the starting backpack for new characters only.

@@ -8,6 +8,7 @@ shader_type spatial;
 render_mode diffuse_lambert;
 
 #include "res://assets/materials/pixel_sample.gdshaderinc"
+#include "res://assets/materials/rain_cover.gdshaderinc"
 
 uniform sampler2D tex_r : source_color, filter_nearest_mipmap, repeat_enable; // grass
 uniform sampler2D tex_g : source_color, filter_nearest_mipmap, repeat_enable; // dirt
@@ -29,7 +30,10 @@ uniform float cliff_slope_end : hint_range(0.0, 1.0) = 0.55;
 // sun, so without this the contact shading only shows in shade). Set from data/world.json
 // "ambient_occlusion" "terrain_light_affect" by AtmosphereManager.
 // Rain (Weather): 0 dry, 1 soaked: darker and shinier ground.
+// It only shows under open sky (the cover map, rain_cover.gdshaderinc), so floors under a
+// roof stay dry. wet_look: how wet this material gets (0 = never, e.g. indoor floors).
 global uniform float wetness;
+uniform float wet_look : hint_range(0.0, 1.0) = 1.0;
 uniform float ao_light_affect : hint_range(0.0, 1.0) = 0.85;
 
 varying vec3 world_pos;
@@ -88,9 +92,13 @@ void fragment() {
 	w /= max(w.r + w.g + w.b, 0.0001);
 
 	ALBEDO = col_r * w.r + col_g * w.g + col_b * w.b;
-	ROUGHNESS = mix(1.0, 0.35, wetness * (1.0 - w.b * 0.5));
-	ALBEDO *= 1.0 - 0.32 * wetness;
-	SPECULAR = 0.5 * wetness;
+	float wet = wetness * wet_look;
+	if (wet > 0.001) {
+		wet *= rain_cover_open(world_pos, normalize(world_normal));
+	}
+	ROUGHNESS = mix(1.0, 0.35, wet * (1.0 - w.b * 0.5));
+	ALBEDO *= 1.0 - 0.32 * wet;
+	SPECULAR = 0.5 * wet;
 	AO = 1.0;
 	AO_LIGHT_AFFECT = ao_light_affect;
 }
