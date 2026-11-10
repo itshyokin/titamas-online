@@ -23,6 +23,8 @@ signal lock_changed(locked: bool)
 ## Keyboard and mouse: Tab picks the enemy you're looking at when nothing is targeted
 ## (1), or only clears the target (0; click enemies to target them).
 @export var tab_selects := 1.0
+## Targeting an enemy (Tab, click, next target) also locks the camera on (1 = yes).
+@export var lock_on_target := 1.0
 ## When the target dies, pick the next nearest enemy on screen after this many seconds.
 @export var auto_next := 1.0  # 1 = yes
 @export var auto_next_delay := 0.6
@@ -74,7 +76,22 @@ func set_target(node: Node3D) -> void:
 		var s := Combat.stats_of(target)
 		if s and not s.died.is_connected(_on_target_died):
 			s.died.connect(_on_target_died)
+		# Targeting an enemy locks on too (player.json combat lock_on_target).
+		if lock_on_target >= 0.5 and Combat.is_enemy_of(player, target):
+			set_locked(true)
 	target_changed.emit(target)
+
+
+## Selects a friend (a companion, from the party list) so heals go to them. No lock-on.
+func select_friend(node: Node3D) -> void:
+	if node == null or Combat.is_enemy_of(player, node):
+		return
+	set_locked(false)
+	set_target(node)
+
+
+func _friendly_ok(node: Node3D) -> bool:
+	return node != null and (node.is_in_group("followers") or node.is_in_group("remote_players"))
 
 
 func _mark(node: Node3D, on: bool) -> void:
@@ -342,7 +359,7 @@ func _process(_delta: float) -> void:
 	if target and not is_instance_valid(target):
 		set_target(null)
 	# No longer an enemy (danger mode switched off): let go.
-	if target and Combat.is_alive(target) and not Combat.is_enemy_of(player, target):
+	if target and Combat.is_alive(target) and not Combat.is_enemy_of(player, target) and not _friendly_ok(target):
 		set_target(null)
 	if target and target.global_position.distance_to(player.global_position) > maxf(lose_range, pick_range() + 15.0):
 		set_target(null)

@@ -70,6 +70,7 @@ func _ready() -> void:
 	_codex = Codex.new()
 	_codex.settings = _settings
 	add_child(_codex)
+	add_child(RegionMap.new())
 	# Time of day, top right beside the settings gear (only when the world has a day cycle).
 	_clock = Label.new()
 	_clock.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -539,18 +540,36 @@ func _process_party(delta: float) -> void:
 		if s == null:
 			continue
 		if not _party_rows.has(node):
+			# Click a row to target that companion (heals then go to them).
 			var row := VBoxContainer.new()
 			row.add_theme_constant_override("separation", 2)
+			row.mouse_filter = Control.MOUSE_FILTER_STOP
+			row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			row.tooltip_text = "Click to target (heals go to them)"
+			var who: Node3D = node
+			row.gui_input.connect(func(ev: InputEvent) -> void:
+				if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and _targeting:
+					if _targeting.target == who:
+						_targeting.set_target(null)
+					else:
+						_targeting.select_friend(who)
+					row.accept_event())
 			var name_label := _label(s.display_name, 14)
+			name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			row.add_child(name_label)
 			var bar := _progress(Color(0.3, 0.8, 0.35), Vector2(160, 10))
+			bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			row.add_child(bar)
 			_party.add_child(row)
 			_party_rows[node] = [name_label, bar]
 		var bar := _party_rows[node][1] as ProgressBar
 		bar.value = s.health / maxf(s.max_health, 1.0) * 100.0
 		_tint_fill(bar, HealthColors.of(s.health / maxf(s.max_health, 1.0)))
-		(_party_rows[node][0] as Label).text = s.display_name + ("  (down)" if s.is_dead() else "")
+		var downed: bool = s.is_dead() or (node.has_method("is_downed") and node.is_downed())
+		var picked: bool = _targeting != null and _targeting.target == node
+		var label := _party_rows[node][0] as Label
+		label.text = ("▶ " if picked else "") + s.display_name + ("  (down)" if downed else "")
+		label.modulate = Color(1.0, 0.85, 0.4) if picked else (Color(1.0, 0.55, 0.5) if downed else Color.WHITE)
 
 
 ## F9: show what ambient occlusion is doing (the AO buffer: white = none, dark = shaded),

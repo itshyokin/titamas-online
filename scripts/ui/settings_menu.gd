@@ -231,7 +231,7 @@ func _help_tab() -> Control:
 			("%s target the nearest enemy (again to clear) · Shift+%s next enemy · click an enemy to target it · %s lock on (camera follows the target)" % [k.call("target_next"), k.call("target_next"), k.call("lock_on")]) if not g.gamepad else ("%s target / lock on (again to clear) · %s next target · %s lock on" % [k.call("target_next"), k.call("target_prev"), k.call("lock_on")]),
 			"",
 			"[b]Windows[/b]",
-			"%s character and backpack · %s spellbook · %s quests · %s skills · %s chat · Esc / %s / the book: the Codex (character, quests, skills, achievements, lore, settings)" % [k.call("inventory"), k.call("spellbook"), k.call("quest_log"), k.call("skills"), k.call("chat"), k.call("menu")],
+			"%s character and backpack · %s spellbook · %s quests · %s skills · %s region map · %s chat · Esc / %s / the book: the Codex (character, quests, skills, achievements, lore, settings)" % [k.call("inventory"), k.call("spellbook"), k.call("quest_log"), k.call("skills"), k.call("map"), k.call("chat"), k.call("menu")],
 			"%s danger mode: lets you target and attack friendly NPCs (they fight back)" % k.call("danger_mode"),
 		])
 	fill.call()

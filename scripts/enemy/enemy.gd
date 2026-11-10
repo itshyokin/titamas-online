@@ -402,7 +402,8 @@ func _update_threat(delta: float) -> void:
 		return
 	_threat_check = 0.5
 	for who in threat.keys():
-		if not is_instance_valid(who) or not Combat.is_alive(who) or (who as Node3D).global_position.distance_to(global_position) > leash_distance + 10.0:
+		if not is_instance_valid(who) or not Combat.is_alive(who) or (who.has_method("is_alive") and not who.is_alive()) \
+				or (who as Node3D).global_position.distance_to(global_position) > leash_distance + 10.0:
 			threat.erase(who)
 	if ai != AI.CHASE:
 		return

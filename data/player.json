@@ -60,7 +60,8 @@
 		"auto_next_delay": 0.6,
 		"heal_threat": 0.5,
 		"player_threat": 1.0,
-		"threat_switch": 1.1
+		"threat_switch": 1.1,
+		"lock_on_target": 1.0
 	},
 	"loadout": {
 		"light_combo": [
@@ -191,7 +192,7 @@
 		"enemy_bars": {
 			"enabled": true,
 			"min_width": 25,
-			"max_width": 80,
+			"max_width": 50,
 			"hp_at_max": 2000,
 			"max_bars": 3,
 			"top": 50,
@@ -286,6 +287,10 @@
 		"help_below": 0.5,
 		"leave_kill_below": 0.25,
 		"leave_kills": true,
-		"range": 20.0
+		"range": 20.0,
+		"recover_share": 0.3,
+		"recover_after": 4.0,
+		"downed_speed": 1.6,
+		"wait_for_player": true
 	}
 }

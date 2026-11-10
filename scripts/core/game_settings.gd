@@ -30,7 +30,7 @@ const REBINDABLE := [
 	["hotbar_1", "Hotbar 1"], ["hotbar_2", "Hotbar 2"], ["hotbar_3", "Hotbar 3"], ["hotbar_4", "Hotbar 4"],
 	["hotbar_5", "Hotbar 5"], ["hotbar_6", "Hotbar 6"], ["hotbar_7", "Hotbar 7"], ["hotbar_8", "Hotbar 8"],
 	["hotbar_9", "Hotbar 9"], ["hotbar_10", "Hotbar 10"], ["ability_wheel", "Ability wheel (hold)"],
-	["inventory", "Character / backpack"], ["spellbook", "Spellbook"], ["skills", "Skill trees"], ["quest_log", "Quest log"], ["danger_mode", "Danger mode (attack NPCs)"], ["chat", "Chat"],
+	["inventory", "Character / backpack"], ["spellbook", "Spellbook"], ["skills", "Skill trees"], ["quest_log", "Quest log"], ["map", "Region map"], ["danger_mode", "Danger mode (attack NPCs)"], ["chat", "Chat"],
 	["target_next", "Target nearest / clear (Shift: next target)"], ["target_prev", "Next target (controller)"], ["lock_on", "Lock on (camera follows target)"], ["target_clear", "Clear target"],
 	["camera_look", "Hold to look (mouse)"], ["zoom_in", "Zoom in"], ["zoom_out", "Zoom out"], ["menu", "Settings menu"],
 ]

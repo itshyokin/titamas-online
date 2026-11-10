@@ -85,6 +85,7 @@ const RELOAD_SOUND := preload("res://assets/audio/weapons/gun_reload.ogg")
 var in_combat := false
 ## The enemy this player hit last (companions leave it to you).
 var last_struck: Node3D = null
+var last_strike_msec := -100000
 ## The weapon in use: its item ({} = bare hands) and family (data/weapon_types.json).
 var weapon := {}
 var weapon_type := {}

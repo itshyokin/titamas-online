@@ -162,7 +162,7 @@
 			"death_push": 2.5,
 			"fade_time": 2.0,
 			"turn_speed": 1.6,
-			"bar_width": 80,
+			"bar_width": 46,
 			"boss": true,
 			"loot": [
 				{

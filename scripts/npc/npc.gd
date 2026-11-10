@@ -14,7 +14,7 @@ extends CharacterBody3D
 ## keeps beside the player, runs to catch up, joins fights against enemies going for the
 ## player, and turns up next to the player if left far behind. Saved with the character.
 
-enum AI { IDLE, FIGHT, FLEE, RETURN, TALK, DEAD, FOLLOW }
+enum AI { IDLE, FIGHT, FLEE, RETURN, TALK, DEAD, FOLLOW, DOWNED }
 
 ## Which entry in data/npcs.json this is.
 @export var npc_id := "villager"
@@ -168,7 +168,7 @@ func aim_point() -> Vector3:
 
 
 func is_alive() -> bool:
-	return ai != AI.DEAD
+	return ai != AI.DEAD and ai != AI.DOWNED  # downed companions are out of the fight
 
 
 # --- Talking ---------------------------------------------------------------------
@@ -269,6 +269,8 @@ func _physics_process(delta: float) -> void:
 			else:
 				move = _follow(delta)
 				_heal_while_following()
+		AI.DOWNED:
+			move = _downed(delta)
 		AI.TALK, AI.DEAD:
 			pass
 	_walk.x = lerpf(_walk.x, move.x, 10.0 * delta)
@@ -310,6 +312,8 @@ func _look_for_threats() -> void:
 		if node.has_method("is_alive") and not node.is_alive():
 			continue
 		var d := node.global_position.distance_to(global_position)
+		if node.has_meta("player_struck") and node.get("target") != self:
+			continue  # the player's fight
 		if leader and is_instance_valid(leader):
 			# Following: help with whatever is fighting the player (or us), or what the player attacks.
 			var their_target = node.get("target")
@@ -387,6 +391,9 @@ func _fight(delta: float) -> Vector3:
 				_calm_down()  # nothing that needs us: back to the player's side
 				return Vector3.ZERO
 			target = pick
+	elif _target_valid() and target.has_meta("player_struck") and target.get("target") != self:
+		_calm_down()  # the player took this one on: leave it to them
+		return Vector3.ZERO
 	if not _target_valid() or global_position.distance_to(anchor) > _f("leash_distance", 30.0):
 		_calm_down()
 		return Vector3.ZERO
@@ -462,6 +469,8 @@ func _choose_target() -> Node3D:
 		var struck := e.has_meta("player_struck")
 		if not on_party and not struck:
 			continue  # wait for the player to start it
+		if bool(cfg.get("wait_for_player", true)) and not on_us and not _player_fighting():
+			continue  # the player hasn't struck anything yet: hold back
 		var boss := bool(Database.enemy(String(e.get("enemy_id"))).get("boss", false)) if e.get("enemy_id") != null else false
 		var share := st.health / maxf(st.max_health, 1.0)
 		if share < leave_below and not on_us and not leader_hurt and not boss:
@@ -479,6 +488,12 @@ func _choose_target() -> Node3D:
 	return best
 
 
+## The player has landed a blow in the last 20 seconds.
+func _player_fighting() -> bool:
+	var pc := leader.get_node_or_null("PlayerCombat") if leader else null
+	return pc != null and Time.get_ticks_msec() - int(pc.get("last_strike_msec")) < 20000
+
+
 ## The enemy the player is fighting: their target, else what they hit last.
 func _leader_focus() -> Node3D:
 	var tg := leader.get_node_or_null("Targeting")
@@ -492,11 +507,130 @@ func _leader_focus() -> Node3D:
 	return null
 
 
+# --- Downed companions --------------------------------------------------------------
+## Out of health while following: limps to cover (shared with any other downed companion,
+## behind a rock or tree from the enemies), waits there out of the fight, and gets back
+## up once healed above player.json companions.recover_share or when the fight is over.
+static var _cover := Vector3.INF
+static var _cover_time := 0
+var _downed_quiet := 0.0
+
+
+func is_downed() -> bool:
+	return ai == AI.DOWNED
+
+
+func _go_down() -> void:
+	ai = AI.DOWNED
+	target = null
+	_attack_time = -1.0
+	_casting = null
+	_downed_quiet = 0.0
+	stats.health = 1.0
+	stats.health_changed.emit(stats.health, stats.max_health)
+	FloatingText.spawn(self, "Down!", Color(1.0, 0.45, 0.35), 1.2)
+	GameLog.post("%s is down and falls back to cover." % stats.display_name, Color(1.0, 0.6, 0.5))
+	# Enemies let go of it.
+	for n in get_tree().get_nodes_in_group(Combat.GROUP):
+		if n.get("target") == self and n.has_method("_give_up"):
+			var t = n.get("threat")
+			if t is Dictionary:
+				(t as Dictionary).erase(self)
+			n.set("target", null)
+	if Time.get_ticks_msec() - _cover_time > 20000 or _cover == Vector3.INF:
+		_cover = _find_cover()
+		_cover_time = Time.get_ticks_msec()
+
+
+func _downed(delta: float) -> Vector3:
+	var cfg: Dictionary = Database.player.get("companions", {})
+	if stats.health >= stats.max_health * float(cfg.get("recover_share", 0.3)):
+		_recover()
+		return Vector3.ZERO
+	# The fight is over (nothing fighting the party nearby): get back up.
+	if _party_in_fight():
+		_downed_quiet = 0.0
+	else:
+		_downed_quiet += delta
+		if _downed_quiet > float(cfg.get("recover_after", 4.0)):
+			stats.health = maxf(stats.health, stats.max_health * float(cfg.get("recover_share", 0.3)))
+			stats.health_changed.emit(stats.health, stats.max_health)
+			_recover()
+			return Vector3.ZERO
+	# Spread out a little around the shared cover spot.
+	var spot := _cover + Vector3(sin(get_instance_id() % 7), 0, cos(get_instance_id() % 7)) * 1.2
+	var to := spot - global_position
+	to.y = 0.0
+	if to.length() < 0.6:
+		return Vector3.ZERO
+	return to.normalized() * float(cfg.get("downed_speed", 1.6))
+
+
+func _recover() -> void:
+	ai = AI.FOLLOW if leader else AI.IDLE
+	FloatingText.spawn(self, "Back on my feet!", Color(0.6, 1.0, 0.6), 1.0)
+	_show_weapon()
+
+
+func _party_in_fight() -> bool:
+	var anchor: Node3D = leader if leader and is_instance_valid(leader) else self
+	for n in get_tree().get_nodes_in_group(Combat.GROUP):
+		var t = n.get("target")
+		if t is Node and (t == anchor or (t as Node).is_in_group("followers")) and Combat.is_alive(n) \
+				and (n as Node3D).global_position.distance_to(anchor.global_position) < 35.0:
+			return true
+	return false
+
+
+## Somewhere the enemies can't see: try spots around (away from the enemies first) and
+## prefer one where the line from the enemies is blocked by the world (rock, tree, wall).
+func _find_cover() -> Vector3:
+	var anchor: Node3D = leader if leader and is_instance_valid(leader) else self
+	var foes := Vector3.ZERO
+	var count := 0
+	for n in get_tree().get_nodes_in_group(Combat.GROUP):
+		var e := n as Node3D
+		if e and Combat.is_alive(e) and Combat.is_enemy_of(self, e) and e.global_position.distance_to(anchor.global_position) < 40.0:
+			foes += e.global_position
+			count += 1
+	var space := get_world_3d().direct_space_state
+	if count == 0:
+		return global_position
+	foes /= count
+	var away := anchor.global_position - foes
+	away.y = 0.0
+	away = away.normalized() if away.length() > 0.1 else Vector3.BACK
+	var best := global_position + away * 10.0
+	var best_score := -INF
+	for angle in [0.0, 0.5, -0.5, 1.0, -1.0, 1.5, -1.5]:
+		for dist in [8.0, 12.0, 16.0]:
+			var flat: Vector3 = anchor.global_position + away.rotated(Vector3.UP, angle) * dist
+			var q := PhysicsRayQueryParameters3D.create(flat + Vector3.UP * 20.0, flat + Vector3.DOWN * 40.0, 1)
+			var ground := space.intersect_ray(q)
+			if ground.is_empty():
+				continue
+			var spot: Vector3 = ground.position
+			if spot.y < -4.5:
+				continue  # not in the sea
+			var look := PhysicsRayQueryParameters3D.create(foes + Vector3.UP * 1.5, spot + Vector3.UP * 1.0, 1)
+			var blocked := not space.intersect_ray(look).is_empty()
+			var score := spot.distance_to(foes) * 0.3 + (20.0 if blocked else 0.0) - absf(angle) * 2.0
+			if score > best_score:
+				best_score = score
+				best = spot
+	return best
+
+
 ## Combat.hit asks this: a companion never lands the killing blow while the player is
 ## around and doing fine (it leaves the enemy on 1 health).
 func spares_kill(victim: Node) -> bool:
-	if leader == null or not is_instance_valid(leader) or not bool(Database.player.get("companions", {}).get("leave_kills", true)):
+	if not bool(Database.player.get("companions", {}).get("leave_kills", true)):
 		return false
+	if leader == null or not is_instance_valid(leader):
+		# Guards and other NPCs: leave the player's enemies to the player when they're near.
+		var p := get_tree().get_first_node_in_group("player") as Node3D
+		return p != null and victim.has_meta("player_struck") and Combat.is_alive(p) \
+			and (victim as Node3D).global_position.distance_to(p.global_position) < 25.0
 	var lstats := Combat.stats_of(leader)
 	if lstats == null or lstats.is_dead():
 		return false
@@ -675,6 +809,11 @@ func stagger(seconds := 0.6) -> void:
 
 func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
 	_since_hurt = 0.0
+	if leader and ai != AI.DOWNED and ai != AI.DEAD and stats.health <= 1.0:
+		_go_down()
+		return
+	if ai == AI.DOWNED:
+		return
 	# Attacked by the player (danger mode): turn on them, and stop following them.
 	if source and source.is_in_group("player") and not angry_at_player:
 		angry_at_player = true
@@ -726,8 +865,16 @@ func follow(who: Node3D, quietly := false) -> void:
 		add_to_group("followers")
 		ai = AI.FOLLOW
 		_stuck_time = 0.0
+		# Companions don't die: at 0 health they go down and crawl to cover.
+		if not stats.has_meta("own_immortal"):
+			stats.set_meta("own_immortal", stats.immortal)
+		stats.immortal = true
 	else:
 		remove_from_group("followers")
+		if ai == AI.DOWNED:
+			_recover()
+		if stats.has_meta("own_immortal"):
+			stats.immortal = bool(stats.get_meta("own_immortal"))
 		_home = global_position  # waits here
 		_wander_to = _home
 		ai = AI.IDLE
@@ -868,6 +1015,12 @@ func _animate() -> void:
 	if current == "hit_react" and character.animation_position() < 0.4:
 		return
 	var speed := Vector2(velocity.x, velocity.z).length()
+	if ai == AI.DOWNED:
+		if speed < 0.3:
+			character.play("injured_idle" if character.has_animation("injured_idle") else "idle", 0.3)
+		else:
+			character.play("injured_walk" if character.has_animation("injured_walk") else "walking", 0.25, clampf(speed / float(Database.animations.get("injured", {}).get("speed", 0.8)), 0.6, 1.8))
+		return
 	if speed < 0.3:
 		character.play("idle_armed" if ai == AI.FIGHT else "idle", 0.25)
 	elif speed < 2.6:

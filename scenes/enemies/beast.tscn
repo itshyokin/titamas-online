@@ -9,7 +9,7 @@ height = 0.7
 
 [node name="Beast" type="CharacterBody3D"]
 collision_layer = 4
-collision_mask = 3
+collision_mask = 1
 script = ExtResource("1_beast")
 enemy_id = "cave_bat"
 

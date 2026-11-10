@@ -75,6 +75,7 @@ static func enemies_near(who: Node, center: Vector3, radius: float) -> Array[Nod
 	for n in who.get_tree().get_nodes_in_group(GROUP):
 		var node := n as Node3D
 		if node and node != who and is_alive(node) and is_enemy_of(who, node) \
+				and not (node.has_method("is_downed") and node.is_downed()) \
 				and node.global_position.distance_to(center) <= radius:
 			out.append(node)
 	return out
@@ -160,6 +161,7 @@ static func _tag(source: Node, target: Node) -> void:
 		var pc := source.get_node_or_null("PlayerCombat")
 		if pc:
 			pc.set("last_struck", target)
+			pc.set("last_strike_msec", Time.get_ticks_msec())
 	if source and (source.is_in_group("player") or source.is_in_group("followers")) and "tagged_by_player" in target:
 		target.set("tagged_by_player", true)
 

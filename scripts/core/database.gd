@@ -29,7 +29,7 @@ const PLAYER_MOVEMENT := ["injured_speed", "injured_sprint_speed", "injured_heal
 const PLAYER_COMBAT := ["tap_time", "quick_shot_power", "block_reduction", "lunge_range", "parry_window",
 	"counter_window", "perfect_dodge_window", "cast_pushback", "interrupt_share", "proficiency_damage", "proficiency_speed",
 	"arrow_gravity", "combat_linger", "block_arc"]  # world_* / gash_time are read from Database.player directly
-const PLAYER_TARGETING := ["tab_range", "lock_range", "lose_range", "snap_range", "tab_selects", "attack_selects", "click_radius", "auto_next", "auto_next_delay"]
+const PLAYER_TARGETING := ["tab_range", "lock_range", "lose_range", "snap_range", "tab_selects", "attack_selects", "click_radius", "auto_next", "auto_next_delay", "lock_on_target"]
 
 var abilities := {}  # id -> Ability (the same objects for the whole session)
 var enemies := {}  # id -> Dictionary
