@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/climb_lock.gd" id="1_lock"]
+
+[node name="ClimbLock" type="Node3D"]
+script = ExtResource("1_lock")

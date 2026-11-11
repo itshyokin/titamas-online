@@ -17,7 +17,7 @@ extends RefCounted
 
 const LETTERS := ["A", "B", "C", "D"]
 
-static var _unsaved := {"switches": {}, "variables": {}, "self_switches": {}}
+static var _unsaved := {"switches": {}, "variables": {}, "self_switches": {}, "defeated": {}, "nav": {}}
 
 
 static func _store(which: String) -> Dictionary:
@@ -73,11 +73,35 @@ static func changed() -> void:
 	var loop := Engine.get_main_loop() as SceneTree
 	if loop:
 		loop.call_group("map_events", "refresh")
+		loop.call_group("event_watchers", "refresh")  # story enemies (appear / stay dead)
+
+
+## A level node that is gone for good (an enemy with Stays Dead that was killed).
+## `key`: "<scene path>:<node path in the scene>".
+static func mark_defeated(key: String) -> void:
+	_store("defeated")[key] = true
+
+
+static func is_defeated(key: String) -> bool:
+	return bool(_store("defeated").get(key, false))
+
+
+## Nav points shown on the HUD (NavPoints): id -> {target, label, color, reach}.
+static func nav_store() -> Dictionary:
+	return _store("nav")
+
+
+## The key mark_defeated uses for `node` in the current level.
+static func node_key(node: Node) -> String:
+	var scene := node.get_tree().current_scene if node.is_inside_tree() else null
+	if scene == null:
+		return String(node.name)
+	return "%s:%s" % [scene.scene_file_path, String(scene.get_path_to(node))]
 
 
 ## Forgets everything (a new character while testing).
 static func reset_unsaved() -> void:
-	_unsaved = {"switches": {}, "variables": {}, "self_switches": {}}
+	_unsaved = {"switches": {}, "variables": {}, "self_switches": {}, "defeated": {}, "nav": {}}
 
 
 ## All of `conditions` hold (an empty list always does). `self_key`: whose A–D.

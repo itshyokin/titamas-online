@@ -61,7 +61,7 @@
 			"attack_hit_time": 0.3,
 			"attack_power": 9.0,
 			"attack_range": 2.0,
-			"behaviour": "wander",
+			"behaviour": "stand",
 			"can_fight": true,
 			"can_follow": true,
 			"dialogue": [
@@ -101,7 +101,8 @@
 			"title": "",
 			"wait_line": "I'll wait here. Don't be long.",
 			"walk_speed": 1.3,
-			"wander_radius": 3.0
+			"wander_radius": 3.0,
+			"event": "katrina_intro"
 		},
 		{
 			"abilities": [],

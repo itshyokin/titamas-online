@@ -46,6 +46,18 @@ var tagged_by_player := false
 @export var heavy_animation_speed := 0.7
 @export var heavy_hit_time := 0.68
 
+@export_group("Story (events)")
+## Not in the level until this switch is on (an event turns it on: a boss bursting out).
+@export var appear_switch := ""
+## Rises out of the ground (dust, rocks, a rumble) when it appears during play.
+@export var emerge := false
+## Turned on when this one is killed (an event page can wait for it).
+@export var defeat_switch := ""
+## 1 is added to this variable each time this one is killed ("kill 3 bandits").
+@export var defeat_variable := ""
+## Never comes back once killed, even after saving and loading.
+@export var stays_dead := false
+
 @export_group("Death")
 ## Seconds before the body disappears, and before it comes back.
 @export var corpse_time := 12.0
@@ -115,6 +127,84 @@ func _ready() -> void:
 	_plate = Nameplate.attach(self)
 	DispositionDisc.attach(self)
 	_equip.call_deferred()
+	if not appear_switch.is_empty() or stays_dead:
+		add_to_group("event_watchers")
+		_check_story.call_deferred(false)
+
+
+# --- Story: appearing on a switch, staying dead -------------------------------------
+
+var _present := true
+var _emerging := false
+
+
+## EventState changed (a switch flipped): appear if our switch just came on.
+func refresh() -> void:
+	_check_story(true)
+
+
+func _check_story(animate: bool) -> void:
+	var gone := stays_dead and EventState.is_defeated(EventState.node_key(self))
+	var want := not gone and (appear_switch.is_empty() or EventState.get_switch(appear_switch))
+	if want == _present or _emerging:
+		return
+	if want and animate and emerge:
+		_emerge()
+	else:
+		_set_present(want)
+
+
+## In the level or not: hidden, not thinking, not targetable, no collision.
+func _set_present(on: bool) -> void:
+	_present = on
+	visible = on
+	process_mode = Node.PROCESS_MODE_INHERIT if on else Node.PROCESS_MODE_DISABLED
+	collision_layer = 4 if on and ai != AI.DEAD else 0
+	if on:
+		add_to_group(Combat.GROUP)
+	else:
+		remove_from_group(Combat.GROUP)
+
+
+## Bursts up out of the ground: the earth shakes and splits, rocks fly, then it comes
+## for the nearest player.
+func _emerge() -> void:
+	_emerging = true
+	var root := Combat.world_root(self)
+	var top := _home
+	var depth := 2.0 + float(Combat.radius_of(self)) * 2.5
+	_set_present(true)
+	process_mode = Node.PROCESS_MODE_DISABLED  # no AI while it climbs out
+	global_position = top - Vector3.UP * depth
+	Cutscene.shake(self, 1.8, 0.35)
+	Combat.play_sound(self, preload("res://assets/audio/creatures/ground_smash.ogg"), 8.0, 0.8)
+	Effects.shockwave(root, top, 6.0, Color(0.7, 0.62, 0.48))
+	for i in 14:
+		var chip := TrollRock.Chip.new()
+		chip.velocity = Vector3(randf_range(-6, 6), randf_range(6, 11), randf_range(-6, 6))
+		root.add_child(chip)
+		chip.global_position = top + Vector3.UP * 0.4
+	var tw := get_tree().create_tween()  # it's switched off meanwhile, so not its own tween
+	tw.tween_property(self, "global_position", top, 1.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	await tw.finished
+	Effects.shockwave(root, top, 4.0, Color(0.7, 0.62, 0.48))
+	_emerging = false
+	process_mode = Node.PROCESS_MODE_INHERIT
+	var p := _nearest_player(aggro_radius * 3.0)
+	if p:
+		_engage(p)
+
+
+## Killed: tells the events (switch, variable) and remembers it if it stays dead.
+## Returns true when it should never respawn.
+func _record_death() -> bool:
+	if not defeat_variable.is_empty():
+		EventState.set_var(defeat_variable, EventState.get_var(defeat_variable) + 1.0)
+	if stays_dead:
+		EventState.mark_defeated(EventState.node_key(self))
+	if not defeat_switch.is_empty():
+		EventState.set_switch(defeat_switch, true)
+	return stays_dead
 
 
 func _equip() -> void:
@@ -464,6 +554,7 @@ func _on_died() -> void:
 	ai = AI.DEAD
 	_loot = LootBag.drop_for(Database.enemy(enemy_id), Combat.world_root(self), global_position, self)
 	credit_kill()
+	var forever := _record_death()
 	target = null
 	collision_layer = 0
 	velocity = Vector3.ZERO
@@ -489,6 +580,9 @@ func _on_died() -> void:
 	model.visible = false
 	Ragdoll.stop(character)
 	_fade_body(0.0, 0.0)
+	if forever:
+		_set_present(false)
+		return
 	await get_tree().create_timer(maxf(respawn_time - waited, 5.0)).timeout
 	_respawn()
 

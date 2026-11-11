@@ -494,6 +494,7 @@ func face_toward(point: Vector3, delta := 0.0) -> void:
 ## enemies.json "applies" with status "knockdown"): limp on the ground for `seconds`,
 ## thrown along `push`, then the getting_up clip. Can't act or dodge meanwhile; still
 ## takes hits. Dodging through the blow (i-frames) avoids it altogether.
+const GET_UP_SPEED := 1.6
 var knocked_down := false
 var _down_left := 0.0
 var _getting_up := 0.0
@@ -544,8 +545,9 @@ func _knocked_movement(delta: float) -> void:
 	Ragdoll.stop(character)
 	velocity = Vector3(0, velocity.y, 0)
 	if character.has_animation("getting_up"):
-		action_animation.emit("getting_up", 0.0, 0.05, 1.0)
-		_getting_up = character.get_animation_length("getting_up") * 0.85
+		# Played quickly: back in the fight in about a second.
+		action_animation.emit("getting_up", 0.0, 0.05, GET_UP_SPEED)
+		_getting_up = minf(character.get_animation_length("getting_up") * 0.7 / GET_UP_SPEED, 1.4)
 	else:
 		_getting_up = 0.3
 
@@ -714,6 +716,8 @@ func _probe_ledge(feet: Vector3, forward: Vector3, any_edge := false) -> Diction
 	if wall.is_empty() or absf(wall.normal.y) > 0.3:
 		return {}
 	if not any_edge and grab_any_ledge < 0.5 and not _marked(wall.collider as Node, "ledge"):
+		return {}
+	if ClimbLock.blocked_at(wall.position, true):
 		return {}
 	var normal: Vector3 = wall.normal
 	normal.y = 0.0
@@ -902,6 +906,8 @@ func _try_attach_surface(on_ground: bool) -> bool:
 	var node := hit.collider as Node
 	var ladder := _marked(node, "ladder")
 	if not ladder and not _marked(node, "wall"):
+		return false
+	if ClimbLock.blocked_at(hit.position, true):
 		return false
 	if on_ground and not ladder:
 		return false  # walls need a jump; ladders you just walk into

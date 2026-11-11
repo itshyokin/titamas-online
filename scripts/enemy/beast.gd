@@ -608,6 +608,7 @@ func _on_died() -> void:
 	_plan = ""
 	_loot = LootBag.drop_for(Database.enemy(enemy_id), Combat.world_root(self), global_position, self)
 	credit_kill()
+	var forever := _record_death()
 	target = null
 	collision_layer = 0
 	_walk = Vector3.ZERO
@@ -629,6 +630,9 @@ func _on_died() -> void:
 	await _fade_body(1.0)
 	model.visible = false
 	_fade_body(0.0, 0.0)
+	if forever:
+		_set_present(false)
+		return
 	await get_tree().create_timer(maxf(respawn_time - waited, 5.0)).timeout
 	_respawn()
 

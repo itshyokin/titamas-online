@@ -81,6 +81,10 @@ func _ready() -> void:
 	_clock.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	_clock.add_theme_constant_override("outline_size", 4)
 	add_child(_clock)
+	var nav := NavMarkers.new()
+	nav.name = "NavMarkers"
+	add_child(nav)
+	move_child(nav, 0)  # under the rest of the HUD
 	_compass = Compass.new()
 	add_child(_compass)
 	var stats := get_node_or_null(stats_path) as Stats

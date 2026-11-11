@@ -235,7 +235,7 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"]), "fbx": fbx,
 				"props": props, "levels": levels, "markers": _markers(levels),
 				"glbs": _files("res://assets/models/characters/src", ["glb"]), "glb_meshes": _glb_meshes(), "glb_bones": _glb_bones(),
-				"pieces": _files("res://assets/characters/lowpoly", ["scn"]), "sprites": _files(SPRITE_DIR, ["png"])})
+				"pieces": _files("res://assets/characters/lowpoly", ["scn"]), "sprites": _files(SPRITE_DIR, ["png"]), "videos": _files("res://assets", ["ogv"])})
 		["POST", "/api/upload_sprite"]:
 			# "Load PNG…" on an effect sprite field: {name, data (base64)} → assets/effects/custom/<name>.png
 			var up = JSON.parse_string(req.body)

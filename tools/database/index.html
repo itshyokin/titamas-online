@@ -57,6 +57,7 @@
 		flex: 1;
 		display: grid;
 		grid-template-columns: 150px 260px 1fr;
+		grid-template-rows: minmax(0, 1fr);  /* one row, as tall as the window: the panes scroll */
 		gap: 0;
 		margin: 10px;
 		background: var(--window);
@@ -68,6 +69,8 @@
 	nav {
 		background: #d9d4c8;
 		border-right: 1px solid var(--line);
+		overflow-y: auto;
+		min-height: 0;
 		padding: 8px 6px;
 		display: flex;
 		flex-direction: column;
@@ -117,7 +120,7 @@
 	.list .tools { display: flex; gap: 6px; padding: 0 6px 8px; }
 	.list .tools button { flex: 1; padding: 4px 4px; }
 	.detail { overflow-y: auto; min-height: 0; }
-	.detail .inner { padding: 10px 14px 30px; max-width: 900px; }
+	.detail .inner { padding: 10px 14px 80px; max-width: 900px; }
 	fieldset {
 		border: 1px solid var(--line);
 		border-radius: 3px;
@@ -1413,7 +1416,7 @@ const TABS = {
 // ---------------------------------------------------------------------------
 let data = {};       // file -> JSON
 let saved = {};      // file -> JSON string as last saved
-let assets = { animations: [], sounds: [], fbx: [], sprites: [] };
+let assets = { animations: [], sounds: [], fbx: [], sprites: [], videos: [] };
 let tab = "abilities";
 let selected = { abilities: 0, enemies: 0, regions: 0 };
 
@@ -2432,12 +2435,13 @@ const nameOf = (opts, id) => { const o = opts.find(x => x[0] === id); return o ?
 const itemName = id => nameOf(itemOptions(), id);
 
 const CMD_GROUPS = [
-	["Message", ["text", "choice", "log"]],
-	["Flow", ["if", "wait", "call", "stop", "erase", "note"]],
+	["Message", ["text", "choice", "say", "log"]],
+	["Flow", ["if", "wait", "wait_for", "call", "stop", "erase", "note"]],
 	["Switches", ["switch", "self_switch", "variable"]],
 	["Player", ["give_item", "take_item", "gold", "xp", "heal", "follower", "animation"]],
 	["World", ["teleport", "set_home", "fade_out", "fade_in", "sound", "effect", "weather"]],
-	["Progress", ["quest", "achievement"]],
+	["Progress", ["quest", "achievement", "nav"]],
+	["Cutscene", ["shake", "toss", "camera", "letterbox", "video"]],
 ];
 // Body Models pieces → appearance options (mirrors Database.piece_use / _merge_pieces).
 const PIECE_USES = [["", "Item / other"], ["hair", "Hair style"], ["facial_hair", "Facial hair"], ["head", "Head"], ["face", "Face"]];
@@ -2481,6 +2485,35 @@ const CMDS = {
 	quest: { label: "Quest", make: () => ({ cmd: "quest", id: "", op: "start" }),
 		fields: [["id", "Quest", "select", questOptions], ["op", "Do", "select", [["offer", "Offer (Accept / Decline window)"], ["start", "Start (accept)"], ["complete", "Complete (gives the rewards)"], ["fail", "Fail"], ["reset", "Reset (not started)"]]]],
 		show: c => "Quest: " + ({ offer: "offer", start: "start", complete: "complete", fail: "fail", reset: "reset" }[c.op] || c.op) + " " + nameOf(questOptions(), c.id) },
+	say: { label: "Say (spoken while you play)", make: () => ({ cmd: "say", who: "npc", npc: "", name: "", text: "", sound: "", log: true, seconds: 0, wait: true }),
+		fields: [["who", "Who says it", "select", [["npc", "An NPC (e.g. a follower)"], ["event", "This event"], ["player", "The player"]]], ["npc", "NPC (when Who is an NPC)", "npc"],
+			["name", "Name shown (empty = theirs)", "text"], ["text", "Line", "textarea", "A bubble over their head while play goes on: no key press needed. {player} and the other text codes work."],
+			["sound", "Voice clip (optional)", "sound"], ["log", "Also in the game log", "bool"], ["seconds", "Shown for (s, 0 = long enough to read)", "number"], ["wait", "The event waits until it's been read", "bool"]],
+		show: c => "Say: " + (c.name || (c.who === "npc" ? nameOf(npcOptions(), c.npc) : c.who === "player" ? "Player" : "Event")) + ": " + (c.text || "") },
+	wait_for: { label: "Wait until…", make: () => ({ cmd: "wait_for", conditions: [{ type: "switch", id: "", is: true }], timeout: 0 }),
+		fields: [["conditions", "Waits (play goes on) until all of these hold", "conditions"], ["timeout", "Give up after (s, 0 = never)", "number"]],
+		show: c => "Wait until: " + condText(c.conditions) + (c.timeout ? " (max " + c.timeout + " s)" : "") },
+	nav: { label: "Nav point (HUD waypoint)", make: () => ({ cmd: "nav", op: "set", id: "main", target: "marker:", label: "", color: "#ffd35c", reach: 0 }),
+		fields: [["op", "", "select", [["set", "Show"], ["clear", "Remove"]]], ["id", "Id (several can show; Remove with an empty id clears all)", "text"],
+			["target", "Points at", "navtarget"], ["label", "Label", "text"], ["color", "Colour", "color"], ["reach", "Goes away within (m, 0 = never; enemy points also go when they're all dead)", "number"]],
+		show: c => c.op === "clear" ? "Nav: remove " + (c.id || "all") : "Nav: " + (c.label || c.id) + " → " + (c.target || "?") },
+	shake: { label: "Screen shake", make: () => ({ cmd: "shake", seconds: 3, strength: 0.4, sound: "rumble", wait: false }),
+		fields: [["seconds", "Seconds", "number"], ["strength", "Strength (0–1)", "number"], ["sound", "Sound", "select", () => [["rumble", "Earth rumble (built in)"], ["", "None"]].concat((assets.sounds || []).map(p => [p, soundLabel(p)]))], ["wait", "Wait until it stops", "bool"]],
+		show: c => "Shake: " + c.seconds + " s at " + c.strength },
+	toss: { label: "Throw the player (ground bursts)", make: () => ({ cmd: "toss", toward: "away", marker: "", power: 9, height: 5, down: 1.4, damage: 0 }),
+		fields: [["toward", "Thrown", "select", [["away", "Away from this event"], ["marker", "Toward a marker"]]], ["marker", "Marker (when toward a marker)", "marker"],
+			["power", "How far (push, m/s)", "number"], ["height", "How high (m/s up)", "number"], ["down", "On the ground for (s)", "number"], ["damage", "Damage", "number"]],
+		show: c => "Throw player " + (c.toward === "marker" ? "→ " + c.marker : "away") },
+	camera: { label: "Cutscene camera", make: () => ({ cmd: "camera", op: "move", marker: "", look: "", seconds: 2, wait: true }),
+		fields: [["op", "", "select", [["move", "Glide to a marker"], ["back", "Back to the game camera"]]], ["marker", "Marker (its position and facing)", "marker"],
+			["look", "Looks at (optional)", "select", [["", "Where the marker faces"], ["player", "The player"], ["event", "This event"], ["npc", "An NPC"]]], ["npc", "NPC (when looking at one)", "npc"],
+			["seconds", "Over (s)", "number"], ["wait", "Wait until it gets there", "bool"]],
+		show: c => c.op === "back" ? "Camera: back (" + c.seconds + " s)" : "Camera → " + (c.marker || "?") + (c.look ? " looking at " + c.look : "") },
+	letterbox: { label: "Letterbox bars", make: () => ({ cmd: "letterbox", on: true, seconds: 0.6 }),
+		fields: [["on", "", "onoff"], ["seconds", "Over (s)", "number"]], show: c => "Letterbox " + (c.on === false ? "off" : "on") },
+	video: { label: "Play video", make: () => ({ cmd: "video", video: "", skippable: true, pause: true }),
+		fields: [["video", "Video (.ogv)", "select", () => (assets.videos || []).map(p => [p, p.split("/").pop()])], ["skippable", "Can be skipped (Esc / Interact / click)", "bool"], ["pause", "Pause the game under it", "bool"]],
+		show: c => "Video: " + ((c.video || "?").split("/").pop()) },
 	achievement: { label: "Unlock achievement", make: () => ({ cmd: "achievement", id: "" }),
 		fields: [["id", "Achievement", "select", achievementOptions]], show: c => "Achievement: " + nameOf(achievementOptions(), c.id) },
 	text: { label: "Show text", make: () => ({ cmd: "text", speaker: "", text: "" }),
@@ -2878,6 +2911,37 @@ function commandEditor(c) {
 				ctl.setAttribute("list", "ev-markers");
 				ctl.oninput = () => setv(ctl.value);
 				w.appendChild(dl);
+				break;
+			}
+			case "navtarget": {
+				// "kind:what": a marker / event / NPC / enemies by node name / the player.
+				const cur = String(c[key] || "marker:");
+				let kind = cur.split(":")[0], what = cur.slice(kind.length + 1);
+				ctl = el("div", { className: "row" });
+				const ks = selectOf([["marker", "A marker / node"], ["event", "An event"], ["npc", "An NPC"], ["enemy", "Enemies (node names)"], ["player", "The player"]], kind, false);
+				ks.style.flex = "0 0 160px";
+				let vs;
+				const build = () => {
+					if (vs) vs.remove();
+					if (kind === "event") vs = selectOf(eventOptions(), what, true);
+					else if (kind === "npc") vs = selectOf(npcOptions(), what, true);
+					else if (kind === "player") vs = el("span");
+					else {
+						vs = el("input", { type: "text", value: what, placeholder: kind === "enemy" ? "Bandit, Bandit2, Bandit3" : "node name" });
+						if (kind === "marker") {
+							const dl = el("datalist", { id: "ev-nav-markers" });
+							for (const m of (Object.values(assets.markers || {}).flat())) dl.appendChild(el("option", { value: m }));
+							vs.setAttribute("list", "ev-nav-markers");
+							ctl.appendChild(dl);
+						}
+					}
+					const upd = () => { what = vs.value || ""; setv(kind + ":" + what); };
+					vs.oninput = upd; vs.onchange = upd;
+					ctl.appendChild(vs);
+				};
+				ks.onchange = () => { kind = ks.value; what = ""; setv(kind + ":"); build(); };
+				ctl.appendChild(ks);
+				build();
 				break;
 			}
 			case "vec3": {

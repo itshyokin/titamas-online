@@ -420,6 +420,720 @@
 					"trigger": "action"
 				}
 			]
+		},
+		{
+			"id": "tut_wake",
+			"name": "Tutorial: waking at the Monolith",
+			"note": "Runs once at the start of a new game. Place it anywhere (it's invisible).",
+			"pages": [
+				{
+					"commands": [
+						{
+							"cmd": "letterbox",
+							"on": true,
+							"seconds": 0.01
+						},
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Cold stone under your cheek. Your head is pounding."
+						},
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Above you the Monolith hums, too tall to see the top of. You don't remember how you got here... or much of anything."
+						},
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Across the pond, someone has lit a fire."
+						},
+						{
+							"cmd": "letterbox",
+							"on": false,
+							"seconds": 0.8
+						},
+						{
+							"cmd": "nav",
+							"op": "set",
+							"id": "main",
+							"target": "npc:katrina",
+							"label": "Someone across the water",
+							"color": "#ffd35c",
+							"reach": 0
+						},
+						{
+							"cmd": "switch",
+							"id": "tut_started",
+							"value": true
+						}
+					],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "auto"
+				},
+				{
+					"commands": [],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "tut_started",
+							"is": true
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				}
+			]
+		},
+		{
+			"id": "katrina_intro",
+			"name": "Katrina (tutorial)",
+			"note": "Runs when you talk to Katrina (npcs.json katrina: event).",
+			"pages": [
+				{
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Easy, easy! You came out of that water like a drowned cat."
+						},
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Katrina. And you're... not sure? Hm. The Monolith does that to people, they say."
+						},
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Well, you can't walk these hills empty-handed. Here, take this."
+						},
+						{
+							"cmd": "give_item",
+							"item": "iron_longsword",
+							"count": 1,
+							"silent": false
+						},
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Try it on those dummies first. Give them a few good whacks, and I'll come along with you."
+						},
+						{
+							"cmd": "nav",
+							"op": "clear",
+							"id": "main"
+						},
+						{
+							"cmd": "follower",
+							"npc": "katrina",
+							"op": "join"
+						},
+						{
+							"cmd": "variable",
+							"id": "dummy_hits",
+							"op": "set",
+							"value": 0
+						},
+						{
+							"cmd": "nav",
+							"op": "set",
+							"id": "main",
+							"target": "node:TrainingDummy",
+							"label": "Training dummies",
+							"color": "#ffd35c",
+							"reach": 4
+						},
+						{
+							"cmd": "switch",
+							"id": "tut_met_katrina",
+							"value": true
+						}
+					],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "Talk",
+					"solid": false,
+					"speaker": "Katrina",
+					"trigger": "action"
+				},
+				{
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Go on, have at those dummies. They don't hit back."
+						}
+					],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "tut_met_katrina",
+							"is": true
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "Talk",
+					"solid": false,
+					"speaker": "Katrina",
+					"trigger": "action"
+				},
+				{
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "The bandits are past the road. Lead the way, I'm right behind you."
+						}
+					],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "tut_practice_done",
+							"is": true
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "Talk",
+					"solid": false,
+					"speaker": "Katrina",
+					"trigger": "action"
+				},
+				{
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "Stay sharp. The old quarry's east of here: that's our way out."
+						}
+					],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "tut_bandits_done",
+							"is": true
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "Talk",
+					"solid": false,
+					"speaker": "Katrina",
+					"trigger": "action"
+				},
+				{
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "",
+							"text": "We actually brought it down. The vines should hold us now. Let's climb out of here."
+						}
+					],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "troll_defeated",
+							"is": true
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "Talk",
+					"solid": false,
+					"speaker": "Katrina",
+					"trigger": "action"
+				}
+			]
+		},
+		{
+			"id": "tut_guide",
+			"name": "Tutorial: Katrina's guidance",
+			"note": "Invisible. Katrina talks as you play and moves the nav point along. Each page waits, then flips the next switch.",
+			"pages": [
+				{
+					"commands": [],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				},
+				{
+					"commands": [
+						{
+							"cmd": "wait_for",
+							"conditions": [
+								{
+									"type": "variable",
+									"id": "dummy_hits",
+									"op": ">=",
+									"value": 5
+								}
+							],
+							"timeout": 0
+						},
+						{
+							"cmd": "say",
+							"who": "npc",
+							"npc": "katrina",
+							"name": "",
+							"text": "Not bad! Your arm remembers more than your head does.",
+							"sound": "",
+							"log": true,
+							"seconds": 0,
+							"wait": true
+						},
+						{
+							"cmd": "say",
+							"who": "npc",
+							"npc": "katrina",
+							"name": "",
+							"text": "See the smoke past the road? Bandits. Let's clear them out. Stay close.",
+							"sound": "",
+							"log": true,
+							"seconds": 0,
+							"wait": true
+						},
+						{
+							"cmd": "variable",
+							"id": "tut_bandits",
+							"op": "set",
+							"value": 0
+						},
+						{
+							"cmd": "nav",
+							"op": "set",
+							"id": "main",
+							"target": "enemy:Bandit,Bandit2,Bandit3",
+							"label": "Bandits",
+							"color": "#ffd35c",
+							"reach": 0
+						},
+						{
+							"cmd": "switch",
+							"id": "tut_practice_done",
+							"value": true
+						}
+					],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "tut_met_katrina",
+							"is": true
+						}
+					],
+					"freeze": false,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "auto"
+				},
+				{
+					"commands": [
+						{
+							"cmd": "wait_for",
+							"conditions": [
+								{
+									"type": "variable",
+									"id": "tut_bandits",
+									"op": ">=",
+									"value": 3
+								}
+							],
+							"timeout": 0
+						},
+						{
+							"cmd": "say",
+							"who": "npc",
+							"npc": "katrina",
+							"name": "",
+							"text": "That's the lot of them. The old quarry's east: that's our way out.",
+							"sound": "",
+							"log": true,
+							"seconds": 0,
+							"wait": true
+						},
+						{
+							"cmd": "nav",
+							"op": "set",
+							"id": "main",
+							"target": "marker:TrollArena",
+							"label": "The old quarry",
+							"color": "#ffd35c",
+							"reach": 0
+						},
+						{
+							"cmd": "switch",
+							"id": "tut_bandits_done",
+							"value": true
+						}
+					],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "tut_practice_done",
+							"is": true
+						}
+					],
+					"freeze": false,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "auto"
+				},
+				{
+					"commands": [],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "tut_bandits_done",
+							"is": true
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				}
+			]
+		},
+		{
+			"id": "tut_rumble",
+			"name": "Tutorial: the troll wakes",
+			"note": "Walk-in area on the way to the quarry. The troll (Enemies/Troll) has Appear Switch = troll_awake and Emerge on.",
+			"pages": [
+				{
+					"commands": [],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				},
+				{
+					"commands": [
+						{
+							"cmd": "nav",
+							"op": "clear",
+							"id": "main"
+						},
+						{
+							"cmd": "shake",
+							"seconds": 4.5,
+							"strength": 0.45,
+							"sound": "rumble",
+							"wait": false
+						},
+						{
+							"cmd": "say",
+							"who": "npc",
+							"npc": "katrina",
+							"name": "",
+							"text": "Wait... do you feel that?",
+							"sound": "",
+							"log": true,
+							"seconds": 2.0,
+							"wait": true
+						},
+						{
+							"cmd": "letterbox",
+							"on": true,
+							"seconds": 0.5
+						},
+						{
+							"cmd": "camera",
+							"op": "move",
+							"marker": "TrollCam",
+							"look": "TrollArena",
+							"seconds": 1.6,
+							"wait": true
+						},
+						{
+							"cmd": "switch",
+							"id": "troll_awake",
+							"value": true
+						},
+						{
+							"cmd": "wait",
+							"seconds": 2.4
+						},
+						{
+							"cmd": "say",
+							"who": "npc",
+							"npc": "katrina",
+							"name": "",
+							"text": "A troll! Dodge the rocks, and when it raises its fists, get clear!",
+							"sound": "",
+							"log": true,
+							"seconds": 3.5,
+							"wait": false
+						},
+						{
+							"cmd": "camera",
+							"op": "back",
+							"seconds": 1.2,
+							"wait": true
+						},
+						{
+							"cmd": "letterbox",
+							"on": false,
+							"seconds": 0.5
+						},
+						{
+							"cmd": "nav",
+							"op": "set",
+							"id": "main",
+							"target": "enemy:Troll",
+							"label": "Old Mossback",
+							"color": "#ffd35c",
+							"reach": 0
+						},
+						{
+							"cmd": "self_switch",
+							"letter": "A",
+							"value": true
+						}
+					],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "tut_bandits_done",
+							"is": true
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "touch"
+				},
+				{
+					"commands": [],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "tut_bandits_done",
+							"is": true
+						},
+						{
+							"type": "self",
+							"letter": "A",
+							"is": true
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				}
+			]
+		},
+		{
+			"id": "quarry_vines",
+			"name": "Quarry vines (blocked by the troll)",
+			"note": "Walk-in area in front of the vines. While the troll is up, the ground bursts and throws you back. The ClimbLock box on the vines unlocks with troll_defeated.",
+			"pages": [
+				{
+					"commands": [],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				},
+				{
+					"commands": [
+						{
+							"cmd": "toss",
+							"toward": "away",
+							"marker": "",
+							"power": 11,
+							"height": 6,
+							"down": 1.4,
+							"damage": 0
+						},
+						{
+							"cmd": "say",
+							"who": "npc",
+							"npc": "katrina",
+							"name": "",
+							"text": "It won't let us leave! We have to bring it down!",
+							"sound": "",
+							"log": true,
+							"seconds": 3.0,
+							"wait": false
+						}
+					],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "troll_awake",
+							"is": true
+						}
+					],
+					"freeze": false,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "touch"
+				},
+				{
+					"commands": [],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "troll_defeated",
+							"is": true
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				}
+			]
+		},
+		{
+			"id": "tut_victory",
+			"name": "Tutorial: the troll falls",
+			"note": "Invisible. Runs once when the troll is killed (its Defeat Switch = troll_defeated).",
+			"pages": [
+				{
+					"commands": [],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				},
+				{
+					"commands": [
+						{
+							"cmd": "wait",
+							"seconds": 2.5
+						},
+						{
+							"cmd": "say",
+							"who": "npc",
+							"npc": "katrina",
+							"name": "",
+							"text": "...It's down. It's actually down!",
+							"sound": "",
+							"log": true,
+							"seconds": 0,
+							"wait": true
+						},
+						{
+							"cmd": "say",
+							"who": "npc",
+							"npc": "katrina",
+							"name": "",
+							"text": "Those vines should hold us now. Up we go.",
+							"sound": "",
+							"log": true,
+							"seconds": 0,
+							"wait": true
+						},
+						{
+							"cmd": "nav",
+							"op": "set",
+							"id": "main",
+							"target": "marker:QuarryVines",
+							"label": "Climb out",
+							"color": "#ffd35c",
+							"reach": 3
+						},
+						{
+							"cmd": "self_switch",
+							"letter": "A",
+							"value": true
+						}
+					],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "troll_defeated",
+							"is": true
+						}
+					],
+					"freeze": false,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "auto"
+				},
+				{
+					"commands": [],
+					"conditions": [
+						{
+							"type": "switch",
+							"id": "troll_defeated",
+							"is": true
+						},
+						{
+							"type": "self",
+							"letter": "A",
+							"is": true
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				}
+			]
 		}
 	],
 	"switches": [
@@ -438,12 +1152,44 @@
 		{
 			"id": "village_attacked",
 			"name": "Village under attack (safe area off)"
+		},
+		{
+			"id": "tut_started",
+			"name": "Tutorial: woke up"
+		},
+		{
+			"id": "tut_met_katrina",
+			"name": "Tutorial: met Katrina"
+		},
+		{
+			"id": "tut_practice_done",
+			"name": "Tutorial: practised on the dummies"
+		},
+		{
+			"id": "tut_bandits_done",
+			"name": "Tutorial: bandits cleared"
+		},
+		{
+			"id": "troll_awake",
+			"name": "Troll has woken (it appears)"
+		},
+		{
+			"id": "troll_defeated",
+			"name": "Troll defeated"
 		}
 	],
 	"variables": [
 		{
 			"id": "lever_pulls",
 			"name": "Times the lever was pulled"
+		},
+		{
+			"id": "dummy_hits",
+			"name": "Hits on the training dummies"
+		},
+		{
+			"id": "tut_bandits",
+			"name": "Tutorial bandits killed"
 		}
 	]
 }

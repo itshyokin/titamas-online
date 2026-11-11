@@ -98,6 +98,12 @@ func _draw_markers(heading: float, font: Font) -> void:
 		if e and st and not st.is_dead() and e.get("target") == player and Combat.is_enemy_of(player, e) \
 				and e.global_position.distance_to(player.global_position) < enemy_range:
 			marks.append([e.global_position, "●", Color(0.95, 0.25, 0.2), 12])
+	# Nav points (event "Nav point" command).
+	var nav := get_tree().get_first_node_in_group("hud")
+	var markers := nav.get_node_or_null("NavMarkers") if nav else null
+	if markers:
+		for p: Dictionary in markers.call("points"):
+			marks.append([p.position, "◆", p.color, 16])
 	var session := get_tree().root.get_node_or_null("GameSession")
 	if session and session.call("active"):
 		var home: Dictionary = session.get("data").get("home", {})

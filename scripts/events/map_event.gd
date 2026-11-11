@@ -152,7 +152,7 @@ func trigger() -> String:
 
 
 func is_running() -> bool:
-	return _runner != null and is_instance_valid(_runner)
+	return _runner != null and is_instance_valid(_runner) and not _runner.is_queued_for_deletion()
 
 
 ## Runs the active page's commands (`npc`: the NPC showing this page, if any).
@@ -181,11 +181,21 @@ func erase() -> void:
 
 
 func _run_auto() -> void:
+	if trigger() == "auto" and not _auto_done and is_running():
+		# The page that's still finishing turned on this one: start it when that one ends.
+		if not _runner.finished.is_connected(_run_auto_later):
+			_runner.finished.connect(_run_auto_later, CONNECT_ONE_SHOT)
+		return
 	if trigger() == "auto" and not _auto_done and not is_running():
 		var player := _player()
 		if player:
 			_auto_done = true
 			start(player)
+
+
+func _run_auto_later() -> void:
+	_runner = null
+	_run_auto.call_deferred()
 
 
 func _on_body_entered(body: Node) -> void:

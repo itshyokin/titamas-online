@@ -7,6 +7,8 @@ extends StaticBody3D
 @export var level := 1
 @export var max_health := 500.0
 @export var reset_after := 4.0
+## 1 is added to this event variable on every hit ("hit the dummies 5 times").
+@export var hit_variable := ""
 
 var stats: Stats
 var _since_hit := 0.0
@@ -58,6 +60,8 @@ func _process(delta: float) -> void:
 
 func _on_damaged(amount: float, _source: Node, _crit: bool) -> void:
 	_since_hit = 0.0
+	if not hit_variable.is_empty():
+		EventState.set_var(hit_variable, EventState.get_var(hit_variable) + 1.0)
 	# Wobble.
 	var t := create_tween()
 	t.tween_property(_body, "rotation_degrees:x", -8.0 - minf(amount, 30.0) * 0.3, 0.06)

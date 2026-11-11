@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/safe_area.tscn" id="99_safe"]
 [ext_resource type="PackedScene" path="res://scenes/world/swarm_spot.tscn" id="100_swarm"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="101_troll"]
+[ext_resource type="PackedScene" path="res://scenes/world/climb_lock.tscn" id="102_climb"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
@@ -110,26 +111,36 @@ target_path = NodePath("../Player")
 [node name="TrainingDummy" type="StaticBody3D" parent="Enemies" unique_id=1295057077]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -56.130466, 2.6304288, 50.010624)
 script = ExtResource("91_dummy")
+hit_variable = "dummy_hits"
 
 [node name="TrainingDummy2" type="StaticBody3D" parent="Enemies" unique_id=926457814]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53.091194, 2.6304288, 50.010624)
 script = ExtResource("91_dummy")
+hit_variable = "dummy_hits"
 
 [node name="TrainingDummy3" type="StaticBody3D" parent="Enemies" unique_id=1378317541]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -59.924137, 2.6304288, 50.010624)
 script = ExtResource("91_dummy")
+hit_variable = "dummy_hits"
 
 [node name="Bandit" parent="Enemies" unique_id=1918972890 instance=ExtResource("90_bandit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2.795746, 2)
+defeat_variable = "tut_bandits"
 
 [node name="Bandit2" parent="Enemies" unique_id=417441187 instance=ExtResource("90_bandit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.70174, 2.795746, 10)
+defeat_variable = "tut_bandits"
 
 [node name="Bandit3" parent="Enemies" unique_id=808439722 instance=ExtResource("90_bandit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.0862, 4.603443, 10.822014)
+defeat_variable = "tut_bandits"
 
 [node name="Troll" parent="Enemies" unique_id=1177397848 instance=ExtResource("101_troll")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 6, 52)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 2.4, 52)
+appear_switch = "troll_awake"
+emerge = true
+defeat_switch = "troll_defeated"
+stays_dead = true
 
 [node name="CaveBat" parent="Enemies" unique_id=10845968 instance=ExtResource("97_beast")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 4, 45)
@@ -172,7 +183,7 @@ visible = false
 npc_id = "guard_healer"
 
 [node name="Katrina" parent="NPCs" unique_id=1950577435 instance=ExtResource("95_npc")]
-transform = Transform3D(-0.852549, 0, 0.52264726, 0, 1, 0, -0.52264726, 0, -0.852549, -52, 3, 65.08072)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -50, 2.3, 53)
 npc_id = "katrina"
 
 [node name="Villager" parent="NPCs" unique_id=91995911 instance=ExtResource("95_npc")]
@@ -249,3 +260,38 @@ indoors = true
 [node name="FliesByTheRoad" parent="Areas" unique_id=1073066422 instance=ExtResource("100_swarm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51, 2.1, 74)
 visible = false
+
+[node name="Tutorial" type="Node3D" parent="Events"]
+
+[node name="TutWake" parent="Events/Tutorial" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 2, 92)
+event_id = "tut_wake"
+
+[node name="TutGuide" parent="Events/Tutorial" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 2, 94)
+event_id = "tut_guide"
+
+[node name="TutVictory" parent="Events/Tutorial" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 2.4, 56)
+event_id = "tut_victory"
+
+[node name="TutRumble" parent="Events/Tutorial" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58, 2.5, 34)
+event_id = "tut_rumble"
+size = Vector3(18, 8, 18)
+
+[node name="QuarryVines" parent="Events/Tutorial" instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 91, 2.5, 62)
+event_id = "quarry_vines"
+size = Vector3(5, 5, 8)
+
+[node name="VinesLock" parent="Events/Tutorial" instance=ExtResource("102_climb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 95, 2, 62)
+size = Vector3(6, 16, 10)
+unlock_switch = "troll_defeated"
+
+[node name="TrollArena" type="Marker3D" parent="Events/Tutorial"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 4.5, 52)
+
+[node name="TrollCam" type="Marker3D" parent="Events/Tutorial"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, 8, 40)
