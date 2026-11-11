@@ -281,6 +281,13 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 		out_dir = bpy.path.abspath(s.export_dir)
 		os.makedirs(out_dir, exist_ok=True)
 
+		# Export Chunks cuts up whatever is active: stop if that's a prop or a water plane
+		# (clicking a tree just before exporting would overwrite a chunk with the tree).
+		water = bpy.data.collections.get(s.water_collection)
+		if master in _prop_objects(s) or (water and master.name in water.all_objects):
+			self.report({"ERROR"}, f"'{master.name}' is a prop/water object: click the terrain to make it active, then Export Chunks")
+			return {"CANCELLED"}
+
 		if master.mode != "OBJECT":
 			bpy.ops.object.mode_set(mode="OBJECT")  # commits sculpt/edit changes
 
@@ -356,7 +363,7 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 				h = max(v.co.y for v in cell.verts) - min(v.co.y for v in cell.verts)
 				name = f"chunk_{i}_{j}"
 				if w < size - 0.01 or h < size - 0.01:
-					partial.append(name)
+					partial.append(f"{name} ({w:.1f} x {h:.1f} m)")
 
 				mesh = bpy.data.meshes.new(name)
 				cell.to_mesh(mesh)
@@ -426,7 +433,7 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 		if prop_count:
 			msg += f", {prop_count} props"
 		if partial:
-			msg += f" | Partial (terrain doesn't fill the cell): {', '.join(partial)}"
+			msg += f" | Partial: '{master.name}' doesn't fill the {size:g} m cell: {', '.join(partial)}"
 			self.report({"WARNING"}, msg)
 		else:
 			self.report({"INFO"}, msg)
