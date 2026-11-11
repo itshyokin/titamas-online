@@ -299,6 +299,10 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 
 		xs = [v.co.x for v in src.verts]
 		ys = [v.co.y for v in src.verts]
+		if max(xs) - min(xs) < half and max(ys) - min(ys) < half:
+			src.free()
+			self.report({"ERROR"}, f"'{master.name}' is only {max(xs) - min(xs):.0f} x {max(ys) - min(ys):.0f} m: is the terrain the active object? Click it, then Export Chunks")
+			return {"CANCELLED"}
 		i_first, i_last = _cell_range(min(xs), max(xs), size)
 		k_first, k_last = _cell_range(min(ys), max(ys), size)  # k = Blender Y cell, J = -k
 
