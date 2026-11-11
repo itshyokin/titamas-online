@@ -1,28 +1,4 @@
 {
-	"switches": [
-		{
-			"id": "lever_pulled",
-			"name": "Lever by the road is down"
-		},
-		{
-			"id": "insignia_quest",
-			"name": "Quest: insignias (started)"
-		},
-		{
-			"id": "insignia_done",
-			"name": "Quest: insignias (done)"
-		},
-		{
-			"id": "village_attacked",
-			"name": "Village under attack (safe area off)"
-		}
-	],
-	"variables": [
-		{
-			"id": "lever_pulls",
-			"name": "Times the lever was pulled"
-		}
-	],
 	"events": [
 		{
 			"id": "old_stone",
@@ -30,14 +6,6 @@
 			"note": "Example: a choice, rewards and a self switch.",
 			"pages": [
 				{
-					"conditions": [],
-					"trigger": "action",
-					"model": "builtin:standing_stone",
-					"solid": true,
-					"marker": false,
-					"prompt": "Touch the stone",
-					"speaker": "",
-					"freeze": true,
 					"commands": [
 						{
 							"cmd": "text",
@@ -45,18 +13,12 @@
 							"text": "An old standing stone. Runes glow faintly along one side."
 						},
 						{
-							"cmd": "choice",
-							"options": [
-								"Touch the runes",
-								"Leave it"
-							],
-							"cancel": 1,
 							"branches": [
 								[
 									{
 										"cmd": "effect",
-										"on": "player",
 										"color": "#66ccff",
+										"on": "player",
 										"size": 1.2
 									},
 									{
@@ -73,13 +35,13 @@
 									},
 									{
 										"cmd": "give_item",
+										"count": 2.0,
 										"item": "minor_healing_potion",
-										"count": 2,
 										"silent": false
 									},
 									{
 										"cmd": "xp",
-										"value": 25
+										"value": 25.0
 									},
 									{
 										"cmd": "self_switch",
@@ -88,32 +50,46 @@
 									}
 								],
 								[]
+							],
+							"cancel": 1.0,
+							"cmd": "choice",
+							"options": [
+								"Touch the runes",
+								"Leave it"
 							]
 						}
-					]
+					],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "builtin:standing_stone",
+					"prompt": "Touch the stone",
+					"solid": true,
+					"speaker": "",
+					"trigger": "action"
 				},
 				{
-					"conditions": [
-						{
-							"type": "self",
-							"letter": "A",
-							"is": true
-						}
-					],
-					"trigger": "action",
-					"model": "builtin:standing_stone",
-					"solid": true,
-					"marker": false,
-					"prompt": "Look at the stone",
-					"speaker": "",
-					"freeze": true,
 					"commands": [
 						{
 							"cmd": "text",
 							"speaker": "",
 							"text": "The runes have gone dark."
 						}
-					]
+					],
+					"conditions": [
+						{
+							"is": true,
+							"letter": "A",
+							"type": "self"
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "builtin:standing_stone",
+					"prompt": "Look at the stone",
+					"solid": true,
+					"speaker": "",
+					"trigger": "action"
 				}
 			]
 		},
@@ -123,56 +99,56 @@
 			"note": "Example: a chest that opens once.",
 			"pages": [
 				{
-					"conditions": [],
-					"trigger": "action",
-					"model": "builtin:chest",
-					"solid": true,
-					"marker": true,
-					"prompt": "Open",
-					"speaker": "",
-					"freeze": true,
 					"commands": [
 						{
 							"cmd": "give_item",
+							"count": 3.0,
 							"item": "bandage",
-							"count": 3,
 							"silent": false
 						},
 						{
 							"cmd": "gold",
 							"op": "add",
-							"value": 15,
-							"silent": false
+							"silent": false,
+							"value": 15.0
 						},
 						{
 							"cmd": "self_switch",
 							"letter": "A",
 							"value": true
 						}
-					]
+					],
+					"conditions": [],
+					"freeze": true,
+					"marker": true,
+					"model": "builtin:chest",
+					"prompt": "Open",
+					"solid": true,
+					"speaker": "",
+					"trigger": "action"
 				},
 				{
-					"conditions": [
-						{
-							"type": "self",
-							"letter": "A",
-							"is": true
-						}
-					],
-					"trigger": "action",
-					"model": "builtin:chest_open",
-					"solid": true,
-					"marker": false,
-					"prompt": "Look inside",
-					"speaker": "",
-					"freeze": true,
 					"commands": [
 						{
 							"cmd": "text",
 							"speaker": "",
 							"text": "It's empty."
 						}
-					]
+					],
+					"conditions": [
+						{
+							"is": true,
+							"letter": "A",
+							"type": "self"
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "builtin:chest_open",
+					"prompt": "Look inside",
+					"solid": true,
+					"speaker": "",
+					"trigger": "action"
 				}
 			]
 		},
@@ -182,14 +158,6 @@
 			"note": "Example: a switch, a variable and {var:...} in text.",
 			"pages": [
 				{
-					"conditions": [],
-					"trigger": "action",
-					"model": "builtin:lever",
-					"solid": false,
-					"marker": false,
-					"prompt": "Pull",
-					"speaker": "",
-					"freeze": true,
 					"commands": [
 						{
 							"cmd": "sound",
@@ -204,30 +172,24 @@
 							"cmd": "variable",
 							"id": "lever_pulls",
 							"op": "add",
-							"value": 1
+							"value": 1.0
 						},
 						{
 							"cmd": "text",
 							"speaker": "",
 							"text": "Clunk. (Times pulled: {var:lever_pulls})"
 						}
-					]
+					],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "builtin:lever",
+					"prompt": "Pull",
+					"solid": false,
+					"speaker": "",
+					"trigger": "action"
 				},
 				{
-					"conditions": [
-						{
-							"type": "switch",
-							"id": "lever_pulled",
-							"is": true
-						}
-					],
-					"trigger": "action",
-					"model": "builtin:lever_on",
-					"solid": false,
-					"marker": false,
-					"prompt": "Push back",
-					"speaker": "",
-					"freeze": true,
 					"commands": [
 						{
 							"cmd": "switch",
@@ -236,10 +198,24 @@
 						},
 						{
 							"cmd": "log",
-							"text": "The lever clicks back up.",
-							"color": "#e6e6e0"
+							"color": "#e6e6e0",
+							"text": "The lever clicks back up."
 						}
-					]
+					],
+					"conditions": [
+						{
+							"id": "lever_pulled",
+							"is": true,
+							"type": "switch"
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "builtin:lever_on",
+					"prompt": "Push back",
+					"solid": false,
+					"speaker": "",
+					"trigger": "action"
 				}
 			]
 		},
@@ -249,45 +225,21 @@
 			"note": "Example: a teleport to a Marker3D in the level.",
 			"pages": [
 				{
-					"conditions": [],
-					"trigger": "action",
-					"model": "builtin:sign",
-					"solid": true,
-					"marker": false,
-					"prompt": "Read",
-					"speaker": "Signpost",
-					"freeze": true,
 					"commands": [
 						{
 							"cmd": "text",
 							"speaker": "Signpost",
-							"text": "North: the lookout. South: the sea."
-						},
-						{
-							"cmd": "text",
-							"speaker": "Signpost",
 							"text": "Somebody has scratched a shortcut under it."
-						},
-						{
-							"cmd": "choice",
-							"options": [
-								"Take the shortcut",
-								"Stay"
-							],
-							"cancel": 1,
-							"branches": [
-								[
-									{
-										"cmd": "teleport",
-										"scene": "",
-										"marker": "LookoutPoint",
-										"fade": true
-									}
-								],
-								[]
-							]
 						}
-					]
+					],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "builtin:sign",
+					"prompt": "Read",
+					"solid": true,
+					"speaker": "Signpost",
+					"trigger": "action"
 				}
 			]
 		},
@@ -297,14 +249,6 @@
 			"note": "Example: a touch area that runs once.",
 			"pages": [
 				{
-					"conditions": [],
-					"trigger": "touch",
-					"model": "",
-					"solid": false,
-					"marker": false,
-					"prompt": "",
-					"speaker": "",
-					"freeze": true,
 					"commands": [
 						{
 							"cmd": "text",
@@ -316,24 +260,32 @@
 							"letter": "A",
 							"value": true
 						}
-					]
+					],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "touch"
 				},
 				{
+					"commands": [],
 					"conditions": [
 						{
-							"type": "self",
+							"is": true,
 							"letter": "A",
-							"is": true
+							"type": "self"
 						}
 					],
-					"trigger": "none",
-					"model": "",
-					"solid": false,
-					"marker": false,
-					"prompt": "",
-					"speaker": "",
 					"freeze": true,
-					"commands": []
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
 				}
 			]
 		},
@@ -343,14 +295,6 @@
 			"note": "Example: an NPC on an event page (model npc:villager) with a small quest.",
 			"pages": [
 				{
-					"conditions": [],
-					"trigger": "action",
-					"model": "npc:villager",
-					"solid": false,
-					"marker": false,
-					"prompt": "",
-					"speaker": "",
-					"freeze": true,
 					"commands": [
 						{
 							"cmd": "text",
@@ -363,9 +307,6 @@
 							"text": "If you bring me 3 bandit insignias, I'll make it worth your while."
 						},
 						{
-							"cmd": "quest",
-							"id": "bandit_insignias",
-							"op": "offer",
 							"accepted": [
 								{
 									"cmd": "switch",
@@ -378,39 +319,43 @@
 									"text": "Thank you! Come back when you have them."
 								}
 							],
+							"cmd": "quest",
 							"declined": [
 								{
 									"cmd": "text",
 									"speaker": "",
 									"text": "I understand."
 								}
-							]
-						}
-					]
-				},
-				{
-					"conditions": [
-						{
-							"type": "switch",
-							"id": "insignia_quest",
-							"is": true
+							],
+							"id": "bandit_insignias",
+							"op": "offer"
 						}
 					],
-					"trigger": "action",
-					"model": "npc:villager",
-					"solid": false,
-					"marker": false,
-					"prompt": "",
-					"speaker": "",
+					"conditions": [],
 					"freeze": true,
+					"marker": false,
+					"model": "npc:villager",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "action"
+				},
+				{
 					"commands": [
 						{
 							"cmd": "if",
 							"conditions": [
 								{
-									"type": "quest",
 									"id": "bandit_insignias",
-									"state": "ready"
+									"state": "ready",
+									"type": "quest"
+								}
+							],
+							"else": [
+								{
+									"cmd": "text",
+									"speaker": "",
+									"text": "Any luck with those insignias? I need 3."
 								}
 							],
 							"then": [
@@ -433,41 +378,72 @@
 									"cmd": "achievement",
 									"id": "BANDIT_BASHER"
 								}
-							],
-							"else": [
-								{
-									"cmd": "text",
-									"speaker": "",
-									"text": "Any luck with those insignias? I need 3."
-								}
 							]
 						}
-					]
-				},
-				{
+					],
 					"conditions": [
 						{
-							"type": "switch",
-							"id": "insignia_done",
-							"is": true
+							"id": "insignia_quest",
+							"is": true,
+							"type": "switch"
 						}
 					],
-					"trigger": "action",
-					"model": "npc:villager",
-					"solid": false,
-					"marker": false,
-					"prompt": "",
-					"speaker": "",
 					"freeze": true,
+					"marker": false,
+					"model": "npc:villager",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "action"
+				},
+				{
 					"commands": [
 						{
 							"cmd": "text",
 							"speaker": "",
 							"text": "Thanks again, {player}. The roads feel safer already."
 						}
-					]
+					],
+					"conditions": [
+						{
+							"id": "insignia_done",
+							"is": true,
+							"type": "switch"
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "npc:villager",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "action"
 				}
 			]
+		}
+	],
+	"switches": [
+		{
+			"id": "lever_pulled",
+			"name": "Lever by the road is down"
+		},
+		{
+			"id": "insignia_quest",
+			"name": "Quest: insignias (started)"
+		},
+		{
+			"id": "insignia_done",
+			"name": "Quest: insignias (done)"
+		},
+		{
+			"id": "village_attacked",
+			"name": "Village under attack (safe area off)"
+		}
+	],
+	"variables": [
+		{
+			"id": "lever_pulls",
+			"name": "Times the lever was pulled"
 		}
 	]
 }

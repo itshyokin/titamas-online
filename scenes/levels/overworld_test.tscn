@@ -92,7 +92,7 @@ target_path = NodePath("../Player")
 default_material = SubResource("StandardMaterial3D_ycjve")
 
 [node name="Player" parent="." unique_id=806400208 instance=ExtResource("3_4nsao")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49.14438, 2.485851, 76.27473)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49.14438, 2.0768363, 89.451126)
 
 [node name="Ocean" type="Node3D" parent="." unique_id=1156260732]
 script = ExtResource("4_r6e8q")
@@ -108,7 +108,15 @@ target_path = NodePath("../Player")
 [node name="Enemies" type="Node3D" parent="." unique_id=1245119392]
 
 [node name="TrainingDummy" type="StaticBody3D" parent="Enemies" unique_id=1295057077]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -59.063515, 2.537659, 62.096825)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -56.130466, 2.6304288, 50.010624)
+script = ExtResource("91_dummy")
+
+[node name="TrainingDummy2" type="StaticBody3D" parent="Enemies" unique_id=926457814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53.091194, 2.6304288, 50.010624)
+script = ExtResource("91_dummy")
+
+[node name="TrainingDummy3" type="StaticBody3D" parent="Enemies" unique_id=1378317541]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -59.924137, 2.6304288, 50.010624)
 script = ExtResource("91_dummy")
 
 [node name="Bandit" parent="Enemies" unique_id=1918972890 instance=ExtResource("90_bandit")]
@@ -120,19 +128,22 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.70174, 2.795746, 10)
 [node name="Bandit3" parent="Enemies" unique_id=808439722 instance=ExtResource("90_bandit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.0862, 4.603443, 10.822014)
 
-[node name="Troll" parent="Enemies" instance=ExtResource("101_troll")]
+[node name="Troll" parent="Enemies" unique_id=1177397848 instance=ExtResource("101_troll")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 6, 52)
 
 [node name="CaveBat" parent="Enemies" unique_id=10845968 instance=ExtResource("97_beast")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 4, 45)
+visible = false
 
 [node name="CaveBat2" parent="Enemies" unique_id=549116291 instance=ExtResource("97_beast")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 4, 49)
+visible = false
 
 [node name="NPCs" type="Node3D" parent="." unique_id=1939955384]
 
 [node name="VillageGuard" parent="NPCs" unique_id=167749516 instance=ExtResource("95_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -54, 3, 70)
+visible = false
 npc_id = "village_guard"
 
 [node name="Patrol" type="Node3D" parent="NPCs/VillageGuard" unique_id=1042662519]
@@ -147,29 +158,35 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 6)
 
 [node name="GuardArcher" parent="NPCs" unique_id=1485815995 instance=ExtResource("95_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -46, 3, 66)
+visible = false
 npc_id = "guard_archer"
 
 [node name="GuardMage" parent="NPCs" unique_id=204765442 instance=ExtResource("95_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 3, 68)
+visible = false
 npc_id = "guard_mage"
 
 [node name="GuardHealer" parent="NPCs" unique_id=2075688443 instance=ExtResource("95_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 3, 70)
+visible = false
 npc_id = "guard_healer"
 
 [node name="Katrina" parent="NPCs" unique_id=1950577435 instance=ExtResource("95_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 3, 80)
+transform = Transform3D(-0.852549, 0, 0.52264726, 0, 1, 0, -0.52264726, 0, -0.852549, -52, 3, 65.08072)
 npc_id = "katrina"
 
 [node name="Villager" parent="NPCs" unique_id=91995911 instance=ExtResource("95_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 3, 72)
+visible = false
 
 [node name="InnBed" parent="." unique_id=261041230 instance=ExtResource("96_home")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 3, 82)
+visible = false
 home_name = "the village inn"
 
 [node name="WeaponChest" parent="." unique_id=950996312 instance=ExtResource("97_chest")]
 transform = Transform3D(0.8660254, 0, 0.5, 0, 1, 0, -0.5, 0, 0.8660254, -46.5, 3, 73.5)
+visible = false
 chest_id = "start_weapon_chest"
 title = "Weapon Chest"
 items = Array[String](["worn_dagger", "iron_greatsword", "smiths_hammer", "woodcutters_axe", "light_crossbow", "flintlock_pistol", "flintlock_rifle"])
@@ -179,49 +196,56 @@ greeting = "Someone left a chest of practice weapons by the road."
 
 [node name="OldStone" parent="Events" unique_id=1412088578 instance=ExtResource("98_event")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53.5, 3, 77)
+visible = false
 event_id = "old_stone"
 size = Vector3(1.2, 2.2, 1)
 
 [node name="RoadChest" parent="Events" unique_id=671285401 instance=ExtResource("98_event")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50.5, 3, 71)
+visible = false
 event_id = "road_chest"
 size = Vector3(1.2, 1, 0.8)
 
 [node name="RoadLever" parent="Events" unique_id=958543233 instance=ExtResource("98_event")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44.5, 3, 78)
+visible = false
 event_id = "road_lever"
 size = Vector3(0.8, 1, 0.6)
 
 [node name="RoadSign" parent="Events" unique_id=94758719 instance=ExtResource("98_event")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -47, 3, 80)
+transform = Transform3D(0.93974036, 0, 0.34188893, 0, 1, 0, -0.34188893, 0, 0.93974036, -54.388557, 1.0102637, 65.1387)
 event_id = "road_sign"
 size = Vector3(1, 1.6, 0.4)
 
 [node name="WelcomeArea" parent="Events" unique_id=1215007725 instance=ExtResource("98_event")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43, 3, 72)
+visible = false
 event_id = "welcome_area"
 size = Vector3(5, 3, 5)
 
 [node name="InsigniaVillager" parent="Events" unique_id=455319948 instance=ExtResource("98_event")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 3, 72)
+visible = false
 event_id = "insignia_villager"
 size = Vector3(1, 2, 1)
 
 [node name="LookoutPoint" type="Marker3D" parent="Events" unique_id=593464410]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 7, 60)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.00539, 7, 60)
 
-[node name="Areas" type="Node3D" parent="."]
+[node name="Areas" type="Node3D" parent="." unique_id=2049325193]
 
-[node name="VillageSafeArea" parent="Areas" instance=ExtResource("99_safe")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, -4, 73)
-size = Vector3(34, 24, 34)
+[node name="VillageSafeArea" parent="Areas" unique_id=845066492 instance=ExtResource("99_safe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -59.371716, -4, 78.35388)
+size = Vector3(75, 24.03, 65)
 off_switch = "village_attacked"
 
-[node name="InnIndoors" parent="Areas" instance=ExtResource("99_safe")]
+[node name="InnIndoors" parent="Areas" unique_id=268068342 instance=ExtResource("99_safe")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 2, 82)
+visible = false
 size = Vector3(7, 5, 7)
 safe = false
 indoors = true
 
-[node name="FliesByTheRoad" parent="Areas" instance=ExtResource("100_swarm")]
+[node name="FliesByTheRoad" parent="Areas" unique_id=1073066422 instance=ExtResource("100_swarm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51, 2.1, 74)
+visible = false
