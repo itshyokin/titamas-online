@@ -243,6 +243,41 @@ size = Vector3(1, 2, 1)
 [node name="LookoutPoint" type="Marker3D" parent="Events" unique_id=593464410]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.00539, 7, 60)
 
+[node name="Tutorial" type="Node3D" parent="Events" unique_id=1487523754]
+
+[node name="TutWake" parent="Events/Tutorial" unique_id=65192816 instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 2, 92)
+event_id = "tut_wake"
+
+[node name="TutGuide" parent="Events/Tutorial" unique_id=1160840300 instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 2, 94)
+event_id = "tut_guide"
+
+[node name="TutVictory" parent="Events/Tutorial" unique_id=777870319 instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 2.4, 56)
+event_id = "tut_victory"
+
+[node name="TutRumble" parent="Events/Tutorial" unique_id=1877634962 instance=ExtResource("98_event")]
+transform = Transform3D(0.9560697, 0, 0.2931394, 0, 1, 0, -0.2931394, 0, 0.9560697, 63.137432, 1.7175064, 30.701786)
+event_id = "tut_rumble"
+size = Vector3(45, 15, 18)
+
+[node name="QuarryVines" parent="Events/Tutorial" unique_id=1917941121 instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 91, 2.5, 62)
+event_id = "quarry_vines"
+size = Vector3(5, 5, 8)
+
+[node name="VinesLock" parent="Events/Tutorial" unique_id=2091573642 instance=ExtResource("102_climb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 68.62752, 2, 101.38348)
+size = Vector3(6, 16, 10)
+unlock_switch = "troll_defeated"
+
+[node name="TrollArena" type="Marker3D" parent="Events/Tutorial" unique_id=334368028]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 4.5, 52)
+
+[node name="TrollCam" type="Marker3D" parent="Events/Tutorial" unique_id=1033373466]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, 8, 40)
+
 [node name="Areas" type="Node3D" parent="." unique_id=2049325193]
 
 [node name="VillageSafeArea" parent="Areas" unique_id=845066492 instance=ExtResource("99_safe")]
@@ -260,38 +295,3 @@ indoors = true
 [node name="FliesByTheRoad" parent="Areas" unique_id=1073066422 instance=ExtResource("100_swarm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51, 2.1, 74)
 visible = false
-
-[node name="Tutorial" type="Node3D" parent="Events"]
-
-[node name="TutWake" parent="Events/Tutorial" instance=ExtResource("98_event")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 2, 92)
-event_id = "tut_wake"
-
-[node name="TutGuide" parent="Events/Tutorial" instance=ExtResource("98_event")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 2, 94)
-event_id = "tut_guide"
-
-[node name="TutVictory" parent="Events/Tutorial" instance=ExtResource("98_event")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 2.4, 56)
-event_id = "tut_victory"
-
-[node name="TutRumble" parent="Events/Tutorial" instance=ExtResource("98_event")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58, 2.5, 34)
-event_id = "tut_rumble"
-size = Vector3(18, 8, 18)
-
-[node name="QuarryVines" parent="Events/Tutorial" instance=ExtResource("98_event")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 91, 2.5, 62)
-event_id = "quarry_vines"
-size = Vector3(5, 5, 8)
-
-[node name="VinesLock" parent="Events/Tutorial" instance=ExtResource("102_climb")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 95, 2, 62)
-size = Vector3(6, 16, 10)
-unlock_switch = "troll_defeated"
-
-[node name="TrollArena" type="Marker3D" parent="Events/Tutorial"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 4.5, 52)
-
-[node name="TrollCam" type="Marker3D" parent="Events/Tutorial"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, 8, 40)

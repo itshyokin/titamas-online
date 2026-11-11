@@ -429,38 +429,13 @@
 				{
 					"commands": [
 						{
-							"cmd": "letterbox",
-							"on": true,
-							"seconds": 0.01
-						},
-						{
-							"cmd": "text",
-							"speaker": "",
-							"text": "Cold stone under your cheek. Your head is pounding."
-						},
-						{
-							"cmd": "text",
-							"speaker": "",
-							"text": "Above you the Monolith hums, too tall to see the top of. You don't remember how you got here... or much of anything."
-						},
-						{
-							"cmd": "text",
-							"speaker": "",
-							"text": "Across the pond, someone has lit a fire."
-						},
-						{
-							"cmd": "letterbox",
-							"on": false,
-							"seconds": 0.8
-						},
-						{
 							"cmd": "nav",
-							"op": "set",
-							"id": "main",
-							"target": "npc:katrina",
-							"label": "Someone across the water",
 							"color": "#ffd35c",
-							"reach": 0
+							"id": "main",
+							"label": "???",
+							"op": "set",
+							"reach": 0.0,
+							"target": "npc:katrina"
 						},
 						{
 							"cmd": "switch",
@@ -481,9 +456,9 @@
 					"commands": [],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "tut_started",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": true,
@@ -505,34 +480,76 @@
 					"commands": [
 						{
 							"cmd": "text",
-							"speaker": "",
-							"text": "Easy, easy! You came out of that water like a drowned cat."
+							"speaker": "Katrina",
+							"text": "Who's there?!"
 						},
 						{
 							"cmd": "text",
-							"speaker": "",
-							"text": "Katrina. And you're... not sure? Hm. The Monolith does that to people, they say."
+							"speaker": "Katrina",
+							"text": "Huh? You're not... "
 						},
 						{
 							"cmd": "text",
-							"speaker": "",
-							"text": "Well, you can't walk these hills empty-handed. Here, take this."
+							"speaker": "Katrina",
+							"text": "Hmm, sorry. Thought you were someone else..."
+						},
+						{
+							"cmd": "text",
+							"speaker": "Katrina",
+							"text": "I'm Commander Katrina Humphrey of the Knight's Guild,\nsworn Guardian of Lady Eleanor Faewood."
+						},
+						{
+							"cmd": "choice",
+							"options": [
+								"I'm {player}, nice to meet you.",
+								"Where are we?",
+								"What are you doing out here?"
+							],
+							"branches": [
+								[
+									{
+										"cmd": "text",
+										"speaker": "Katrina",
+										"text": "I'm Commander Katrina Humphrey of the Knight's Guild,\nsworn Guardian of Lady Eleanor Faewood."
+									}
+								],
+								[
+									{
+										"cmd": "text",
+										"speaker": "Katrina",
+										"text": "You're on Saturn's Moon, Titan.\nThis is a human colony, called Titamas."
+									}
+								],
+								[
+									{
+										"cmd": "text",
+										"speaker": "Katrina",
+										"text": "I'm looking for Lady Faewood. \nShe disappeared from our camp and I've been searching all over for her."
+									}
+								]
+							],
+							"cancel": 0.0
+						},
+						{
+							"cmd": "text",
+							"speaker": "Katrina",
+							"text": "Would you help me look for her?\nHere, take this dagger... you don't want to be caught unarmed in these woods..."
 						},
 						{
 							"cmd": "give_item",
-							"item": "iron_longsword",
-							"count": 1,
+							"count": 1.0,
+							"item": "worn_dagger",
 							"silent": false
 						},
 						{
 							"cmd": "text",
-							"speaker": "",
-							"text": "Try it on those dummies first. Give them a few good whacks, and I'll come along with you."
+							"speaker": "Katrina",
+							"text": "Give those dummies a few good whacks to try it out."
 						},
 						{
 							"cmd": "nav",
-							"op": "clear",
-							"id": "main"
+							"id": "main",
+							"op": "clear"
 						},
 						{
 							"cmd": "follower",
@@ -543,16 +560,16 @@
 							"cmd": "variable",
 							"id": "dummy_hits",
 							"op": "set",
-							"value": 0
+							"value": 0.0
 						},
 						{
 							"cmd": "nav",
-							"op": "set",
-							"id": "main",
-							"target": "node:TrainingDummy",
-							"label": "Training dummies",
 							"color": "#ffd35c",
-							"reach": 4
+							"id": "main",
+							"label": "Training dummies",
+							"op": "set",
+							"reach": 4.0,
+							"target": "node:TrainingDummy"
 						},
 						{
 							"cmd": "switch",
@@ -573,15 +590,15 @@
 					"commands": [
 						{
 							"cmd": "text",
-							"speaker": "",
-							"text": "Go on, have at those dummies. They don't hit back."
+							"speaker": "Katrina",
+							"text": "Go on, have at those dummies."
 						}
 					],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "tut_met_katrina",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": true,
@@ -596,15 +613,15 @@
 					"commands": [
 						{
 							"cmd": "text",
-							"speaker": "",
-							"text": "The bandits are past the road. Lead the way, I'm right behind you."
+							"speaker": "Katrina",
+							"text": "The bandits are past the pond. Lead the way, I'm right behind you."
 						}
 					],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "tut_practice_done",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": true,
@@ -619,15 +636,15 @@
 					"commands": [
 						{
 							"cmd": "text",
-							"speaker": "",
+							"speaker": "Katrina",
 							"text": "Stay sharp. The old quarry's east of here: that's our way out."
 						}
 					],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "tut_bandits_done",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": true,
@@ -642,15 +659,15 @@
 					"commands": [
 						{
 							"cmd": "text",
-							"speaker": "",
-							"text": "We actually brought it down. The vines should hold us now. Let's climb out of here."
+							"speaker": "Katrina",
+							"text": "Damn Trolls, they're always such a hassle. Let's climb out of here."
 						}
 					],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "troll_defeated",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": true,
@@ -685,50 +702,61 @@
 							"cmd": "wait_for",
 							"conditions": [
 								{
-									"type": "variable",
 									"id": "dummy_hits",
 									"op": ">=",
-									"value": 5
+									"type": "variable",
+									"value": 5.0
 								}
 							],
-							"timeout": 0
+							"timeout": 0.0
 						},
 						{
 							"cmd": "say",
-							"who": "npc",
-							"npc": "katrina",
-							"name": "",
-							"text": "Not bad! Your arm remembers more than your head does.",
-							"sound": "",
 							"log": true,
-							"seconds": 0,
-							"wait": true
+							"name": "",
+							"npc": "katrina",
+							"seconds": 0.0,
+							"sound": "",
+							"text": "Hmm, not bad!",
+							"wait": true,
+							"who": "npc"
 						},
 						{
 							"cmd": "say",
-							"who": "npc",
-							"npc": "katrina",
-							"name": "",
-							"text": "See the smoke past the road? Bandits. Let's clear them out. Stay close.",
-							"sound": "",
 							"log": true,
-							"seconds": 0,
-							"wait": true
+							"name": "",
+							"npc": "katrina",
+							"seconds": 0.0,
+							"sound": "",
+							"text": "There's some bandits nearby, let's put that dagger to good use.",
+							"wait": true,
+							"who": "npc"
+						},
+						{
+							"cmd": "say",
+							"log": true,
+							"name": "",
+							"npc": "katrina",
+							"seconds": 0.0,
+							"sound": "",
+							"text": "You lead the way---I've got your back.",
+							"wait": true,
+							"who": "npc"
 						},
 						{
 							"cmd": "variable",
 							"id": "tut_bandits",
 							"op": "set",
-							"value": 0
+							"value": 0.0
 						},
 						{
 							"cmd": "nav",
-							"op": "set",
-							"id": "main",
-							"target": "enemy:Bandit,Bandit2,Bandit3",
-							"label": "Bandits",
 							"color": "#ffd35c",
-							"reach": 0
+							"id": "main",
+							"label": "Bandits",
+							"op": "set",
+							"reach": 0.0,
+							"target": "enemy:Bandit,Bandit2,Bandit3"
 						},
 						{
 							"cmd": "switch",
@@ -738,9 +766,9 @@
 					],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "tut_met_katrina",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": false,
@@ -757,33 +785,33 @@
 							"cmd": "wait_for",
 							"conditions": [
 								{
-									"type": "variable",
 									"id": "tut_bandits",
 									"op": ">=",
-									"value": 3
+									"type": "variable",
+									"value": 3.0
 								}
 							],
-							"timeout": 0
+							"timeout": 0.0
 						},
 						{
 							"cmd": "say",
-							"who": "npc",
-							"npc": "katrina",
-							"name": "",
-							"text": "That's the lot of them. The old quarry's east: that's our way out.",
-							"sound": "",
 							"log": true,
-							"seconds": 0,
-							"wait": true
+							"name": "",
+							"npc": "katrina",
+							"seconds": 0.0,
+							"sound": "",
+							"text": "Good work, {player}! The old quarry's east: that's our way out.",
+							"wait": true,
+							"who": "npc"
 						},
 						{
 							"cmd": "nav",
-							"op": "set",
-							"id": "main",
-							"target": "marker:TrollArena",
-							"label": "The old quarry",
 							"color": "#ffd35c",
-							"reach": 0
+							"id": "main",
+							"label": "The old quarry",
+							"op": "set",
+							"reach": 0.0,
+							"target": "marker:TrollArena"
 						},
 						{
 							"cmd": "switch",
@@ -793,9 +821,9 @@
 					],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "tut_practice_done",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": false,
@@ -810,9 +838,9 @@
 					"commands": [],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "tut_bandits_done",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": true,
@@ -845,26 +873,26 @@
 					"commands": [
 						{
 							"cmd": "nav",
-							"op": "clear",
-							"id": "main"
+							"id": "main",
+							"op": "clear"
 						},
 						{
 							"cmd": "shake",
 							"seconds": 4.5,
-							"strength": 0.45,
 							"sound": "rumble",
+							"strength": 0.45,
 							"wait": false
 						},
 						{
 							"cmd": "say",
-							"who": "npc",
-							"npc": "katrina",
-							"name": "",
-							"text": "Wait... do you feel that?",
-							"sound": "",
 							"log": true,
+							"name": "",
+							"npc": "katrina",
 							"seconds": 2.0,
-							"wait": true
+							"sound": "",
+							"text": "Wait... do you feel that?",
+							"wait": true,
+							"who": "npc"
 						},
 						{
 							"cmd": "letterbox",
@@ -873,9 +901,9 @@
 						},
 						{
 							"cmd": "camera",
-							"op": "move",
-							"marker": "TrollCam",
 							"look": "TrollArena",
+							"marker": "TrollCam",
+							"op": "move",
 							"seconds": 1.6,
 							"wait": true
 						},
@@ -890,14 +918,14 @@
 						},
 						{
 							"cmd": "say",
-							"who": "npc",
-							"npc": "katrina",
-							"name": "",
-							"text": "A troll! Dodge the rocks, and when it raises its fists, get clear!",
-							"sound": "",
 							"log": true,
+							"name": "",
+							"npc": "katrina",
 							"seconds": 3.5,
-							"wait": false
+							"sound": "",
+							"text": "A troll! Dodge the rocks, and when it raises its fists, get clear!",
+							"wait": false,
+							"who": "npc"
 						},
 						{
 							"cmd": "camera",
@@ -912,12 +940,12 @@
 						},
 						{
 							"cmd": "nav",
-							"op": "set",
-							"id": "main",
-							"target": "enemy:Troll",
-							"label": "Old Mossback",
 							"color": "#ffd35c",
-							"reach": 0
+							"id": "main",
+							"label": "Old Mossback",
+							"op": "set",
+							"reach": 0.0,
+							"target": "enemy:Troll"
 						},
 						{
 							"cmd": "self_switch",
@@ -927,9 +955,9 @@
 					],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "tut_bandits_done",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": true,
@@ -944,14 +972,14 @@
 					"commands": [],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "tut_bandits_done",
-							"is": true
+							"is": true,
+							"type": "switch"
 						},
 						{
-							"type": "self",
+							"is": true,
 							"letter": "A",
-							"is": true
+							"type": "self"
 						}
 					],
 					"freeze": true,
@@ -984,30 +1012,30 @@
 					"commands": [
 						{
 							"cmd": "toss",
-							"toward": "away",
-							"marker": "",
-							"power": 11,
-							"height": 6,
+							"damage": 0.0,
 							"down": 1.4,
-							"damage": 0
+							"height": 6.0,
+							"marker": "",
+							"power": 11.0,
+							"toward": "away"
 						},
 						{
 							"cmd": "say",
-							"who": "npc",
-							"npc": "katrina",
-							"name": "",
-							"text": "It won't let us leave! We have to bring it down!",
-							"sound": "",
 							"log": true,
+							"name": "",
+							"npc": "katrina",
 							"seconds": 3.0,
-							"wait": false
+							"sound": "",
+							"text": "It won't let us leave! We have to bring it down!",
+							"wait": false,
+							"who": "npc"
 						}
 					],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "troll_awake",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": false,
@@ -1022,9 +1050,9 @@
 					"commands": [],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "troll_defeated",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": true,
@@ -1061,34 +1089,34 @@
 						},
 						{
 							"cmd": "say",
-							"who": "npc",
-							"npc": "katrina",
-							"name": "",
-							"text": "...It's down. It's actually down!",
-							"sound": "",
 							"log": true,
-							"seconds": 0,
-							"wait": true
+							"name": "",
+							"npc": "katrina",
+							"seconds": 0.0,
+							"sound": "",
+							"text": "Take that, you mossy bastard!",
+							"wait": true,
+							"who": "npc"
 						},
 						{
 							"cmd": "say",
-							"who": "npc",
-							"npc": "katrina",
-							"name": "",
-							"text": "Those vines should hold us now. Up we go.",
-							"sound": "",
 							"log": true,
-							"seconds": 0,
-							"wait": true
+							"name": "",
+							"npc": "katrina",
+							"seconds": 0.0,
+							"sound": "",
+							"text": "{player}, those vines should take us out of here. Up we go.",
+							"wait": true,
+							"who": "npc"
 						},
 						{
 							"cmd": "nav",
-							"op": "set",
-							"id": "main",
-							"target": "marker:QuarryVines",
-							"label": "Climb out",
 							"color": "#ffd35c",
-							"reach": 3
+							"id": "main",
+							"label": "Climb out",
+							"op": "set",
+							"reach": 3.0,
+							"target": "marker:QuarryVines"
 						},
 						{
 							"cmd": "self_switch",
@@ -1098,9 +1126,9 @@
 					],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "troll_defeated",
-							"is": true
+							"is": true,
+							"type": "switch"
 						}
 					],
 					"freeze": false,
@@ -1115,14 +1143,14 @@
 					"commands": [],
 					"conditions": [
 						{
-							"type": "switch",
 							"id": "troll_defeated",
-							"is": true
+							"is": true,
+							"type": "switch"
 						},
 						{
-							"type": "self",
+							"is": true,
 							"letter": "A",
-							"is": true
+							"type": "self"
 						}
 					],
 					"freeze": true,

@@ -1,140 +1,144 @@
 {
-	"stats": {
-		"max_health": 100.0,
-		"max_mana": 100.0,
-		"max_stamina": 100.0,
-		"stamina_regen": 20.0,
-		"stamina_regen_delay": 1.0,
-		"mana_regen": 2.0
-	},
-	"movement": {
-		"run_speed": 4.5,
-		"walk_speed": 1.8,
-		"sprint_speed": 8.0,
-		"jump_velocity": 5.0,
-		"sprint_stamina_cost": 25.0,
-		"swim_speed": 2.2,
-		"swim_sprint_speed": 3.8,
-		"swim_sprint_stamina_cost": 18.0,
-		"double_tap_time": 0.3,
-		"lock_on_hops": 0.0,
-		"grab_any_ledge": 0.0,
-		"injured_speed": 1.25,
-		"injured_health": 0.2,
-		"injured_sprint_speed": 4.6,
-		"fall_safe_height": 4.5,
-		"fall_damage": 7.0,
-		"fall_fatal_height": 22.0
+	"attributes": {
+		"base": 10.0,
+		"creation_points": 5.0,
+		"list": [
+			{
+				"description": "Hits harder with weapons and blocks better.",
+				"effects": {
+					"attack": 1.0,
+					"block": 0.5
+				},
+				"id": "strength",
+				"name": "Strength"
+			},
+			{
+				"description": "Critical hits and stamina for sprinting.",
+				"effects": {
+					"crit_chance": 0.5,
+					"stamina": 4.0
+				},
+				"id": "agility",
+				"name": "Agility"
+			},
+			{
+				"description": "Spell power and mana.",
+				"effects": {
+					"bonus_mana": 6.0,
+					"spell_power": 1.0
+				},
+				"id": "intellect",
+				"name": "Intellect"
+			},
+			{
+				"description": "Health and a little armour.",
+				"effects": {
+					"armor": 0.5,
+					"bonus_health": 8.0
+				},
+				"id": "vitality",
+				"name": "Vitality"
+			},
+			{
+				"description": "Mana and healing.",
+				"effects": {
+					"bonus_mana": 4.0,
+					"mana_regen": 0.2,
+					"spell_power": 0.5
+				},
+				"id": "spirit",
+				"name": "Spirit"
+			}
+		],
+		"max_creation_per_attribute": 3.0
 	},
 	"combat": {
-		"tap_time": 0.22,
-		"quick_shot_power": 0.6,
-		"block_reduction": 0.75,
-		"lunge_range": 6.5,
-		"parry_window": 0.25,
-		"counter_window": 1.5,
-		"perfect_dodge_window": 0.18,
-		"cast_pushback": 0.35,
-		"interrupt_share": 0.15,
-		"move_cancels_cast": true,
-		"proficiency_damage": 0.15,
-		"proficiency_speed": 0.1,
 		"arrow_gravity": 6.0,
-		"combat_linger": 6.0,
-		"block_arc": 150.0,
-		"tab_range": 35.0,
-		"lock_range": 40.0,
-		"lose_range": 55.0,
-		"snap_range": 2.5,
-		"tab_selects": 1.0,
 		"attack_selects": 0.0,
-		"click_radius": 48.0,
-		"world_bounce": true,
-		"world_knockback": 4.5,
-		"world_check": 0.8,
-		"gash_time": 25.0,
-		"spark_size": 1.0,
-		"heal_color": "#ffdb52",
-		"sneak_attack": 2.0,
-		"stealth_notice": 1.8,
-		"finisher_chance": 0.35,
-		"finisher_seconds": 1.4,
 		"auto_next": 1.0,
 		"auto_next_delay": 0.6,
-		"heal_threat": 0.5,
-		"player_threat": 1.0,
-		"threat_switch": 1.1,
-		"lock_on_target": 1.0,
+		"block_arc": 150.0,
+		"block_reduction": 0.75,
 		"blood_color": "#7e0d10",
 		"blood_seconds": 30.0,
-		"require_target": 1.0
+		"cast_pushback": 0.35,
+		"click_radius": 48.0,
+		"combat_linger": 6.0,
+		"counter_window": 1.5,
+		"finisher_chance": 0.35,
+		"finisher_seconds": 1.4,
+		"gash_time": 25.0,
+		"heal_color": "#ffdb52",
+		"heal_threat": 0.5,
+		"interrupt_share": 0.15,
+		"lock_on_target": 1.0,
+		"lock_range": 40.0,
+		"lose_range": 55.0,
+		"lunge_range": 6.5,
+		"move_cancels_cast": true,
+		"parry_window": 0.25,
+		"perfect_dodge_window": 0.18,
+		"player_threat": 1.0,
+		"proficiency_damage": 0.15,
+		"proficiency_speed": 0.1,
+		"quick_shot_power": 0.6,
+		"require_target": 1.0,
+		"snap_range": 2.5,
+		"sneak_attack": 2.0,
+		"spark_size": 1.0,
+		"stealth_notice": 1.8,
+		"tab_range": 35.0,
+		"tab_selects": 1.0,
+		"tap_time": 0.22,
+		"threat_switch": 1.1,
+		"world_bounce": true,
+		"world_check": 0.8,
+		"world_knockback": 4.5
 	},
-	"loadout": {
-		"light_combo": [
-			"slash_1",
-			"slash_2",
-			"slash_3"
-		],
-		"heavy_attack": "heavy_strike",
-		"ranged_attack": "arrow_shot",
-		"spells": [
-			"firebolt",
-			"mend"
-		]
+	"companions": {
+		"downed_speed": 1.6,
+		"help_below": 0.5,
+		"leave_kill_below": 0.25,
+		"leave_kills": true,
+		"range": 20.0,
+		"recover_after": 4.0,
+		"recover_share": 0.3,
+		"wait_for_player": true
 	},
-	"starting_kit": {
-		"gold": 10,
-		"equipment": {
-			"legs": "travelers_trousers",
-			"feet": "worn_boots",
-			"primary": "rusty_sword"
-		},
-		"backpack": [
-			[
-				"hearthstone",
-				1
-			],
-			[
-				"blue_cloak",
-				1
-			],
-			[
-				"leather_jerkin",
-				1
-			],
-			[
-				"leather_gloves",
-				1
-			],
-			[
-				"iron_helm",
-				1
-			],
-			[
-				"iron_pauldrons",
-				1
-			],
-			[
-				"wooden_shield",
-				1
-			],
-			[
-				"minor_healing_potion",
-				5
-			],
-			[
-				"bandage",
-				5
-			],
-			[
-				"mana_draught",
-				2
-			],
-			[
-				"hunting_bow",
-				1
-			]
-		]
+	"death": {
+		"drown_wait": 0.6,
+		"fade_in": 1.0,
+		"fade_out": 1.2,
+		"fatigue_fx_start": 0.5,
+		"fatigue_gray": 1.0,
+		"fatigue_vignette": 0.85,
+		"gold_loss": 0.1,
+		"weakened_damage": 0.8,
+		"weakened_health": 0.8,
+		"weakened_saturation": 0.65,
+		"weakened_seconds": 30.0,
+		"weakened_speed": 0.85
+	},
+	"dialogue": {
+		"chars_per_second": 45.0,
+		"tick_db": -14.0,
+		"tick_every": 2.0,
+		"tick_sound": "res://assets/audio/sfx/text_tick.ogg"
+	},
+	"discs": {
+		"enabled": true,
+		"friendly": "#3fbf4a",
+		"hostile": "#d8332a",
+		"neutral": "#9a9a9a",
+		"opacity": 0.75,
+		"size": 1.0
+	},
+	"equip_sounds": {
+		"cloth": "res://assets/audio/sfx/equip_cloth.ogg",
+		"jewelry": "res://assets/audio/sfx/equip_jewelry.ogg",
+		"leather": "res://assets/audio/sfx/equip_leather.ogg",
+		"metal": "res://assets/audio/sfx/equip_metal.ogg",
+		"volume_db": -6.0
 	},
 	"hotbar": [
 		"ability:firebolt",
@@ -148,165 +152,116 @@
 		"",
 		""
 	],
-	"leveling": {
-		"max_level": 10,
-		"xp_to_next": [
-			100,
-			160,
-			240,
-			340,
-			460,
-			600,
-			760,
-			940,
-			1140
-		],
-		"health_per_level": 12,
-		"mana_per_level": 8,
-		"attack_per_level": 1,
-		"spell_power_per_level": 1,
-		"kill_xp_base": 15,
-		"kill_xp_per_level": 10,
-		"skill_points_start": 1,
-		"skill_points_per_level": 1
-	},
-	"death": {
-		"gold_loss": 0.1,
-		"weakened_seconds": 120,
-		"weakened_damage": 0.8,
-		"weakened_health": 0.8,
-		"weakened_speed": 0.85,
-		"weakened_saturation": 0.65,
-		"fade_out": 1.2,
-		"fade_in": 1.0,
-		"drown_wait": 0.6,
-		"fatigue_fx_start": 0.5,
-		"fatigue_gray": 1.0,
-		"fatigue_vignette": 0.85
-	},
 	"hud": {
+		"compass": {
+			"enabled": true,
+			"enemy_range": 40.0,
+			"quest_range": 150.0,
+			"width": 0.4
+		},
+		"enemy_bars": {
+			"bosses_only": true,
+			"color": "#b3241e",
+			"damage_color": "#e8c46a",
+			"enabled": true,
+			"hp_at_max": 2000.0,
+			"max_bars": 3.0,
+			"max_width": 50.0,
+			"min_width": 25.0,
+			"top": 50.0
+		},
+		"health_critical": "#d8332a",
 		"health_full": "#3fbf4a",
 		"health_half": "#e6d23a",
 		"health_low": "#ee8a2a",
-		"health_critical": "#d8332a",
-		"compass": {
-			"enabled": true,
-			"width": 0.4,
-			"quest_range": 150,
-			"enemy_range": 40
-		},
-		"enemy_bars": {
-			"enabled": true,
-			"min_width": 25,
-			"max_width": 50,
-			"hp_at_max": 2000,
-			"max_bars": 3,
-			"top": 50,
-			"color": "#b3241e",
-			"damage_color": "#e8c46a",
-			"bosses_only": true
-		},
-		"target_frame": false,
-		"icon_pixels": 24
+		"icon_pixels": 24.0,
+		"target_frame": false
 	},
-	"equip_sounds": {
-		"cloth": "res://assets/audio/sfx/equip_cloth.ogg",
-		"leather": "res://assets/audio/sfx/equip_leather.ogg",
-		"metal": "res://assets/audio/sfx/equip_metal.ogg",
-		"jewelry": "res://assets/audio/sfx/equip_jewelry.ogg",
-		"volume_db": -6
-	},
-	"dialogue": {
-		"chars_per_second": 45,
-		"tick_sound": "res://assets/audio/sfx/text_tick.ogg",
-		"tick_every": 2,
-		"tick_db": -14
-	},
-	"discs": {
-		"enabled": true,
-		"hostile": "#d8332a",
-		"neutral": "#9a9a9a",
-		"friendly": "#3fbf4a",
-		"opacity": 0.75,
-		"size": 1.0
-	},
-	"attributes": {
-		"base": 10,
-		"creation_points": 5,
-		"max_creation_per_attribute": 3,
-		"list": [
-			{
-				"id": "strength",
-				"name": "Strength",
-				"description": "Hits harder with weapons and blocks better.",
-				"effects": {
-					"attack": 1.0,
-					"block": 0.5
-				}
-			},
-			{
-				"id": "agility",
-				"name": "Agility",
-				"description": "Critical hits and stamina for sprinting.",
-				"effects": {
-					"crit_chance": 0.5,
-					"stamina": 4
-				}
-			},
-			{
-				"id": "intellect",
-				"name": "Intellect",
-				"description": "Spell power and mana.",
-				"effects": {
-					"spell_power": 1.0,
-					"bonus_mana": 6
-				}
-			},
-			{
-				"id": "vitality",
-				"name": "Vitality",
-				"description": "Health and a little armour.",
-				"effects": {
-					"bonus_health": 8,
-					"armor": 0.5
-				}
-			},
-			{
-				"id": "spirit",
-				"name": "Spirit",
-				"description": "Mana and healing.",
-				"effects": {
-					"bonus_mana": 4,
-					"spell_power": 0.5,
-					"mana_regen": 0.2
-				}
-			}
+	"leveling": {
+		"attack_per_level": 1.0,
+		"health_per_level": 12.0,
+		"kill_xp_base": 15.0,
+		"kill_xp_per_level": 10.0,
+		"mana_per_level": 8.0,
+		"max_level": 10.0,
+		"skill_points_per_level": 1.0,
+		"skill_points_start": 1.0,
+		"spell_power_per_level": 1.0,
+		"xp_to_next": [
+			500.0,
+			560.0,
+			640.0,
+			740.0,
+			860.0,
+			1000.0,
+			1160.0,
+			1340.0,
+			1500.0
 		]
+	},
+	"loadout": {
+		"heavy_attack": "heavy_strike",
+		"light_combo": [
+			"slash_1",
+			"slash_2",
+			"slash_3"
+		],
+		"ranged_attack": "arrow_shot",
+		"spells": [
+			"firebolt",
+			"mend"
+		]
+	},
+	"movement": {
+		"double_tap_time": 0.3,
+		"fall_damage": 7.0,
+		"fall_fatal_height": 22.0,
+		"fall_safe_height": 4.5,
+		"grab_any_ledge": 0.0,
+		"injured_health": 0.2,
+		"injured_speed": 1.25,
+		"injured_sprint_speed": 4.6,
+		"jump_velocity": 5.0,
+		"lock_on_hops": 0.0,
+		"run_speed": 4.5,
+		"sprint_speed": 8.0,
+		"sprint_stamina_cost": 25.0,
+		"swim_speed": 2.2,
+		"swim_sprint_speed": 3.8,
+		"swim_sprint_stamina_cost": 18.0,
+		"walk_speed": 1.8
 	},
 	"rarity_colors": {
 		"common": "#a8a8a8",
-		"uncommon": "#59e659",
-		"rare": "#5999ff",
 		"epic": "#bf73ff",
-		"legendary": "#ff9926"
-	},
-	"companions": {
-		"help_below": 0.5,
-		"leave_kill_below": 0.25,
-		"leave_kills": true,
-		"range": 20.0,
-		"recover_share": 0.3,
-		"recover_after": 4.0,
-		"downed_speed": 1.6,
-		"wait_for_player": true
+		"legendary": "#ff9926",
+		"rare": "#5999ff",
+		"uncommon": "#59e659"
 	},
 	"safe_areas": {
-		"notices": true,
-		"enter_text": "You are safe here.",
-		"leave_text": "You are no longer safe.",
 		"blocked_text": "You can't fight from a safe area.",
-		"notice_seconds": 2.5,
 		"enter_color": "#9be8a8",
-		"leave_color": "#f0c27a"
+		"enter_text": "You are safe here.",
+		"leave_color": "#f0c27a",
+		"leave_text": "You are no longer safe.",
+		"notice_seconds": 2.5,
+		"notices": false
+	},
+	"starting_kit": {
+		"backpack": [],
+		"equipment": {
+			"feet": "worn_boots",
+			"legs": "travelers_trousers",
+			"chest": "leather_jerkin"
+		},
+		"gold": 0.0
+	},
+	"stats": {
+		"mana_regen": 2.0,
+		"max_health": 100.0,
+		"max_mana": 100.0,
+		"max_stamina": 100.0,
+		"stamina_regen": 20.0,
+		"stamina_regen_delay": 1.0
 	}
 }
