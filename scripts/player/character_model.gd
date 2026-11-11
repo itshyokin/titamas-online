@@ -1087,6 +1087,10 @@ func _add_sway(nodes: Array, amount: float, anchors := SWAY_ANCHORS) -> void:
 
 
 static func _sway_anchor(label: String, keys: Array[String]) -> bool:
+	# A material named *sway* (e.g. "chainmail_sway") always swings, even when another
+	# keyword ("chainmail") would anchor it.
+	if label.contains("sway"):
+		return false
 	for k in keys:
 		if label.contains(k):
 			return true

@@ -26,7 +26,7 @@ const OLD_BODIES := "res://assets/models/characters/base_bodies.glb"
 const GEAR_DIR := "res://assets/characters/lowpoly"
 ## What to build: data/body_models.json (Database → Body Models): the source .glb, the
 ## height, which meshes make the body, which body materials become their own parts, and the
-## pieces to save. A piece: {id, mesh, material ("" = all), min_y / max_y (m after the
+## pieces to save. A piece: {id, mesh, material ("" = all, or a comma list), min_y / max_y / max_side (m after the
 ## bake, -1 = none; to split one mesh by height), bone (rigid meshes follow it)}.
 const SETTINGS := "res://data/body_models.json"
 
@@ -80,7 +80,7 @@ func _load_settings() -> void:
 			continue
 		if not PIECES.has(id):
 			PIECES[id] = []
-		PIECES[id].append([String(p.mesh), String(p.get("material", "")), float(p.get("min_y", -1)), float(p.get("max_y", -1))])
+		PIECES[id].append([String(p.mesh), String(p.get("material", "")), float(p.get("min_y", -1)), float(p.get("max_y", -1)), float(p.get("max_side", -1))])
 		if String(p.get("bone", "")) != "":
 			BONE_OF[String(p.mesh)] = String(p.bone)
 
@@ -363,12 +363,17 @@ func _save_piece(file: String, specs: Array) -> void:
 			continue
 		for surf in mi.mesh.get_surface_count():
 			var s := _bake_surface(mi, surf)
-			if String(spec[1]) != "" and s.material_name != String(spec[1]):
+			# material: "" = all, else one name or a comma list ("chainmail,chainmail_sway,leather").
+			if String(spec[1]) != "" and not s.material_name in String(spec[1]).replace(" ", "").split(",", false):
 				continue
 			var builder := Builder.new()
 			for t in range(0, s.index.size(), 3):
 				var y: float = (s.pos[s.index[t]].y + s.pos[s.index[t + 1]].y + s.pos[s.index[t + 2]].y) / 3.0
 				if (float(spec[2]) >= 0.0 and y < float(spec[2])) or (float(spec[3]) >= 0.0 and y > float(spec[3])):
+					continue
+				# max_side: only faces within this far of the middle (leave out cuffs on the arms).
+				var side: float = absf(s.pos[s.index[t]].x + s.pos[s.index[t + 1]].x + s.pos[s.index[t + 2]].x) / 3.0
+				if spec.size() > 4 and float(spec[4]) >= 0.0 and side > float(spec[4]):
 					continue
 				builder.add_tri(s, t, str(surf))
 			if builder.i.is_empty():

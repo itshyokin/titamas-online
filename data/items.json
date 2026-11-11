@@ -575,8 +575,8 @@
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
 			"value": 40.0,
-			"sway_anchors": "chainmail",
-			"sway": 1.0
+			"sway_anchors": "chainmail,leather",
+			"sway": 0.4
 		},
 		{
 			"armor": 3.0,

@@ -113,6 +113,11 @@ var _heavy_sound: AudioStream = preload("res://assets/audio/combat/swing_heavy.o
 
 
 func _ready() -> void:
+	# Turned in the level (root rotated): move that turn onto the model, since facing sets
+	# the model's own yaw (otherwise it walks sideways).
+	if absf(rotation.y) > 0.0001:
+		model.rotation.y += rotation.y
+		rotation.y = 0.0
 	add_to_group(Combat.GROUP)
 	Database.apply_enemy(self, enemy_id, true)
 	Database.changed.connect(func(which: String) -> void:

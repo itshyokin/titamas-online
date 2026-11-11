@@ -82,12 +82,14 @@ func _ready() -> void:
 	if not Engine.is_editor_hint():
 		add_child(QuestMarker.new("", npc_id))
 		DispositionDisc.attach(self)
-	_home_yaw = model.rotation.y
 	var patrol := get_node_or_null("Patrol")
 	if patrol:
 		for m in patrol.get_children():
 			if m is Node3D:
 				_patrol.append((m as Node3D).global_position)
+	if not Engine.is_editor_hint():
+		_fold_yaw()
+	_home_yaw = model.rotation.y
 	_apply_data(true)
 	Database.changed.connect(func(which: String) -> void:
 		if which == "npcs" or which == "appearance" or which == "items":
@@ -998,6 +1000,16 @@ func _regen(delta: float) -> void:
 
 
 # --- Looks -----------------------------------------------------------------------------
+
+## A character turned in the level (the root rotated, e.g. to face the player) would walk
+## sideways, since facing sets the model's own yaw: move that turn onto the model.
+func _fold_yaw() -> void:
+	var yaw := rotation.y
+	if absf(yaw) < 0.0001:
+		return
+	rotation.y = 0.0
+	model.rotation.y += yaw
+
 
 func _face(point: Vector3, delta: float) -> void:
 	var dir := point - global_position

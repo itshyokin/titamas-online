@@ -21,10 +21,18 @@
 	"pieces": [
 		{
 			"id": "chainmail_shirt",
-			"material": "chainmail",
+			"material": "chainmail,chainmail_sway",
 			"max_y": -1.0,
 			"mesh": "chainmail",
 			"min_y": -1.0
+		},
+		{
+			"id": "chainmail_shirt",
+			"material": "leather",
+			"max_y": -1.0,
+			"mesh": "chainmail",
+			"min_y": 0.6,
+			"max_side": 0.35
 		},
 		{
 			"id": "cloth_leggings",
