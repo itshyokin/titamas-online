@@ -49,6 +49,7 @@
 			"hides": [],
 			"icon": "builtin:sword",
 			"icon_color": "#b8a48c",
+			"icon_tint": "#b8a48c",
 			"id": "rusty_sword",
 			"kind": "weapon",
 			"model": "builtin:sword",
@@ -63,8 +64,7 @@
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
 			"value": 6.0,
-			"weapon_type": "sword",
-			"icon_tint": "#b8a48c"
+			"weapon_type": "sword"
 		},
 		{
 			"armor": 0.0,
@@ -462,6 +462,7 @@
 			],
 			"icon": "builtin:pants",
 			"icon_color": "#4a5070",
+			"icon_tint": "#4a5070",
 			"id": "travelers_trousers",
 			"kind": "armor",
 			"model": "",
@@ -474,8 +475,7 @@
 			"use_hot_per_tick": 0.0,
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
-			"value": 8.0,
-			"icon_tint": "#4a5070"
+			"value": 8.0
 		},
 		{
 			"armor": 2.0,
@@ -574,7 +574,9 @@
 			"use_hot_per_tick": 0.0,
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
-			"value": 40.0
+			"value": 40.0,
+			"sway_anchors": "chainmail",
+			"sway": 1.0
 		},
 		{
 			"armor": 3.0,
@@ -596,6 +598,7 @@
 			],
 			"icon": "builtin:pants",
 			"icon_color": "#cbbd9f",
+			"icon_tint": "#cbbd9f",
 			"id": "linen_leggings",
 			"kind": "armor",
 			"model": "",
@@ -608,8 +611,7 @@
 			"use_hot_per_tick": 0.0,
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
-			"value": 6.0,
-			"icon_tint": "#cbbd9f"
+			"value": 6.0
 		},
 		{
 			"armor": 3.0,
@@ -766,6 +768,7 @@
 			"hides": [],
 			"icon": "builtin:coin",
 			"icon_color": "#7a6a50",
+			"icon_tint": "#7a6a50",
 			"id": "bandit_insignia",
 			"kind": "junk",
 			"model": "",
@@ -777,8 +780,7 @@
 			"use_hot_per_tick": 0.0,
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
-			"value": 3.0,
-			"icon_tint": "#7a6a50"
+			"value": 3.0
 		},
 		{
 			"armor": 0.0,
@@ -1188,6 +1190,7 @@
 			"hides": [],
 			"icon": "builtin:cloak",
 			"icon_color": "#3a5aa8",
+			"icon_tint": "#3a5aa8",
 			"id": "blue_cloak",
 			"kind": "armor",
 			"material": "cloth",
@@ -1203,8 +1206,7 @@
 			"use_hot_per_tick": 0.0,
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
-			"value": 25.0,
-			"icon_tint": "#3a5aa8"
+			"value": 25.0
 		}
 	]
 }

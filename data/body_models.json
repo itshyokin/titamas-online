@@ -99,12 +99,12 @@
 			"min_y": -1.0
 		},
 		{
+			"bone": "mixamorig_Spine",
 			"id": "cloak_blue",
 			"material": "",
 			"max_y": -1.0,
 			"mesh": "cloak_blue",
-			"min_y": -1.0,
-			"bone": "mixamorig_Spine"
+			"min_y": -1.0
 		},
 		{
 			"id": "hair_backbraid",
@@ -246,6 +246,55 @@
 			"max_y": -1.0,
 			"mesh": "shield_wooden",
 			"min_y": -1.0
+		},
+		{
+			"id": "beard",
+			"mesh": "beard",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "beard_chin",
+			"mesh": "beard_chin",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "beard_dwarf",
+			"mesh": "beard_dwarf",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "beard_goatee",
+			"mesh": "beard_goatee",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "beard_long",
+			"mesh": "beard_long",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "beard_shaggy",
+			"mesh": "beard_shaggy",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
+		},
+		{
+			"id": "beard_stache",
+			"mesh": "beard_stache",
+			"material": "",
+			"min_y": -1.0,
+			"max_y": -1.0
 		}
 	],
 	"source": "res://assets/models/characters/src/lowpoly_guy.glb"

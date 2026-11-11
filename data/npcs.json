@@ -10,6 +10,7 @@
 			"attack_power": 10.0,
 			"attack_range": 2.0,
 			"behaviour": "patrol",
+			"blood_color": "#763055",
 			"can_fight": true,
 			"can_follow": false,
 			"dialogue": [
@@ -19,10 +20,10 @@
 			"equipment": {
 				"chest": "chainmail_shirt",
 				"feet": "worn_boots",
+				"hands": "leather_gloves",
 				"legs": "linen_leggings",
 				"off_hand": "wooden_shield",
 				"primary": "iron_longsword",
-				"hands": "leather_gloves",
 				"shoulders": "iron_pauldrons"
 			},
 			"gold_max": 8.0,
@@ -34,31 +35,31 @@
 			"level": 3.0,
 			"look": {
 				"body": "masc",
+				"brows": "natural",
 				"build": "heavy",
 				"eye_color": "#5a3418",
 				"eyes": "anime_upturned",
 				"facial_color": "#3b2618",
-				"facial_hair": "",
+				"facial_hair": "beard",
 				"hair": "hair_short",
 				"hair_color": "#3b2618",
 				"height": "tall",
-				"skin": "#b37a52",
-				"nose": "anime_nose_shadow",
 				"mouth": "frown",
-				"brows": "natural",
+				"nose": "anime_nose_shadow",
 				"placement": {
 					"brows": {
 						"scale": 1.45,
 						"x": 0.85
 					},
 					"eyes": {
-						"x": 0.0,
-						"scale": 0.8
+						"scale": 0.8,
+						"x": 0.0
 					},
 					"mouth": {
 						"y": 0.15
 					}
-				}
+				},
+				"skin": "#b37a52"
 			},
 			"loot": [],
 			"max_health": 140.0,
@@ -67,8 +68,7 @@
 			"run_speed": 4.2,
 			"title": "Guard",
 			"walk_speed": 1.3,
-			"wander_radius": 4.0,
-			"blood_color": "#763055"
+			"wander_radius": 4.0
 		},
 		{
 			"abilities": [
@@ -84,6 +84,7 @@
 			"attack_power": 9.0,
 			"attack_range": 2.0,
 			"behaviour": "stand",
+			"blood_color": "#4d84c8",
 			"can_fight": true,
 			"can_follow": true,
 			"dialogue": [
@@ -116,15 +117,13 @@
 				],
 				"eye_color": "#b5b5b5",
 				"eyes": "anime_sparkle",
+				"face": "sculpted",
 				"facial_hair": "",
 				"hair": "hair_ponytail",
 				"hair_color": "#f2f0a8",
 				"height": "tall",
 				"mouth": "smirk",
 				"nose": "anime_nose_shadow",
-				"skin": "#ebc4a4",
-				"species": "human",
-				"face": "sculpted",
 				"placement": {
 					"eyes": {
 						"scale": 0.7,
@@ -133,7 +132,9 @@
 					"mouth": {
 						"y": 0.25
 					}
-				}
+				},
+				"skin": "#ebc4a4",
+				"species": "human"
 			},
 			"loot": [],
 			"max_health": 110.0,
@@ -143,8 +144,7 @@
 			"title": "",
 			"wait_line": "I'll wait here. Don't be long.",
 			"walk_speed": 1.3,
-			"wander_radius": 3.0,
-			"blood_color": "#4d84c8"
+			"wander_radius": 3.0
 		},
 		{
 			"abilities": [],
