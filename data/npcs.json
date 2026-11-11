@@ -17,12 +17,13 @@
 				"If they follow you here, lead them my way. I'll handle it."
 			],
 			"equipment": {
-				"chest": "leather_jerkin",
+				"chest": "chainmail_shirt",
 				"feet": "worn_boots",
-				"head": "iron_helm",
-				"legs": "travelers_trousers",
+				"legs": "linen_leggings",
 				"off_hand": "wooden_shield",
-				"primary": "iron_longsword"
+				"primary": "iron_longsword",
+				"hands": "leather_gloves",
+				"shoulders": "iron_pauldrons"
 			},
 			"gold_max": 8.0,
 			"gold_min": 3.0,
@@ -35,13 +36,29 @@
 				"body": "masc",
 				"build": "heavy",
 				"eye_color": "#5a3418",
-				"eyes": "narrow",
+				"eyes": "anime_upturned",
 				"facial_color": "#3b2618",
-				"facial_hair": "short_beard",
-				"hair": "short",
+				"facial_hair": "",
+				"hair": "hair_short",
 				"hair_color": "#3b2618",
 				"height": "tall",
-				"skin": "#b37a52"
+				"skin": "#b37a52",
+				"nose": "anime_nose_shadow",
+				"mouth": "frown",
+				"brows": "natural",
+				"placement": {
+					"brows": {
+						"scale": 1.45,
+						"x": 0.85
+					},
+					"eyes": {
+						"x": 0.0,
+						"scale": 0.8
+					},
+					"mouth": {
+						"y": 0.15
+					}
+				}
 			},
 			"loot": [],
 			"max_health": 140.0,
@@ -50,10 +67,15 @@
 			"run_speed": 4.2,
 			"title": "Guard",
 			"walk_speed": 1.3,
-			"wander_radius": 4.0
+			"wander_radius": 4.0,
+			"blood_color": "#763055"
 		},
 		{
-			"abilities": [],
+			"abilities": [
+				"gs_slash",
+				"smite",
+				"arrow_shot"
+			],
 			"aggro_radius": 12.0,
 			"attack_animation": "attack_light_2",
 			"attack_animation_speed": 0.9,
@@ -72,9 +94,9 @@
 				"feet": "worn_boots",
 				"hands": "leather_gloves",
 				"legs": "linen_leggings",
+				"off_hand": "wooden_shield",
 				"primary": "iron_greatsword",
-				"shoulders": "blue_cloak",
-				"off_hand": "wooden_shield"
+				"shoulders": "blue_cloak"
 			},
 			"event": "katrina_intro",
 			"follow_line": "Lead the way, {player}. I've got your back.",
@@ -87,19 +109,31 @@
 			"level": 3.0,
 			"look": {
 				"body": "masc",
-				"build": "",
+				"brows": "arched",
+				"build": "medium",
+				"extras": [
+					"scar_eye"
+				],
 				"eye_color": "#b5b5b5",
-				"eyes": "almond",
+				"eyes": "anime_sparkle",
 				"facial_hair": "",
 				"hair": "hair_ponytail",
 				"hair_color": "#f2f0a8",
-				"height": "",
+				"height": "tall",
+				"mouth": "smirk",
+				"nose": "anime_nose_shadow",
 				"skin": "#ebc4a4",
 				"species": "human",
-				"brows": "arched",
-				"nose": "straight",
-				"mouth": "neutral",
-				"extras": []
+				"face": "sculpted",
+				"placement": {
+					"eyes": {
+						"scale": 0.7,
+						"y": 0.0
+					},
+					"mouth": {
+						"y": 0.25
+					}
+				}
 			},
 			"loot": [],
 			"max_health": 110.0,
@@ -109,7 +143,8 @@
 			"title": "",
 			"wait_line": "I'll wait here. Don't be long.",
 			"walk_speed": 1.3,
-			"wander_radius": 3.0
+			"wander_radius": 3.0,
+			"blood_color": "#4d84c8"
 		},
 		{
 			"abilities": [],
