@@ -642,50 +642,157 @@ func _tint(nodes: Array, color: Color) -> void:
 				mi.material_override = mat
 
 
-## Two flat eye quads laid on the face, following its shape, on the head bone.
+## The face: two eye quads (each its own colour: heterochromia when the look's
+## mirror_eyes is off) and one layer picture made of the chosen brows, nose, mouth and
+## extras (appearance.json "face_area"), both laid on the head mesh's shape on the head bone.
 func _build_eyes() -> void:
-	var eyes: Dictionary = _look.get("eyes", {})
-	var place: Dictionary = _look.get("eye_placement", {})
 	var skel := get_skeleton()
 	var head := skel.get_node_or_null(("f_" if body_type == BodyType.FEMME else "") + "head") as MeshInstance3D
-	if eyes.is_empty() or place.is_empty() or head == null or not ResourceLoader.exists(String(eyes.get("texture", ""))):
+	if head == null:
 		return
 	var head_arrays := head.mesh.surface_get_arrays(0)
-	var mat := ShaderMaterial.new()
-	mat.shader = EYE_SHADER
-	mat.set_shader_parameter("eye_texture", load(String(eyes.texture)))
-	if ResourceLoader.exists(String(eyes.get("iris", ""))):
-		mat.set_shader_parameter("iris_mask", load(String(eyes.iris)))
-	mat.set_shader_parameter("eye_color", _look.get("eye_color", Color(0.3, 0.5, 0.8)))
-	var y := float(place.height)
-	var w := float(place.width) * 0.5
-	var h := float(place.tall) * 0.5
-	for side: float in [-1.0, 1.0]:
-		var cx := side * float(place.apart)
-		var st := SurfaceTool.new()
-		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		# Corners: inner-top, outer-top, outer-bottom, inner-bottom (the texture's outer corner is u = 1).
-		var corners := [Vector2(-w, h), Vector2(w, h), Vector2(w, -h), Vector2(-w, -h)]
-		var uvs := [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
-		var pts: Array[Vector3] = []
-		for c: Vector2 in corners:
-			var px := cx + c.x * side
-			var py := y + c.y
-			pts.append(Vector3(px, py, _face_z(head_arrays, px, py, w * 0.7) - float(place.forward)))
-		for k: int in [0, 1, 2, 0, 2, 3]:
-			st.set_uv(uvs[k])
-			st.add_vertex(pts[k])
-		st.generate_normals()
-		var mi := MeshInstance3D.new()
-		mi.name = "Eye"
-		mi.mesh = st.commit()
-		mi.material_override = mat
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		var attach := attach_to_bone(mi, "mixamorig_Head", Transform3D.IDENTITY)
-		if attach:
-			attach.name = "Eye%s" % ("L" if side > 0.0 else "R")
-			_eye_nodes.append(attach)
+	var eyes: Dictionary = _look.get("eyes", {})
+	var place: Dictionary = _look.get("eye_placement", {})
+	if not eyes.is_empty() and not place.is_empty() and ResourceLoader.exists(String(eyes.get("texture", ""))):
+		var y := float(place.height)
+		var w := float(place.width) * 0.5
+		var h := float(place.tall) * 0.5
+		for side: float in [-1.0, 1.0]:
+			var mat := ShaderMaterial.new()
+			mat.shader = EYE_SHADER
+			mat.set_shader_parameter("eye_texture", load(String(eyes.texture)))
+			if ResourceLoader.exists(String(eyes.get("iris", ""))):
+				mat.set_shader_parameter("iris_mask", load(String(eyes.iris)))
+			# +x is the character's right.
+			var col: Color = _look.get("eye_color_right" if side > 0.0 else "eye_color", _look.get("eye_color", Color(0.3, 0.5, 0.8)))
+			mat.set_shader_parameter("eye_color", col)
+			var cx := side * float(place.apart)
+			# u = 0 at the inner corner, 1 at the outer one (the texture's outer corner is on the right).
+			var mesh := _face_mesh(head_arrays, cx - side * w, cx + side * w, y + h, y - h, float(place.forward), 6, 4)
+			_add_face_part(mesh, mat, "Eye%s" % ("R" if side > 0.0 else "L"))
+	_build_face_layers(head_arrays)
 	_update_hidden_parts()
+
+
+## Brows, nose, mouth and extras stacked into one picture over the face area.
+func _build_face_layers(head_arrays: Array) -> void:
+	var area: Dictionary = _look.get("face_area", {})
+	if area.is_empty():
+		return
+	var layers: Array = []
+	for o in [_look.get("brows", {})] + (_look.get("extras", []) as Array) + [_look.get("nose", {}), _look.get("mouth", {})]:
+		if o is Dictionary and ResourceLoader.exists(String(o.get("texture", ""))):
+			layers.append(o)
+	if layers.is_empty():
+		return
+	var skin: Color = _look.get("skin", skin_color)
+	var hair: Color = _look.get("hair_color", Color(0.25, 0.15, 0.1))
+	var tex := _face_texture(layers, skin, hair)
+	if tex == null:
+		return
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = tex
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	mat.alpha_scissor_threshold = 0.5
+	mat.roughness = _skin_material.roughness
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var cy := float(area.get("height", 1.7))
+	var hw := float(area.get("width", 0.15)) * 0.5
+	var hh := float(area.get("tall", 0.2)) * 0.5
+	# Pictures are drawn seen from the front: their left is the character's right (+x).
+	var mesh := _face_mesh(head_arrays, hw, -hw, cy + hh, cy - hh, float(area.get("forward", 0.0015)), 24, 30)
+	_add_face_part(mesh, mat, "FaceLayers")
+
+
+static var _face_cache := {}
+
+## Stacks layer pictures (multipliers: 128 grey = the skin / hair colour as it is) into one
+## coloured picture. Cached per combination.
+static func _face_texture(layers: Array, skin: Color, hair: Color) -> Texture2D:
+	var key := skin.to_html() + hair.to_html()
+	for o: Dictionary in layers:
+		key += "|" + String(o.texture)
+	if _face_cache.has(key):
+		return _face_cache[key]
+	var out: Image = null
+	for o: Dictionary in layers:
+		var img := (load(String(o.texture)) as Texture2D).get_image()
+		if img == null:
+			continue
+		if img.is_compressed():
+			img.decompress()
+		img.convert(Image.FORMAT_RGBA8)
+		if out == null:
+			out = Image.create(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8)
+		elif img.get_size() != out.get_size():
+			img.resize(out.get_width(), out.get_height(), Image.INTERPOLATE_NEAREST)
+		var base := hair if String(o.get("tint", "skin")) == "hair" else skin
+		for y in img.get_height():
+			for x in img.get_width():
+				var c := img.get_pixel(x, y)
+				if c.a < 0.5:
+					continue
+				var k := 255.0 / 128.0
+				out.set_pixel(x, y, Color(minf(base.r * c.r * k, 1.0), minf(base.g * c.g * k, 1.0), minf(base.b * c.b * k, 1.0), 1.0))
+	var tex: Texture2D = ImageTexture.create_from_image(out) if out else null
+	_face_cache[key] = tex
+	return tex
+
+
+func _add_face_part(mesh: Mesh, mat: Material, node_name: String) -> void:
+	if mesh == null:
+		return
+	var mi := MeshInstance3D.new()
+	mi.name = node_name
+	mi.mesh = mesh
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var attach := attach_to_bone(mi, "mixamorig_Head", Transform3D.IDENTITY)
+	if attach:
+		attach.name = node_name
+		_eye_nodes.append(attach)
+
+
+## A grid over the face from x0 (u = 0) to x1 (u = 1) and y_top (v = 0) to y_bottom, each
+## point pushed onto the head mesh's front (+ `forward` towards the viewer). Cells that
+## miss the face or fold over its edge (big jumps in depth) are left out.
+static func _face_mesh(arrays: Array, x0: float, x1: float, y_top: float, y_bottom: float, forward: float, nx: int, ny: int) -> Mesh:
+	var z := PackedFloat32Array()
+	var pts: Array[Vector3] = []
+	for j in ny + 1:
+		for i in nx + 1:
+			var u := float(i) / nx
+			var v := float(j) / ny
+			var x := lerpf(x0, x1, u)
+			var y := lerpf(y_top, y_bottom, v)
+			var fz := _face_z(arrays, x, y, 0.0)
+			z.append(fz)
+			pts.append(Vector3(x, y, fz - forward))
+	var cell := maxf(absf(x1 - x0) / nx, absf(y_top - y_bottom) / ny)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var any := false
+	for j in ny:
+		for i in nx:
+			var ids := [j * (nx + 1) + i, j * (nx + 1) + i + 1, (j + 1) * (nx + 1) + i + 1, (j + 1) * (nx + 1) + i]
+			var lo := INF
+			var hi := -INF
+			for k: int in ids:
+				lo = minf(lo, z[k])
+				hi = maxf(hi, z[k])
+			# A miss reads 0 (the middle of the head); a fold reads a jump of several cells.
+			if hi > -0.02 or hi - lo > cell * 3.0:
+				continue
+			any = true
+			for k: int in [0, 1, 2, 0, 2, 3]:
+				var idx: int = ids[k]
+				st.set_uv(Vector2(float(idx % (nx + 1)) / nx, float(idx / (nx + 1)) / ny))
+				st.add_vertex(pts[idx])
+	if not any:
+		return null
+	st.generate_normals()
+	return st.commit()
 
 
 ## Front of the face (smallest z) at (x, y): where a line along z meets the head mesh's

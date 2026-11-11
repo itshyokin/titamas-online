@@ -117,7 +117,9 @@ func _ready() -> void:
 	Database.apply_enemy(self, enemy_id, true)
 	Database.changed.connect(func(which: String) -> void:
 		if which == "enemies":
-			Database.apply_enemy(self, enemy_id))
+			Database.apply_enemy(self, enemy_id)
+		if which in ["enemies", "appearance", "items"] and stats and not stats.is_dead():
+			_equip())
 	_home = global_position
 	_wander_to = _home
 	_wait = randf_range(0.5, 3.0)
@@ -207,9 +209,34 @@ func _record_death() -> bool:
 	return stays_dead
 
 
+## Dresses it from its enemies.json entry: "look" (same as NPCs and the creator: face,
+## hair, eyes...) and "equipment" (worn gear; primary = the weapon in hand). Without them
+## the old plain body (skin_color) and the "weapon" choice.
 func _equip() -> void:
-	if String(Database.enemy(enemy_id).get("weapon", "sword")) == "sword":
-		character.attach_to_hand(WeaponModels.sword())
+	if character == null:
+		return
+	var d := Database.enemy(enemy_id)
+	var look = d.get("look", {})
+	var eq: Dictionary = d.get("equipment", {}) if d.get("equipment") is Dictionary else {}
+	character.take_off_all()
+	if look is Dictionary and not (look as Dictionary).is_empty():
+		character.apply_appearance(Database.resolve_appearance(look))
+	for slot in ["head", "shoulders", "chest", "hands", "legs", "feet", "off_hand"]:
+		var item := Database.item(String(eq.get(slot, "")))
+		if not item.is_empty():
+			character.wear(item, slot)
+	if _weapon_node and is_instance_valid(_weapon_node):
+		_weapon_node.queue_free()
+	_weapon_node = null
+	var main := Database.item(String(eq.get("primary", "")))
+	if not main.is_empty():
+		var fits: Array = main.get("fit", {}).get(character.body_key(), [])
+		_weapon_node = character.attach_fitted(fits[0] if not fits.is_empty() else {"bone": "mixamorig_RightHand", "grip": true}, String(main.get("model", "")))
+	elif String(d.get("weapon", "sword")) == "sword":
+		_weapon_node = character.attach_to_hand(WeaponModels.sword())
+
+
+var _weapon_node: Node3D = null
 
 
 func aim_point() -> Vector3:

@@ -67,6 +67,10 @@ var _join_address: LineEdit
 var _net_status: Label
 
 
+var _mirror_check: CheckBox
+var _right_eye_box: Control
+var _extra_buttons := {}  # extra id -> Button
+
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	GameSettings.menu_open = false
@@ -847,7 +851,7 @@ func _creator_page() -> Control:
 	lv.add_child(_note("Drag to turn your character · mouse wheel to zoom"))
 
 	# Right: hair, facial hair, eyes.
-	var right := _panel(Control.PRESET_TOP_RIGHT, Vector2(-370, 40), Vector2(340, 0))
+	var right := _panel(Control.PRESET_TOP_RIGHT, Vector2(-396, 40), Vector2(340, 0))
 	page.add_child(right)
 	var rv := _scrolling(right, 10)
 	rv.add_child(_heading("Appearance", 24))
@@ -857,7 +861,27 @@ func _creator_page() -> Control:
 	rv.add_child(_stepper("Facial hair", "facial_hair", "facial_hair"))
 	rv.add_child(_swatch_grid("facial_color", a.get("hair_colors", []), 7))
 	rv.add_child(_stepper("Eyes", "eyes", "eyes"))
+	rv.add_child(_section("Eye colour"))
 	rv.add_child(_swatch_grid("eye_color", a.get("eye_colors", []), 5))
+	# Heterochromia (half-elves always have it): the right eye's own colour.
+	_mirror_check = CheckBox.new()
+	_mirror_check.text = "Same colour for both eyes"
+	_mirror_check.toggled.connect(func(on: bool) -> void:
+		_look["mirror_eyes"] = on
+		if not on and String(_look.get("eye_color_right", "")) == "":
+			_look["eye_color_right"] = _look.get("eye_color", "#3f78c8")
+		_shot = "face"
+		_apply_look())
+	rv.add_child(_mirror_check)
+	_right_eye_box = VBoxContainer.new()
+	_right_eye_box.add_child(_section("Right eye colour"))
+	_right_eye_box.add_child(_swatch_grid("eye_color_right", a.get("eye_colors", []), 5))
+	rv.add_child(_right_eye_box)
+	rv.add_child(_stepper("Brows", "brows", "brows"))
+	rv.add_child(_stepper("Nose", "nose", "noses"))
+	rv.add_child(_stepper("Mouth", "mouth", "mouths"))
+	rv.add_child(_section("Extras"))
+	rv.add_child(_extras_grid(a.get("face_extras", [])))
 	rv.add_child(_button("Randomize", _randomize))
 
 	# Bottom: name and navigation.
@@ -955,6 +979,8 @@ func _stepper(title: String, key: String, list: String) -> VBoxContainer:
 	var value := Label.new()
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value.clip_text = true  # long names never widen the panel
+	value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	row.add_child(value)
 	var next := _button("›", func() -> void: _step(key, list, 1))
 	next.custom_minimum_size = Vector2(44, 36)
@@ -982,7 +1008,7 @@ func _swatch_grid(key: String, colors: Array, columns: int) -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 5)
 	box.add_child(_swatch_row(key, colors, columns))
-	var face := key in ["hair_color", "facial_color", "eye_color"]
+	var face := key in ["hair_color", "facial_color", "eye_color", "eye_color_right"]
 	var more := Button.new()
 	more.text = "More colours…"
 	more.custom_minimum_size = Vector2(0, 26)
@@ -1029,7 +1055,7 @@ func _swatch_row(key: String, colors: Array, columns: int) -> GridContainer:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(34, 30)
 		b.tooltip_text = col
-		var face := key in ["hair_color", "facial_color", "eye_color"]
+		var face := key in ["hair_color", "facial_color", "eye_color", "eye_color_right"]
 		b.pressed.connect(func() -> void:
 			_look[key] = col
 			_shot = "face" if face else _shot
@@ -1037,6 +1063,35 @@ func _swatch_row(key: String, colors: Array, columns: int) -> GridContainer:
 		grid.add_child(b)
 		entries.append([col, b])
 	_swatches[key] = entries
+	return grid
+
+
+## Toggle buttons for face extras (freckles, scars...): any number can be on.
+func _extras_grid(options: Array) -> GridContainer:
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	for o in options:
+		if not o is Dictionary:
+			continue
+		var id := String(o.get("id", ""))
+		var b := Button.new()
+		b.text = String(o.get("name", id))
+		b.toggle_mode = true
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.custom_minimum_size.y = 30
+		b.toggled.connect(func(on: bool) -> void:
+			var list: Array = (_look.get("extras", []) as Array).duplicate()
+			if on and not id in list:
+				list.append(id)
+			elif not on:
+				list.erase(id)
+			_look["extras"] = list
+			_shot = "face"
+			_apply_look())
+		grid.add_child(b)
+		_extra_buttons[id] = b
 	return grid
 
 
@@ -1049,7 +1104,7 @@ func _randomize() -> void:
 		var o: Array = a.get(list, [])
 		return String(o[randi() % o.size()]) if not o.is_empty() else ""
 	_look["skin"] = pick_color.call("skin_colors")
-	_look["face"] = "painted"
+	_look["face"] = "sculpted"
 	_look["hair"] = pick.call("hair_styles")
 	# Natural hair colours most of the time.
 	var hair_colors: Array = a.get("hair_colors", [])
@@ -1058,6 +1113,16 @@ func _randomize() -> void:
 	_look["facial_hair"] = pick.call("facial_hair") if randf() < 0.5 else "none"
 	_look["eyes"] = pick.call("eyes")
 	_look["eye_color"] = pick_color.call("eye_colors")
+	_look["mirror_eyes"] = randf() > 0.08
+	_look["eye_color_right"] = pick_color.call("eye_colors")
+	_look["brows"] = pick.call("brows")
+	_look["nose"] = pick.call("noses")
+	_look["mouth"] = pick.call("mouths")
+	var extras := []
+	for o in a.get("face_extras", []):
+		if randf() < 0.12:
+			extras.append(String(o.get("id", "")))
+	_look["extras"] = extras
 	_shot = "full"
 	_apply_look()
 
@@ -1068,6 +1133,18 @@ func _apply_look() -> void:
 
 
 func _refresh_creator() -> void:
+	var mirror := bool(_look.get("mirror_eyes", true))
+	var forced := bool(Database.species_data(String(_look.get("species", ""))).get("heterochromia", false)) if _look.has("species") else false
+	if forced:
+		mirror = false
+	if _mirror_check:
+		_mirror_check.set_pressed_no_signal(mirror)
+		_mirror_check.disabled = forced
+		_mirror_check.tooltip_text = "Your species always has two eye colours." if forced else ""
+		_right_eye_box.visible = not mirror
+	var extras: Array = _look.get("extras", [])
+	for id: String in _extra_buttons:
+		(_extra_buttons[id] as Button).set_pressed_no_signal(id in extras)
 	for key: String in _choices:
 		var current := _pronouns if key == "pronouns" else String(_look.get(key, ""))
 		for e: Array in _choices[key]:
@@ -1164,6 +1241,14 @@ func _select_species(id: String) -> void:
 	if sp.is_empty():
 		return
 	_look["species"] = String(sp.get("id", id))
+	if bool(sp.get("heterochromia", false)):
+		# This species' eyes always differ (e.g. half-elves).
+		_look["mirror_eyes"] = false
+		if String(_look.get("eye_color_right", "")) in ["", String(_look.get("eye_color", ""))]:
+			var cols: Array = Database.appearance.get("eye_colors", [])
+			var others := cols.filter(func(c: Variant) -> bool: return String(c) != String(_look.get("eye_color", "")))
+			if not others.is_empty():
+				_look["eye_color_right"] = String(others[randi() % others.size()])
 	for e: Array in _species_buttons:
 		(e[1] as Button).set_pressed_no_signal(e[0] == _look.species)
 	var t := "[font_size=28][color=#%s]%s[/color][/font_size]\n%s\n" % [ACCENT.to_html(false), sp.get("name", id), sp.get("description", "")]

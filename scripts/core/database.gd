@@ -273,7 +273,10 @@ func appearance_option(list: String, id: String) -> Dictionary:
 ## into what CharacterModel.apply_appearance() needs.
 func resolve_appearance(look: Dictionary) -> Dictionary:
 	var d: Dictionary = appearance.get("default", {})
-	var get := func(key: String) -> String: return String(look.get(key, d.get(key, "")))
+	# A missing or empty choice ("(none)" in the Database) means the default.
+	var get := func(key: String) -> String:
+		var v := String(look.get(key, ""))
+		return v if v != "" else String(d.get(key, ""))
 	# One androgynous body for everyone (the femme body is kept only for old content;
 	# appearance.json "bodies" lists the ones characters may use).
 	var body: String = get.call("body")
@@ -285,6 +288,20 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 	# (NPC looks without a species keep their own height / build / head.)
 	var sp := species_data(String(look.species)) if look.has("species") and not species_list.is_empty() else {}
 	var head_id: String = String(sp.get("head", "")) if String(sp.get("head", "")) != "" else get.call("head")
+	var eye_left := Color.html(get.call("eye_color")) if Color.html_is_valid(get.call("eye_color")) else Color(0.3, 0.5, 0.8)
+	var eye_right := eye_left
+	var mirror = look.get("mirror_eyes", d.get("mirror_eyes", true))
+	if bool(sp.get("heterochromia", false)):
+		mirror = false  # e.g. half-elves: their eyes always differ
+	if not bool(mirror) and Color.html_is_valid(String(look.get("eye_color_right", ""))):
+		eye_right = Color.html(String(look.eye_color_right))
+	var extras: Array = []
+	var extra_ids = look.get("extras", d.get("extras", []))
+	if extra_ids is Array:
+		for id in extra_ids:
+			var o := appearance_option("face_extras", String(id))
+			if not o.is_empty():
+				extras.append(o)
 	return {
 		"body": body,
 		"skin": Color.html(get.call("skin")) if Color.html_is_valid(get.call("skin")) else Color(0.8, 0.6, 0.45),
@@ -295,8 +312,15 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 		"facial_hair": appearance_option("facial_hair", get.call("facial_hair")),
 		"facial_color": Color.html(get.call("facial_color")) if Color.html_is_valid(get.call("facial_color")) else Color(0.25, 0.15, 0.1),
 		"eyes": appearance_option("eyes", get.call("eyes")),
-		"eye_color": Color.html(get.call("eye_color")) if Color.html_is_valid(get.call("eye_color")) else Color(0.3, 0.5, 0.8),
+		"eye_color": eye_left,
+		# Heterochromia: "mirror_eyes" false gives the right eye its own colour.
+		"eye_color_right": eye_right,
 		"eye_placement": placement.get(body, {}),
+		"nose": appearance_option("noses", get.call("nose")),
+		"mouth": appearance_option("mouths", get.call("mouth")),
+		"brows": appearance_option("brows", get.call("brows")),
+		"extras": extras,
+		"face_area": (appearance.get("face_area", {}) as Dictionary).get(body, {}),
 		"underwear": appearance.get("underwear", {}),
 		"height_scale": float(sp.get("height", appearance_option("heights", get.call("height")).get("scale", 1.0))),
 		"weight": float(sp.get("build", appearance_option("builds", get.call("build")).get("weight", 0.0))),
@@ -404,7 +428,7 @@ func apply_enemy(node: Node, id: String, refill := false) -> void:
 				list.append(load(String(path)))
 		node.set("death_sounds", list)
 	var character := node.get_node_or_null("Model/Character")
-	if character and d.has("skin_color"):
+	if character and d.has("skin_color") and (d.get("look", {}) as Dictionary).is_empty():
 		character.set("skin_color", DataFiles.color_from(d.skin_color))
 
 

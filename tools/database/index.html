@@ -271,6 +271,27 @@ const fxFields = (slot, what, sizeHelp) => [
 	{ key: "fx." + slot + ".look", label: "Look", type: "select", options: [["glow", "Glow (shines, tinted with the ability's colour)"], ["drawn", "As drawn (your colours and outlines)"]], show: e => !!(((e.fx || {})[slot] || {}).sprite) },
 ];
 
+// Character looks (NPCs and enemies): the same choices as the character creator.
+const LOOK_FIELDS = [
+	{ key: "look.skin", label: "Skin colour", type: "color" },
+	{ key: "look.species", label: "Species (sets head, height, build)", type: "select", empty: true, options: () => (((data.species || {}).species) || []).map(x => [x.id, x.name]) },
+	{ key: "look.head", label: "Head", type: "lookopt", list: "heads" },
+	{ key: "look.face", label: "Face", type: "lookopt", list: "faces", help: "Detailed = eyes, brows, nose, mouth and extras below. Painted = the simple painted face (ignores them). (none) = the default." },
+	{ key: "look.hair", label: "Hair style", type: "lookopt", list: "hair_styles" },
+	{ key: "look.hair_color", label: "Hair colour", type: "color", help: "Also the brows." },
+	{ key: "look.facial_hair", label: "Facial hair", type: "lookopt", list: "facial_hair" },
+	{ key: "look.facial_color", label: "Facial hair colour", type: "color" },
+	{ key: "look.eyes", label: "Eyes", type: "lookopt", list: "eyes" },
+	{ key: "look.eye_color", label: "Eye colour (left eye when not mirrored)", type: "color" },
+	{ key: "look.mirror_eyes", label: "Both eyes the same colour", type: "bool", def: true, rerender: true, help: "Off = heterochromia: the right eye gets its own colour (species with Heterochromia are always off)." },
+	{ key: "look.eye_color_right", label: "Right eye colour", type: "color", show: e => (e.look || {}).mirror_eyes === false },
+	{ key: "look.brows", label: "Brows", type: "lookopt", list: "brows" },
+	{ key: "look.nose", label: "Nose", type: "lookopt", list: "noses" },
+	{ key: "look.mouth", label: "Mouth", type: "lookopt", list: "mouths" },
+	{ key: "look.extras", label: "Extras", type: "lookextras", wide: true },
+	{ key: "look.height", label: "Height", type: "lookopt", list: "heights" },
+	{ key: "look.build", label: "Build", type: "lookopt", list: "builds" },
+];
 // Item groups (same as the backpack tabs, CharacterWindow.tab_of).
 const ITEM_CATS = [["consumables", "Consumables"], ["weapons", "Weapons"], ["armor", "Armour"], ["key", "Key items"], ["misc", "Misc"]];
 function itemCategory(it) {
@@ -509,11 +530,18 @@ const TABS = {
 				{ key: "level", label: "Level", type: "int" },
 				{ key: "max_health", label: "Health", type: "number" },
 				{ key: "bar_width", label: "Health bar width (% of screen, 0 = by health)", type: "number", help: "The bar across the top while it fights you. Bosses ~80, a bandit ~25." },
-				{ key: "skin_color", label: "Skin colour", type: "color" },
-				{ key: "weapon", label: "Weapon", type: "select", options: [["sword", "Sword"], ["none", "None"]] },
+				{ key: "skin_color", label: "Skin colour (when it has no Look)", type: "color", show: e => !e.look },
+				{ key: "weapon", label: "Weapon (when Gear has none)", type: "select", options: [["sword", "Sword (stand-in)"], ["none", "None"]], show: e => !((e.equipment || {}).primary) },
 				{ key: "boss", label: "Boss", type: "bool", help: "No finisher kill-cams on it." },
 				{ key: "blood_color", label: "Blood colour", type: "color", help: "What it bleeds when hit: dark red by default, oil for machines. Empty or \"none\" = no blood (dummies, ghosts)." },
 			]],
+			["Look (humanoids: bandit.tscn)", [
+				{ key: "_look_note", label: "", type: "note", wide: true, text: "Same choices as the character creator and NPCs. Leave a choice on (none) for the default. Without any look it keeps the old plain body tinted by Skin colour." },
+				...LOOK_FIELDS,
+			], e => !(e.beast || {}).body],
+			["Gear (humanoids)", [
+				{ key: "equipment", label: "Wearing", type: "kitgear", wide: true, help: "Shows on the body (no armour stats for enemies). Weapon = the one it holds; empty = the Weapon choice above." },
+			], e => !(e.beast || {}).body],
 			["Beast body (scenes/enemies/beast.tscn: not a humanoid)", [
 				{ key: "beast.body", label: "Body", type: "select", options: [["", "(humanoid: use bandit.tscn)"], ["bat", "Bat (flies)"], ["dragon", "Dragon (boss)"], ["troll", "Troll (boss: throws rocks, smashes the ground)"]], help: "Place scenes/enemies/beast.tscn in a level and set its Enemy Id to this entry (or use the ready-made scenes/enemies/dragon.tscn / troll.tscn)." },
 				{ key: "beast.color", label: "Colour", type: "color" },
@@ -836,18 +864,7 @@ const TABS = {
 				{ key: "loot", label: "Items", type: "loot", wide: true },
 			]],
 			["Look", [
-				{ key: "look.skin", label: "Skin colour", type: "color" },
-				{ key: "look.species", label: "Species (sets head, height, build)", type: "select", empty: true, options: () => (((data.species || {}).species) || []).map(x => [x.id, x.name]) },
-				{ key: "look.head", label: "Head", type: "lookopt", list: "heads" },
-				{ key: "look.face", label: "Face", type: "lookopt", list: "faces" },
-				{ key: "look.hair", label: "Hair style", type: "lookopt", list: "hair_styles" },
-				{ key: "look.hair_color", label: "Hair colour", type: "color" },
-				{ key: "look.facial_hair", label: "Facial hair", type: "lookopt", list: "facial_hair" },
-				{ key: "look.facial_color", label: "Facial hair colour", type: "color" },
-				{ key: "look.eyes", label: "Eyes", type: "lookopt", list: "eyes" },
-				{ key: "look.eye_color", label: "Eye colour", type: "color" },
-				{ key: "look.height", label: "Height", type: "lookopt", list: "heights" },
-				{ key: "look.build", label: "Build", type: "lookopt", list: "builds" },
+				...LOOK_FIELDS,
 			]],
 			["Gear", [
 				{ key: "equipment", label: "Wearing", type: "kitgear", wide: true, help: "Primary = the weapon it fights with." },
@@ -1067,6 +1084,7 @@ const TABS = {
 				{ key: "name", label: "Name", type: "text" },
 				{ key: "description", label: "Description", type: "textarea", wide: true, help: "Shown on the species page, the first page of character creation." },
 				{ key: "traits", label: "Traits (one line)", type: "text", wide: true },
+				{ key: "heterochromia", label: "Heterochromia (eyes always two colours)", type: "bool", help: "E.g. half-elves: the creator's Same colour for both eyes is off and locked, and NPCs of this species get two colours too (their Right eye colour)." },
 			]],
 			["Body", [
 				{ key: "head", label: "Head", type: "lookopt", list: "heads", help: "Body Models pieces used as Head appear here too." },
@@ -1538,6 +1556,8 @@ async function load() {
 			data[t.file] = d[t.file] || (t.single ? {} : { [t.listKey]: [] });
 			saved[t.file] = JSON.stringify(data[t.file]);
 		}
+		// Files without a tab of their own (appearance.json: the creator's choices) are read only.
+		for (const key of Object.keys(d)) if (!(key in data) && d[key]) data[key] = d[key];
 		render();
 	} catch (e) {
 		$("status").textContent = "Can't reach Godot. Open this page from Godot's Database button.";
@@ -1816,8 +1836,8 @@ function fieldControl(t, entry, f) {
 	switch (f.type) {
 		case "bool": {
 			wrap.className += " check";
-			const c = el("input", { type: "checkbox", checked: !!value });
-			c.onchange = () => set(c.checked);
+			const c = el("input", { type: "checkbox", checked: !!(value ?? f.def) });
+			c.onchange = () => set(c.checked, !!f.rerender);
 			wrap.append(c, label);
 			return wrap;
 		}
@@ -1833,6 +1853,20 @@ function fieldControl(t, entry, f) {
 				set(v);
 			};
 			wrap.append(label, i);
+			break;
+		}
+		case "lookextras": {
+			// Face extras (freckles, scars...): any number.
+			const on = Array.isArray(value) ? value.slice() : [];
+			const box = el("div", { className: "parts" });
+			for (const o of ((data.appearance || {}).face_extras || [])) {
+				const lab = el("label", { className: "part" });
+				const c = el("input", { type: "checkbox", checked: on.includes(o.id) });
+				c.onchange = () => { const i = on.indexOf(o.id); if (c.checked && i < 0) on.push(o.id); if (!c.checked && i >= 0) on.splice(i, 1); set(on.slice()); };
+				lab.append(c, document.createTextNode(" " + (o.name || o.id)));
+				box.appendChild(lab);
+			}
+			wrap.append(label, box);
 			break;
 		}
 		case "lookopt": {

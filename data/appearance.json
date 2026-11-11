@@ -70,15 +70,15 @@
 	],
 	"faces": [
 		{
+			"id": "sculpted",
+			"name": "Detailed"
+		},
+		{
 			"id": "painted",
 			"name": "Painted (simple)",
 			"fitted_masc": "res://assets/characters/lowpoly/face_default_masc.scn",
 			"fitted_femme": "",
 			"painted": true
-		},
-		{
-			"id": "sculpted",
-			"name": "Eyes only"
 		}
 	],
 	"hair_styles": [
@@ -198,16 +198,16 @@
 	"eye_placement": {
 		"masc": {
 			"height": 1.725,
-			"apart": 0.03,
-			"width": 0.032,
-			"tall": 0.026,
+			"apart": 0.036,
+			"width": 0.064,
+			"tall": 0.052,
 			"forward": 0.002
 		},
 		"femme": {
 			"height": 1.742,
-			"apart": 0.038,
-			"width": 0.043,
-			"tall": 0.032,
+			"apart": 0.042,
+			"width": 0.072,
+			"tall": 0.058,
 			"forward": 0.002
 		}
 	},
@@ -225,7 +225,13 @@
 		"height": "medium",
 		"build": "medium",
 		"head": "human",
-		"face": "painted"
+		"face": "sculpted",
+		"nose": "straight",
+		"mouth": "neutral",
+		"brows": "natural",
+		"extras": [],
+		"mirror_eyes": true,
+		"eye_color_right": "#3f78c8"
 	},
 	"underwear": {
 		"id": "underwear",
@@ -236,5 +242,185 @@
 	},
 	"bodies": [
 		"masc"
-	]
+	],
+	"noses": [
+		{
+			"id": "none",
+			"name": "None"
+		},
+		{
+			"id": "straight",
+			"name": "Straight",
+			"texture": "res://assets/characters/face/nose_straight.png"
+		},
+		{
+			"id": "button",
+			"name": "Button",
+			"texture": "res://assets/characters/face/nose_button.png"
+		},
+		{
+			"id": "hooked",
+			"name": "Hooked",
+			"texture": "res://assets/characters/face/nose_hooked.png"
+		},
+		{
+			"id": "broad",
+			"name": "Broad",
+			"texture": "res://assets/characters/face/nose_broad.png"
+		},
+		{
+			"id": "pointed",
+			"name": "Pointed",
+			"texture": "res://assets/characters/face/nose_pointed.png"
+		}
+	],
+	"mouths": [
+		{
+			"id": "none",
+			"name": "None"
+		},
+		{
+			"id": "neutral",
+			"name": "Neutral",
+			"texture": "res://assets/characters/face/mouth_neutral.png"
+		},
+		{
+			"id": "smile",
+			"name": "Smile",
+			"texture": "res://assets/characters/face/mouth_smile.png"
+		},
+		{
+			"id": "frown",
+			"name": "Frown",
+			"texture": "res://assets/characters/face/mouth_frown.png"
+		},
+		{
+			"id": "full",
+			"name": "Full lips",
+			"texture": "res://assets/characters/face/mouth_full.png"
+		},
+		{
+			"id": "thin",
+			"name": "Thin",
+			"texture": "res://assets/characters/face/mouth_thin.png"
+		},
+		{
+			"id": "smirk",
+			"name": "Smirk",
+			"texture": "res://assets/characters/face/mouth_smirk.png"
+		},
+		{
+			"id": "wide",
+			"name": "Wide",
+			"texture": "res://assets/characters/face/mouth_wide.png"
+		}
+	],
+	"brows": [
+		{
+			"id": "none",
+			"name": "None"
+		},
+		{
+			"id": "natural",
+			"name": "Natural",
+			"texture": "res://assets/characters/face/brows_natural.png",
+			"tint": "hair"
+		},
+		{
+			"id": "thin",
+			"name": "Thin",
+			"texture": "res://assets/characters/face/brows_thin.png",
+			"tint": "hair"
+		},
+		{
+			"id": "thick",
+			"name": "Thick",
+			"texture": "res://assets/characters/face/brows_thick.png",
+			"tint": "hair"
+		},
+		{
+			"id": "arched",
+			"name": "Arched",
+			"texture": "res://assets/characters/face/brows_arched.png",
+			"tint": "hair"
+		},
+		{
+			"id": "angry",
+			"name": "Angry",
+			"texture": "res://assets/characters/face/brows_angry.png",
+			"tint": "hair"
+		},
+		{
+			"id": "worried",
+			"name": "Worried",
+			"texture": "res://assets/characters/face/brows_worried.png",
+			"tint": "hair"
+		}
+	],
+	"face_extras": [
+		{
+			"id": "freckles",
+			"name": "Freckles",
+			"texture": "res://assets/characters/face/freckles.png"
+		},
+		{
+			"id": "blush",
+			"name": "Rosy cheeks",
+			"texture": "res://assets/characters/face/blush.png"
+		},
+		{
+			"id": "wrinkles",
+			"name": "Wrinkles",
+			"texture": "res://assets/characters/face/wrinkles.png"
+		},
+		{
+			"id": "tired_eyes",
+			"name": "Tired eyes",
+			"texture": "res://assets/characters/face/tired_eyes.png"
+		},
+		{
+			"id": "scar_eye",
+			"name": "Scar over the eye",
+			"texture": "res://assets/characters/face/scar_eye.png"
+		},
+		{
+			"id": "scar_cheek",
+			"name": "Cheek scar",
+			"texture": "res://assets/characters/face/scar_cheek.png"
+		},
+		{
+			"id": "scar_lip",
+			"name": "Lip scar",
+			"texture": "res://assets/characters/face/scar_lip.png"
+		},
+		{
+			"id": "beauty_mark",
+			"name": "Beauty mark",
+			"texture": "res://assets/characters/face/beauty_mark.png"
+		},
+		{
+			"id": "chin_dimple",
+			"name": "Chin dimple",
+			"texture": "res://assets/characters/face/chin_dimple.png"
+		},
+		{
+			"id": "stubble_shadow",
+			"name": "Five o'clock shadow",
+			"texture": "res://assets/characters/face/stubble_shadow.png"
+		}
+	],
+	"face_area": {
+		"masc": {
+			"height": 1.7,
+			"width": 0.15,
+			"tall": 0.2,
+			"forward": 0.0015
+		},
+		"femme": {
+			"height": 1.715,
+			"width": 0.15,
+			"tall": 0.2,
+			"forward": 0.0015
+		}
+	}
 }
