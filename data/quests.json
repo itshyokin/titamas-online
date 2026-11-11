@@ -1,38 +1,75 @@
 {
-	"start_sound": "res://assets/audio/sfx/quest_start.ogg",
 	"complete_sound": "res://assets/audio/sfx/quest_complete.ogg",
-	"sound_db": -4,
 	"quests": [
 		{
-			"id": "bandit_insignias",
-			"name": "Bandit Insignias",
+			"available": [],
+			"description": "Bandits took the villager's brother's cart. Bring back 3 bandit insignias from the bandits on the road.",
 			"giver": "Villager",
 			"giver_event": "insignia_villager",
 			"giver_npc": "",
+			"id": "bandit_insignias",
+			"name": "Bandit Insignias",
+			"objectives": [
+				{
+					"count": 3.0,
+					"item": "bandit_insignia",
+					"text": "Bandit Insignias",
+					"type": "item"
+				}
+			],
+			"reward_gold": 50.0,
+			"reward_items": [
+				{
+					"count": 1.0,
+					"item": "iron_helm"
+				},
+				{
+					"count": 2.0,
+					"item": "minor_healing_potion"
+				}
+			],
+			"reward_xp": 120.0,
+			"rewards": "",
+			"take_items": true
+		},
+		{
+			"id": "first_steps",
+			"name": "First Steps",
+			"giver": "",
+			"giver_event": "tut_guide",
+			"giver_npc": "",
 			"available": [],
-			"description": "Bandits took the villager's brother's cart. Bring back 3 bandit insignias from the bandits on the road.",
+			"description": "Complete training with Katrina and defeat the Bandits.",
+			"reward_xp": 100.0,
+			"reward_gold": 25.0,
+			"reward_items": [],
+			"take_items": true,
 			"rewards": "",
 			"objectives": [
 				{
-					"text": "Bandit Insignias",
-					"type": "item",
-					"item": "bandit_insignia",
-					"count": 3
-				}
-			],
-			"reward_gold": 50,
-			"reward_xp": 120,
-			"reward_items": [
-				{
-					"item": "iron_helm",
-					"count": 1
+					"text": "Practice with your Dagger",
+					"type": "switch",
+					"item": "",
+					"count": 1.0,
+					"switch": "tut_practice_done"
 				},
 				{
-					"item": "minor_healing_potion",
-					"count": 2
+					"text": "Defeat the Bandits",
+					"type": "switch",
+					"item": "",
+					"count": 1.0,
+					"switch": "tut_bandits_done"
+				},
+				{
+					"text": "Defeat Mossback the Troll",
+					"type": "switch",
+					"item": "",
+					"count": 1.0,
+					"switch": "troll_defeated"
 				}
-			],
-			"take_items": true
+			]
 		}
-	]
+	],
+	"sound_db": -4.0,
+	"start_sound": "res://assets/audio/sfx/quest_start.ogg"
 }

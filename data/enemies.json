@@ -13,8 +13,8 @@
 			"death_push": 2.5,
 			"death_sounds": [
 				"res://assets/audio/combat/death_grunt_1.ogg",
-				"res://assets/audio/combat/death_grunt_2.ogg",
-				"res://assets/audio/combat/death_grunt_3.ogg"
+				"res://assets/audio/combat/death_grunt_3.ogg",
+				"res://assets/audio/combat/death_grunt_2.ogg"
 			],
 			"fade_time": 2.0,
 			"gold_max": 8.0,
@@ -66,7 +66,7 @@
 			"ragdoll": 1.0,
 			"respawn_time": 90.0,
 			"run_speed": 4.0,
-			"skin_color": "#9e8c80",
+			"skin_color": "#d0c8c1",
 			"walk_speed": 1.4,
 			"wander_radius": 5.0,
 			"weapon": "sword",
@@ -214,9 +214,9 @@
 			"attack_arc": 110.0,
 			"attack_cooldown": 1.4,
 			"attack_hit_time": 0.32,
-			"attack_power": 24.0,
+			"attack_power": 12.0,
 			"attack_range": 5.0,
-			"bar_width": 46.0,
+			"bar_width": 30.0,
 			"beast": {
 				"aim_height": 3.2,
 				"body": "troll",
@@ -260,23 +260,29 @@
 			"id": "troll",
 			"knockback": 6.0,
 			"leash_distance": 70.0,
-			"level": 6.0,
+			"level": 5.0,
 			"loot": [
-				{
-					"chance": 1.0,
-					"item": "iron_longsword",
-					"max": 1.0,
-					"min": 1.0
-				},
 				{
 					"chance": 1.0,
 					"item": "minor_healing_potion",
 					"max": 4.0,
 					"min": 2.0
+				},
+				{
+					"item": "stone_chunk",
+					"chance": 0.5,
+					"min": 3.0,
+					"max": 1.0
+				},
+				{
+					"item": "smiths_hammer",
+					"chance": 0.25,
+					"min": 1.0,
+					"max": 1.0
 				}
 			],
 			"loot_time": 120.0,
-			"max_health": 2000.0,
+			"max_health": 500.0,
 			"name": "Old Mossback",
 			"ragdoll": 1.0,
 			"respawn_time": 600.0,
@@ -284,7 +290,7 @@
 			"turn_speed": 1.5,
 			"walk_speed": 0.0,
 			"wander_radius": 4.0,
-			"xp": 650.0
+			"xp": 250.0
 		}
 	]
 }

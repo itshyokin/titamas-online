@@ -228,8 +228,8 @@
 					"commands": [
 						{
 							"cmd": "text",
-							"speaker": "Signpost",
-							"text": "Somebody has scratched a shortcut under it."
+							"speaker": "Sign",
+							"text": "THE MONOLITH\n\"A doorway between worlds...\""
 						}
 					],
 					"conditions": [],
@@ -429,6 +429,11 @@
 				{
 					"commands": [
 						{
+							"cmd": "log",
+							"text": "You find yourself in a strange forest...",
+							"color": "#f9fccb"
+						},
+						{
 							"cmd": "nav",
 							"color": "#ffd35c",
 							"id": "main",
@@ -499,12 +504,6 @@
 							"text": "I'm Commander Katrina Humphrey of the Knight's Guild,\nsworn Guardian of Lady Eleanor Faewood."
 						},
 						{
-							"cmd": "choice",
-							"options": [
-								"I'm {player}, nice to meet you.",
-								"Where are we?",
-								"What are you doing out here?"
-							],
 							"branches": [
 								[
 									{
@@ -528,7 +527,13 @@
 									}
 								]
 							],
-							"cancel": 0.0
+							"cancel": 0.0,
+							"cmd": "choice",
+							"options": [
+								"I'm {player}, nice to meet you.",
+								"Where are we?",
+								"What are you doing out here?"
+							]
 						},
 						{
 							"cmd": "text",

@@ -65,15 +65,18 @@
 			"can_fight": true,
 			"can_follow": true,
 			"dialogue": [
-				"Oh, hello! Placeholder Katrina here. Write my real lines in the Database whenever you're ready."
+				"What is it, {player} ?"
 			],
 			"equipment": {
 				"chest": "chainmail_shirt",
 				"feet": "worn_boots",
+				"hands": "leather_gloves",
 				"legs": "linen_leggings",
 				"primary": "iron_greatsword",
-				"hands": "leather_gloves"
+				"shoulders": "blue_cloak",
+				"off_hand": "wooden_shield"
 			},
+			"event": "katrina_intro",
 			"follow_line": "Lead the way, {player}. I've got your back.",
 			"gold_max": 0.0,
 			"gold_min": 0.0,
@@ -85,13 +88,14 @@
 			"look": {
 				"body": "masc",
 				"build": "",
-				"eye_color": "#3f8a3c",
+				"eye_color": "#b5b5b5",
 				"eyes": "",
 				"facial_hair": "",
-				"hair": "",
-				"hair_color": "#b0461f",
+				"hair": "hair_ponytail",
+				"hair_color": "#f2f0a8",
 				"height": "",
-				"skin": "#ebc4a4"
+				"skin": "#ebc4a4",
+				"species": "human"
 			},
 			"loot": [],
 			"max_health": 110.0,
@@ -101,8 +105,7 @@
 			"title": "",
 			"wait_line": "I'll wait here. Don't be long.",
 			"walk_speed": 1.3,
-			"wander_radius": 3.0,
-			"event": "katrina_intro"
+			"wander_radius": 3.0
 		},
 		{
 			"abilities": [],
@@ -223,8 +226,8 @@
 			],
 			"equipment": {
 				"chest": "leather_jerkin",
-				"legs": "travelers_trousers",
 				"feet": "worn_boots",
+				"legs": "travelers_trousers",
 				"primary": "hunting_bow"
 			},
 			"follow_line": "Lead on. I'll follow.",
@@ -232,6 +235,7 @@
 			"gold_min": 0.0,
 			"id": "guard_archer",
 			"immortal": false,
+			"keeps_distance": true,
 			"kind": "companion",
 			"leash_distance": 35.0,
 			"level": 5.0,
@@ -254,8 +258,7 @@
 			"title": "Guard Archer",
 			"wait_line": "I'll hold here.",
 			"walk_speed": 1.3,
-			"wander_radius": 3.0,
-			"keeps_distance": true
+			"wander_radius": 3.0
 		},
 		{
 			"abilities": [
@@ -276,8 +279,8 @@
 			],
 			"equipment": {
 				"chest": "leather_jerkin",
-				"legs": "linen_leggings",
-				"feet": "worn_boots"
+				"feet": "worn_boots",
+				"legs": "linen_leggings"
 			},
 			"follow_line": "Lead on. I'll follow.",
 			"gold_max": 0.0,
@@ -328,12 +331,13 @@
 			],
 			"equipment": {
 				"chest": "leather_jerkin",
-				"legs": "linen_leggings",
-				"feet": "worn_boots"
+				"feet": "worn_boots",
+				"legs": "linen_leggings"
 			},
 			"follow_line": "Lead on. I'll follow.",
 			"gold_max": 0.0,
 			"gold_min": 0.0,
+			"heal_below": 0.7,
 			"id": "guard_healer",
 			"immortal": false,
 			"kind": "companion",
@@ -358,8 +362,7 @@
 			"title": "Guard Healer",
 			"wait_line": "I'll hold here.",
 			"walk_speed": 1.3,
-			"wander_radius": 3.0,
-			"heal_below": 0.7
+			"wander_radius": 3.0
 		}
 	]
 }

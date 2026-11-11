@@ -1,29 +1,55 @@
 {
 	"achievements": [
 		{
+			"description": "Collect 3 Bandit Insignias for the villager.",
+			"hidden": false,
+			"icon": "",
 			"id": "BANDIT_BASHER",
 			"name": "Bandit Basher",
-			"description": "Collect 3 Bandit Insignias for the villager.",
+			"points": 10.0,
+			"rule": {
+				"kind": "event"
+			},
+			"steam_id": ""
+		},
+		{
+			"description": "Defeat your first enemy.",
+			"hidden": false,
 			"icon": "",
-			"points": 10,
+			"id": "FIRST_BLOOD",
+			"name": "First Blood",
+			"points": 5.0,
+			"rule": {
+				"count": 1.0,
+				"enemy": "",
+				"kind": "defeat"
+			},
+			"steam_id": ""
+		},
+		{
+			"description": "Defeat Mossback the Troll.",
+			"hidden": false,
+			"icon": "",
+			"id": "mossback_beat",
+			"name": "Stoned",
+			"points": 5.0,
+			"rule": {
+				"count": 1.0,
+				"enemy": "troll",
+				"kind": "defeat"
+			},
+			"steam_id": ""
+		},
+		{
+			"id": "knights_to_meet_ya",
+			"name": "Knights to Meet Ya",
+			"description": "Get Katrina to join your party.",
+			"icon": "",
+			"points": 5.0,
 			"hidden": false,
 			"steam_id": "",
 			"rule": {
 				"kind": "event"
-			}
-		},
-		{
-			"id": "FIRST_BLOOD",
-			"name": "First Blood",
-			"description": "Defeat your first enemy.",
-			"icon": "",
-			"points": 5,
-			"hidden": false,
-			"steam_id": "",
-			"rule": {
-				"kind": "defeat",
-				"enemy": "",
-				"count": 1
 			}
 		}
 	]
