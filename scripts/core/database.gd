@@ -320,6 +320,7 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 		"mouth": appearance_option("mouths", get.call("mouth")),
 		"brows": appearance_option("brows", get.call("brows")),
 		"extras": extras,
+		"placement": look.get("placement", {}) if look.get("placement") is Dictionary else {},
 		"face_area": (appearance.get("face_area", {}) as Dictionary).get(body, {}),
 		"underwear": appearance.get("underwear", {}),
 		"height_scale": float(sp.get("height", appearance_option("heights", get.call("height")).get("scale", 1.0))),

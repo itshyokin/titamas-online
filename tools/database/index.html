@@ -122,6 +122,10 @@
 	.cat-bar { display: flex; flex-wrap: wrap; gap: 3px; padding: 6px 6px 0; }
 	.cat-bar button { flex: 1 1 auto; padding: 2px 6px; font-size: 12px; }
 	.cat-bar button.on { background: var(--select); color: var(--select-ink); border-color: #23497e; }
+	.placement-grid { display: grid; grid-template-columns: 60px 1fr 1fr 1fr auto; gap: 4px 10px; align-items: center; font-size: 12px; }
+	.placement-grid .pl-cell { display: flex; gap: 6px; align-items: center; }
+	.placement-grid .pl-cell input { flex: 1; }
+	.placement-grid .pl-cell span { width: 34px; font-family: monospace; }
 	.look-preview { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
 	.look-preview img { background: #2b2e38; border: 1px solid #444; border-radius: 4px; }
 	.look-preview .lp-body { width: 156px; height: 252px; }
@@ -295,6 +299,7 @@ const LOOK_FIELDS = [
 	{ key: "look.nose", label: "Nose", type: "lookopt", list: "noses" },
 	{ key: "look.mouth", label: "Mouth", type: "lookopt", list: "mouths" },
 	{ key: "look.extras", label: "Extras", type: "lookextras", wide: true },
+	{ key: "look.placement", label: "Placement (like the creator's Customize placement)", type: "placement", wide: true },
 	{ key: "look.height", label: "Height", type: "lookopt", list: "heights" },
 	{ key: "look.build", label: "Build", type: "lookopt", list: "builds" },
 ];
@@ -1908,6 +1913,29 @@ function fieldControl(t, entry, f) {
 			wrap.append(label, box);
 			previewEls = { body, face, status };
 			requestPreview(entry, false);
+			break;
+		}
+		case "placement": {
+			// {eyes|brows|nose|mouth: {x, y, scale}}: x/y -1..1 (spacing or sideways, down/up), scale 0.5..1.6.
+			const pl = JSON.parse(JSON.stringify(value || {}));
+			const grid = el("div", { className: "placement-grid" });
+			grid.append(el("span"), el("span", { textContent: "Left / right (eyes, brows: spacing)" }), el("span", { textContent: "Down / up" }), el("span", { textContent: "Size" }), el("span"));
+			for (const [part, name] of [["eyes", "Eyes"], ["brows", "Brows"], ["nose", "Nose"], ["mouth", "Mouth"]]) {
+				const p = pl[part] || {};
+				grid.appendChild(el("span", { textContent: name }));
+				for (const [k, lo, hi, def] of [["x", -1, 1, 0], ["y", -1, 1, 0], ["scale", 0.5, 1.6, 1]]) {
+					const cell = el("div", { className: "pl-cell" });
+					const r = el("input", { type: "range", min: lo, max: hi, step: 0.05, value: p[k] ?? def });
+					const v = el("span", { textContent: Number(p[k] ?? def).toFixed(2) });
+					r.oninput = () => { v.textContent = Number(r.value).toFixed(2); pl[part] = Object.assign({}, pl[part] || {}, { [k]: parseFloat(r.value) }); set(JSON.parse(JSON.stringify(pl))); };
+					cell.append(r, v);
+					grid.appendChild(cell);
+				}
+				const reset = el("button", { textContent: "Reset" });
+				reset.onclick = () => { delete pl[part]; set(JSON.parse(JSON.stringify(pl)), true); };
+				grid.appendChild(reset);
+			}
+			wrap.append(label, grid);
 			break;
 		}
 		case "lookextras": {

@@ -70,6 +70,7 @@ var _net_status: Label
 var _mirror_check: CheckBox
 var _right_eye_box: Control
 var _extra_buttons := {}  # extra id -> Button
+var _placement_sliders := {}  # part -> {"x"/"y"/"scale": HSlider}
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -861,6 +862,7 @@ func _creator_page() -> Control:
 	rv.add_child(_stepper("Facial hair", "facial_hair", "facial_hair"))
 	rv.add_child(_swatch_grid("facial_color", a.get("hair_colors", []), 7))
 	rv.add_child(_stepper("Eyes", "eyes", "eyes"))
+	rv.add_child(_placement_box("eyes", "Spacing"))
 	rv.add_child(_section("Eye colour"))
 	rv.add_child(_swatch_grid("eye_color", a.get("eye_colors", []), 5))
 	# Heterochromia (half-elves always have it): the right eye's own colour.
@@ -878,8 +880,11 @@ func _creator_page() -> Control:
 	_right_eye_box.add_child(_swatch_grid("eye_color_right", a.get("eye_colors", []), 5))
 	rv.add_child(_right_eye_box)
 	rv.add_child(_stepper("Brows", "brows", "brows"))
+	rv.add_child(_placement_box("brows", "Spacing"))
 	rv.add_child(_stepper("Nose", "nose", "noses"))
+	rv.add_child(_placement_box("nose", "Left / right"))
 	rv.add_child(_stepper("Mouth", "mouth", "mouths"))
+	rv.add_child(_placement_box("mouth", "Left / right"))
 	rv.add_child(_section("Extras"))
 	rv.add_child(_extras_grid(a.get("face_extras", [])))
 	rv.add_child(_button("Randomize", _randomize))
@@ -1066,6 +1071,72 @@ func _swatch_row(key: String, colors: Array, columns: int) -> GridContainer:
 	return grid
 
 
+## "Customize placement" under a face part: sliders for sideways (or spacing), up/down and
+## size, saved in the look's "placement" {part: {x, y, scale}}.
+func _placement_box(part: String, sideways: String) -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	var toggle := Button.new()
+	toggle.text = "Customize placement…"
+	toggle.toggle_mode = true
+	toggle.custom_minimum_size.y = 28
+	toggle.add_theme_font_size_override("font_size", 14)
+	box.add_child(toggle)
+	var inner := VBoxContainer.new()
+	inner.visible = false
+	box.add_child(inner)
+	toggle.toggled.connect(func(on: bool) -> void:
+		inner.visible = on
+		if on:
+			_shot = "face"
+			_apply_look())
+	var settle := Timer.new()
+	settle.wait_time = 0.12
+	settle.one_shot = true
+	settle.timeout.connect(func() -> void:
+		_shot = "face"
+		_apply_look())
+	box.add_child(settle)
+	var sliders := {}
+	for row: Array in [["x", sideways, -1.0, 1.0, 0.0], ["y", "Up / down", -1.0, 1.0, 0.0], ["scale", "Size", 0.5, 1.6, 1.0]]:
+		var h := HBoxContainer.new()
+		var l := Label.new()
+		l.text = row[1]
+		l.custom_minimum_size.x = 100
+		l.add_theme_font_size_override("font_size", 14)
+		h.add_child(l)
+		var sl := HSlider.new()
+		sl.min_value = row[2]
+		sl.max_value = row[3]
+		sl.step = 0.05
+		sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sl.custom_minimum_size.y = 24
+		var key: String = row[0]
+		sl.value_changed.connect(func(v: float) -> void:
+			var all: Dictionary = (_look.get("placement", {}) as Dictionary).duplicate(true)
+			var mine: Dictionary = all.get(part, {})
+			mine[key] = v
+			all[part] = mine
+			_look["placement"] = all
+			settle.start())
+		h.add_child(sl)
+		inner.add_child(h)
+		sliders[key] = sl
+	var reset := Button.new()
+	reset.text = "Reset"
+	reset.custom_minimum_size.y = 26
+	reset.pressed.connect(func() -> void:
+		var all: Dictionary = (_look.get("placement", {}) as Dictionary).duplicate(true)
+		all.erase(part)
+		_look["placement"] = all
+		_refresh_creator()
+		_shot = "face"
+		_apply_look())
+	inner.add_child(reset)
+	_placement_sliders[part] = sliders
+	return box
+
+
 ## Toggle buttons for face extras (freckles, scars...): any number can be on.
 func _extras_grid(options: Array) -> GridContainer:
 	var grid := GridContainer.new()
@@ -1123,6 +1194,7 @@ func _randomize() -> void:
 		if randf() < 0.12:
 			extras.append(String(o.get("id", "")))
 	_look["extras"] = extras
+	_look["placement"] = {}
 	_shot = "full"
 	_apply_look()
 
@@ -1142,6 +1214,12 @@ func _refresh_creator() -> void:
 		_mirror_check.disabled = forced
 		_mirror_check.tooltip_text = "Your species always has two eye colours." if forced else ""
 		_right_eye_box.visible = not mirror
+	for part: String in _placement_sliders:
+		var p := CharacterModel.part_placement(_look, part)
+		var sl: Dictionary = _placement_sliders[part]
+		(sl.x as HSlider).set_value_no_signal(p.x)
+		(sl.y as HSlider).set_value_no_signal(p.y)
+		(sl.scale as HSlider).set_value_no_signal(p.z)
 	var extras: Array = _look.get("extras", [])
 	for id: String in _extra_buttons:
 		(_extra_buttons[id] as Button).set_pressed_no_signal(id in extras)

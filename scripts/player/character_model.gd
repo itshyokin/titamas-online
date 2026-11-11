@@ -654,9 +654,12 @@ func _build_eyes() -> void:
 	var eyes: Dictionary = _look.get("eyes", {})
 	var place: Dictionary = _look.get("eye_placement", {})
 	if not eyes.is_empty() and not place.is_empty() and ResourceLoader.exists(String(eyes.get("texture", ""))):
-		var y := float(place.height)
-		var w := float(place.width) * 0.5
-		var h := float(place.tall) * 0.5
+		# The look's own placement (creator "Customize placement"): spacing, height, size.
+		var mine := part_placement(_look, "eyes")
+		var y := float(place.height) + mine.y * EYE_SHIFT.y
+		var w := float(place.width) * 0.5 * mine.z
+		var h := float(place.tall) * 0.5 * mine.z
+		var apart := float(place.apart) + mine.x * EYE_SHIFT.x
 		for side: float in [-1.0, 1.0]:
 			var mat := ShaderMaterial.new()
 			mat.shader = EYE_SHADER
@@ -666,7 +669,7 @@ func _build_eyes() -> void:
 			# +x is the character's right.
 			var col: Color = _look.get("eye_color_right" if side > 0.0 else "eye_color", _look.get("eye_color", Color(0.3, 0.5, 0.8)))
 			mat.set_shader_parameter("eye_color", col)
-			var cx := side * float(place.apart)
+			var cx := side * apart
 			# u = 0 at the inner corner, 1 at the outer one (the texture's outer corner is on the right).
 			var mesh := _face_mesh(head_arrays, cx - side * w, cx + side * w, y + h, y - h, float(place.forward), 6, 4)
 			_add_face_part(mesh, mat, "Eye%s" % ("R" if side > 0.0 else "L"))
@@ -679,10 +682,17 @@ func _build_face_layers(head_arrays: Array) -> void:
 	var area: Dictionary = _look.get("face_area", {})
 	if area.is_empty():
 		return
-	var layers: Array = []
-	for o in [_look.get("brows", {})] + (_look.get("extras", []) as Array) + [_look.get("nose", {}), _look.get("mouth", {})]:
+	var layers: Array = []  # [entry, placement Vector3 (x, y, scale), split in two halves (brows)]
+	var parts := [["brows", _look.get("brows", {})]]
+	for e in (_look.get("extras", []) as Array):
+		parts.append(["", e])
+	parts.append(["nose", _look.get("nose", {})])
+	parts.append(["mouth", _look.get("mouth", {})])
+	for pair: Array in parts:
+		var o = pair[1]
 		if o is Dictionary and ResourceLoader.exists(String(o.get("texture", ""))):
-			layers.append(o)
+			var part: String = pair[0]
+			layers.append([o, part_placement(_look, part) if part != "" else Vector3(0, 0, 1), part == "brows"])
 	if layers.is_empty():
 		return
 	var skin: Color = _look.get("skin", skin_color)
@@ -707,16 +717,33 @@ func _build_face_layers(head_arrays: Array) -> void:
 
 static var _face_cache := {}
 
+## How far placement x / y = ±1 moves a part: eyes in metres (spacing, height); face
+## layers in pixels of the 64 × 80 face picture (brows: spacing; nose, mouth: sideways).
+const EYE_SHIFT := Vector2(0.012, 0.018)
+const LAYER_SHIFT := Vector2(6.0, 8.0)
+const PLACEMENT_PARTS := ["eyes", "brows", "nose", "mouth"]
+
+
+## A look's placement for one part as (x, y, scale): x, y from -1 to 1 (left/right or
+## spacing, down/up), scale 0.5–1.6. From look "placement" {part: {x, y, scale}}.
+static func part_placement(look: Dictionary, part: String) -> Vector3:
+	var all = look.get("placement", {})
+	var p = all.get(part, {}) if all is Dictionary else {}
+	if not p is Dictionary:
+		return Vector3(0, 0, 1)
+	return Vector3(clampf(float(p.get("x", 0.0)), -1.0, 1.0), clampf(float(p.get("y", 0.0)), -1.0, 1.0), clampf(float(p.get("scale", 1.0)), 0.5, 1.6))
+
 ## Stacks layer pictures (multipliers: 128 grey = the skin / hair colour as it is) into one
 ## coloured picture. Cached per combination.
 static func _face_texture(layers: Array, skin: Color, hair: Color) -> Texture2D:
 	var key := skin.to_html() + hair.to_html()
-	for o: Dictionary in layers:
-		key += "|" + String(o.texture)
+	for l: Array in layers:
+		key += "|%s%s" % [String(l[0].texture), str(l[1])]
 	if _face_cache.has(key):
 		return _face_cache[key]
 	var out: Image = null
-	for o: Dictionary in layers:
+	for l: Array in layers:
+		var o: Dictionary = l[0]
 		var img := (load(String(o.texture)) as Texture2D).get_image()
 		if img == null:
 			continue
@@ -727,6 +754,7 @@ static func _face_texture(layers: Array, skin: Color, hair: Color) -> Texture2D:
 			out = Image.create(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8)
 		elif img.get_size() != out.get_size():
 			img.resize(out.get_width(), out.get_height(), Image.INTERPOLATE_NEAREST)
+		img = _placed(img, l[1], l[2])
 		var tint := String(o.get("tint", "skin"))
 		# "none" = drawn in real colours (anime mouths, tears...): copied as they are.
 		var base := hair if tint == "hair" else (Color.WHITE if tint == "none" else skin)
@@ -740,6 +768,47 @@ static func _face_texture(layers: Array, skin: Color, hair: Color) -> Texture2D:
 	var tex: Texture2D = ImageTexture.create_from_image(out) if out else null
 	_face_cache[key] = tex
 	return tex
+
+
+## A layer moved and scaled by its placement (x, y, scale): scaled around the middle of what's
+## drawn on it; `halves` (brows) moves each half of the face apart / together instead of sideways.
+static func _placed(img: Image, place: Vector3, halves: bool) -> Image:
+	if place.is_equal_approx(Vector3(0, 0, 1)):
+		return img
+	var w := img.get_width()
+	var h := img.get_height()
+	var out := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	var mid := w / 2
+	var spans: Array = [[0, mid, -1.0], [mid, w, 1.0]] if halves else [[0, w, 1.0]]
+	for span: Array in spans:
+		var x0: int = span[0]
+		var x1: int = span[1]
+		# Middle of what's drawn in this span.
+		var used := Rect2i()
+		var any := false
+		for y in h:
+			for x in range(x0, x1):
+				if img.get_pixel(x, y).a >= 0.5:
+					used = Rect2i(x, y, 1, 1) if not any else used.expand(Vector2i(x, y)).expand(Vector2i(x + 1, y + 1))
+					any = true
+		if not any:
+			continue
+		var c := Vector2(used.position) + Vector2(used.size) * 0.5
+		var shift := Vector2(place.x * LAYER_SHIFT.x * float(span[2]), -place.y * LAYER_SHIFT.y)
+		for y in h:
+			for x in range(0, w):
+				# Brows: each half only fills its own side.
+				if halves and (x < mid) != (x0 == 0):
+					continue
+				var src := (Vector2(x + 0.5, y + 0.5) - c - shift) / place.z + c
+				var sx := int(floor(src.x))
+				var sy := int(floor(src.y))
+				if sx < x0 or sx >= x1 or sy < 0 or sy >= h:
+					continue
+				var col := img.get_pixel(sx, sy)
+				if col.a >= 0.5:
+					out.set_pixel(x, y, col)
+	return out
 
 
 func _add_face_part(mesh: Mesh, mat: Material, node_name: String) -> void:
