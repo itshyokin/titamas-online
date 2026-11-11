@@ -58,7 +58,13 @@ var _rebuild_scripts: Array = []
 var _rebuild_marker := ""
 
 
+var _preview: Node  # look_preview.gd: NPC / enemy look pictures for the page
+
+
 func _enter_tree() -> void:
+	_preview = preload("res://addons/titamas_database/look_preview.gd").new()
+	_preview.name = "LookPreview"
+	add_child(_preview)
 	_button = Button.new()
 	_button.text = "Database"
 	_button.tooltip_text = "Open the game database (abilities, items, enemies, player, classes, world, regions) in your browser."
@@ -121,6 +127,8 @@ func _check_rebuild() -> void:
 
 
 func _exit_tree() -> void:
+	if _preview:
+		_preview.queue_free()
 	if _rebuild_thread:
 		_rebuild_thread.wait_to_finish()
 	remove_control_from_container(CONTAINER_TOOLBAR, _button)
@@ -264,6 +272,21 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 			out_file.close()
 			EditorInterface.get_resource_filesystem().scan()
 			_json(peer, 200, {"ok": true, "path": target, "width": img.get_width(), "height": img.get_height()})
+		["POST", "/api/preview"]:
+			# {look, equipment} → {body, face} (base64 PNGs), rendered a few frames later.
+			var want = JSON.parse_string(req.body)
+			if not want is Dictionary:
+				_json(peer, 400, {"ok": false, "error": "Bad request"})
+				return
+			var look = want.get("look", {})
+			var eq = want.get("equipment", {})
+			_preview.call("render", look if look is Dictionary else {}, eq if eq is Dictionary else {}, func(r: Dictionary) -> void:
+				if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+					return
+				if r.has("error"):
+					_json(peer, 500, {"ok": false, "error": r.error})
+				else:
+					_json(peer, 200, {"ok": true, "body": Marshalls.raw_to_base64(r.body), "face": Marshalls.raw_to_base64(r.face)}))
 		["POST", "/api/rebuild_animations"]:
 			_json(peer, 200, {"ok": _start_rebuild()})
 		["POST", "/api/rebuild_bodies"]:

@@ -159,6 +159,90 @@
 			"name": "Fierce",
 			"texture": "res://assets/characters/eyes/fierce.png",
 			"iris": "res://assets/characters/eyes/fierce_iris.png"
+		},
+		{
+			"id": "anime_bright",
+			"name": "Anime: bright",
+			"texture": "res://assets/characters/eyes/anime_bright.png",
+			"iris": "res://assets/characters/eyes/anime_bright_iris.png"
+		},
+		{
+			"id": "anime_soft",
+			"name": "Anime: soft",
+			"texture": "res://assets/characters/eyes/anime_soft.png",
+			"iris": "res://assets/characters/eyes/anime_soft_iris.png"
+		},
+		{
+			"id": "anime_sharp",
+			"name": "Anime: sharp",
+			"texture": "res://assets/characters/eyes/anime_sharp.png",
+			"iris": "res://assets/characters/eyes/anime_sharp_iris.png"
+		},
+		{
+			"id": "anime_upturned",
+			"name": "Anime: upturned",
+			"texture": "res://assets/characters/eyes/anime_upturned.png",
+			"iris": "res://assets/characters/eyes/anime_upturned_iris.png"
+		},
+		{
+			"id": "anime_droopy",
+			"name": "Anime: droopy",
+			"texture": "res://assets/characters/eyes/anime_droopy.png",
+			"iris": "res://assets/characters/eyes/anime_droopy_iris.png"
+		},
+		{
+			"id": "anime_sleepy",
+			"name": "Anime: sleepy",
+			"texture": "res://assets/characters/eyes/anime_sleepy.png",
+			"iris": "res://assets/characters/eyes/anime_sleepy_iris.png"
+		},
+		{
+			"id": "anime_sparkle",
+			"name": "Anime: sparkle",
+			"texture": "res://assets/characters/eyes/anime_sparkle.png",
+			"iris": "res://assets/characters/eyes/anime_sparkle_iris.png"
+		},
+		{
+			"id": "anime_small_iris",
+			"name": "Anime: small iris",
+			"texture": "res://assets/characters/eyes/anime_small_iris.png",
+			"iris": "res://assets/characters/eyes/anime_small_iris_iris.png"
+		},
+		{
+			"id": "cat_slit",
+			"name": "Cat: slit",
+			"texture": "res://assets/characters/eyes/cat_slit.png",
+			"iris": "res://assets/characters/eyes/cat_slit_iris.png"
+		},
+		{
+			"id": "cat_slit_round",
+			"name": "Cat: round slit",
+			"texture": "res://assets/characters/eyes/cat_slit_round.png",
+			"iris": "res://assets/characters/eyes/cat_slit_round_iris.png"
+		},
+		{
+			"id": "closed_happy",
+			"name": "Closed: happy ^ ^",
+			"texture": "res://assets/characters/eyes/closed_happy.png",
+			"iris": "res://assets/characters/eyes/closed_happy_iris.png"
+		},
+		{
+			"id": "closed_calm",
+			"name": "Closed: calm",
+			"texture": "res://assets/characters/eyes/closed_calm.png",
+			"iris": "res://assets/characters/eyes/closed_calm_iris.png"
+		},
+		{
+			"id": "dot_eyes",
+			"name": "Dots",
+			"texture": "res://assets/characters/eyes/dot_eyes.png",
+			"iris": "res://assets/characters/eyes/dot_eyes_iris.png"
+		},
+		{
+			"id": "dizzy",
+			"name": "Dizzy spirals",
+			"texture": "res://assets/characters/eyes/dizzy.png",
+			"iris": "res://assets/characters/eyes/dizzy_iris.png"
 		}
 	],
 	"heights": [
@@ -272,6 +356,21 @@
 			"id": "pointed",
 			"name": "Pointed",
 			"texture": "res://assets/characters/face/nose_pointed.png"
+		},
+		{
+			"id": "anime_nose_dot",
+			"name": "Anime: dot",
+			"texture": "res://assets/characters/face/anime_nose_dot.png"
+		},
+		{
+			"id": "anime_nose_hook",
+			"name": "Anime: hook",
+			"texture": "res://assets/characters/face/anime_nose_hook.png"
+		},
+		{
+			"id": "anime_nose_shadow",
+			"name": "Anime: shadow",
+			"texture": "res://assets/characters/face/anime_nose_shadow.png"
 		}
 	],
 	"mouths": [
@@ -313,6 +412,54 @@
 			"id": "wide",
 			"name": "Wide",
 			"texture": "res://assets/characters/face/mouth_wide.png"
+		},
+		{
+			"id": "anime_mouth_smile",
+			"name": "Anime: small smile",
+			"texture": "res://assets/characters/face/anime_mouth_smile.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_mouth_cat",
+			"name": "Anime: cat :3",
+			"texture": "res://assets/characters/face/anime_mouth_cat.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_mouth_grin",
+			"name": "Anime: open grin",
+			"texture": "res://assets/characters/face/anime_mouth_grin.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_mouth_fang",
+			"name": "Anime: fang",
+			"texture": "res://assets/characters/face/anime_mouth_fang.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_mouth_o",
+			"name": "Anime: oh",
+			"texture": "res://assets/characters/face/anime_mouth_o.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_mouth_tongue",
+			"name": "Anime: tongue out",
+			"texture": "res://assets/characters/face/anime_mouth_tongue.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_mouth_wavy",
+			"name": "Anime: wavy (nervous)",
+			"texture": "res://assets/characters/face/anime_mouth_wavy.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_mouth_shout",
+			"name": "Anime: shout",
+			"texture": "res://assets/characters/face/anime_mouth_shout.png",
+			"tint": "none"
 		}
 	],
 	"brows": [
@@ -354,6 +501,36 @@
 			"id": "worried",
 			"name": "Worried",
 			"texture": "res://assets/characters/face/brows_worried.png",
+			"tint": "hair"
+		},
+		{
+			"id": "anime_brows_soft",
+			"name": "Anime: soft",
+			"texture": "res://assets/characters/face/anime_brows_soft.png",
+			"tint": "hair"
+		},
+		{
+			"id": "anime_brows_high",
+			"name": "Anime: raised",
+			"texture": "res://assets/characters/face/anime_brows_high.png",
+			"tint": "hair"
+		},
+		{
+			"id": "anime_brows_angry",
+			"name": "Anime: angry",
+			"texture": "res://assets/characters/face/anime_brows_angry.png",
+			"tint": "hair"
+		},
+		{
+			"id": "anime_brows_sad",
+			"name": "Anime: sad",
+			"texture": "res://assets/characters/face/anime_brows_sad.png",
+			"tint": "hair"
+		},
+		{
+			"id": "anime_brows_dots",
+			"name": "Anime: dots",
+			"texture": "res://assets/characters/face/anime_brows_dots.png",
 			"tint": "hair"
 		}
 	],
@@ -407,6 +584,35 @@
 			"id": "stubble_shadow",
 			"name": "Five o'clock shadow",
 			"texture": "res://assets/characters/face/stubble_shadow.png"
+		},
+		{
+			"id": "anime_blush",
+			"name": "Anime blush lines",
+			"texture": "res://assets/characters/face/anime_blush.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_sweat",
+			"name": "Sweat drop",
+			"texture": "res://assets/characters/face/anime_sweat.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_tears",
+			"name": "Tears",
+			"texture": "res://assets/characters/face/anime_tears.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_anger",
+			"name": "Anger mark",
+			"texture": "res://assets/characters/face/anime_anger.png",
+			"tint": "none"
+		},
+		{
+			"id": "anime_whiskers",
+			"name": "Whisker marks",
+			"texture": "res://assets/characters/face/anime_whiskers.png"
 		}
 	],
 	"face_area": {

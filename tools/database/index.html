@@ -122,6 +122,11 @@
 	.cat-bar { display: flex; flex-wrap: wrap; gap: 3px; padding: 6px 6px 0; }
 	.cat-bar button { flex: 1 1 auto; padding: 2px 6px; font-size: 12px; }
 	.cat-bar button.on { background: var(--select); color: var(--select-ink); border-color: #23497e; }
+	.look-preview { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+	.look-preview img { background: #2b2e38; border: 1px solid #444; border-radius: 4px; }
+	.look-preview .lp-body { width: 156px; height: 252px; }
+	.look-preview .lp-face { width: 156px; height: 156px; }
+	.look-preview .lp-side { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--soft); max-width: 200px; }
 	.icon-pick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 	.icon-pick .icon-now { width: 48px; height: 48px; image-rendering: pixelated; background: #1e2230; border: 1px solid #444; border-radius: 4px; }
 	.icon-grid details { margin: 4px 0; }
@@ -273,6 +278,7 @@ const fxFields = (slot, what, sizeHelp) => [
 
 // Character looks (NPCs and enemies): the same choices as the character creator.
 const LOOK_FIELDS = [
+	{ key: "_preview", label: "Preview", type: "lookpreview", wide: true },
 	{ key: "look.skin", label: "Skin colour", type: "color" },
 	{ key: "look.species", label: "Species (sets head, height, build)", type: "select", empty: true, options: () => (((data.species || {}).species) || []).map(x => [x.id, x.name]) },
 	{ key: "look.head", label: "Head", type: "lookopt", list: "heads" },
@@ -292,6 +298,38 @@ const LOOK_FIELDS = [
 	{ key: "look.height", label: "Height", type: "lookopt", list: "heights" },
 	{ key: "look.build", label: "Build", type: "lookopt", list: "builds" },
 ];
+// Look previews: POST /api/preview → the plugin renders the look in the editor.
+let previewEls = null, previewTimer = 0, previewKey = "", previewLast = null, previewBusy = false, previewAgain = null;
+function requestPreview(entry, force) {
+	if (!previewEls || !entry) return;
+	const want = { look: entry.look || {}, equipment: entry.equipment || {} };
+	const key = JSON.stringify(want);
+	if (!force && key === previewKey && previewLast) { showPreview(previewLast); return; }
+	if (previewBusy) { previewAgain = entry; return; }
+	previewBusy = true;
+	previewEls.status.textContent = "Rendering…";
+	fetch("/api/preview", { method: "POST", body: key }).then(r => r.json()).then(res => {
+		previewBusy = false;
+		if (!res.ok) { previewEls.status.textContent = res.error || "Couldn't render"; }
+		else { previewKey = key; previewLast = res; showPreview(res); previewEls.status.textContent = ""; }
+		if (previewAgain) { const e = previewAgain; previewAgain = null; requestPreview(e, false); }
+	}).catch(() => { previewBusy = false; if (previewEls) previewEls.status.textContent = "Preview needs Godot (open the page from the Database button)."; });
+}
+function showPreview(res) {
+	if (!previewEls) return;
+	previewEls.body.src = "data:image/png;base64," + res.body;
+	previewEls.face.src = "data:image/png;base64," + res.face;
+}
+function schedulePreview() {
+	if (!previewEls || !document.body.contains(previewEls.body)) { previewEls = null; return; }
+	clearTimeout(previewTimer);
+	previewTimer = setTimeout(() => {
+		const t = TABS[tab];
+		const list = data[t.file] && data[t.file][t.listKey];
+		if (list) requestPreview(list[selected[tab]], false);
+	}, 600);
+}
+
 // Item groups (same as the backpack tabs, CharacterWindow.tab_of).
 const ITEM_CATS = [["consumables", "Consumables"], ["weapons", "Weapons"], ["armor", "Armour"], ["key", "Key items"], ["misc", "Misc"]];
 function itemCategory(it) {
@@ -1767,6 +1805,7 @@ function renderDetail(t) {
 }
 
 function changed(rerender = false) {
+	if (tab === "npcs" || tab === "enemies") schedulePreview();
 	if (rerender) render();
 	else {
 		const anyDirty = Object.values(TABS).some(t => dirty(t.file));
@@ -1853,6 +1892,22 @@ function fieldControl(t, entry, f) {
 				set(v);
 			};
 			wrap.append(label, i);
+			break;
+		}
+		case "lookpreview": {
+			// A picture of the look + gear, rendered by Godot (auto-updates a moment after a change).
+			const box = el("div", { className: "look-preview" });
+			const body = el("img", { className: "lp-body", alt: "" });
+			const face = el("img", { className: "lp-face", alt: "" });
+			const side = el("div", { className: "lp-side" });
+			const status = el("span", { textContent: "" });
+			const again = el("button", { textContent: "Refresh preview" });
+			again.onclick = () => requestPreview(entry, true);
+			side.append(again, status, el("span", { textContent: "Standing in the A-pose (animations only play in the game)." }));
+			box.append(body, face, side);
+			wrap.append(label, box);
+			previewEls = { body, face, status };
+			requestPreview(entry, false);
 			break;
 		}
 		case "lookextras": {

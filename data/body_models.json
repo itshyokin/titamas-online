@@ -80,7 +80,8 @@
 			"material": "",
 			"max_y": -1.0,
 			"mesh": "hair_short",
-			"min_y": -1.0
+			"min_y": -1.0,
+			"sway": 0.0
 		},
 		{
 			"id": "hair_balding",

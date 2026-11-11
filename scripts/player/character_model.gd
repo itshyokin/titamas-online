@@ -727,13 +727,15 @@ static func _face_texture(layers: Array, skin: Color, hair: Color) -> Texture2D:
 			out = Image.create(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8)
 		elif img.get_size() != out.get_size():
 			img.resize(out.get_width(), out.get_height(), Image.INTERPOLATE_NEAREST)
-		var base := hair if String(o.get("tint", "skin")) == "hair" else skin
+		var tint := String(o.get("tint", "skin"))
+		# "none" = drawn in real colours (anime mouths, tears...): copied as they are.
+		var base := hair if tint == "hair" else (Color.WHITE if tint == "none" else skin)
+		var k := 1.0 if tint == "none" else 255.0 / 128.0
 		for y in img.get_height():
 			for x in img.get_width():
 				var c := img.get_pixel(x, y)
 				if c.a < 0.5:
 					continue
-				var k := 255.0 / 128.0
 				out.set_pixel(x, y, Color(minf(base.r * c.r * k, 1.0), minf(base.g * c.g * k, 1.0), minf(base.b * c.b * k, 1.0), 1.0))
 	var tex: Texture2D = ImageTexture.create_from_image(out) if out else null
 	_face_cache[key] = tex
