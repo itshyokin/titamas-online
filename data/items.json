@@ -570,13 +570,13 @@
 			"slot": "chest",
 			"spell_power": 0.0,
 			"stack_max": 0.0,
+			"sway": 0.1,
+			"sway_anchors": "chainmail,leather",
 			"use_heal": 0.0,
 			"use_hot_per_tick": 0.0,
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
-			"value": 40.0,
-			"sway_anchors": "chainmail,leather",
-			"sway": 0.4
+			"value": 40.0
 		},
 		{
 			"armor": 3.0,
