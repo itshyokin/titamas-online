@@ -140,7 +140,7 @@ func _fill() -> void:
 		c.queue_free()
 	var first: Button = null
 	if bag.gold > 0:
-		var b := _row({"icon": "coin", "icon_color": "#ffd76a", "name": "Gold"}, bag.gold, "%d gold" % bag.gold)
+		var b := _row({"icon": "builtin:coin_bag", "name": "Gold"}, bag.gold, "%d gold" % bag.gold)
 		b.pressed.connect(func() -> void:
 			bag.take_gold(inventory)
 			_refresh())

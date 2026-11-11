@@ -36,6 +36,8 @@ const FILES := {
 const MAX_BODY := 4 * 1024 * 1024
 ## Effect sprites for abilities (builtin/ from tools/art/make_effect_sprites.py, custom/ yours).
 const SPRITE_DIR := "res://assets/effects"
+## Item icons: builtin Saturn pictures (items/, tools/art/export_saturn_icons.mjs) and yours (custom/).
+const ICON_DIR := "res://assets/icons"
 
 var _server: TCPServer
 var _port := 0
@@ -209,7 +211,7 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 	# Effect sprite pictures for the page's previews: /sprite/assets/effects/…png
 	if req.method == "GET" and String(req.path).begins_with("/sprite/"):
 		var file := "res://" + String(req.path).trim_prefix("/sprite/").uri_decode()
-		if file.begins_with(SPRITE_DIR) and not file.contains("..") and file.get_extension().to_lower() == "png" and FileAccess.file_exists(file):
+		if (file.begins_with(SPRITE_DIR) or file.begins_with(ICON_DIR)) and not file.contains("..") and file.get_extension().to_lower() == "png" and FileAccess.file_exists(file):
 			_send(peer, 200, "image/png", FileAccess.get_file_as_bytes(file))
 		else:
 			_send(peer, 404, "text/plain", "Not found".to_utf8_buffer())
@@ -235,7 +237,8 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"]), "fbx": fbx,
 				"props": props, "levels": levels, "markers": _markers(levels),
 				"glbs": _files("res://assets/models/characters/src", ["glb"]), "glb_meshes": _glb_meshes(), "glb_bones": _glb_bones(),
-				"pieces": _files("res://assets/characters/lowpoly", ["scn"]), "sprites": _files(SPRITE_DIR, ["png"]), "videos": _files("res://assets", ["ogv"])})
+				"pieces": _files("res://assets/characters/lowpoly", ["scn"]), "sprites": _files(SPRITE_DIR, ["png"]), "videos": _files("res://assets", ["ogv"]),
+				"item_icons": _item_icon_groups(), "custom_icons": _files(ICON_DIR.path_join("custom"), ["png"])})
 		["POST", "/api/upload_sprite"]:
 			# "Load PNG…" on an effect sprite field: {name, data (base64)} → assets/effects/custom/<name>.png
 			var up = JSON.parse_string(req.body)
@@ -249,8 +252,10 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 				clean += ch if (ch >= "a" and ch <= "z") or (ch >= "0" and ch <= "9") or ch == "_" else "_"
 			if clean.is_empty():
 				clean = "sprite"
-			DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SPRITE_DIR.path_join("custom")))
-			var target := SPRITE_DIR.path_join("custom").path_join(clean + ".png")
+			# folder "icons" = an item icon (assets/icons/custom), otherwise an effect sprite.
+			var folder := (ICON_DIR if String(up.get("folder", "")) == "icons" else SPRITE_DIR).path_join("custom")
+			DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
+			var target := folder.path_join(clean + ".png")
 			var out_file := FileAccess.open(target, FileAccess.WRITE)
 			if out_file == null:
 				_json(peer, 500, {"ok": false, "error": "Couldn't write %s" % target})
@@ -384,3 +389,12 @@ func _files(dir: String, exts: Array) -> Array:
 			out.append(dir.path_join(file))
 	out.sort()
 	return out
+
+
+## The builtin item icons' picker groups: [[group, [[id, name], ...]], ...] from icons.json.
+func _item_icon_groups() -> Array:
+	var path := ICON_DIR.path_join("items/icons.json")
+	if not FileAccess.file_exists(path):
+		return []
+	var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return d.get("groups", []) if d is Dictionary else []

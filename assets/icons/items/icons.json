@@ -1,0 +1,1106 @@
+{
+	"size": 16,
+	"groups": [
+		[
+			"Potions and bottles",
+			[
+				[
+					"potion",
+					"Red potion"
+				],
+				[
+					"ether",
+					"Blue potion"
+				],
+				[
+					"tonic",
+					"Green potion"
+				],
+				[
+					"potion_purple",
+					"Purple potion"
+				],
+				[
+					"potion_yellow",
+					"Yellow potion"
+				],
+				[
+					"potion_white",
+					"White potion"
+				],
+				[
+					"elixir",
+					"Elixir"
+				],
+				[
+					"vial",
+					"Vial"
+				],
+				[
+					"vial_blue",
+					"Blue vial"
+				],
+				[
+					"bottle",
+					"Tall bottle"
+				],
+				[
+					"jar",
+					"Jar"
+				]
+			]
+		],
+		[
+			"Food",
+			[
+				[
+					"apple",
+					"Apple"
+				],
+				[
+					"pear",
+					"Pear"
+				],
+				[
+					"banana",
+					"Bananas"
+				],
+				[
+					"grapes",
+					"Grapes"
+				],
+				[
+					"cherries",
+					"Cherries"
+				],
+				[
+					"orange",
+					"Orange"
+				],
+				[
+					"lemon",
+					"Lemon"
+				],
+				[
+					"berries",
+					"Berries"
+				],
+				[
+					"carrot",
+					"Carrot"
+				],
+				[
+					"potato",
+					"Potato"
+				],
+				[
+					"onion",
+					"Onion"
+				],
+				[
+					"cabbage",
+					"Cabbage"
+				],
+				[
+					"corn",
+					"Corn"
+				],
+				[
+					"tomato",
+					"Tomato"
+				],
+				[
+					"pumpkin",
+					"Pumpkin"
+				],
+				[
+					"mushroom",
+					"Mushroom"
+				],
+				[
+					"mushroom_brown",
+					"Brown mushroom"
+				],
+				[
+					"egg",
+					"Egg"
+				],
+				[
+					"cheese",
+					"Cheese"
+				],
+				[
+					"bread",
+					"Bread"
+				],
+				[
+					"bread_loaf",
+					"Bread loaf"
+				],
+				[
+					"drumstick",
+					"Drumstick"
+				],
+				[
+					"steak",
+					"Steak"
+				],
+				[
+					"ham",
+					"Ham"
+				],
+				[
+					"fish_cooked",
+					"Cooked fish"
+				],
+				[
+					"pie",
+					"Pie"
+				],
+				[
+					"cake",
+					"Cake"
+				],
+				[
+					"cookie",
+					"Cookie"
+				],
+				[
+					"honey",
+					"Honey pot"
+				],
+				[
+					"rice_ball",
+					"Rice ball"
+				],
+				[
+					"soup",
+					"Soup"
+				],
+				[
+					"stew",
+					"Stew pot"
+				]
+			]
+		],
+		[
+			"Drinks",
+			[
+				[
+					"water",
+					"Water"
+				],
+				[
+					"waterskin",
+					"Waterskin"
+				],
+				[
+					"milk",
+					"Milk"
+				],
+				[
+					"mug",
+					"Mug of ale"
+				],
+				[
+					"wine",
+					"Wine"
+				],
+				[
+					"wine_glass",
+					"Wine glass"
+				],
+				[
+					"soda",
+					"Soda bottle"
+				],
+				[
+					"soda_can",
+					"Soda can"
+				],
+				[
+					"tea",
+					"Tea cup"
+				],
+				[
+					"keg",
+					"Keg"
+				],
+				[
+					"barrel",
+					"Barrel"
+				]
+			]
+		],
+		[
+			"Weapons",
+			[
+				[
+					"sword",
+					"Sword"
+				],
+				[
+					"longsword",
+					"Longsword"
+				],
+				[
+					"greatsword",
+					"Greatsword"
+				],
+				[
+					"katana",
+					"Katana"
+				],
+				[
+					"rapier",
+					"Rapier"
+				],
+				[
+					"scimitar",
+					"Scimitar"
+				],
+				[
+					"dagger",
+					"Dagger"
+				],
+				[
+					"throwing_knife",
+					"Throwing knives"
+				],
+				[
+					"cleaver",
+					"Cleaver"
+				],
+				[
+					"axe",
+					"Great axe"
+				],
+				[
+					"hammer",
+					"War hammer"
+				],
+				[
+					"mace",
+					"Mace"
+				],
+				[
+					"morningstar",
+					"Morning star"
+				],
+				[
+					"club",
+					"Club"
+				],
+				[
+					"spear",
+					"Spear"
+				],
+				[
+					"halberd",
+					"Halberd"
+				],
+				[
+					"trident",
+					"Trident"
+				],
+				[
+					"scythe",
+					"Scythe"
+				],
+				[
+					"staff",
+					"Staff"
+				],
+				[
+					"staff_orb",
+					"Orb staff"
+				],
+				[
+					"wand",
+					"Wand"
+				],
+				[
+					"scepter",
+					"Scepter"
+				],
+				[
+					"whip",
+					"Whip"
+				],
+				[
+					"knuckles",
+					"Knuckles"
+				],
+				[
+					"fist",
+					"Fist"
+				],
+				[
+					"bow",
+					"Bow"
+				],
+				[
+					"longbow",
+					"Longbow"
+				],
+				[
+					"crossbow",
+					"Crossbow"
+				],
+				[
+					"arrow",
+					"Arrow"
+				],
+				[
+					"arrow_steel",
+					"Steel arrow"
+				],
+				[
+					"bomb",
+					"Bomb"
+				],
+				[
+					"pickaxe",
+					"Pickaxe"
+				]
+			]
+		],
+		[
+			"Armor and clothes",
+			[
+				[
+					"armor",
+					"Armor"
+				],
+				[
+					"leather_armor",
+					"Leather armor"
+				],
+				[
+					"chainmail",
+					"Chainmail"
+				],
+				[
+					"plate_armor",
+					"Plate armor"
+				],
+				[
+					"shirt",
+					"Shirt"
+				],
+				[
+					"tunic",
+					"Tunic"
+				],
+				[
+					"vest",
+					"Leather vest"
+				],
+				[
+					"robe",
+					"Robe"
+				],
+				[
+					"cloak",
+					"Cloak"
+				],
+				[
+					"pants",
+					"Trousers"
+				],
+				[
+					"helmet",
+					"Helmet"
+				],
+				[
+					"helmet_knight",
+					"Knight helm"
+				],
+				[
+					"helmet_horned",
+					"Horned helmet"
+				],
+				[
+					"helmet_plumed",
+					"Plumed helmet"
+				],
+				[
+					"hood",
+					"Hood"
+				],
+				[
+					"hat",
+					"Hat"
+				],
+				[
+					"wizard_hat",
+					"Wizard hat"
+				],
+				[
+					"crown",
+					"Crown"
+				],
+				[
+					"tiara",
+					"Tiara"
+				],
+				[
+					"circlet",
+					"Circlet"
+				],
+				[
+					"gloves",
+					"Gloves"
+				],
+				[
+					"gauntlets",
+					"Gauntlets"
+				],
+				[
+					"belt",
+					"Belt"
+				],
+				[
+					"boots",
+					"Boots"
+				],
+				[
+					"shoes",
+					"Shoes"
+				],
+				[
+					"shield",
+					"Shield"
+				],
+				[
+					"shield_round",
+					"Round shield"
+				],
+				[
+					"shield_kite",
+					"Kite shield"
+				],
+				[
+					"buckler",
+					"Buckler"
+				]
+			]
+		],
+		[
+			"Accessories and gems",
+			[
+				[
+					"ring",
+					"Ring"
+				],
+				[
+					"ring_sun",
+					"Sun ring"
+				],
+				[
+					"ring_tide",
+					"Tide ring"
+				],
+				[
+					"ring_leaf",
+					"Leaf ring"
+				],
+				[
+					"ring_ember",
+					"Ember ring"
+				],
+				[
+					"amulet",
+					"Amulet"
+				],
+				[
+					"gem",
+					"Gem"
+				],
+				[
+					"ruby",
+					"Ruby"
+				],
+				[
+					"sapphire",
+					"Sapphire"
+				],
+				[
+					"emerald",
+					"Emerald"
+				],
+				[
+					"amethyst",
+					"Amethyst"
+				],
+				[
+					"topaz",
+					"Topaz"
+				],
+				[
+					"diamond",
+					"Diamond"
+				],
+				[
+					"pearl",
+					"Pearl"
+				],
+				[
+					"orb",
+					"Orb"
+				],
+				[
+					"rune",
+					"Rune stone"
+				],
+				[
+					"totem",
+					"Charm"
+				]
+			]
+		],
+		[
+			"Materials",
+			[
+				[
+					"fur",
+					"Fur pelt"
+				],
+				[
+					"wolf_pelt",
+					"Grey pelt"
+				],
+				[
+					"leather",
+					"Leather"
+				],
+				[
+					"hide",
+					"Hide"
+				],
+				[
+					"tusk",
+					"Tusk"
+				],
+				[
+					"horn",
+					"Horn"
+				],
+				[
+					"bone",
+					"Bone"
+				],
+				[
+					"skull",
+					"Skull"
+				],
+				[
+					"feather",
+					"Feather"
+				],
+				[
+					"claw",
+					"Claw"
+				],
+				[
+					"fang",
+					"Fang"
+				],
+				[
+					"scale",
+					"Scale"
+				],
+				[
+					"shell",
+					"Shell"
+				],
+				[
+					"slime_gel",
+					"Slime gel"
+				],
+				[
+					"hay",
+					"Hay bundle"
+				],
+				[
+					"wheat_bundle",
+					"Wheat"
+				],
+				[
+					"wool",
+					"Wool"
+				],
+				[
+					"cloth",
+					"Cloth roll"
+				],
+				[
+					"thread",
+					"Thread spool"
+				],
+				[
+					"silk",
+					"Silk"
+				],
+				[
+					"rope",
+					"Rope"
+				],
+				[
+					"plank",
+					"Planks"
+				],
+				[
+					"log",
+					"Firewood"
+				],
+				[
+					"nails",
+					"Nails"
+				]
+			]
+		],
+		[
+			"Ores and minerals",
+			[
+				[
+					"stone",
+					"Stone"
+				],
+				[
+					"coal",
+					"Coal"
+				],
+				[
+					"ore_copper",
+					"Copper ore"
+				],
+				[
+					"ore_iron",
+					"Iron ore"
+				],
+				[
+					"ore_silver",
+					"Silver ore"
+				],
+				[
+					"ore_gold",
+					"Gold ore"
+				],
+				[
+					"ore_mythril",
+					"Mythril ore"
+				],
+				[
+					"ingot_copper",
+					"Copper ingot"
+				],
+				[
+					"ingot_iron",
+					"Iron ingot"
+				],
+				[
+					"ingot_steel",
+					"Steel ingot"
+				],
+				[
+					"ingot_silver",
+					"Silver ingot"
+				],
+				[
+					"ingot_gold",
+					"Gold ingot"
+				],
+				[
+					"ingot_mythril",
+					"Mythril ingot"
+				],
+				[
+					"crystal",
+					"Crystal cluster"
+				],
+				[
+					"salt",
+					"Salt"
+				],
+				[
+					"sulfur",
+					"Sulfur"
+				],
+				[
+					"clay",
+					"Clay"
+				],
+				[
+					"sand",
+					"Sand"
+				]
+			]
+		],
+		[
+			"Herbs and plants",
+			[
+				[
+					"herb",
+					"Herb"
+				],
+				[
+					"flower",
+					"Flower"
+				],
+				[
+					"rose",
+					"Rose"
+				],
+				[
+					"leaf",
+					"Leaf"
+				],
+				[
+					"clover",
+					"Four-leaf clover"
+				],
+				[
+					"mint",
+					"Mint"
+				],
+				[
+					"nightshade",
+					"Nightshade"
+				],
+				[
+					"root",
+					"Root"
+				],
+				[
+					"seeds",
+					"Seeds"
+				],
+				[
+					"sapling",
+					"Sapling"
+				],
+				[
+					"cactus",
+					"Cactus"
+				]
+			]
+		],
+		[
+			"Fishing",
+			[
+				[
+					"fishing_rod",
+					"Fishing rod"
+				],
+				[
+					"fish_minnow",
+					"Small fish"
+				],
+				[
+					"fish_trout",
+					"Trout"
+				],
+				[
+					"fish_eel",
+					"Eel"
+				],
+				[
+					"fish_koi",
+					"Golden fish"
+				],
+				[
+					"boot",
+					"Old boot"
+				]
+			]
+		],
+		[
+			"Containers and things",
+			[
+				[
+					"bag",
+					"Pouch"
+				],
+				[
+					"sack",
+					"Sack"
+				],
+				[
+					"coin_bag",
+					"Coin purse"
+				],
+				[
+					"coin",
+					"Coins"
+				],
+				[
+					"basket",
+					"Basket"
+				],
+				[
+					"crate",
+					"Crate"
+				],
+				[
+					"chest",
+					"Chest"
+				],
+				[
+					"clay_pot",
+					"Clay pot"
+				],
+				[
+					"key",
+					"Key"
+				],
+				[
+					"lockpick",
+					"Lockpick"
+				],
+				[
+					"scroll",
+					"Scroll"
+				],
+				[
+					"book",
+					"Book"
+				],
+				[
+					"map",
+					"Map"
+				],
+				[
+					"letter",
+					"Letter"
+				],
+				[
+					"ticket",
+					"Ticket"
+				],
+				[
+					"candle",
+					"Candle"
+				],
+				[
+					"lantern",
+					"Lantern"
+				],
+				[
+					"torch",
+					"Torch"
+				],
+				[
+					"flashlight",
+					"Flashlight"
+				],
+				[
+					"bell",
+					"Bell"
+				],
+				[
+					"hourglass",
+					"Hourglass"
+				],
+				[
+					"compass",
+					"Compass"
+				],
+				[
+					"quill",
+					"Quill"
+				],
+				[
+					"saddle",
+					"Saddle"
+				],
+				[
+					"trophy",
+					"Trophy"
+				]
+			]
+		],
+		[
+			"Magic",
+			[
+				[
+					"spell_fire",
+					"Fire spell"
+				],
+				[
+					"spell_ice",
+					"Ice spell"
+				],
+				[
+					"spell_bolt",
+					"Lightning spell"
+				],
+				[
+					"spell_water",
+					"Water spell"
+				],
+				[
+					"spell_wind",
+					"Wind spell"
+				],
+				[
+					"spell_quake",
+					"Earth spell"
+				],
+				[
+					"spell_poison",
+					"Poison spell"
+				],
+				[
+					"spell_light",
+					"Light spell"
+				],
+				[
+					"spell_dark",
+					"Dark spell"
+				],
+				[
+					"spell_star",
+					"Arcane spell"
+				],
+				[
+					"spell_heal",
+					"Healing spell"
+				],
+				[
+					"spell_shield",
+					"Protect spell"
+				],
+				[
+					"spell_haste",
+					"Haste spell"
+				],
+				[
+					"shard_fire",
+					"Fire shard"
+				],
+				[
+					"shard_frost",
+					"Frost shard"
+				],
+				[
+					"shard_spark",
+					"Lightning shard"
+				],
+				[
+					"shard_venom",
+					"Poison shard"
+				],
+				[
+					"shard_arcane",
+					"Arcane shard"
+				],
+				[
+					"shard_light",
+					"Light shard"
+				],
+				[
+					"shard_shadow",
+					"Shadow shard"
+				],
+				[
+					"shard_earth",
+					"Earth shard"
+				],
+				[
+					"shard_tide",
+					"Water shard"
+				]
+			]
+		],
+		[
+			"Element stones",
+			[
+				[
+					"ess_fragment_water",
+					"Water fragment"
+				],
+				[
+					"ess_shard_water",
+					"Water shard"
+				],
+				[
+					"ess_heart_water",
+					"Water heart stone"
+				],
+				[
+					"ess_fragment_fire",
+					"Fire fragment"
+				],
+				[
+					"ess_shard_fire",
+					"Fire shard"
+				],
+				[
+					"ess_heart_fire",
+					"Fire heart stone"
+				],
+				[
+					"ess_fragment_nature",
+					"Nature fragment"
+				],
+				[
+					"ess_shard_nature",
+					"Nature shard"
+				],
+				[
+					"ess_heart_nature",
+					"Nature heart stone"
+				],
+				[
+					"ess_fragment_earth",
+					"Earth fragment"
+				],
+				[
+					"ess_shard_earth",
+					"Earth shard"
+				],
+				[
+					"ess_heart_earth",
+					"Earth heart stone"
+				],
+				[
+					"ess_fragment_shock",
+					"Shock fragment"
+				],
+				[
+					"ess_shard_shock",
+					"Shock shard"
+				],
+				[
+					"ess_heart_shock",
+					"Shock heart stone"
+				],
+				[
+					"ess_fragment_light",
+					"Light fragment"
+				],
+				[
+					"ess_shard_light",
+					"Light shard"
+				],
+				[
+					"ess_heart_light",
+					"Light heart stone"
+				],
+				[
+					"ess_fragment_dark",
+					"Dark fragment"
+				],
+				[
+					"ess_shard_dark",
+					"Dark shard"
+				],
+				[
+					"ess_heart_dark",
+					"Dark heart stone"
+				]
+			]
+		]
+	]
+}

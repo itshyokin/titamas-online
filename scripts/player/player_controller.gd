@@ -459,13 +459,15 @@ func _update_sprint(moving: bool, delta: float, swimming := false) -> void:
 
 ## Starts a combat action (PlayerCombat drives it). Only from normal movement on the
 ## ground, or chaining from another action.
-func start_action(move_scale := 0.0) -> bool:
+## `in_air`: allowed while airborne too (the Hearthstone, so a player stuck "falling" on
+## some geometry can always get home).
+func start_action(move_scale := 0.0, in_air := false) -> bool:
 	if knocked_down:
 		return false  # on the ground: nothing until back up
 	if state == State.ACTION:
 		action_move_scale = move_scale
 		return true
-	if state != State.NORMAL or not is_on_floor():
+	if state != State.NORMAL or not (is_on_floor() or in_air):
 		return false
 	state = State.ACTION
 	action_move_scale = move_scale

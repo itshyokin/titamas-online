@@ -143,14 +143,14 @@
 	"hotbar": [
 		"ability:firebolt",
 		"ability:mend",
-		"item:minor_healing_potion",
-		"item:bandage",
-		"item:hearthstone",
 		"",
 		"",
 		"",
 		"",
-		""
+		"",
+		"",
+		"",
+		"item:hearthstone"
 	],
 	"hud": {
 		"compass": {

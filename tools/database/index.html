@@ -116,6 +116,20 @@
 		text-overflow: ellipsis;
 	}
 	.items div:hover { background: #e4ddcd; }
+	.items .cat-head { background: #d9d0bd; color: #4a4434; font-weight: 600; cursor: default; font-family: inherit; font-size: 12px; padding: 4px 8px; }
+	.items .cat-head:hover { background: #d9d0bd; }
+	.items img.li-icon { width: 16px; height: 16px; image-rendering: pixelated; vertical-align: -3px; margin-right: 6px; }
+	.cat-bar { display: flex; flex-wrap: wrap; gap: 3px; padding: 6px 6px 0; }
+	.cat-bar button { flex: 1 1 auto; padding: 2px 6px; font-size: 12px; }
+	.cat-bar button.on { background: var(--select); color: var(--select-ink); border-color: #23497e; }
+	.icon-pick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+	.icon-pick .icon-now { width: 48px; height: 48px; image-rendering: pixelated; background: #1e2230; border: 1px solid #444; border-radius: 4px; }
+	.icon-grid details { margin: 4px 0; }
+	.icon-grid summary { cursor: pointer; font-size: 12px; color: var(--soft); }
+	.icon-grid .cells { display: flex; flex-wrap: wrap; gap: 3px; padding: 4px 0; }
+	.icon-grid .cells img { width: 32px; height: 32px; image-rendering: pixelated; background: #1e2230; border: 2px solid transparent; border-radius: 3px; cursor: pointer; }
+	.icon-grid .cells img.on { border-color: #ffd35c; }
+	.icon-grid .cells img:hover { border-color: #8ab4ff; }
 	.items div.on { background: var(--select); color: var(--select-ink); }
 	.list .tools { display: flex; gap: 6px; padding: 0 6px 8px; }
 	.list .tools button { flex: 1; padding: 4px 4px; }
@@ -222,6 +236,7 @@
 	<nav id="nav"></nav>
 	<section class="list">
 		<div class="box-title" id="list-title">List</div>
+		<div class="cat-bar" id="cat-bar"></div>
 		<div class="items" id="items"></div>
 		<div class="tools">
 			<button id="add">New</button>
@@ -255,6 +270,76 @@ const fxFields = (slot, what, sizeHelp) => [
 	{ key: "fx." + slot + ".frames", label: "Frames", type: "int", def: 1, help: "For an animated picture: frames side by side in one row, all the same size. 1 = a still picture.", show: e => !!(((e.fx || {})[slot] || {}).sprite) },
 	{ key: "fx." + slot + ".look", label: "Look", type: "select", options: [["glow", "Glow (shines, tinted with the ability's colour)"], ["drawn", "As drawn (your colours and outlines)"]], show: e => !!(((e.fx || {})[slot] || {}).sprite) },
 ];
+
+// Item groups (same as the backpack tabs, CharacterWindow.tab_of).
+const ITEM_CATS = [["consumables", "Consumables"], ["weapons", "Weapons"], ["armor", "Armour"], ["key", "Key items"], ["misc", "Misc"]];
+function itemCategory(it) {
+	const k = it.kind || "";
+	if (it.keep || k === "quest" || k === "key") return "key";
+	if (k === "weapon") return "weapons";
+	if (k === "armor") return "armor";
+	if (k === "consumable" || k === "food") return "consumables";
+	return "misc";
+}
+// Icons drawn in code before the Saturn icons (still work, coloured by Icon colour).
+const LEGACY_ICONS = ["sword", "dagger", "axe", "hammer", "bow", "crossbow", "gun", "shield", "helm", "shoulders", "chest", "legs", "boots", "gloves", "potion", "bandage", "coin", "cloth", "bag", "hearthstone", "log", "ore"];
+const iconUrl = icon => !icon ? "" : icon.startsWith("builtin:") ? "/sprite/assets/icons/items/" + encodeURIComponent(icon.slice(8)) + ".png"
+	: icon.startsWith("res://") ? "/sprite/" + icon.replace("res://", "").split("/").map(encodeURIComponent).join("/") : "";
+// Saturn's tintCanvas: the tint's hue (and most of its saturation), each pixel's own lightness; outline and glints kept.
+const tintCache = new Map();
+function itemIconSrc(icon, tint) {
+	const url = iconUrl(icon);
+	if (!url || !tint || !/^#[0-9a-fA-F]{6}/.test(tint)) return url;
+	const key = url + "|" + tint;
+	if (tintCache.has(key)) return tintCache.get(key) || url;
+	tintCache.set(key, null);
+	const img = new Image();
+	img.onload = () => {
+		const c = document.createElement("canvas");
+		c.width = img.width; c.height = img.height;
+		const g = c.getContext("2d");
+		g.drawImage(img, 0, 0);
+		const im = g.getImageData(0, 0, c.width, c.height), d = im.data;
+		const t = parseInt(tint.slice(1, 7), 16);
+		const [th, ts, tl] = rgbToHsl((t >> 16) & 255, (t >> 8) & 255, t & 255);
+		for (let i = 0; i < d.length; i += 4) {
+			if (d[i + 3] < 8) continue;
+			const [, sat, l] = rgbToHsl(d[i], d[i + 1], d[i + 2]);
+			if (l < 0.13 || l > 0.97) continue;
+			const [r, gg, b] = hslToRgb(th, Math.min(1, ts * (sat > 0.12 ? 1 : 0.6)), Math.max(0, Math.min(1, l + (tl - 0.5) * 0.35)));
+			d[i] = r; d[i + 1] = gg; d[i + 2] = b;
+		}
+		g.putImageData(im, 0, 0);
+		tintCache.set(key, c.toDataURL());
+		document.querySelectorAll("img[data-tint-key]").forEach(e => { if (e.dataset.tintKey === key) e.src = tintCache.get(key); });
+	};
+	img.src = url;
+	return url;
+}
+function rgbToHsl(r, g, b) {
+	r /= 255; g /= 255; b /= 255;
+	const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+	if (mx === mn) return [0, 0, l];
+	const dd = mx - mn, sat = l > 0.5 ? dd / (2 - mx - mn) : dd / (mx + mn);
+	const h = mx === r ? (g - b) / dd + (g < b ? 6 : 0) : mx === g ? (b - r) / dd + 2 : (r - g) / dd + 4;
+	return [h / 6, sat, l];
+}
+function hslToRgb(h, sat, l) {
+	if (!sat) { const v = Math.round(l * 255); return [v, v, v]; }
+	const q = l < 0.5 ? l * (1 + sat) : l + sat - l * sat, p = 2 * l - q;
+	const f = t => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+	return [Math.round(f(h + 1 / 3) * 255), Math.round(f(h) * 255), Math.round(f(h - 1 / 3) * 255)];
+}
+// An <img> for an item icon that picks up its tinted copy once it's made.
+function iconImg(icon, tint, cls) {
+	const img = el("img", { className: cls || "", alt: "" });
+	const src = itemIconSrc(icon, tint);
+	if (!src) { img.style.visibility = "hidden"; return img; }
+	img.src = src;
+	if (tint) img.dataset.tintKey = iconUrl(icon) + "|" + tint;
+	return img;
+}
+let listCat = {};  // tab -> category shown ("" = all)
 
 const TABS = {
 	abilities: {
@@ -339,9 +424,10 @@ const TABS = {
 	},
 	items: {
 		title: "Items", file: "items", listKey: "items", idKey: "id", nameKey: "name",
+		categories: ITEM_CATS, categoryOf: itemCategory, iconOf: e => itemIconSrc(e.icon, e.icon_tint),
 		blank: () => ({
 			id: "new_item", name: "New Item", description: "", kind: "material", slot: "", rarity: "common",
-			icon: "bag", icon_color: "#c0b090", value: 1, stack_max: 0, attack: 0, spell_power: 0, armor: 0, block: 0,
+			icon: "builtin:bag", icon_tint: "", icon_color: "#c0b090", value: 1, stack_max: 0, attack: 0, spell_power: 0, armor: 0, block: 0,
 			bonus_health: 0, bonus_mana: 0, use_heal: 0, use_hot_per_tick: 0, use_hot_ticks: 0, use_mana: 0, use_time: 0, use_anim: "",
 			model: "", fitted_masc: "", fitted_femme: "", hides: [], fit: { masc: [], femme: [] },
 		}),
@@ -349,13 +435,14 @@ const TABS = {
 			["General", [
 				{ key: "id", label: "ID", type: "text", help: "Used by loot tables and the starting kit." },
 				{ key: "name", label: "Name", type: "text" },
-				{ key: "kind", label: "Kind", type: "select", options: [["weapon", "Weapon"], ["armor", "Armour"], ["consumable", "Consumable (usable)"], ["material", "Material"], ["junk", "Junk (sell)"], ["quest", "Quest item"], ["key", "Key item"]] },
+				{ key: "kind", label: "Kind", type: "select", options: [["weapon", "Weapon"], ["armor", "Armour"], ["consumable", "Consumable / potion (usable)"], ["food", "Food (usable)"], ["material", "Material"], ["junk", "Junk (sell)"], ["quest", "Quest item"], ["key", "Key item"]], help: "Also picks its group here and in the backpack: Consumables (potions, food), Weapons, Armour, Key items (quest/key, or Can't be thrown away), Misc (materials, junk)." },
 				{ key: "slot", label: "Equips to", type: "select", options: [["", "(not equippable)"], ["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["weapon", "Weapon (primary or secondary)"], ["off_hand", "Off hand (shield)"]] },
 				{ key: "rarity", label: "Rarity", type: "select", options: [["common", "Common (grey)"], ["uncommon", "Uncommon (green)"], ["rare", "Rare (blue)"], ["epic", "Epic (purple)"], ["legendary", "Legendary (orange)"]] },
 				{ key: "value", label: "Worth (gold)", type: "int" },
 				{ key: "stack_max", label: "Stacks to", type: "int", help: "0 = automatic (gear 1, everything else 64)." },
-				{ key: "icon", label: "Icon", type: "select", options: ["sword", "dagger", "axe", "hammer", "bow", "crossbow", "gun", "shield", "helm", "shoulders", "chest", "legs", "boots", "gloves", "potion", "bandage", "coin", "cloth", "bag"] },
-				{ key: "icon_color", label: "Icon colour", type: "color" },
+				{ key: "icon", label: "Icon", type: "itemicon", wide: true, help: "The Saturn engine's pixel icons (tools/art/export_saturn_icons.mjs), or Load PNG… for your own (assets/icons/custom)." },
+				{ key: "icon_tint", label: "Icon tint", type: "tint", help: "Recolours the picture (keeps its shading, outline and glints). Empty = its own colours.", show: e => !LEGACY_ICONS.includes(e.icon || "") },
+				{ key: "icon_color", label: "Icon colour", type: "color", show: e => LEGACY_ICONS.includes(e.icon || "") },
 				{ key: "description", label: "Description", type: "textarea", wide: true },
 			]],
 			["Stats when equipped", [
@@ -1546,13 +1633,41 @@ function renderList(t) {
 	const items = $("items");
 	items.innerHTML = "";
 	selected[tab] = Math.max(0, Math.min(selected[tab] ?? 0, list.length - 1));
-	list.forEach((e, i) => {
+	// Tabs with categories (Items): a bar to show one group, and the full list split under headings.
+	const bar = $("cat-bar");
+	bar.innerHTML = "";
+	bar.style.display = t.categories ? "" : "none";
+	const cat = t.categories ? (listCat[tab] || "") : "";
+	if (t.categories) {
+		for (const [id, label] of [["", "All"]].concat(t.categories)) {
+			const n = id ? list.filter(e => t.categoryOf(e) === id).length : list.length;
+			const b = el("button", { textContent: label + " " + n, className: id === cat ? "on" : "" });
+			b.onclick = () => {
+				listCat[tab] = id;
+				const first = list.findIndex(e => !id || t.categoryOf(e) === id);
+				if (first >= 0 && id && t.categoryOf(list[selected[tab]] || {}) !== id) selected[tab] = first;
+				render();
+			};
+			bar.appendChild(b);
+		}
+	}
+	const row = (e, i) => {
 		const div = document.createElement("div");
-		div.textContent = String(i + 1).padStart(4, "0") + ": " + (e[t.nameKey] || e[t.idKey] || "");
+		if (t.iconOf) div.appendChild(iconImg(e.icon, e.icon_tint, "li-icon"));
+		div.appendChild(document.createTextNode(String(i + 1).padStart(4, "0") + ": " + (e[t.nameKey] || e[t.idKey] || "")));
 		div.className = i === selected[tab] ? "on" : "";
 		div.onclick = () => { selected[tab] = i; render(); };
 		items.appendChild(div);
-	});
+	};
+	if (t.categories) {
+		for (const [id, label] of t.categories) {
+			if (cat && cat !== id) continue;
+			const members = list.map((e, i) => [e, i]).filter(([e]) => t.categoryOf(e) === id);
+			if (!members.length) continue;
+			if (!cat) items.appendChild(el("div", { className: "cat-head", textContent: label }));
+			members.forEach(([e, i]) => row(e, i));
+		}
+	} else list.forEach(row);
 	$("del").disabled = list.length === 0;
 	$("copy").disabled = list.length === 0;
 }
@@ -1568,6 +1683,7 @@ $("add").onclick = () => {
 	const list = data[t.file][t.listKey];
 	const e = t.blank();
 	e[t.idKey] = uniqueId(list, t.idKey, e[t.idKey]);
+	if (tab === "items" && listCat.items) e.kind = { consumables: "consumable", weapons: "weapon", armor: "armor", key: "key", misc: "material" }[listCat.items];
 	list.push(e);
 	selected[tab] = list.length - 1;
 	render();
@@ -1662,11 +1778,15 @@ function selectOf(options, value, allowEmpty) {
 	const s = el("select");
 	if (allowEmpty) s.appendChild(el("option", { value: "", textContent: "(none)" }));
 	let found = false;
+	const groups = {};  // options with a third entry go under that <optgroup>
 	for (const o of options) {
-		const [v, label] = Array.isArray(o) ? o : [o, o];
+		const [v, label, group] = Array.isArray(o) ? o : [o, o];
 		const opt = el("option", { value: v, textContent: label });
 		if (v === value) { opt.selected = true; found = true; }
-		s.appendChild(opt);
+		if (group) {
+			if (!groups[group]) s.appendChild(groups[group] = el("optgroup", { label: group }));
+			groups[group].appendChild(opt);
+		} else s.appendChild(opt);
 	}
 	if (!found && value) {
 		const opt = el("option", { value, textContent: value + " (missing)" });
@@ -1677,7 +1797,14 @@ function selectOf(options, value, allowEmpty) {
 }
 
 const soundLabel = p => p.replace("res://assets/audio/", "");
-const itemOptions = () => ((data.items && data.items.items) || []).map(it => [it.id, it.name + "  (" + it.id + ")"]);
+// Items for pickers (events, loot, quests…), grouped like the Items list.
+const itemOptions = () => {
+	const all = (data.items && data.items.items) || [];
+	const out = [];
+	for (const [id, label] of ITEM_CATS)
+		for (const it of all) if (itemCategory(it) === id) out.push([it.id, it.name + "  (" + it.id + ")", label]);
+	return out;
+};
 const abilityOptions = () => data.abilities.abilities.map(a => [a.id, a.display_name + "  (" + a.id + ")"]);
 
 function fieldControl(t, entry, f) {
@@ -1758,6 +1885,77 @@ function fieldControl(t, entry, f) {
 			const s = selectOf(assets.animations, value, true);
 			s.onchange = () => set(s.value);
 			wrap.append(label, s);
+			break;
+		}
+		case "itemicon": {
+			// Item icon: the Saturn pixel icons in folding groups, your own PNGs, or the old drawn glyphs.
+			const box = el("div");
+			const top = el("div", { className: "icon-pick" });
+			const now = iconImg(value, entry.icon_tint, "icon-now");
+			const name = el("span", { textContent: value || "(none)" });
+			const pick = el("input", { type: "file", accept: "image/png" });
+			pick.style.display = "none";
+			const load = el("button", { textContent: "Load PNG…", title: "Copies a PNG from your computer into assets/icons/custom and uses it." });
+			load.onclick = () => pick.click();
+			pick.onchange = async () => {
+				const file = pick.files[0];
+				if (!file) return;
+				const buf = new Uint8Array(await file.arrayBuffer());
+				let bin = "";
+				for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+				const res = await fetch("/api/upload_sprite", { method: "POST", body: JSON.stringify({ name: file.name, data: btoa(bin), folder: "icons" }) }).then(r => r.json()).catch(() => null);
+				if (!res || !res.ok) { toast((res && res.error) || "Couldn't load that picture", true); return; }
+				if (!assets.custom_icons) assets.custom_icons = [];
+				if (!assets.custom_icons.includes(res.path)) assets.custom_icons.push(res.path);
+				toast("Loaded " + res.path.split("/").pop() + " (" + res.width + " × " + res.height + ")");
+				set(res.path, true);
+			};
+			top.append(now, name, load, pick);
+			const grid = el("div", { className: "icon-grid" });
+			const groups = (assets.item_icons || []).slice();
+			if ((assets.custom_icons || []).length) groups.unshift(["Yours (assets/icons/custom)", assets.custom_icons.map(p => [p, p.split("/").pop()])]);
+			const OLD = "Old drawn icons (use Icon colour)";
+			groups.push([OLD, LEGACY_ICONS.map(n => [n, n])]);
+			for (const [g, list] of groups) {
+				const det = el("details");
+				const legacy = g === OLD;
+				const ids = list.map(([id]) => id.startsWith("res://") || legacy ? id : "builtin:" + id);
+				if (ids.includes(value)) det.open = true;
+				det.appendChild(el("summary", { textContent: g + " (" + list.length + ")" }));
+				const cells = el("div", { className: "cells" });
+				list.forEach(([, label], k) => {
+					const id = ids[k];
+					if (legacy) {
+						const b = el("button", { textContent: id, title: "Drawn in code" });
+						b.className = id === value ? "on" : "";
+						b.onclick = () => set(id, true);
+						cells.appendChild(b);
+						return;
+					}
+					const img = iconImg(id, "", id === value ? "on" : "");
+					img.title = label;
+					img.onclick = () => set(id, true);
+					cells.appendChild(img);
+				});
+				det.appendChild(cells);
+				grid.appendChild(det);
+			}
+			box.append(top, grid);
+			wrap.append(label, box);
+			break;
+		}
+		case "tint": {
+			// A colour that can be left empty (= no tint).
+			const row = el("div", { className: "color-row" });
+			const pick = el("input", { type: "color", value: (value || "#ffffff").slice(0, 7) });
+			const txt = el("input", { type: "text", value: value || "", placeholder: "none" });
+			const clear = el("button", { textContent: "None", title: "Its own colours" });
+			pick.oninput = () => { txt.value = pick.value; set(pick.value); };
+			pick.onchange = () => changed(true);
+			txt.onchange = () => { if (txt.value === "" || /^#[0-9a-fA-F]{6}$/.test(txt.value)) set(txt.value.toLowerCase(), true); };
+			clear.onclick = () => set("", true);
+			row.append(pick, txt, clear);
+			wrap.append(label, row);
 			break;
 		}
 		case "sprite": {

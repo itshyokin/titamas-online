@@ -34,6 +34,10 @@ uniform float cliff_slope_end : hint_range(0.0, 1.0) = 0.55;
 // roof stay dry. wet_look: how wet this material gets (0 = never, e.g. indoor floors).
 global uniform float wetness;
 uniform float wet_look : hint_range(0.0, 1.0) = 1.0;
+// Dry ground is fully matte (roughness 1, no specular). When soaked it only gets this
+// shiny: roughness falls to wet_roughness and specular rises to wet_specular.
+uniform float wet_roughness : hint_range(0.0, 1.0) = 0.65;
+uniform float wet_specular : hint_range(0.0, 1.0) = 0.25;
 uniform float ao_light_affect : hint_range(0.0, 1.0) = 0.85;
 
 varying vec3 world_pos;
@@ -96,13 +100,16 @@ void fragment() {
 	if (wet > 0.001) {
 		wet *= rain_cover_open(world_pos, normalize(world_normal));
 	}
-	ROUGHNESS = mix(1.0, 0.35, wet * (1.0 - w.b * 0.5));
+	// Wet only shines once it's properly wet (light damp/dew just darkens).
+	float shine = smoothstep(0.35, 1.0, wet) * (1.0 - w.b * 0.5);
+	ROUGHNESS = mix(1.0, wet_roughness, shine);
 	ALBEDO *= 1.0 - 0.32 * wet;
-	SPECULAR = 0.5 * wet;
+	SPECULAR = wet_specular * shine;
 	// Snow lying in patches (Weather "frost"): white, soft, not under roofs or trees.
 	float snow = snow_at(world_pos, normalize(world_normal)) * wet_look;
 	ALBEDO = mix(ALBEDO, vec3(0.9, 0.94, 1.0), snow * 0.92);
-	ROUGHNESS = mix(ROUGHNESS, 0.8, snow);
+	ROUGHNESS = mix(ROUGHNESS, 1.0, snow);
+	SPECULAR *= 1.0 - snow;
 	AO = 1.0;
 	AO_LIGHT_AFFECT = ao_light_affect;
 }

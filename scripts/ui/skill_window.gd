@@ -97,13 +97,8 @@ func close() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if embedded:
 		return
-	if event.is_action_pressed("skills"):
-		if is_open():
-			close()
-		elif not GameSettings.menu_open:
-			open()
-		get_viewport().set_input_as_handled()
-	elif is_open() and (event.is_action_pressed("ui_cancel") or event.is_action_pressed("menu")):
+	# N opens the Codex at Skills (Codex handles it); this only closes a standalone window.
+	if is_open() and (event.is_action_pressed("ui_cancel") or event.is_action_pressed("menu")):
 		close()
 		get_viewport().set_input_as_handled()
 

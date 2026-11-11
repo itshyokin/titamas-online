@@ -464,7 +464,7 @@ func _use_hearthstone(d: Dictionary) -> bool:
 		var boom := String(d.get("teleport_sound", ""))
 		if boom != "":
 			Combat.play_sound(player, DataFiles.stream_from(boom), 0.0)
-		GameSession.travel_home(fade, float(d.get("hearth_fade_out", 0.7)), float(d.get("hearth_fade_in", 1.2))), "cast_channel", false, loop)
+		GameSession.travel_home(fade, float(d.get("hearth_fade_out", 0.7)), float(d.get("hearth_fade_in", 1.2))), "cast_channel", false, loop, true)  # in_air: works when stuck "falling"
 	if started:
 		_hearth_glow(player as Node3D, combat, seconds, glow, float(d.get("hearth_light_energy", 3.0)))
 	return started
@@ -601,7 +601,7 @@ func _queue_save() -> void:
 
 
 func to_dict() -> Dictionary:
-	return {"bag": bag.duplicate(true), "equipped": equipped.duplicate(), "gold": gold, "hotbar": hotbar.duplicate(),
+	return {"bag": bag.duplicate(true), "equipped": equipped.duplicate(), "gold": gold, "hotbar": hotbar.duplicate(), "hotbar_version": 2,
 		"active_weapon": active_weapon}
 
 
@@ -654,6 +654,12 @@ func load_character() -> bool:
 	elif hb is Array:
 		for i in mini(hb.size(), HOTBAR_SIZE):
 			hotbar[i] = String(hb[i])
+		if int(data.get("hotbar_version", 1)) < 2:
+			# The old default bar put the potion and bandage in boxes 3 and 4; now items
+			# are only on the bar when the player puts them there.
+			if hotbar[2] == "item:minor_healing_potion" and hotbar[3] == "item:bandage":
+				hotbar[2] = ""
+				hotbar[3] = ""
 	else:
 		# Older save: the default bar, plus whatever was in the old quick slots.
 		_default_hotbar()

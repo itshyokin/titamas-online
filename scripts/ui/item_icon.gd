@@ -1,8 +1,15 @@
 class_name ItemIcon
 extends Control
-## A simple drawn icon for an item, by its "icon" type and colour (until there's icon art):
-## sword, dagger, axe, hammer, bow, crossbow, gun, shield, helm, shoulders, chest, legs, boots, gloves, potion, bandage, coin,
-## cloth, bag. A stack count shows in the corner.
+## An item's icon. "builtin:<name>" = one of the Saturn engine's 16 px pixel-art icons
+## (assets/icons/items, from tools/art/export_saturn_icons.mjs), recoloured by the item's
+## "icon_tint" when set (same recolour as Saturn's tintCanvas: the tint's hue, each
+## pixel's own lightness; outline and white glints kept); a res:// .png = your own picture.
+## Older glyph names (sword, dagger, axe, hammer, bow, crossbow, gun, shield, helm,
+## shoulders, chest, legs, boots, gloves, potion, bandage, coin, cloth, bag) are still drawn
+## in code, coloured by "icon_color". A stack count shows in the corner.
+
+const BUILTIN_DIR := "res://assets/icons/items/"
+static var _textures := {}  # "icon|tint" -> Texture2D (null when missing)
 
 const RARITY_COLORS := {
 	"common": Color(0.66, 0.66, 0.66),
@@ -15,6 +22,7 @@ const RARITY_COLORS := {
 var icon := ""
 var color := Color.WHITE
 var count := 0
+var tint := ""  # icon_tint ("" = the picture's own colours)
 ## Draws the vector picture itself (the copy PixelIcons draws small); off = shows the
 ## pixel version (the stack count stays sharp on top).
 var raw := false
@@ -41,6 +49,7 @@ static func rarity_color(item: Dictionary) -> Color:
 func show_item(item: Dictionary, stack := 0) -> void:
 	icon = String(item.get("icon", "")) if not item.is_empty() else ""
 	color = DataFiles.color_from(item.get("icon_color", "#ffffff")) if not item.is_empty() else Color.WHITE
+	tint = String(item.get("icon_tint", "")) if not item.is_empty() else ""
 	count = stack
 	queue_redraw()
 
@@ -50,6 +59,13 @@ func _draw() -> void:
 		return
 	var s := minf(size.x, size.y)
 	var o := (size - Vector2(s, s)) * 0.5
+	var pic := picture(icon, tint)
+	if pic:
+		# Pixel art already: drawn as it is, nearest filtered.
+		var inset := s * 0.06
+		draw_texture_rect(pic, Rect2(o + Vector2(inset, inset), Vector2(s, s) - Vector2(inset, inset) * 2.0), false)
+		_draw_count(s, o)
+		return
 	if not raw and PixelIcons.pixels() > 0:
 		var kind := icon
 		var col := color
@@ -162,3 +178,90 @@ func _draw_count(s: float, o: Vector2) -> void:
 		var at := o + Vector2(s - w - 3, s - 4)
 		draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color.BLACK)
 		draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color.WHITE)
+
+
+## The picture for an icon id ("builtin:<name>" or a res:// image), recoloured by `tint_hex`;
+## null for the drawn glyphs. Cached.
+static func picture(icon_id: String, tint_hex := "") -> Texture2D:
+	var path := ""
+	if icon_id.begins_with("builtin:"):
+		path = BUILTIN_DIR + icon_id.trim_prefix("builtin:") + ".png"
+	elif icon_id.begins_with("res://") or icon_id.begins_with("user://"):
+		path = icon_id
+	else:
+		return null
+	var key := icon_id + "|" + tint_hex
+	if _textures.has(key):
+		return _textures[key]
+	var tex: Texture2D = null
+	var img: Image = null
+	if ResourceLoader.exists(path):
+		var t := load(path) as Texture2D
+		if t:
+			img = t.get_image()
+			if tint_hex == "":
+				tex = t
+	elif FileAccess.file_exists(path):
+		img = Image.load_from_file(ProjectSettings.globalize_path(path))
+		if img and tint_hex == "":
+			tex = ImageTexture.create_from_image(img)
+	if img and tex == null and Color.html_is_valid(tint_hex):
+		tex = ImageTexture.create_from_image(_tinted(img, Color.html(tint_hex)))
+	_textures[key] = tex
+	return tex
+
+
+## Saturn's tintCanvas: each pixel takes the tint's hue (and most of its saturation) and
+## keeps its own lightness; the dark outline and pure white glints are left alone.
+static func _tinted(src: Image, t: Color) -> Image:
+	var img := src.duplicate() as Image
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	var tl := _lightness(t)
+	var ts := _hsl_saturation(t)
+	for y in img.get_height():
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			if c.a < 8.0 / 255.0:
+				continue
+			var l := _lightness(c)
+			if l < 0.13 or l > 0.97:
+				continue
+			var ns := minf(1.0, ts * (1.0 if _hsl_saturation(c) > 0.12 else 0.6))
+			var nl := clampf(l + (tl - 0.5) * 0.35, 0.0, 1.0)
+			var out := _from_hsl(t.h, ns, nl)
+			out.a = c.a
+			img.set_pixel(x, y, out)
+	return img
+
+
+static func _lightness(c: Color) -> float:
+	return (maxf(c.r, maxf(c.g, c.b)) + minf(c.r, minf(c.g, c.b))) * 0.5
+
+
+static func _hsl_saturation(c: Color) -> float:
+	var mx := maxf(c.r, maxf(c.g, c.b))
+	var mn := minf(c.r, minf(c.g, c.b))
+	if mx == mn:
+		return 0.0
+	var l := (mx + mn) * 0.5
+	var d := mx - mn
+	return d / (2.0 - mx - mn) if l > 0.5 else d / (mx + mn)
+
+
+static func _from_hsl(h: float, s: float, l: float) -> Color:
+	if s <= 0.0:
+		return Color(l, l, l)
+	var q := l * (1.0 + s) if l < 0.5 else l + s - l * s
+	var p := 2.0 * l - q
+	var f := func(t: float) -> float:
+		t = fposmod(t, 1.0)
+		if t < 1.0 / 6.0:
+			return p + (q - p) * 6.0 * t
+		if t < 0.5:
+			return q
+		if t < 2.0 / 3.0:
+			return p + (q - p) * (2.0 / 3.0 - t) * 6.0
+		return p
+	return Color(f.call(h + 1.0 / 3.0), f.call(h), f.call(h - 1.0 / 3.0))

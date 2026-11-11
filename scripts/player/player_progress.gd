@@ -375,5 +375,23 @@ func _apply_skills() -> void:
 			if not ab in combat.spells:
 				combat.spells.append(ab)
 		_skill_spells = learn
+		_offer_to_hotbar(learn)
 		combat.loadout_changed.emit()
 	skills_changed.emit()
+
+
+## Newly learned abilities (skill tree, racial) go into the first free hotbar box, once each:
+## ids already offered are kept in the save (`hotbar_offered`), so one the player took off
+## the bar doesn't come back.
+var _offered_memory: Array = []
+
+func _offer_to_hotbar(learn: Array[Ability]) -> void:
+	var inv := player.get_node_or_null("Inventory")
+	if inv == null:
+		return
+	var offered: Array = GameSession.data.get_or_add("hotbar_offered", []) if GameSession.active() else _offered_memory
+	for ab in learn:
+		if ab.id in offered:
+			continue
+		offered.append(ab.id)
+		inv.call("add_to_hotbar", "ability:" + ab.id)

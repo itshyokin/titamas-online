@@ -1180,13 +1180,13 @@ func _end_cast() -> void:
 ## `anim`: the animation role/clip played while the bar fills. `timed`: the clip holds
 ## a pose (animations.json "drink" hold_at) while the bar fills, then plays out so it
 ## ends with the bar (faster if the bar is shorter than the clip).
-func channel(display: String, seconds: float, on_done: Callable, anim := "cast_channel", timed := false, loop: AudioStream = null) -> bool:
+func channel(display: String, seconds: float, on_done: Callable, anim := "cast_channel", timed := false, loop: AudioStream = null, in_air := false) -> bool:
 	if _channel or _current or _charging or _blocking or _casting:
 		notice.emit("You're busy")
 		return false
 	if _aiming:
 		_set_aiming(false)
-	if not player.start_action(0.0):
+	if not player.start_action(0.0, in_air):
 		notice.emit("Can't do that now")
 		return false
 	_channel = Ability.new()

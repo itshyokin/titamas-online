@@ -100,7 +100,7 @@
 			"fog_add": 0.02,
 			"saturation_scale": 0.85,
 			"rain": 0.0,
-			"wetness": 0.3,
+			"wetness": 0.0,
 			"lightning_every": 0.0,
 			"wind_add": -0.2,
 			"sound": "",

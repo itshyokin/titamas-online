@@ -325,7 +325,7 @@ static func tab_of(d: Dictionary) -> String:
 			return "weapons"
 		"armor":
 			return "armor"
-		"consumable":
+		"consumable", "food":
 			return "potions"
 	return "items"
 

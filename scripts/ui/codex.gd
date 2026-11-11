@@ -1,21 +1,23 @@
 class_name Codex
 extends CanvasLayer
 ## The Codex (book button, top right; Esc / Start): one book with pages down the left —
-## Character (a 3D view of you and your stats), Quests, Skills, Achievements, Lore and
-## Settings — plus Save game / Quit to title. Quests and Skills are the quest log and
-## skill windows shown inside the book (L and N still open them on their own). Lore
+## Character (a 3D view of you and your stats), Quests, Spells, Skills, Achievements, Lore
+## and Settings — plus Save game / Quit to title. Quests, Spells and Skills are the quest
+## log, spellbook and skill trees shown inside the book (L opens the quest log on its own;
+## P and N open the book at Spells / Skills). Lore
 ## entries come from data/lore.json (Database → Lore) and appear once their conditions
 ## hold. Built by the HUD, which hands it the other windows.
 
 const PANEL := Color(0.075, 0.068, 0.09, 0.97)
 const PAGE := Color(0.12, 0.11, 0.14, 1.0)
 const ACCENT := Color(1.0, 0.85, 0.45)
-const PAGES := [["character", "Character"], ["quests", "Quests"], ["skills", "Skills"],
+const PAGES := [["character", "Character"], ["quests", "Quests"], ["spells", "Spells"], ["skills", "Skills"],
 	["achievements", "Achievements"], ["lore", "Lore"], ["settings", "Settings"]]
 
 var settings: SettingsMenu
 var quest_log: QuestLog
 var skill_window: SkillWindow
+var spellbook: Spellbook
 var targeting: Node
 
 var _window: PanelContainer
@@ -73,12 +75,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			show_page("quests")
 			get_viewport().set_input_as_handled()
 		elif event.is_action_pressed("skills"):
-			show_page("skills")
+			close() if _current == "skills" else show_page("skills")
+			get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("spellbook"):
+			close() if _current == "spells" else show_page("spells")
 			get_viewport().set_input_as_handled()
 		return
 	if GameSettings.menu_open:
 		return
-	if event.is_action_pressed("menu"):
+	if event.is_action_pressed("skills"):
+		open("skills")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("spellbook"):
+		open("spells")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("menu"):
 		open()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("target_clear"):
@@ -212,6 +223,8 @@ func show_page(id: String) -> void:
 			_embed(quest_log)
 		"skills":
 			_embed(skill_window)
+		"spells":
+			_embed(spellbook)
 		"settings":
 			if settings and _settings_tabs == null:
 				_settings_tabs = settings.call("take_tabs")

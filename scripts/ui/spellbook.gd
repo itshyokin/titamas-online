@@ -1,7 +1,8 @@
 class_name Spellbook
 extends CanvasLayer
-## Spellbook (P): the spells this character knows. Drag one onto the hotbar, or press
-## "Add to bar" (controller: A) to put it in the first free box. Built by the HUD.
+## Spellbook: the spells this character knows, shown as the Codex's Spells page (P opens
+## the Codex there). Drag one onto the hotbar, or press "Add to bar" (controller: A) to
+## put it in the first free box. Built by the HUD, embedded by the Codex.
 
 const PANEL := Color(0.08, 0.075, 0.1, 0.95)
 
@@ -9,6 +10,9 @@ var combat: PlayerCombat
 var inventory: Inventory
 var _window: PanelContainer
 var _list: VBoxContainer
+var _head: Control
+## Shown inside the Codex right now (the Codex handles keys and closing).
+var embedded := false
 
 
 func _init(player_combat: PlayerCombat, inv: Inventory) -> void:
@@ -47,6 +51,7 @@ func _ready() -> void:
 	close_button.pressed.connect(close)
 	head.add_child(close_button)
 	v.add_child(head)
+	_head = head
 	var hint := Label.new()
 	hint.text = "Drag a spell onto the hotbar (boxes 1–10)."
 	hint.modulate = Color(1, 1, 1, 0.6)
@@ -63,29 +68,24 @@ func is_open() -> bool:
 	return _window.visible
 
 
+## Opens the Codex at the Spells page.
 func open() -> void:
-	_fill()
-	_window.visible = true
-	GameSettings.menu_open = true
-	if GameSettings.gamepad and _list.get_child_count() > 0:
-		(_list.get_child(0).get_child(2) as Control).grab_focus()
+	get_tree().call_group("codex", "open", "spells")
 
 
 func close() -> void:
+	if embedded:
+		get_tree().call_group("codex", "close")
+		return
 	_window.visible = false
-	GameSettings.menu_open = false
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("spellbook"):
-		close() if is_open() else open()
-		get_viewport().set_input_as_handled()
-	elif is_open() and (event.is_action_pressed("ui_cancel") or event.is_action_pressed("target_clear")):
-		close()
-		get_viewport().set_input_as_handled()
 
 
 func _fill() -> void:
+	_head.visible = not embedded
+	_window.set_anchors_preset(Control.PRESET_TOP_LEFT if embedded else Control.PRESET_CENTER_LEFT)
+	if embedded:
+		_window.position = Vector2.ZERO
+		_window.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	for c in _list.get_children():
 		c.queue_free()
 	for ab in combat.spells:
