@@ -9,34 +9,34 @@
 		"terrain_light_affect": 0.85
 	},
 	"day_length_minutes": 24.0,
+	"music": {
+		"boss": "res://assets/audio/music/boss.ogg",
+		"boss_volume_db": -9.0,
+		"combat": "res://assets/audio/music/combat.ogg",
+		"combat_volume_db": -10.0,
+		"fade_in": 1.2,
+		"fade_out": 4.0,
+		"linger": 5.0
+	},
 	"night_brightness": 0.3,
+	"performance": {
+		"ai_sleep_distance": 90.0,
+		"ai_wake_margin": 12.0,
+		"grass_range": 50.0,
+		"occluder_sink": 1.0,
+		"occluder_step": 4.0,
+		"occlusion": true,
+		"prop_range_fade": 6.0,
+		"prop_range_min": 45.0,
+		"prop_range_per_metre": 24.0,
+		"props_per_frame": 12.0
+	},
+	"sea_level": -15.0,
 	"start_hour": 9.0,
-	"sea_level": -5.0,
 	"sun_height": 65.0,
 	"wind": {
 		"calm": 0.4,
 		"gust_seconds": 25.0,
 		"gusty": 1.5
-	},
-	"performance": {
-		"ai_sleep_distance": 90.0,
-		"ai_wake_margin": 12.0,
-		"prop_range_per_metre": 24.0,
-		"prop_range_min": 45.0,
-		"prop_range_fade": 6.0,
-		"grass_range": 50.0,
-		"occlusion": true,
-		"occluder_step": 4,
-		"occluder_sink": 1.0,
-		"props_per_frame": 12
-	},
-	"music": {
-		"combat": "res://assets/audio/music/combat.ogg",
-		"boss": "res://assets/audio/music/boss.ogg",
-		"combat_volume_db": -10.0,
-		"boss_volume_db": -9.0,
-		"linger": 5.0,
-		"fade_in": 1.2,
-		"fade_out": 4.0
 	}
 }

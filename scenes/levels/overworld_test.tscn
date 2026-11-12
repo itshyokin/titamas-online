@@ -19,7 +19,7 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/golem.tscn" id="102_golem"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/gold_golem.tscn" id="103_gold_golem"]
 [ext_resource type="PackedScene" path="res://scenes/world/music_zone.tscn" id="104_music_zone"]
-[ext_resource type="AudioStream" path="res://assets/audio/music/monolith.ogg" id="105_monolith_music"]
+[ext_resource type="AudioStream" uid="uid://db136ycpxplvb" path="res://assets/audio/music/monolith.ogg" id="105_monolith_music"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
@@ -100,6 +100,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49.14438, 2.0768363, 89.4511
 
 [node name="Ocean" type="Node3D" parent="." unique_id=1156260732]
 script = ExtResource("4_r6e8q")
+sea_level = -15.0
 target_path = NodePath("../Player")
 streamer_path = NodePath("../ChunkStreamer")
 
@@ -139,7 +140,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.915064, 3.6172962, 6.78233
 defeat_variable = "tut_bandits"
 
 [node name="Troll" parent="Enemies" unique_id=1177397848 instance=ExtResource("101_troll")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 2.4, 52)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 68.30203, 2.4, 88.60991)
 appear_switch = "troll_awake"
 emerge = true
 defeat_switch = "troll_defeated"
@@ -261,13 +262,13 @@ event_id = "tut_guide"
 size = Vector3(45, 8, 2)
 
 [node name="TutVictory" parent="Events/Tutorial" unique_id=777870319 instance=ExtResource("98_event")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 2.4, 56)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 69.50197, 2.4, 89.905785)
 event_id = "tut_victory"
 
 [node name="TutRumble" parent="Events/Tutorial" unique_id=1877634962 instance=ExtResource("98_event")]
-transform = Transform3D(0.9560697, 0, 0.2931394, 0, 1, 0, -0.2931394, 0, 0.9560697, 63.137432, 1.7175064, 30.701786)
+transform = Transform3D(0.9560697, 0, 0.2931394, 0, 1, 0, -0.2931394, 0, 0.9560697, 70.21431, -0.33385277, 61.113945)
 event_id = "tut_rumble"
-size = Vector3(45, 15, 18)
+size = Vector3(85, 15, 18)
 
 [node name="QuarryVines" parent="Events/Tutorial" unique_id=1917941121 instance=ExtResource("98_event")]
 transform = Transform3D(0.1607942, 0, 0.98698795, 0, 1, 0, -0.98698795, 0, 0.1607942, 64.323425, -1.3319988, 115.80385)
@@ -286,7 +287,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 69.08765, 4.499998, 92.402565
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, 8, 40)
 
 [node name="Areas" type="Node3D" parent="." unique_id=2049325193]
-
 
 [node name="MonolithMusic" parent="Areas" unique_id=1610023003 instance=ExtResource("104_music_zone")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 2, 89)
