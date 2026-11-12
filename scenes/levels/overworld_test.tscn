@@ -15,6 +15,8 @@
 [ext_resource type="PackedScene" path="res://scenes/world/safe_area.tscn" id="99_safe"]
 [ext_resource type="PackedScene" path="res://scenes/world/swarm_spot.tscn" id="100_swarm"]
 [ext_resource type="PackedScene" path="res://scenes/world/campfire.tscn" id="106_campfire"]
+[ext_resource type="PackedScene" path="res://scenes/world/seat_log.tscn" id="107_seat_log"]
+[ext_resource type="PackedScene" path="res://scenes/world/seat_stool.tscn" id="108_seat_stool"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="101_troll"]
 [ext_resource type="PackedScene" path="res://scenes/world/climb_lock.tscn" id="102_climb"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/golem.tscn" id="102_golem"]
@@ -329,3 +331,12 @@ camp_name = "Village Campfire"
 [node name="PlainsCampfire" parent="Campfires" unique_id=1902733417 instance=ExtResource("106_campfire")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -228, 4, 196)
 camp_name = "Singed Plains Camp"
+
+[node name="CampLog" parent="Campfires" unique_id=1902733420 instance=ExtResource("107_seat_log")]
+transform = Transform3D(-1.00000, 0.00000, 0.00000, 0.00000, 1.00000, 0.00000, -0.00000, 0.00000, -1.00000, -50, 3, 59.3)
+
+[node name="CampLog2" parent="Campfires" unique_id=1902733421 instance=ExtResource("107_seat_log")]
+transform = Transform3D(0.41906, 0.00000, 0.90796, 0.00000, 1.00000, 0.00000, -0.90796, 0.00000, 0.41906, -47.4, 3, 63.2)
+
+[node name="CampStool" parent="Campfires" unique_id=1902733422 instance=ExtResource("108_seat_stool")]
+transform = Transform3D(0.60000, 0.00000, -0.80000, 0.00000, 1.00000, 0.00000, 0.80000, 0.00000, 0.60000, -52.4, 3, 63.8)

@@ -103,7 +103,9 @@
 		"range": 20.0,
 		"recover_after": 4.0,
 		"recover_share": 0.3,
-		"wait_for_player": true
+		"wait_for_player": true,
+		"rest_after": 4.0,
+		"rest_fire_range": 12.0
 	},
 	"death": {
 		"drown_wait": 0.6,

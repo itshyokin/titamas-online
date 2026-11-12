@@ -325,6 +325,7 @@ func _look_for_threats() -> void:
 	if leader and is_instance_valid(leader):
 		var pick := _choose_target()
 		if pick:
+			_stop_resting()
 			target = pick
 			ai = AI.FIGHT
 			_show_weapon()
@@ -892,6 +893,7 @@ func can_follow() -> bool:
 
 ## Starts (or stops, with null) following a player.
 func follow(who: Node3D, quietly := false) -> void:
+	_stop_resting()
 	leader = who
 	if leader:
 		add_to_group("followers")
@@ -956,6 +958,9 @@ func _follow(delta: float) -> Vector3:
 	if _should_revive():
 		return _revive_move(delta)
 	_revive_time = 0.0
+	var rest_move: Variant = _camp_rest(delta)
+	if rest_move != null:
+		return rest_move
 	var to_leader := leader.global_position - global_position
 	var far := Vector2(to_leader.x, to_leader.z).length()
 	if far > FOLLOW_TELEPORT or (far > 12.0 and absf(to_leader.y) > 8.0):
@@ -990,6 +995,141 @@ func _follow(delta: float) -> Vector3:
 	if far > 7.0 or to.length() > 4.0:
 		speed = _f("run_speed", 4.2) * 1.25  # catching up
 	return to.normalized() * minf(speed, to.length() * 4.0)
+
+
+# --- Resting in camp ---------------------------------------------------------------
+# When the player stays put near a lit campfire or in a safe area, followers find a free
+# seat nearby (or sit on the ground round the fire) and do their rest_activity (npcs.json:
+# relax, warm, read, eat, drink, talk) until the player moves off.
+
+var _leader_still := 0.0
+var _rest_from := Vector3.INF      # where the leader was when we sat down
+var _rest_seat: Node3D = null
+var _rest_spot := -1
+var _rest_ground := Vector3.INF    # ground spot by a fire (no seat)
+var _rest_face := Vector3.ZERO
+var _seated := false
+var _slide_walk := false  # stepping into a seat (moved by hand: still walks)
+
+
+func _camp_rest(delta: float) -> Variant:
+	var cfg: Dictionary = Database.player.get("companions", {})
+	var leader_speed := Vector2(leader.velocity.x, leader.velocity.z).length() if leader is CharacterBody3D else 0.0
+	_leader_still = _leader_still + delta if leader_speed < 0.3 else 0.0
+	var fire := _fire_near(leader.global_position, float(cfg.get("rest_fire_range", 12.0)))
+	var calm: bool = target == null and leader.get("state") == PlayerController.State.NORMAL
+	var place_ok: bool = fire != null or SafeArea.safe_at(leader.global_position)
+	var moved_off: bool = _rest_from != Vector3.INF and leader.global_position.distance_to(_rest_from) > 3.0
+	if moved_off:
+		_leader_still = 0.0  # wait for them to settle again
+	if not calm or not place_ok or moved_off or (_rest_from == Vector3.INF and _leader_still < float(cfg.get("rest_after", 4.0))):
+		_stop_resting()
+		return null
+	if _rest_from == Vector3.INF:
+		_rest_from = leader.global_position
+		_pick_rest_spot(fire)
+	if _rest_seat == null and _rest_ground == Vector3.INF:
+		return null  # nowhere to sit: just follow
+	var feet: Vector3 = _rest_seat.call("feet_position", _rest_spot) if _rest_seat else _rest_ground
+	var to := feet - global_position
+	to.y = 0.0
+	if not _seated:
+		if to.length() > 1.6:
+			return to.normalized() * _f("walk_speed", 1.2) * (2.0 if to.length() > 3.0 else 1.0)
+		if _rest_seat and not _rest_seat in get_collision_exceptions():
+			add_collision_exception_with(_rest_seat)  # sitting overlaps the seat
+		if to.length() > 0.12:
+			# The last step: straight there, round the seat's edge.
+			global_position += to.normalized() * minf(_f("walk_speed", 1.2) * delta, to.length())
+			_face(global_position + to, delta)
+			_slide_walk = true
+			return Vector3.ZERO
+		_slide_walk = false
+		_sit_down(fire)
+	global_position.x = feet.x
+	global_position.z = feet.z
+	model.rotation.y = atan2(-_rest_face.x, -_rest_face.z)
+	return Vector3.ZERO
+
+
+func _fire_near(at: Vector3, reach: float) -> Node3D:
+	for f in get_tree().get_nodes_in_group("campfires"):
+		if bool(f.get("lit")) and (f as Node3D).global_position.distance_to(at) < reach:
+			return f
+	return null
+
+
+func _pick_rest_spot(fire: Node3D) -> void:
+	var best: Node3D = null
+	var best_i := -1
+	var best_d := INF
+	for s in get_tree().get_nodes_in_group("seats"):
+		var seat_node := s as Node3D
+		if seat_node.global_position.distance_to(leader.global_position) > 14.0:
+			continue
+		var i: int = seat_node.call("free_spot", global_position, self)
+		if i < 0:
+			continue
+		var d := seat_node.global_position.distance_to(global_position)
+		if d < best_d:
+			best_d = d
+			best = seat_node
+			best_i = i
+	if best:
+		_rest_seat = best
+		_rest_spot = best_i
+		best.call("take", best_i, self)
+		_rest_face = best.call("facing")
+		return
+	if fire:
+		# Round the fire, each follower at their own place in the ring.
+		var idx := get_tree().get_nodes_in_group("followers").find(self)
+		var a := 2.2 + idx * 1.3
+		var f3 := fire.global_position
+		var spot := f3 + Vector3(cos(a), 0, sin(a)) * 1.9
+		var q := PhysicsRayQueryParameters3D.create(spot + Vector3.UP * 3.0, spot + Vector3.DOWN * 6.0, 1)
+		var hit := get_world_3d().direct_space_state.intersect_ray(q)
+		_rest_ground = (hit.position as Vector3) if not hit.is_empty() else spot
+		_rest_face = (f3 - _rest_ground) * Vector3(1, 0, 1)
+		_rest_face = _rest_face.normalized()
+
+
+func _sit_down(fire: Node3D) -> void:
+	_seated = true
+	var sp := character.sit_pose()
+	if sp == null:
+		return
+	var skel := character.get_skeleton()
+	var hips := skel.find_bone("mixamorig_Hips")
+	var hip_y := (skel.global_transform * skel.get_bone_global_pose(hips).origin).y - global_position.y if hips >= 0 else 0.95
+	var seat_h: float = float(_rest_seat.call("height")) if _rest_seat else 0.0
+	sp.forward = _rest_face
+	sp.ground = _rest_seat == null
+	sp.seat_drop = maxf(hip_y - (seat_h + 0.08), 0.0) if _rest_seat else maxf(hip_y - 0.4, 0.0)
+	sp.seat_back = 0.38 if _rest_seat else 0.15
+	var act := String(data.get("rest_activity", "relax"))
+	if act == "relax" and fire and fire.global_position.distance_to(global_position) < 3.5:
+		act = "warm"
+	sp.activity = act
+	sp.sitting = true
+	character.play("idle", 0.3)
+
+
+func _stop_resting() -> void:
+	_slide_walk = false
+	if _rest_seat and is_instance_valid(_rest_seat):
+		_rest_seat.call("release", self)
+		if _rest_seat in get_collision_exceptions():
+			remove_collision_exception_with(_rest_seat)
+	_rest_seat = null
+	_rest_spot = -1
+	_rest_ground = Vector3.INF
+	_rest_from = Vector3.INF
+	if _seated:
+		_seated = false
+		var sp := character.sit_pose()
+		if sp:
+			sp.sitting = false
 
 
 # --- Reviving the player ----------------------------------------------------------
@@ -1201,6 +1341,8 @@ func _animate() -> void:
 	if current == "hit_react" and character.animation_position() < 0.4:
 		return
 	var speed := Vector2(velocity.x, velocity.z).length()
+	if _slide_walk:
+		speed = 1.2
 	if ai == AI.DOWNED:
 		if speed < 0.3:
 			character.play("injured_idle" if character.has_animation("injured_idle") else "idle", 0.3)

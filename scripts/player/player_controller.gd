@@ -208,6 +208,8 @@ func _physics_process(delta: float) -> void:
 	_dodge_cooldown_left = maxf(_dodge_cooldown_left - delta, 0.0)
 	_grab_cooldown = maxf(_grab_cooldown - delta, 0.0)
 	_watch_fall()
+	if seat != null and _seated_tick():
+		return
 	match state:
 		State.NORMAL:
 			_normal_movement(delta)
@@ -285,6 +287,65 @@ func _apply_push(delta: float) -> void:
 ## Jump / talk next to someone who can talk (and roughly faced) starts a conversation.
 ## The one thing Interact would use right now (its prompt is the only one shown).
 var talk_focus: Node3D = null
+## The Seat being sat on (null when standing) and which of its spots.
+var seat: Node3D = null
+var _seat_spot := 0
+
+
+## Sits down on a seat (Seat.talk): stand at its front, face the way it faces, the SitPose
+## lowers the hips onto it. Moving, jumping or dodging gets up.
+func sit_on(s: Node3D, spot: int) -> void:
+	if state != State.NORMAL or seat != null:
+		return
+	seat = s
+	_seat_spot = spot
+	s.call("take", spot, self)
+	if s is PhysicsBody3D:
+		add_collision_exception_with(s)
+	global_position = s.call("feet_position", spot)
+	velocity = Vector3.ZERO
+	var f: Vector3 = s.call("facing")
+	model.rotation.y = _yaw_of(f)
+	var sp := character.sit_pose()
+	if sp:
+		var skel := character.get_skeleton()
+		var hips := skel.find_bone("mixamorig_Hips")
+		var hip_y := (skel.global_transform * skel.get_bone_global_pose(hips).origin).y - global_position.y if hips >= 0 else 0.95
+		sp.forward = f
+		sp.seat_drop = maxf(hip_y - (float(s.call("height")) + 0.08), 0.0)
+		sp.seat_back = 0.38
+		sp.ground = false
+		sp.activity = "relax"
+		sp.sitting = true
+	action_animation.emit("idle", 0.0, 0.3, 1.0)
+
+
+func stand_up() -> void:
+	if seat == null:
+		return
+	if is_instance_valid(seat):
+		seat.call("release", self)
+		var was := seat
+		# Collide with it again once clear of it.
+		get_tree().create_timer(1.0).timeout.connect(func() -> void:
+			if is_instance_valid(was) and seat != was:
+				remove_collision_exception_with(was))
+	seat = null
+	var sp := character.sit_pose()
+	if sp:
+		sp.sitting = false
+
+
+## While seated: stay put; any move, jump or dodge stands up. True = skip normal movement.
+func _seated_tick() -> bool:
+	if not is_instance_valid(seat) or state != State.NORMAL:
+		stand_up()
+		return false
+	velocity = Vector3.ZERO
+	if _input_direction() != Vector3.ZERO or _pressed("jump") or _pressed("dodge"):
+		stand_up()
+		return false
+	return true
 
 
 func _try_talk() -> bool:

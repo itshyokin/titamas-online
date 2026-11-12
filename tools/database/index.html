@@ -803,6 +803,8 @@ const TABS = {
 				{ key: "combat.player_threat", label: "Enemy threat: player damage ×", type: "number", help: "Enemies (bosses too) go after whoever built the most threat: damage dealt, plus healing. Raise this to keep enemies on the player." },
 				{ key: "combat.heal_threat", label: "Enemy threat: per point healed", type: "number", help: "Healing gives the healer this much threat per point with every enemy fighting the party." },
 				{ key: "combat.threat_switch", label: "Enemy threat: switch at ×", type: "number", help: "An enemy switches target when someone has this much more threat than its current target (1.1 = 10 % more)." },
+				{ key: "companions.rest_after", label: "Companions sit down after you stand still for (s)", type: "number", def: 4, help: "Near a lit campfire or in a safe area: they find a seat (or a place round the fire) and do their resting activity." },
+				{ key: "companions.rest_fire_range", label: "Companions: a campfire counts within (m)", type: "number", def: 12 },
 				{ key: "companions.help_below", label: "Companions: help with your fight below (health share)", type: "number", help: "Companions leave the enemy you're fighting to you unless you drop below this (0.5 = half), it's a boss, or it attacks them. They only join fights you start or that come at the party." },
 				{ key: "companions.leave_kill_below", label: "Companions: leave enemies below (health share)", type: "number", help: "Nearly dead enemies are left for you to finish." },
 				{ key: "companions.leave_kills", label: "Companions never land the killing blow", type: "bool", help: "Their hits leave an enemy on 1 health while you're nearby and doing fine." },
@@ -1007,6 +1009,7 @@ const TABS = {
 			]],
 			["Talking", [
 				{ key: "can_follow", label: "Can follow the player", type: "bool", help: "Talking to it offers Follow me / Wait here." },
+				{ key: "rest_activity", label: "Resting in camp", type: "select", options: [["relax", "Relax (warms hands by a fire)"], ["warm", "Warm hands"], ["read", "Read a book"], ["eat", "Eat"], ["drink", "Drink"], ["talk", "Chat"]], help: "Followers sit on seats (chairs, logs, benches) or round the fire when you stay put near a lit campfire or in a safe area." },
 				{ key: "blood_color", label: "Blood colour", type: "color", help: "What they bleed when hit. Empty or \"none\" = no blood." },
 				{ key: "keeps_distance", label: "Keeps its distance (archers)", type: "bool", help: "Stays back and shoots even with a weapon in hand (bows)." },
 				{ key: "heal_below", label: "Heals allies below (share of health)", type: "number", help: "With a heal ability: heals itself, its leader or fellow followers once they drop below this (0.6 = 60%)." },

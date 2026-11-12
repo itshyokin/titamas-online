@@ -497,6 +497,25 @@ func _upper_layer() -> UpperBodyLayer:
 	return layer
 
 
+## The sitting layer (SitPose) on this skeleton, made on first use, placed before HeadLook
+## so the head still turns to look at things. In-game only.
+func sit_pose() -> SitPose:
+	if Engine.is_editor_hint():
+		return null
+	var skel := get_skeleton()
+	if skel == null:
+		return null
+	var sp := skel.get_node_or_null("SitPose") as SitPose
+	if sp == null:
+		sp = SitPose.new()
+		sp.name = "SitPose"
+		skel.add_child(sp)
+		var look := skel.get_node_or_null("HeadLook")
+		if look:
+			skel.move_child(sp, look.get_index())
+	return sp
+
+
 func head_look() -> HeadLook:
 	if Engine.is_editor_hint():
 		return null
