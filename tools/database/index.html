@@ -3059,7 +3059,7 @@ const CMDS = {
 		show: c => "Throw player " + (c.toward === "marker" ? "→ " + c.marker : "away") },
 	camera: { label: "Cutscene camera", make: () => ({ cmd: "camera", op: "move", marker: "", look: "", seconds: 2, wait: true }),
 		fields: [["op", "", "select", [["move", "Glide to a marker"], ["back", "Back to the game camera"]]], ["marker", "Marker (its position and facing)", "marker"],
-			["look", "Looks at (optional)", "select", [["", "Where the marker faces"], ["player", "The player"], ["event", "This event"], ["npc", "An NPC"]]], ["npc", "NPC (when looking at one)", "npc"],
+			["look", "Looks at (optional)", "select", () => [["", "Where the marker faces"], ["player", "The player"], ["event", "This event"], ["npc", "An NPC"]].concat([...new Set(Object.values(assets.markers || {}).flat())].sort().map(m => [m, "Marker: " + m]))], ["npc", "NPC (when looking at one)", "npc"],
 			["seconds", "Over (s)", "number"], ["wait", "Wait until it gets there", "bool"]],
 		show: c => c.op === "back" ? "Camera: back (" + c.seconds + " s)" : "Camera → " + (c.marker || "?") + (c.look ? " looking at " + c.look : "") },
 	letterbox: { label: "Letterbox bars", make: () => ({ cmd: "letterbox", on: true, seconds: 0.6 }),
