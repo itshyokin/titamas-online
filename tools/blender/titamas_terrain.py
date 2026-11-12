@@ -756,6 +756,22 @@ class TITAMAS_OT_setup_painting(bpy.types.Operator):
 		return {"FINISHED"}
 
 
+def _draw_paint_brush(context, layout) -> None:
+	"""Blender's own Vertex Paint brush size and strength, repeated here (they also sit in
+	the bar along the top of the viewport while in Vertex Paint mode)."""
+	if context.mode != "PAINT_VERTEX":
+		layout.label(text="Brush size / strength show while painting", icon="INFO")
+		return
+	ts = context.tool_settings
+	brush = ts.vertex_paint.brush if ts.vertex_paint else None
+	ups = getattr(ts, "unified_paint_settings", None)
+	col = layout.column(align=True)
+	for attr, label in (("size", "Brush Size"), ("strength", "Strength")):
+		owner = ups if ups is not None and getattr(ups, f"use_unified_{attr}", False) else brush
+		if owner is not None and hasattr(owner, attr):
+			col.prop(owner, attr, text=label, slider=True)
+
+
 class TITAMAS_OT_paint_layer(bpy.types.Operator):
 	bl_idname = "titamas.paint_layer"
 	bl_label = "Paint Layer"
@@ -1243,6 +1259,7 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 		row = box.row(align=True)
 		for i in range(3):
 			row.operator(TITAMAS_OT_paint_layer.bl_idname, text=_layer_label(obj, i)).layer = i
+		_draw_paint_brush(context, box)
 
 		box = layout.box()
 		box.label(text="3. Export", icon="EXPORT")
