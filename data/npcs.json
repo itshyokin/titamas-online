@@ -2,6 +2,60 @@
 	"npcs": [
 		{
 			"abilities": [],
+			"aggro_radius": 10.0,
+			"attack_animation": "attack_light_1",
+			"attack_animation_speed": 1.0,
+			"attack_cooldown": 1.5,
+			"attack_hit_time": 0.32,
+			"attack_power": 0.0,
+			"attack_range": 2.0,
+			"behaviour": "stand",
+			"can_fight": false,
+			"can_follow": false,
+			"dialogue": [],
+			"equipment": {},
+			"gold_max": 0.0,
+			"gold_min": 0.0,
+			"id": "base_character",
+			"immortal": true,
+			"kind": "story",
+			"leash_distance": 30.0,
+			"level": 1.0,
+			"look": {
+				"body": "masc",
+				"face": "sculpted",
+				"eyes": "anime_upturned",
+				"eye_color": "#3f78c8",
+				"brows": "natural",
+				"nose": "anime_nose_shadow",
+				"mouth": "neutral",
+				"extras": [],
+				"placement": {
+					"eyes": {
+						"scale": 0.75
+					},
+					"mouth": {
+						"y": 0.2
+					},
+					"brows": {
+						"scale": 1.2,
+						"x": 0.4
+					}
+				}
+			},
+			"loot": [],
+			"max_health": 60.0,
+			"name": "Base Character",
+			"respawn_time": 30.0,
+			"run_speed": 4.6,
+			"title": "",
+			"walk_speed": 1.1,
+			"wander_radius": 5.0,
+			"event": "",
+			"template": true
+		},
+		{
+			"abilities": [],
 			"aggro_radius": 14.0,
 			"attack_animation": "attack_light_1",
 			"attack_animation_speed": 0.9,

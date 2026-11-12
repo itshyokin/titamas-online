@@ -41,6 +41,8 @@ var _confirm: ConfirmationDialog
 var _pending_discard := -1
 ## The slot a mouse drag started from (set by ItemSlot).
 var drag_source: ItemSlot = null
+## Shown inside the Codex (its Backpack page; the Codex handles keys and closing).
+var embedded := false
 
 
 func _init(inv: Inventory, player_stats: Stats, player_combat: PlayerCombat = null) -> void:
@@ -63,7 +65,11 @@ func is_open() -> bool:
 	return _window.visible
 
 
+## Opens the Codex at its Backpack page.
 func open() -> void:
+	if not embedded and get_tree().get_first_node_in_group("codex"):
+		get_tree().call_group("codex", "open", "backpack")
+		return
 	_window.visible = true
 	GameSettings.menu_open = true
 	refresh()
@@ -72,24 +78,39 @@ func open() -> void:
 
 
 func close() -> void:
-	_window.visible = false
 	_held = null
+	if embedded:
+		get_tree().call_group("codex", "close")
+		return
+	_window.visible = false
 	GameSettings.menu_open = false
 
 
+## Called by the Codex when it shows (or gives back) the window: sits at the top left of
+## the page inside the book, bottom right on its own.
+func _fill() -> void:
+	if embedded:
+		_window.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		_window.grow_horizontal = Control.GROW_DIRECTION_END
+		_window.grow_vertical = Control.GROW_DIRECTION_END
+		_window.position = Vector2.ZERO
+	refresh()
+	if GameSettings.gamepad and not _bag_slots.is_empty():
+		_bag_slots[0].grab_focus()
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("inventory"):
-		close() if is_open() else open()
-		get_viewport().set_input_as_handled()
-	elif not is_open():
+	# The inventory key opens the Codex at the Backpack page (Codex handles it).
+	if not is_open() or not _window.is_visible_in_tree():
 		return
 	elif event.is_action_pressed("ui_cancel") or event.is_action_pressed("target_clear"):
 		if _held:
 			_held = null
 			refresh()
-		else:
+			get_viewport().set_input_as_handled()
+		elif not embedded:
 			close()
-		get_viewport().set_input_as_handled()
+			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("target_prev") and GameSettings.is_gamepad_event(event):
 		set_tab(_tab - 1)
 		get_viewport().set_input_as_handled()

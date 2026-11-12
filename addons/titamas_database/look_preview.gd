@@ -36,7 +36,7 @@ func _next() -> void:
 
 func _render(look: Dictionary, equipment: Dictionary) -> Dictionary:
 	var db: Object = load("res://scripts/core/database.gd").new()
-	for which in ["body_models", "appearance", "items", "species"]:
+	for which in ["body_models", "appearance", "items", "species", "npcs"]:
 		db.call("_load", which)
 
 	var vp_body := SubViewport.new()

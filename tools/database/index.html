@@ -1335,11 +1335,9 @@ const TABS = {
 				{ key: "class", label: "Class", type: "select", empty: true, options: () => (((data.classes || {}).classes) || []).map(c => [c.id, c.name]), help: "Each class shows its trees (in Order) on the class page." },
 				{ key: "order", label: "Order (1–3)", type: "int" },
 				{ key: "color", label: "Colour", type: "color" },
-				{ key: "rows", label: "Rows (tiers)", type: "int", help: "Tier 1 is the top row; lower tiers usually need points spent above." },
-				{ key: "cols", label: "Columns", type: "int" },
 				{ key: "description", label: "Description", type: "textarea", wide: true },
 			]],
-			["Skills (click a cell to add or edit one)", [
+			["Skills (click to edit, drag to move)", [
 				{ key: "nodes", label: "", type: "skillnodes", wide: true },
 			]],
 		],
@@ -2991,50 +2989,96 @@ function flattenCommands(list, depth, out) {
 const SKILL_STATS = [["attack", "Attack"], ["spell_power", "Spell power"], ["armor", "Armour"], ["block", "Block"], ["bonus_health", "Max health"], ["bonus_mana", "Max mana"], ["crit_chance", "Crit chance (%)"], ["move_speed", "Move speed (%)"], ["stamina", "Max stamina"]];
 let skillPick = {};  // tree id -> selected node id
 function skillTreeEditor(tree) {
+	// Saturn-style: the tree as a constellation (row 0 at the bottom, growing up). Click a skill
+	// to edit it, drag it to move it (half steps), "+ Skill" adds one.
 	if (!Array.isArray(tree.nodes)) tree.nodes = [];
 	const box = el("div", { className: "skilltree" });
-	const rows = Math.max(1, tree.rows | 0), cols = Math.max(1, tree.cols | 0);
-	const grid = el("div");
-	grid.style.cssText = `display:grid;grid-template-columns:repeat(${cols},minmax(90px,1fr));gap:8px;margin-bottom:12px`;
-	const at = (r, c) => tree.nodes.find(n => n.row === r && n.col === c);
+	const color = tree.color || "#c9a25a";
+	const CELL = 78;
+	const nodes = tree.nodes;
+	const maxX = Math.max(4, ...nodes.map(n => +n.col || 0)), maxY = Math.max(2, ...nodes.map(n => +n.row || 0));
+	const W = (maxX + 2) * CELL, H = (maxY + 2) * CELL;
+	const pos = n => [(+n.col || 0) * CELL + CELL / 2, (maxY + 1 - (+n.row || 0)) * CELL + CELL / 2];
+	const ns = "http://www.w3.org/2000/svg";
+	const svg = document.createElementNS(ns, "svg");
+	svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+	svg.setAttribute("class", "sk-ed-map");
+	svg.style.cssText = `width:100%;max-height:420px;background:#141826;border-radius:10px;margin-bottom:10px;touch-action:none`;
+	for (let x = 0; x <= maxX + 1; x++) for (let y = 0; y <= maxY + 1; y++) {
+		const c = document.createElementNS(ns, "circle");
+		c.setAttribute("cx", x * CELL + CELL / 2); c.setAttribute("cy", (maxY + 1 - y) * CELL + CELL / 2); c.setAttribute("r", 2);
+		c.setAttribute("fill", "rgba(255,255,255,.12)");
+		svg.appendChild(c);
+	}
+	for (const n of nodes) for (const pid of n.requires || []) {
+		const p = nodes.find(m => m.id === pid);
+		if (!p) continue;
+		const [x1, y1] = pos(p), [x2, y2] = pos(n), l = document.createElementNS(ns, "line");
+		Object.entries({ x1, y1, x2, y2 }).forEach(([k, v]) => l.setAttribute(k, v));
+		l.setAttribute("stroke", "rgba(255,255,255,.28)"); l.setAttribute("stroke-width", 3);
+		svg.appendChild(l);
+	}
 	const picked = skillPick[tree.id];
-	for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-		const n = at(r, c);
-		const cell = el("button", { textContent: n ? (n.name || n.id) + (n.max_rank > 1 ? "  0/" + n.max_rank : "") : "+", title: n ? n.description || "" : "Add a skill here (tier " + (r + 1) + ")" });
-		cell.style.cssText = "min-height:54px;white-space:normal;border-radius:8px;" + (n ? `border:2px solid ${tree.color || "#c9a25a"};` : "opacity:.45;border:1px dashed #666;") + (n && n.id === picked ? "background:#3a3324;" : "");
-		if (n && (n.requires || []).length) cell.textContent += "  ↑";
-		cell.onclick = () => {
-			if (!n) {
-				let k = 1; while (tree.nodes.some(x => x.id === tree.id + "_" + k)) k++;
-				const node = { id: tree.id + "_" + k, name: "New Skill", description: "", icon: "", row: r, col: c, max_rank: 1, cost: 1, min_level: 1, points_above: r * 3, requires: [], effect: "stat", stat: "attack", per_rank: 1, ability: "", key: "" };
-				tree.nodes.push(node);
-				skillPick[tree.id] = node.id;
-			} else skillPick[tree.id] = n.id;
-			changed(true);
-		};
-		grid.appendChild(cell);
+	for (const n of nodes) {
+		const [x, y] = pos(n), g = document.createElementNS(ns, "g");
+		g.style.cursor = "grab";
+		const sel = n.id === picked;
+		g.innerHTML = `<circle cx="${x}" cy="${y}" r="${sel ? 20 : 15}" fill="${color}" stroke="${sel ? "#fff" : "rgba(0,0,0,.4)"}" stroke-width="${sel ? 3 : 2}"/>` +
+			`<text x="${x}" y="${y - 24}" fill="#e9e2d2" font-size="13" text-anchor="middle">${String(n.name || n.id).replace(/[&<>]/g, "")}</text>` +
+			((n.max_rank || 1) > 1 ? `<text x="${x}" y="${y + 32}" fill="#9ea3b6" font-size="11" text-anchor="middle">×${n.max_rank}</text>` : "");
+		// Drag to move (snaps to half steps); a click without moving picks it.
+		g.addEventListener("pointerdown", ev => {
+			ev.preventDefault();
+			g.setPointerCapture(ev.pointerId);
+			const pt = svg.createSVGPoint();
+			const toGrid = e => { pt.x = e.clientX; pt.y = e.clientY; const p = pt.matrixTransform(svg.getScreenCTM().inverse()); return [Math.max(0, Math.round(((p.x - CELL / 2) / CELL) * 2) / 2), Math.max(0, Math.round(((maxY + 1) - (p.y - CELL / 2) / CELL) * 2) / 2)]; };
+			const start = [n.col, n.row];
+			let moved = false;
+			g.onpointermove = e => {
+				const [cx, cy] = toGrid(e);
+				if (cx !== n.col || cy !== n.row) { moved = true; n.col = cx; n.row = cy; const [nx, ny] = pos(n); g.setAttribute("transform", `translate(${nx - x},${ny - y})`); }
+			};
+			g.onpointerup = () => {
+				g.onpointermove = g.onpointerup = null;
+				skillPick[tree.id] = n.id;
+				if (moved && nodes.some(o => o !== n && o.col === n.col && o.row === n.row)) { n.col = start[0]; n.row = start[1]; }
+				changed(true);
+			};
+		});
+		svg.appendChild(g);
 	}
-	box.appendChild(grid);
-	const node = tree.nodes.find(n => n.id === skillPick[tree.id]);
-	if (!node) {
-		box.appendChild(el("div", { className: "hint", textContent: "Click an empty cell to add a skill, or a skill to edit it. ↑ = needs another skill first." }));
-		return box;
-	}
+	box.appendChild(svg);
+	const tools = el("div", { className: "row" });
+	tools.style.cssText = "display:flex;gap:8px;margin-bottom:10px;align-items:center";
+	const add = el("button", { textContent: "+ Skill" });
+	add.onclick = () => {
+		let k = 1; while (nodes.some(x => x.id === tree.id + "_" + k)) k++;
+		let x = 0, y = 0;
+		while (nodes.some(m => m.col === x && m.row === y)) { x++; if (x > 5) { x = 0; y++; } }
+		const node = { id: tree.id + "_" + k, name: "New Skill", description: "", icon: "", row: y, col: x, max_rank: 1, cost: 1, min_level: 1, points_above: 0, requires: [], effect: "stat", stat: "attack", per_rank: 1, ability: "", key: "" };
+		nodes.push(node);
+		skillPick[tree.id] = node.id;
+		changed(true);
+	};
+	tools.append(add, el("span", { className: "hint", textContent: "Row 0 is the bottom: trees grow upwards. Click a skill to edit it, drag it to move it. A skill needs at least one rank in each skill it's linked from." }));
+	box.appendChild(tools);
+	const node = nodes.find(n => n.id === skillPick[tree.id]);
+	if (!node) return box;
 	const form = el("div", { className: "grid" });
 	const field = (label, input) => { const f = el("div", { className: "field" }); f.append(el("label", { textContent: label }), input); form.appendChild(f); return input; };
-	const txt = (k, label) => { const i = el("input", { type: "text", value: node[k] ?? "" }); i.oninput = () => { node[k] = k === "id" ? i.value.toLowerCase().replace(/[^a-z0-9_]/g, "_") : i.value; if (k === "id") skillPick[tree.id] = node[k]; changed(); }; return field(label, i); };
-	const num = (k, label, step = 1) => { const i = el("input", { type: "number", value: node[k] ?? 0, step }); i.oninput = () => { const v = parseFloat(i.value); if (!Number.isNaN(v)) { node[k] = v; changed(); } }; return field(label, i); };
-	txt("id", "ID");
+	const txt = (k, label) => { const i = el("input", { type: "text", value: node[k] ?? "" }); i.onchange = () => { const old = node.id; node[k] = k === "id" ? i.value.toLowerCase().replace(/[^a-z0-9_]/g, "_") : i.value; if (k === "id") { for (const o of nodes) o.requires = (o.requires || []).map(r => r === old ? node.id : r); skillPick[tree.id] = node[k]; } changed(true); }; return field(label, i); };
+	const num = (k, label, step = 1) => { const i = el("input", { type: "number", value: node[k] ?? 0, step }); i.onchange = () => { const v = parseFloat(i.value); if (!Number.isNaN(v)) { node[k] = v; changed(true); } }; return field(label, i); };
 	txt("name", "Name");
+	txt("id", "ID (saves remember skills by id)");
+	num("col", "Column (x, half steps)", 0.5);
+	num("row", "Row (y, 0 = bottom)", 0.5);
 	num("max_rank", "Ranks");
 	num("cost", "Points per rank");
-	num("min_level", "Character level needed");
+	num("min_level", "Level needed");
 	num("points_above", "Points spent in this tree first");
-	num("row", "Tier (row, from 0)");
-	num("col", "Column (from 0)");
 	const eff = selectOf([["stat", "Raises a stat"], ["ability", "Teaches an ability"], ["passive", "Passive (game code by key)"]], node.effect || "stat", false);
 	eff.onchange = () => { node.effect = eff.value; changed(true); };
-	field("Effect", eff);
+	field("Each rank", eff);
 	if ((node.effect || "stat") === "stat") {
 		const st = selectOf(SKILL_STATS, node.stat || "attack", false);
 		st.onchange = () => { node.stat = st.value; changed(); };
@@ -3053,21 +3097,20 @@ function skillTreeEditor(tree) {
 	ta.oninput = () => { node.description = ta.value; changed(); };
 	desc.append(el("label", { textContent: "Description" }), ta);
 	box.appendChild(desc);
-	// Needs: other skills in this tree.
 	const req = el("div", { className: "field wide" });
-	req.appendChild(el("label", { textContent: "Needs (other skills in this tree, at full rank)" }));
-	for (const other of tree.nodes) {
+	req.appendChild(el("label", { textContent: "Needs (a rank in each; drawn as lines)" }));
+	for (const other of nodes) {
 		if (other === node) continue;
 		const lab = el("label", { className: "check" });
 		const cb = el("input", { type: "checkbox", checked: (node.requires || []).includes(other.id) });
-		cb.onchange = () => { node.requires = (node.requires || []).filter(x => x !== other.id); if (cb.checked) node.requires.push(other.id); changed(); };
-		lab.append(cb, document.createTextNode(" " + (other.name || other.id) + "  (tier " + (other.row + 1) + ")"));
+		cb.onchange = () => { node.requires = (node.requires || []).filter(x => x !== other.id); if (cb.checked) node.requires.push(other.id); changed(true); };
+		lab.append(cb, document.createTextNode(" " + (other.name || other.id)));
 		lab.style.cssText = "display:inline-flex;gap:4px;margin-right:12px";
 		req.appendChild(lab);
 	}
 	box.appendChild(req);
 	const rm = el("button", { textContent: "Delete this skill" });
-	rm.onclick = () => { tree.nodes = tree.nodes.filter(n => n !== node); for (const n of tree.nodes) n.requires = (n.requires || []).filter(x => x !== node.id); delete skillPick[tree.id]; changed(true); };
+	rm.onclick = () => { tree.nodes = nodes.filter(n => n !== node); for (const n of tree.nodes) n.requires = (n.requires || []).filter(x => x !== node.id); delete skillPick[tree.id]; changed(true); };
 	box.appendChild(rm);
 	return box;
 }

@@ -523,7 +523,7 @@ func _title_page() -> Control:
 
 
 func _new_game() -> void:
-	_look = (Database.appearance.get("default", {}) as Dictionary).duplicate()
+	_look = Database.base_look()  # appearance default + the Base Character NPC
 	_pronouns = String(_look.get("pronouns", "he"))
 	_look.erase("pronouns")
 	_pronouns_touched = false
@@ -1126,8 +1126,13 @@ func _placement_box(part: String, sideways: String) -> VBoxContainer:
 	reset.text = "Reset"
 	reset.custom_minimum_size.y = 26
 	reset.pressed.connect(func() -> void:
+		# Back to the Base Character's placement for this part (or none).
 		var all: Dictionary = (_look.get("placement", {}) as Dictionary).duplicate(true)
-		all.erase(part)
+		var base: Dictionary = Database.base_look().get("placement", {})
+		if base.has(part):
+			all[part] = (base[part] as Dictionary).duplicate()
+		else:
+			all.erase(part)
 		_look["placement"] = all
 		_refresh_creator()
 		_shot = "face"
@@ -1194,7 +1199,7 @@ func _randomize() -> void:
 		if randf() < 0.12:
 			extras.append(String(o.get("id", "")))
 	_look["extras"] = extras
-	_look["placement"] = {}
+	_look["placement"] = (Database.base_look().get("placement", {}) as Dictionary).duplicate(true)
 	_shot = "full"
 	_apply_look()
 

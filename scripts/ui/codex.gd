@@ -11,13 +11,14 @@ extends CanvasLayer
 const PANEL := Color(0.075, 0.068, 0.09, 0.97)
 const PAGE := Color(0.12, 0.11, 0.14, 1.0)
 const ACCENT := Color(1.0, 0.85, 0.45)
-const PAGES := [["character", "Character"], ["quests", "Quests"], ["spells", "Spells"], ["skills", "Skills"],
+const PAGES := [["character", "Character"], ["backpack", "Backpack"], ["quests", "Quests"], ["spells", "Spells"], ["skills", "Skills"],
 	["achievements", "Achievements"], ["lore", "Lore"], ["settings", "Settings"]]
 
 var settings: SettingsMenu
 var quest_log: QuestLog
 var skill_window: SkillWindow
 var spellbook: Spellbook
+var character_window: CharacterWindow  # the backpack + gear, shown as the Backpack page
 var targeting: Node
 
 var _window: PanelContainer
@@ -80,6 +81,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.is_action_pressed("spellbook"):
 			close() if _current == "spells" else show_page("spells")
 			get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("inventory"):
+			close() if _current == "backpack" else show_page("backpack")
+			get_viewport().set_input_as_handled()
 		return
 	if GameSettings.menu_open:
 		return
@@ -88,6 +92,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("spellbook"):
 		open("spells")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("inventory"):
+		open("backpack")
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("menu"):
 		open()
@@ -225,6 +232,8 @@ func show_page(id: String) -> void:
 			_embed(skill_window)
 		"spells":
 			_embed(spellbook)
+		"backpack":
+			_embed(character_window)
 		"settings":
 			if settings and _settings_tabs == null:
 				_settings_tabs = settings.call("take_tabs")

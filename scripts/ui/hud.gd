@@ -371,6 +371,7 @@ func _build_hotbar() -> void:
 	_spellbook = Spellbook.new(_combat, _inventory)
 	add_child(_spellbook)
 	_codex.spellbook = _spellbook
+	_codex.character_window = _character_window
 	var quest_log := QuestLog.new()
 	add_child(quest_log)
 	_codex.quest_log = quest_log

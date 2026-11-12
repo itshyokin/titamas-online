@@ -271,8 +271,23 @@ func appearance_option(list: String, id: String) -> Dictionary:
 
 ## Turns a saved look (ids and "#rrggbb" colours, see data/appearance.json "default")
 ## into what CharacterModel.apply_appearance() needs.
+## The look a new character starts from: appearance.json "default" with the NPC
+## "base_character" (Database → NPCs → Base Character) laid over it (its non-empty choices,
+## face placement included).
+func base_look() -> Dictionary:
+	var look: Dictionary = (appearance.get("default", {}) as Dictionary).duplicate(true)
+	var base: Dictionary = npc("base_character").get("look", {})
+	for k: String in base:
+		var v = base[k]
+		if v is String and v == "":
+			continue
+		look[k] = v.duplicate(true) if v is Dictionary or v is Array else v
+	return look
+
+
 func resolve_appearance(look: Dictionary) -> Dictionary:
-	var d: Dictionary = appearance.get("default", {})
+	# Choices left empty fall back to the Base Character (then appearance.json "default").
+	var d: Dictionary = base_look()
 	# A missing or empty choice ("(none)" in the Database) means the default.
 	var get := func(key: String) -> String:
 		var v := String(look.get(key, ""))
