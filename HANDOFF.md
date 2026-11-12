@@ -136,7 +136,11 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Campfires (Campfires/VillageCampfire near the start, PlainsCampfire in the Singed Plains; scenes/world/campfire.tscn): Interact = it becomes where you wake, and rest 2/4/6/8 h (6+ rested and cured, 8+ Well rested buff, less = Tired). Dying: "Wait for help" (a follower comes and revives you) or "Return to camp". Companions now finish enemies except the one you've targeted. Database → Player → Campfires and falling; statuses well_rested / tired.
 - Seats: scenes/world/seat_chair / seat_stool / seat_log / seat_bench (three placed round the village campfire). Interact to sit; move to stand. Followers sit near a lit fire or in a safe area after you stand still 4 s and do their Database "Resting in camp" activity (Katrina eats, Orrin reads, Maelis drinks, Wren warms her hands).
 
+## Waiting on the owner's decision
+- **Rename the Hearthstone** (Blizzard's trademark). Owner picks the new name; then Claude renames the item, its Database fields, messages and the `use_hearth` wording, keeping old saves working (item id mapped).
+
 ## Backlog (agreed, not started)
+- Owner may replace Claude-made art with their own: effect sprites (`tools/art/make_effect_sprites.py`), item/status/ability glyph icons (drawn in code), face parts and anime faces (`tools/art/make_face_parts.py`, `make_anime_face.py`), eyes, grass card; and the synthesised sounds/music. Same file names = drop-in replacements. Until then, list them on Steam's AI disclosure to be safe.
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
 - Icicles on branches in snow (needs a small icicle model or sprite).
 - Wet rain look: more saturation, darker colours, drips from trees.
@@ -158,7 +162,7 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Effect sprites on the ground are hidden by tall grass standing on them.
 - Snow isn't in any region's weather list yet (owner's choice which regions get it).
 - Cover map: roofs need collision to count (visual-only meshes don't keep rain out); tree canopies have none, so rain falls through trees (a small dry ring shows at each trunk). It reaches 24 m from the camera: covered floors further away than that look wet.
-- Credits: the second Vincent Freelance hair collection ("FREE 21 Realtime man Hairstyles collection") has no link yet.
+- Credits: the second Vincent Freelance hair collection ("FREE 21 Realtime man Hairstyles collection", same creator, Sketchfab) has no link yet: owner to find it (Sketchfab downloads / likes) and check it says CC-BY.
 - The shield's bone name was fixed in the data (`mixamorig_LeftForeArm`); it needs **Rebuild** in Body Models to take effect.
 - Blue Cloak is in the starting backpack for new characters only.
 - Not checkable in Claude's test renderer (verify in the editor): decals (blood on slopes, leaves, cloud shadows), SSAO, the finisher kill-cam.
