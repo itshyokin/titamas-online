@@ -748,6 +748,8 @@ func _update_action(delta: float) -> void:
 	if not _hit_done and _time >= _current.hit_time:
 		_hit_done = true
 		_land(_current)
+		if _current == null:
+			return  # the blow bounced off (a guarding golem, a wall): the action ended
 
 	if _time >= _current.recovery_time:
 		if _queued:

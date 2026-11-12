@@ -22,7 +22,9 @@ func _ready() -> void:
 	mesh = q
 	_mat = ShaderMaterial.new()
 	_mat.shader = SHADER
-	_mat.render_priority = 100
+	# First of the see-through things: it redraws a copy of the solid scene, so anything
+	# see-through drawn before it (nameplates, target rings, spell effects) would vanish.
+	_mat.render_priority = Material.RENDER_PRIORITY_MIN
 	material_override = _mat
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	extra_cull_margin = 16384.0
