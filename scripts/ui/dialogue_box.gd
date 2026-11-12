@@ -17,6 +17,10 @@ extends CanvasLayer
 ## choices use the dark panel. Text types out with a soft tick (player.json "dialogue":
 ## chars_per_second, tick_sound, tick_every, tick_db; each speaker gets their own pitch).
 ##
+## A speaker with a character model moves their mouth while their line types out and
+## can show a mood per line (`moods`, CharacterModel.mood); talking to someone close
+## brings in the over-the-shoulder TalkCamera.
+##
 ## Lines can use {player} (the character's name) and the player's pronouns:
 ## {they} {them} {their} {theirs} {themself} (he/him/his..., she/her/hers..., they/them...).
 
@@ -53,10 +57,13 @@ var _is_bubble := -1  # style in use (-1 = not set yet)
 var _tick: AudioStreamPlayer
 var _ticked := 0
 var _cps := CHARS_PER_SECOND
+var _moods: Array = []
+var _model: CharacterModel  # the speaker's face (talking mouth, moods)
 
 
-static func open(from: Node, speaker: String, title: String, lines: Array, on_done: Callable, choices: Array = []) -> DialogueBox:
+static func open(from: Node, speaker: String, title: String, lines: Array, on_done: Callable, choices: Array = [], moods: Array = []) -> DialogueBox:
 	var box := DialogueBox.new()
+	box._moods = moods
 	box._lines = lines.map(func(l: Variant) -> String: return DialogueBox.fill(String(l), from))
 	box._on_done = on_done
 	box._choices = choices
@@ -66,6 +73,10 @@ static func open(from: Node, speaker: String, title: String, lines: Array, on_do
 	box._name.visible = speaker != ""
 	box._anchor = DialogueBox._anchor_of(from) if speaker != "" else null
 	box._tick.pitch_scale = 0.85 + float(absi(hash(speaker)) % 1000) / 1000.0 * 0.35 if speaker != "" else 1.0
+	box._model = DialogueBox.model_of(box._anchor) if box._anchor else null
+	if box._model:
+		var player := from.get_tree().get_first_node_in_group("player") as Node3D
+		TalkCamera.engage(player, box._anchor, box._settings())
 	if box._lines.is_empty():
 		# Just choices (an event's choice with no text before it).
 		box._lines = [""]
@@ -86,6 +97,15 @@ static func _anchor_of(from: Node) -> Node3D:
 	if node != null and "_visual" in node and node.get("_visual") is Node3D:
 		node = node.get("_visual")
 	return node as Node3D
+
+
+## The CharacterModel of a speaker (an NPC, the player, an event's NPC model), or null.
+static func model_of(node: Node) -> CharacterModel:
+	if node == null or not is_instance_valid(node):
+		return null
+	if node is CharacterModel:
+		return node as CharacterModel
+	return node.find_child("Character", true, false) as CharacterModel
 
 
 ## Swaps in the player's name and pronouns.
@@ -189,6 +209,9 @@ func _ready() -> void:
 
 func _show_line() -> void:
 	_text.text = _lines[_index]
+	if is_instance_valid(_model):
+		_model.mood = String(_moods[_index]) if _index < _moods.size() else ""
+		_model.talking = _lines[_index] != ""
 	_shown = 0.0
 	_ticked = 0
 	_text.visible_characters = 0
@@ -210,6 +233,8 @@ func _process(delta: float) -> void:
 		_tick_sound()
 		if _shown >= _text.get_total_character_count():
 			_text.visible_characters = -1
+	if is_instance_valid(_model) and _model.talking and (_text.visible_characters < 0 or _choosing):
+		_model.talking = false
 
 
 ## A tick every few letters while the text types out (not on spaces).
@@ -298,8 +323,15 @@ func _show_choices() -> void:
 		b.text = String(_choices[i][0])
 		b.custom_minimum_size = Vector2(150, 38)
 		b.pressed.connect(_choose.bind(i))
+		# Already asked (a looping choice): greyed out.
+		b.disabled = (_choices[i] as Array).size() > 2 and bool(_choices[i][2])
 		_choice_row.add_child(b)
-	(_choice_row.get_child(0) as Button).grab_focus.call_deferred()
+	var first := 0
+	for i in _choice_row.get_child_count():
+		if not (_choice_row.get_child(i) as Button).disabled:
+			first = i
+			break
+	(_choice_row.get_child(first) as Button).grab_focus.call_deferred()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
@@ -313,18 +345,27 @@ func _choice_input(event: InputEvent) -> void:
 		_finish()
 	elif event.is_action_pressed("move_left") or event.is_action_pressed("ui_left"):
 		get_viewport().set_input_as_handled()
-		(buttons[posmod(focused - 1, buttons.size())] as Button).grab_focus()
+		_step_focus(buttons, focused, -1)
 	elif event.is_action_pressed("move_right") or event.is_action_pressed("ui_right"):
 		get_viewport().set_input_as_handled()
-		(buttons[posmod(focused + 1, buttons.size())] as Button).grab_focus()
+		_step_focus(buttons, focused, 1)
 	elif event.is_action_pressed("jump") or event.is_action_pressed("interact") or event.is_action_pressed("attack") and not event is InputEventMouseButton:
 		get_viewport().set_input_as_handled()
 		_choose(maxi(focused, 0))
 
 
+## Moves the focus to the next choice that isn't greyed out.
+func _step_focus(buttons: Array, from: int, dir: int) -> void:
+	for k in range(1, buttons.size() + 1):
+		var b := buttons[posmod(from + dir * k, buttons.size())] as Button
+		if not b.disabled:
+			b.grab_focus()
+			return
+
+
 ## Runs choice i; shows its reply line if it gave one, otherwise closes.
 func _choose(i: int) -> void:
-	if not _choosing:
+	if not _choosing or (_choices[i] as Array).size() > 2 and bool(_choices[i][2]):
 		return
 	_choosing = false
 	_choice_row.visible = false
@@ -340,6 +381,10 @@ func _choose(i: int) -> void:
 
 
 func _finish() -> void:
+	if is_instance_valid(_model):
+		_model.talking = false
+		_model.mood = ""
+	TalkCamera.release()
 	closed_at = Time.get_ticks_msec()
 	is_open = false
 	GameSettings.menu_open = false

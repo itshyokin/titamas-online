@@ -460,6 +460,21 @@
 			"name": "Anime: shout",
 			"texture": "res://assets/characters/face/anime_mouth_shout.png",
 			"tint": "none"
+		},
+		{
+			"id": "mouth_talk_small",
+			"name": "Open (small)",
+			"texture": "res://assets/characters/face/mouth_talk_small.png"
+		},
+		{
+			"id": "mouth_talk_wide",
+			"name": "Open (talking)",
+			"texture": "res://assets/characters/face/mouth_talk_wide.png"
+		},
+		{
+			"id": "mouth_open_wide",
+			"name": "Open wide",
+			"texture": "res://assets/characters/face/mouth_open_wide.png"
 		}
 	],
 	"brows": [
@@ -628,5 +643,89 @@
 			"tall": 0.2,
 			"forward": 0.0015
 		}
+	},
+	"face_moods": {
+		"happy": {
+			"name": "Happy",
+			"mouth": "smile",
+			"mouth_anime": "anime_mouth_smile",
+			"brows_y": 0.25,
+			"squint": 0.3
+		},
+		"angry": {
+			"name": "Angry",
+			"mouth": "frown",
+			"mouth_anime": "anime_mouth_shout",
+			"brows": "angry",
+			"brows_anime": "anime_brows_angry",
+			"squint": 0.35,
+			"extras_anime": [
+				"anime_anger"
+			]
+		},
+		"sad": {
+			"name": "Sad",
+			"mouth": "frown",
+			"mouth_anime": "anime_mouth_wavy",
+			"brows": "worried",
+			"brows_anime": "anime_brows_sad",
+			"squint": 0.3,
+			"extras_anime": [
+				"anime_tears"
+			]
+		},
+		"shy": {
+			"name": "Shy",
+			"mouth": "thin",
+			"mouth_anime": "anime_mouth_wavy",
+			"brows": "worried",
+			"brows_anime": "anime_brows_sad",
+			"squint": 0.25,
+			"extras": [
+				"blush"
+			],
+			"extras_anime": [
+				"anime_blush"
+			]
+		},
+		"surprised": {
+			"name": "Surprised",
+			"mouth": "mouth_open_wide",
+			"mouth_anime": "anime_mouth_o",
+			"brows_y": 0.7,
+			"squint": 0.0
+		},
+		"smug": {
+			"name": "Smug",
+			"mouth": "smirk",
+			"mouth_anime": "anime_mouth_cat",
+			"brows_y": -0.15,
+			"squint": 0.4
+		},
+		"nervous": {
+			"name": "Nervous",
+			"mouth": "thin",
+			"mouth_anime": "anime_mouth_wavy",
+			"brows": "worried",
+			"brows_anime": "anime_brows_sad",
+			"squint": 0.1,
+			"extras_anime": [
+				"anime_sweat"
+			]
+		}
+	},
+	"face_motion": {
+		"talk_frames": [
+			"mouth_talk_small",
+			"mouth_talk_wide"
+		],
+		"talk_frames_anime": [
+			"anime_mouth_o",
+			"anime_mouth_grin"
+		],
+		"talk_frame_seconds": 0.1,
+		"blink_every_min": 2.0,
+		"blink_every_max": 5.5,
+		"blink_seconds": 0.14
 	}
 }

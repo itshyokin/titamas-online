@@ -8,7 +8,11 @@ extends SceneTree
 ##   maple_tree (+ _small, _tall, _autumn), pine_tree_small / pine_tree_tall (the Blender
 ##     pine_tree stays as it is), and dead versions: birch_tree_dead, maple_tree_dead,
 ##     pine_tree_dead (bare branches)
+##   herb_redberry_bush, herb_blueleaf_bush, herb_goldenbloom, herb_lavender — herbs to pick
+##     (data/harvest.json "pick" kinds): the parts that get picked are meshes named
+##     fruit_* (HerbPatch hides them until they grow back)
 ## Run: godot --headless --path . --script res://tools/godot/make_props.gd
+##      (add `-- herbs` to build only the herbs)
 ## Re-running overwrites them (different random shapes only if SEED changes).
 
 const OUT := "res://assets/props/"
@@ -19,6 +23,10 @@ var rng := RandomNumberGenerator.new()
 
 func _initialize() -> void:
 	rng.seed = SEED
+	if "herbs" in OS.get_cmdline_user_args():
+		_herbs()
+		quit()
+		return
 	var bark := _material("bark", _bark_texture(), Color(1, 1, 1))
 	var leaves := _material("leaves", _noise_texture(Color(0.62, 0.78, 0.32), Color(0.42, 0.62, 0.2)), Color(1, 1, 1))
 	var leaves_dark := _material("leaves", _noise_texture(Color(0.32, 0.52, 0.2), Color(0.2, 0.38, 0.14)), Color(1, 1, 1))
@@ -50,6 +58,123 @@ func _initialize() -> void:
 	_save("maple_tree_dead", _maple(7.5, 0.38, dead_bark, null, true))
 	_save("pine_tree_dead", _pine(10.0, 0.24, dead_bark, null, true))
 	quit()
+
+
+# --- Herbs ----------------------------------------------------------------------------
+
+func _herbs() -> void:
+	rng.seed = SEED + 101
+	var leaves := _material("leaves", _noise_texture(Color(0.3, 0.5, 0.2), Color(0.2, 0.36, 0.14)), Color(1, 1, 1))
+	var stems := _material("stems", null, Color(0.32, 0.5, 0.22))
+	var berries := _material("fruit_berries", null, Color(0.82, 0.1, 0.14))
+	var blue := _material("fruit_blue_leaves", _noise_texture(Color(0.32, 0.55, 0.95), Color(0.2, 0.36, 0.78)), Color(1, 1, 1))
+	var yellow := _material("fruit_flowers", null, Color(0.98, 0.8, 0.2))
+	var centre := _material("flower_centre", null, Color(0.62, 0.36, 0.1))
+	var violet := _material("fruit_lavender", _noise_texture(Color(0.62, 0.42, 0.85), Color(0.45, 0.28, 0.7)), Color(1, 1, 1))
+	_save("herb_redberry_bush", _herb_bush(0.65, leaves, berries, "berries"))
+	_save("herb_blueleaf_bush", _herb_bush(0.7, leaves, blue, "leaves"))
+	_save("herb_goldenbloom", _herb_flowers(stems, yellow, centre))
+	_save("herb_lavender", _herb_lavender(stems, violet))
+
+
+## A low bush with clusters of berries or blue leaves on its outside.
+func _herb_bush(size: float, leaves: Material, fruit: Material, what: String) -> Node3D:
+	var root := Node3D.new()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in 5:
+		var a := rng.randf() * TAU
+		var r := size * rng.randf_range(0.0, 0.5)
+		var s := size * rng.randf_range(0.42, 0.62)
+		_blob(st, Vector3(cos(a) * r, s * 0.65, sin(a) * r), Vector3(s, s * 0.75, s))
+	_add_mesh(root, st, leaves)
+	var fst := SurfaceTool.new()
+	fst.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for c in 7:
+		# A cluster: a few berries (or leaves) bunched together on the surface.
+		var a := rng.randf() * TAU
+		var y := size * rng.randf_range(0.35, 1.05)
+		var r := size * 0.82 * sin(acos(clampf((y - size * 0.6) / size, -1, 1)))
+		var centre := Vector3(cos(a) * r, y, sin(a) * r)
+		var out := Vector3(cos(a), 0.3, sin(a)).normalized()
+		for k in (5 if what == "berries" else 4):
+			var off := Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * size * 0.07
+			if what == "berries":
+				_blob(fst, centre + off + out * size * 0.04, Vector3.ONE * size * 0.055, 0, 0.1)
+			else:
+				# A flat pointed leaf facing outwards.
+				var p := centre + off + out * size * 0.05
+				var side := out.cross(Vector3.UP).normalized() * size * 0.07
+				var tip := p + (out * 0.6 + Vector3.UP * 0.8).normalized() * size * 0.22
+				_quad(fst, p - side * 0.2, p + side, tip, p - side, Vector2(0, 1), Vector2(1, 0.5), Vector2(0.5, 0), Vector2(0, 0.5))
+				_quad(fst, p - side, tip, p + side, p - side * 0.2, Vector2(0, 0.5), Vector2(0.5, 0), Vector2(1, 0.5), Vector2(0, 1))
+	_add_mesh(root, fst, fruit)
+	return root
+
+
+## A clump of thin stems with five-petal yellow flowers on top.
+func _herb_flowers(stems: Material, petals: Material, middle: Material) -> Node3D:
+	var root := Node3D.new()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var pst := SurfaceTool.new()
+	pst.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var cst := SurfaceTool.new()
+	cst.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in 9:
+		var a := rng.randf() * TAU
+		var r := rng.randf_range(0.0, 0.22)
+		var base := Vector3(cos(a) * r, 0, sin(a) * r)
+		var h := rng.randf_range(0.28, 0.5)
+		var top := base + Vector3(rng.randf_range(-0.06, 0.06), h, rng.randf_range(-0.06, 0.06))
+		_cylinder(st, base, top, 0.012, 0.008, 4)
+		# A leaf halfway up.
+		var mid := base.lerp(top, 0.4)
+		_quad(st, mid, mid + Vector3(0.08, 0.05, 0.02), mid + Vector3(0.12, 0.1, 0.0), mid + Vector3(0.05, 0.07, -0.02), Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0))
+		for p in 5:
+			var pa := p * TAU / 5.0 + rng.randf() * 0.3
+			var dir := Vector3(cos(pa), 0.25, sin(pa)).normalized()
+			var side := dir.cross(Vector3.UP).normalized() * 0.022
+			var tip := top + dir * 0.06
+			_quad(pst, top, top + dir * 0.03 + side, tip, top + dir * 0.03 - side, Vector2(0.5, 1), Vector2(1, 0.5), Vector2(0.5, 0), Vector2(0, 0.5))
+			_quad(pst, top, top + dir * 0.03 - side, tip, top + dir * 0.03 + side, Vector2(0.5, 1), Vector2(0, 0.5), Vector2(0.5, 0), Vector2(1, 0.5))
+		_blob(cst, top + Vector3.UP * 0.008, Vector3.ONE * 0.016, 0, 0.0)
+	_add_mesh(root, st, stems)
+	# The centres go with the petals when picked: both are fruit.
+	var c := cst.commit()
+	_add_mesh(root, pst, petals)
+	var mi := MeshInstance3D.new()
+	c.surface_set_material(0, middle)
+	mi.mesh = c
+	mi.name = "fruit_flower_centres"
+	root.add_child(mi)
+	mi.owner = root
+	return root
+
+
+## A clump of tall thin stalks topped with violet lavender spikes.
+func _herb_lavender(stems: Material, spikes: Material) -> Node3D:
+	var root := Node3D.new()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var sst := SurfaceTool.new()
+	sst.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in 14:
+		var a := rng.randf() * TAU
+		var r := rng.randf_range(0.0, 0.16)
+		var base := Vector3(cos(a) * r, 0, sin(a) * r)
+		var lean := Vector3(cos(a), 0, sin(a)) * rng.randf_range(0.05, 0.16)
+		var h := rng.randf_range(0.45, 0.7)
+		var top := base + lean + Vector3.UP * h
+		_cylinder(st, base, top, 0.008, 0.005, 3)
+		# The flower spike: little buds stacked up the last part of the stalk.
+		for k in 6:
+			var t := 0.72 + k * 0.05
+			var p := base.lerp(top, t) + Vector3.UP * 0.02
+			_blob(sst, p, Vector3(0.018, 0.026, 0.018) * (1.0 - k * 0.08), 0, 0.12)
+	_add_mesh(root, st, stems)
+	_add_mesh(root, sst, spikes)
+	return root
 
 
 # --- Shapes (built Y-up, turned Z-up when saved) ------------------------------------

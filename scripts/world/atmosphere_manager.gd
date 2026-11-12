@@ -55,6 +55,13 @@ var _night_check := 0.0
 ## Seconds music takes to cross between regions (and day / night).
 @export var music_fade := 4.0
 var _bed_index := 0
+var _music_now: Array = [null, -80.0, ""]
+var _music_check := 0.0
+var _music_cfg := {}
+var _music_cfg_at := -100000
+var _fight_seen := -100000
+var _fight_kind := ""
+var _haze: HeatHaze
 var _wind: AudioStreamPlayer
 
 # Property name -> how it's applied.
@@ -62,7 +69,7 @@ const FIELDS := [
 	"fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
 	"shadow_strength", "shadow_color", "shadow_fill", "night_sky_top", "night_sky_horizon", "night_fog", "stars",
-	"sky_panorama_strength", "saturation", "contrast", "brightness", "god_rays",
+	"sky_panorama_strength", "saturation", "contrast", "brightness", "god_rays", "heat_haze",
 	"grass_base", "grass_tip", "grass_density", "grass_height", "grass_ground_match",
 ]
 
@@ -137,6 +144,7 @@ func _process(delta: float) -> void:
 	if current == null:
 		return
 	_update_wind(delta)
+	_update_music(delta)
 	# Day turning to night (or back): the night sounds and music fade in.
 	_night_check += delta
 	if _night_check > 2.0:
@@ -235,6 +243,13 @@ func _apply() -> void:
 			_env.volumetric_fog_anisotropy = 0.7
 			_env.volumetric_fog_length = 80.0
 			_env.volumetric_fog_sky_affect = 0.0
+	if not Engine.is_editor_hint():
+		if _haze == null:
+			_haze = HeatHaze.new()
+			_haze.name = "HeatHaze"
+			add_child(_haze)
+		var day: float = smoothstep(0.35, 0.8, cycle.daylight) if cycle else 1.0
+		_haze.strength = float(v.get("heat_haze", 0.0)) * day
 	if _sky:
 		_sky.set_shader_parameter("top_color", v.sky_top)
 		_sky.set_shader_parameter("horizon_color", v.sky_horizon)
@@ -327,8 +342,92 @@ func _change_ambience(region: RegionAtmosphere, fade: float) -> void:
 	var loop := region.ambient_loop_night if night and region.ambient_loop_night else region.ambient_loop
 	_ambience_night = night
 	_crossfade(_beds, loop, region.ambient_volume_db, fade, true)
-	var tune := region.music_night if night and region.music_night else region.music
-	_crossfade(_music, tune, region.music_volume_db, maxf(fade, music_fade), false)
+	_music_now = _pick_music()
+	_crossfade(_music, _music_now[0], _music_now[1], maxf(fade, music_fade), false)
+
+
+# --- Music: region, music zones, battle -----------------------------------------------
+
+## What should play now: [stream, volume_db, kind] — the boss or battle music in a fight
+## (data/world.json "music"), else the music zone the player stands in, else the region's.
+func _pick_music() -> Array:
+	var cfg := _music_settings()
+	var fight := _fight_state()
+	if fight == "boss" and String(cfg.get("boss", "")) != "" and ResourceLoader.exists(String(cfg.boss)):
+		return [load(String(cfg.boss)), float(cfg.get("boss_volume_db", -9.0)), "boss"]
+	if fight != "" and String(cfg.get("combat", "")) != "" and ResourceLoader.exists(String(cfg.combat)):
+		return [load(String(cfg.combat)), float(cfg.get("combat_volume_db", -10.0)), "combat"]
+	var night := _is_night()
+	var best: MusicZone = null
+	if _target:
+		for z in get_tree().get_nodes_in_group("music_zones"):
+			var zone := z as MusicZone
+			if zone and zone.music and zone.contains(_target.global_position) and (best == null or zone.radius < best.radius):
+				best = zone
+	if best:
+		return [best.music_night if night and best.music_night else best.music, best.volume_db, "zone"]
+	if current == null:
+		return [null, -80.0, ""]
+	return [current.music_night if night and current.music_night else current.music, current.music_volume_db, "region"]
+
+
+## "boss" / "combat" while an enemy is fighting the player or a companion (and for a few
+## seconds after: "linger"), else "".
+func _fight_state() -> String:
+	if _target == null:
+		return ""
+	var state := ""
+	for n in get_tree().get_nodes_in_group("combatants"):
+		# Enemies (not named here: Enemy uses autoloads). AI: 0 idle, 4 return, 5 dead.
+		if not n is Node3D or not "enemy_id" in n or not n.is_inside_tree() or not (n as Node3D).is_visible_in_tree():
+			continue
+		var e := n as Node3D
+		var t = e.get("target")
+		var ai := int(e.get("ai"))
+		if t == null or not is_instance_valid(t) or ai in [0, 4, 5]:
+			continue
+		if not (t == _target or t.is_in_group("followers") or t.is_in_group("player")):
+			continue
+		if e.global_position.distance_to(_target.global_position) > 60.0:
+			continue
+		var db := get_node_or_null("/root/Database")
+		var boss := db != null and bool((db.call("enemy", String(e.get("enemy_id"))) as Dictionary).get("boss", false))
+		state = "boss" if boss else (state if state == "boss" else "combat")
+	var now := Time.get_ticks_msec()
+	if state != "":
+		_fight_seen = now
+		_fight_kind = state if state == "boss" or _fight_kind != "boss" else _fight_kind
+		if state == "boss":
+			_fight_kind = "boss"
+		return _fight_kind
+	if now - _fight_seen < int(float(_music_settings().get("linger", 5.0)) * 1000.0):
+		return _fight_kind
+	_fight_kind = ""
+	return ""
+
+
+func _music_settings() -> Dictionary:
+	var now := Time.get_ticks_msec()
+	if now - _music_cfg_at > 1000:
+		_music_cfg_at = now
+		var d = DataFiles.read("res://data/world.json")
+		_music_cfg = (d as Dictionary).get("music", {}) if d is Dictionary else {}
+	return _music_cfg
+
+
+func _update_music(delta: float) -> void:
+	_music_check -= delta
+	if _music_check > 0.0:
+		return
+	_music_check = 0.5
+	var want := _pick_music()
+	if want[0] == _music_now[0] and is_equal_approx(float(want[1]), float(_music_now[1])):
+		return
+	var cfg := _music_settings()
+	var into_fight := String(want[2]) in ["combat", "boss"]
+	var fade := float(cfg.get("fade_in", 1.2)) if into_fight else float(cfg.get("fade_out", 4.0))
+	_music_now = want
+	_crossfade(_music, want[0], want[1], fade, false)
 
 
 func _is_night() -> bool:

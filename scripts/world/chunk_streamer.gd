@@ -501,6 +501,11 @@ func _place_prop(holder: Node3D, entry) -> void:
 		var hide_on := String(entry.get("hide_switch", "")) if entry is Dictionary else ""
 		if show_on != "" or hide_on != "":
 			prop.add_child(SwitchGate.new(show_on, hide_on))
+		# Herbs (harvest.json kinds with "pick"): pickable with Interact, grow back.
+		var hk := PropLibrary.harvest_kind(String(prop.get_meta("prop_name", entry.name)))
+		var kd = (PropLibrary.harvest_data().get("kinds", {}) as Dictionary).get(hk, {}) if hk != "" else {}
+		if kd is Dictionary and bool(kd.get("pick", false)):
+			prop.add_child(HerbPatch.make(hk, kd))
 	holder.add_child(prop)
 
 

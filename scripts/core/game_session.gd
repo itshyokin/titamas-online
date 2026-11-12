@@ -245,6 +245,14 @@ func save_game() -> void:
 	saved.emit()
 
 
+## Seconds this character has been played, counting the time since the last save.
+func play_seconds() -> float:
+	var t := float(data.get("play_time", 0.0))
+	if _play_started > 0:
+		t += (Time.get_ticks_msec() - _play_started) / 1000.0
+	return t
+
+
 func _write() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SAVE_DIR))
 	data["saved"] = Time.get_unix_time_from_system()

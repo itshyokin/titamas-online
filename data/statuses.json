@@ -89,6 +89,15 @@
 			"icon": "fire",
 			"color": "#ff7a2a",
 			"damage_per_second": 5
+		},
+		{
+			"id": "sprained",
+			"name": "Sprained",
+			"description": "Hurt by a fall: limping until it eases.",
+			"kind": "ailment",
+			"icon": "heal",
+			"color": "#e07a5a",
+			"injured": true
 		}
 	]
 }

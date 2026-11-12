@@ -112,6 +112,14 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Golems: Enemies/Golem (16, 2, 160) and Enemies/GildedGolem (2, 2, 172) in overworld_test: walk within 7 m. Move them / use scenes/enemies/golem.tscn and gold_golem.tscn in the east region.
 - The ladder's show_switch was lost when chunk_1_2 props were re-exported: set the custom property `show_switch` = `troll_defeated` on the ladder object in Blender so it survives exports.
 
+## To test in the editor (done 11 Nov late, batch Y)
+- Talk to Katrina: camera glides over your shoulder; her mouth moves while text types; she blinks. Events: Show text → "Speaker's face" (mood); Show choices → Loop + "these answers move on".
+- Fall from a height that hurts: limping (Sprained) for 5 s.
+- Singed Plains: desert wind/night loops, hawk/sand/lava sounds, heat haze in the distance (Database → Regions → Heat haze), its own music. Battle music when enemies fight you, boss music for the Troll; Monolith music near the start (Areas/MonolithMusic: move it onto the real Monolith).
+- Music is synthesised (tools/audio/make_music.py) — ask for changes per track (tempo, instruments, mood).
+- Herbs: import assets/props/herb_*.glb into Blender, paint them with the new Paint Props brush; press E to pick; they regrow (berries 1 game day, lavender 3).
+- Blender: Paint Props box (select props, press Paint Props, drag; Shift+drag erases).
+
 ## Backlog (agreed, not started)
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
 - Icicles on branches in snow (needs a small icicle model or sprite).

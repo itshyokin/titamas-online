@@ -27,8 +27,8 @@
 			"grass_height": 0.8,
 			"grass_tip": "#8cc74d",
 			"id": "starting_region",
-			"music": "res://assets/audio/music/saturn_field.ogg",
-			"music_night": "res://assets/audio/music/saturn_night.ogg",
+			"music": "res://assets/audio/music/forest.ogg",
+			"music_night": "res://assets/audio/music/forest_night.ogg",
 			"music_volume_db": -12.0,
 			"night_fog": "#0f1424",
 			"night_sky_horizon": "#12172e",
@@ -240,18 +240,48 @@
 			"contrast": 1.08,
 			"brightness": 1.0,
 			"god_rays": 0.35,
-			"grass_density": 1.6,
+			"grass_density": 0.6,
 			"grass_height": 0.8,
 			"grass_ground_match": 0.85,
 			"grass_base": "#5a6a2a",
 			"grass_tip": "#c2c46a",
-			"ambient_loop": "",
-			"ambient_loop_night": "",
-			"music": "",
-			"music_night": "",
+			"ambient_loop": "res://assets/audio/ambience/desert_day_loop.ogg",
+			"ambient_loop_night": "res://assets/audio/ambience/desert_night_loop.ogg",
+			"music": "res://assets/audio/music/singed_plains.ogg",
+			"music_night": "res://assets/audio/music/singed_plains_night.ogg",
 			"music_volume_db": -12.0,
 			"ambient_volume_db": -8.0,
-			"wind_volume_db": -20.0
+			"wind_volume_db": -20.0,
+			"heat_haze": 0.55,
+			"random_sounds": [
+				{
+					"distance": 90.0,
+					"max_minutes": 5.0,
+					"min_minutes": 2.0,
+					"only": "day",
+					"sound": "res://assets/audio/ambience/hawk_cry.ogg",
+					"volume_db": -8.0,
+					"when": "random"
+				},
+				{
+					"distance": 25.0,
+					"max_minutes": 3.0,
+					"min_minutes": 1.0,
+					"only": "",
+					"sound": "res://assets/audio/ambience/sand_gust.ogg",
+					"volume_db": -6.0,
+					"when": "random"
+				},
+				{
+					"distance": 45.0,
+					"max_minutes": 4.0,
+					"min_minutes": 1.5,
+					"only": "",
+					"sound": "res://assets/audio/ambience/lava_rumble.ogg",
+					"volume_db": -8.0,
+					"when": "random"
+				}
+			]
 		}
 	]
 }
