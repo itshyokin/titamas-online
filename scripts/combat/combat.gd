@@ -101,6 +101,10 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 	if safe_between(source, target):
 		_safe_notice(source, target)
 		return 0.0
+	# Warded (statuses.json "invulnerable"): nothing gets through.
+	if ts.status_flag("invulnerable"):
+		_warded(target)
+		return 0.0
 	# Co-op: some targets are worked out on another machine (see Net).
 	if target.has_method("forward_hit") and target.forward_hit(source, power, stagger, knockback):
 		if source is PlayerController:
@@ -155,6 +159,17 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 			else:
 				ts.add_status(String(a.get("status", "")), float(a.get("seconds", 8.0)), source)
 	return amount
+
+
+static var _ward_sound: AudioStream = null
+
+
+static func _warded(target: Node3D) -> void:
+	if _ward_sound == null and ResourceLoader.exists("res://assets/audio/spells/ward_block.ogg"):
+		_ward_sound = load("res://assets/audio/spells/ward_block.ogg")
+	if _ward_sound:
+		play_sound(target, _ward_sound, -6.0, randf_range(0.9, 1.1))
+	FloatingText.spawn(target, "Warded", Color(0.6, 0.8, 1.0), 0.8)
 
 
 ## Safe areas (SafeArea boxes): no blow lands between the two sides while the one on the

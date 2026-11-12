@@ -7,7 +7,7 @@
 			"role": "Melee · Versatile",
 			"color": "#c8553d",
 			"icon": "sword",
-			"description": "A trained soldier who can handle any weapon. Fighters stand at the front, trade blows with sword and shield, and carry a bow and a little magic for when the enemy keeps its distance.",
+			"description": "A trained soldier who can handle any weapon. Fighters stand at the front, trade blows with sword and shield, carry a bow for when the enemy keeps its distance, and fly into a Rage when it counts.",
 			"strengths": [
 				"Sturdy in close combat",
 				"Uses every weapon type",
@@ -23,7 +23,8 @@
 				"bow",
 				"crossbow"
 			],
-			"cast_time_scale": 1.0
+			"cast_time_scale": 1.0,
+			"extra_spells": []
 		},
 		{
 			"id": "rogue",
@@ -46,22 +47,37 @@
 				"crossbow",
 				"pistol"
 			],
-			"cast_time_scale": 1.0
+			"cast_time_scale": 1.0,
+			"extra_spells": []
 		},
 		{
 			"id": "mage",
 			"name": "Mage",
-			"available": false,
+			"available": true,
 			"role": "Magic · Ranged",
 			"color": "#4a6ac8",
 			"icon": "staff",
-			"description": "Coming in a later update.",
-			"strengths": [],
+			"description": "A student of the elements. Mages stay back and cast: fire to start with, and in time lightning, ice, water, shields and stranger things. Their spells cast faster than anyone else's.",
+			"strengths": [
+				"Strong at range",
+				"Fast spellcasting",
+				"Fire from the start"
+			],
 			"starting_kit": {},
 			"proficient": [
 				"dagger"
 			],
-			"cast_time_scale": 0.75
+			"cast_time_scale": 0.75,
+			"extra_spells": [
+				"chain_lightning",
+				"frost_bolt",
+				"tidal_wave",
+				"burst_quake",
+				"ward",
+				"blink",
+				"heal",
+				"dark_cloud"
+			]
 		},
 		{
 			"id": "druid",
@@ -78,7 +94,8 @@
 				"hammer",
 				"bow"
 			],
-			"cast_time_scale": 1.0
+			"cast_time_scale": 1.0,
+			"extra_spells": []
 		}
 	]
 }

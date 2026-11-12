@@ -29,7 +29,7 @@ const ACHIEVEMENTS := "res://data/achievements.json"
 ## Ability fields that need converting (everything else is a plain number/string/bool).
 const ABILITY_COLORS := ["color", "projectile_color"]
 const ABILITY_ENUMS := {
-	"delivery": ["melee", "projectile", "heal_over_time", "area", "buff"],
+	"delivery": ["melee", "projectile", "heal_over_time", "area", "buff", "chain", "heal", "cone", "ground"],
 	"projectile_style": ["bolt", "arrow", "bullet"],
 }
 const ABILITY_FIELDS := [

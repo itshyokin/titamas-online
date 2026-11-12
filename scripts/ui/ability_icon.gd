@@ -99,6 +99,33 @@ func _draw() -> void:
 			draw_line(p.call(0.14, 0.7), p.call(0.86, 0.7), ink, s * 0.05)
 			draw_arc(p.call(0.5, 0.7), s * 0.22, PI, TAU, 12, Color(ink, 0.8), s * 0.04)
 			draw_arc(p.call(0.5, 0.7), s * 0.36, PI, TAU, 14, Color(ink, 0.5), s * 0.035)
+		"rage":
+			var pts := PackedVector2Array()
+			for i in 14:
+				var a := -PI * 0.5 + TAU * i / 14.0
+				pts.append(p.call(0.5, 0.52) + Vector2(cos(a), sin(a)) * s * (0.36 if i % 2 == 0 else 0.17))
+			draw_colored_polygon(pts, ink)
+			draw_circle(p.call(0.5, 0.52), s * 0.1, deep)
+		"wave":
+			for i in 3:
+				var y := 0.38 + i * 0.16
+				var pts := PackedVector2Array()
+				for k in 9:
+					var x := 0.14 + k * 0.09
+					pts.append(p.call(x, y + sin(k * 1.4 + i) * 0.05))
+				draw_polyline(pts, Color(ink, 1.0 - i * 0.25), s * 0.07)
+			draw_arc(p.call(0.62, 0.34), s * 0.16, PI * 0.9, PI * 2.1, 10, ink, s * 0.07)
+		"teleport":
+			draw_arc(p.call(0.5, 0.78), s * 0.3, 0.0, TAU, 18, Color(ink, 0.7), s * 0.05)
+			for i in 3:
+				var x := 0.34 + i * 0.16
+				draw_line(p.call(x, 0.72), p.call(x, 0.2 + (i % 2) * 0.12), Color(ink, 0.9 - i * 0.15), s * 0.06)
+			draw_circle(p.call(0.5, 0.18), s * 0.08, ink)
+		"cloud":
+			for q in [[0.34, 0.5, 0.18], [0.54, 0.4, 0.22], [0.68, 0.54, 0.16], [0.48, 0.58, 0.18]]:
+				draw_circle(p.call(q[0], q[1]), s * q[2], deep.darkened(0.3))
+			for q in [[0.4, 0.5], [0.6, 0.5]]:
+				draw_circle(p.call(q[0], q[1]), s * 0.05, Color(1.0, 0.3, 0.3))
 		_:
 			var font := get_theme_default_font()
 			var letter := ability.display_name.left(1).to_upper()

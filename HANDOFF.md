@@ -13,6 +13,12 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 1. **Your own art over Claude's** (art_sheets/, see its README): eyes, brows, noses, mouths, face extras, effects, item icons, ability/status/Codex icons. Draw over a sheet, save, run `python3 tools/art/sheets.py split`. (The Singed Plains region is done.)
 2. **Menus**: menu sounds and the Codex top tabs with icons are in (12 Nov). Keep checking every menu in the editor (title screen, creator, Codex pages, loot, dialogue, death choice, map) and list anything cramped or broken. Done 12 Nov: backpack 60 slots (12 × 5) + bigger doll; creator split into body/hair (left) and Face tabs Features / Eyes / Extras (right); Body Type 2 (reshaped body; tune in Database → Body Models). To check: class page attributes need scrolling to reach Vitality/Spirit; Body Type 2 with every outfit piece (gear cut from the body should follow; rigid pieces like the shield and hats don't move).
 
+## To test in the editor (done 12 Nov: classes and mage spells)
+- Each class starts with one skill from its tree's starting node (free, in hotbar box 1; hearthstone in 0): Fighter **Rage** (glows red 10 s, double damage), Rogue **Stealth** (now 10 s), Mage **Firebolt**. The Mage can now be chosen. Old saves: the old Firebolt/Mend boxes are cleared and the class skill goes in box 1. The other skill trees and nodes were removed (Frost Edge, Burst Quake, Cleave and Riposte are still in the game; add them back as nodes when you want them).
+- New spells, all in the Mage's Spellbook for testing (Database → Classes → Mage → "Also knows"; drag them onto the hotbar): Chain Lightning (needs a target, jumps to 3 more), Frost Bolt (slows; 20 % chance to freeze 3 s; bosses/big beasts/golems can't be frozen), Tidal Wave (cone in front, knocks back/down), Burst Quake, Ward (no damage 4 s, bubble), Blink (click the ground within 20 m, then the cast bar; red marker = can't go there: too far, steep, water, no room, out of sight; Esc cancels), Heal (instant chunk), Dark Cloud (click a spot: 8 s, blinds everyone inside incl. companions (toggle "Blinds friends too"); you see red/grey/green outlines of whoever is inside).
+- To check: the lightning, wave and cloud look in Forward+, the outlines through the cloud, frozen enemies' ice coat, Rage's glow, the sounds (assets/audio/spells, `tools/audio/make_spell_sounds.py`).
+- The new ability/status icons are pictures in assets/icons/abilities and statuses but not on the art sheet yet: if you haven't started drawing on art_sheets/icons.png, run `python3 tools/art/sheets.py make` to add them (it rewrites every sheet from the game's pictures).
+
 ## To test in the editor (done 10 Nov, batch L: safe areas + indoor weather)
 - Test level: the village is a safe area (green box `Areas/VillageSafeArea`). Lead the bats or bandits to it: they should give up at the edge and walk home; "You are safe here." / "You are no longer safe." show on the way in and out; blows either way do nothing while you stand inside (the training dummy still takes hits).
 - Its off switch is `village_attacked`: an event with Switch → village_attacked ON makes the village unsafe until it's turned off again.
@@ -143,7 +149,7 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Mimic enemies disguised as treasure chests (use the loot animation).
 - Rivers: splashes when wading through shallow streams; fish visible; fishing.
 - Minimap (corner), separate from the M region map.
-- Mage class: still "coming soon" in the creator; needs a starting kit and skill tree (its 75 % cast time is already in).
+- Mage: a staff weapon, robes (owner modelling), and turning the test spells into skill-tree nodes.
 - Boss intro (arena entrance, music cue, name card).
 - Stealth sneak-walk animation; paired finisher animations (Mixamo).
 - Co-op: party list doesn't show other players; beasts sync roughly.

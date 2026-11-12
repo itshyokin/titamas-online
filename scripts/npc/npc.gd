@@ -278,6 +278,12 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = -0.5
+	if _frozen_tick():
+		velocity.x = _push.x
+		velocity.z = _push.z
+		_push = _push.move_toward(Vector3.ZERO, 16.0 * delta)
+		move_and_slide()
+		return
 	_scan -= delta
 	if _scan <= 0.0 and ai in [AI.IDLE, AI.RETURN, AI.FOLLOW]:
 		_scan = 0.3
@@ -305,6 +311,7 @@ func _physics_process(delta: float) -> void:
 			move = _downed(delta)
 		AI.TALK, AI.DEAD:
 			pass
+	move *= stats.status_product("move_scale")  # Chilled
 	_walk.x = lerpf(_walk.x, move.x, 10.0 * delta)
 	_walk.z = lerpf(_walk.z, move.z, 10.0 * delta)
 	velocity.x = _walk.x + _push.x
@@ -317,6 +324,20 @@ func _physics_process(delta: float) -> void:
 	_animate()
 	_update_prompt()
 	_update_head(delta)
+
+
+var _was_frozen := false
+
+
+## Frozen solid (status flag "frozen"): stands still with its animation stopped.
+func _frozen_tick() -> bool:
+	var frozen := ai != AI.DEAD and stats.status_flag("frozen")
+	if frozen != _was_frozen:
+		_was_frozen = frozen
+		if character:
+			character.set_speed(0.0 if frozen else 1.0)
+		_walk = Vector3.ZERO
+	return frozen
 
 
 func _look_for_threats() -> void:

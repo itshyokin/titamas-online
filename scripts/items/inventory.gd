@@ -611,7 +611,7 @@ func _queue_save() -> void:
 
 
 func to_dict() -> Dictionary:
-	return {"bag": bag.duplicate(true), "equipped": equipped.duplicate(), "gold": gold, "hotbar": hotbar.duplicate(), "hotbar_version": 2,
+	return {"bag": bag.duplicate(true), "equipped": equipped.duplicate(), "gold": gold, "hotbar": hotbar.duplicate(), "hotbar_version": 3,
 		"active_weapon": active_weapon}
 
 
@@ -670,6 +670,14 @@ func load_character() -> bool:
 			if hotbar[2] == "item:minor_healing_potion" and hotbar[3] == "item:bandage":
 				hotbar[2] = ""
 				hotbar[3] = ""
+		if int(data.get("hotbar_version", 1)) < 3:
+			# The old default bar gave every class Firebolt and Mend in boxes 1 and 2; now
+			# box 1 holds the class's starting skill (offered again by PlayerProgress).
+			if hotbar[0] == "ability:firebolt" and hotbar[1] == "ability:mend":
+				hotbar[0] = ""
+				hotbar[1] = ""
+				if GameSession.active():
+					GameSession.data.erase("hotbar_offered")
 	else:
 		# Older save: the default bar, plus whatever was in the old quick slots.
 		_default_hotbar()

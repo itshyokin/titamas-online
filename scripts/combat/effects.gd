@@ -191,16 +191,13 @@ static func flash(node: Node, color := Color(1, 1, 1), seconds := 0.12, strength
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.albedo_color = Color(color, strength)
 	mat.no_depth_test = false
-	var meshes: Array = node.find_children("*", "MeshInstance3D", true, false)
-	for mi: MeshInstance3D in meshes:
-		if mi.is_visible_in_tree() and mi.material_overlay == null:
-			mi.material_overlay = mat
+	# On top of any status look (StatusLook layers), not instead of it.
+	StatusLook.set_layer(node, "flash", mat)
 	var tween := node.create_tween()
 	tween.tween_property(mat, "albedo_color:a", 0.0, seconds).set_ease(Tween.EASE_IN)
 	tween.tween_callback(func() -> void:
-		for m in meshes:  # untyped: some may have been freed meanwhile
-			if is_instance_valid(m) and (m as MeshInstance3D).material_overlay == mat:
-				(m as MeshInstance3D).material_overlay = null)
+		if is_instance_valid(node) and (StatusLook.body_of(node).get_meta("overlay_layers", {}) as Dictionary).get("flash") == mat:
+			StatusLook.set_layer(node, "flash", null))
 
 
 ## Rising golden motes (soft circles and little diamonds) around a combatant for
@@ -468,10 +465,12 @@ static func enchant_glow(weapon: Node3D, color: Color) -> Node3D:
 	var meshes: Array = weapon.find_children("*", "MeshInstance3D", true, false)
 	for mi: MeshInstance3D in meshes:
 		mi.material_overlay = sheen
+		mi.set_meta("own_overlay", true)  # body looks (StatusLook) leave it alone
 	holder.tree_exiting.connect(func() -> void:
 		for mi in meshes:
 			if is_instance_valid(mi) and (mi as MeshInstance3D).material_overlay == sheen:
-				(mi as MeshInstance3D).material_overlay = null)
+				(mi as MeshInstance3D).material_overlay = null
+				(mi as MeshInstance3D).remove_meta("own_overlay"))
 	var wisps := GPUParticles3D.new()
 	wisps.amount = 28
 	wisps.lifetime = 0.8

@@ -533,8 +533,8 @@ func _update_sprint(moving: bool, delta: float, swimming := false) -> void:
 ## `in_air`: allowed while airborne too (the Hearthstone, so a player stuck "falling" on
 ## some geometry can always get home).
 func start_action(move_scale := 0.0, in_air := false) -> bool:
-	if knocked_down:
-		return false  # on the ground: nothing until back up
+	if knocked_down or stats.status_flag("frozen"):
+		return false  # on the ground / frozen solid: nothing until free
 	if state == State.ACTION:
 		action_move_scale = move_scale
 		return true

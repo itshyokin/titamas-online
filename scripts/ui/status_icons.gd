@@ -187,5 +187,12 @@ class StatusIcon:
 			"moon":
 				draw_circle(c, s * 0.75, ink)
 				draw_circle(c + Vector2(s * 0.35, -s * 0.25), s * 0.6, Color(0.1, 0.12, 0.2, 1.0))
+			"rage":
+				# A clenched burst: a jagged star.
+				var pts := PackedVector2Array()
+				for i in 14:
+					var a := -PI * 0.5 + TAU * i / 14.0
+					pts.append(c + Vector2(cos(a), sin(a)) * s * (0.95 if i % 2 == 0 else 0.45))
+				draw_colored_polygon(pts, ink)
 			_:
 				draw_line(c + Vector2(-s * 0.7, s * 0.7), c + Vector2(s * 0.7, -s * 0.7), ink, 3.0)

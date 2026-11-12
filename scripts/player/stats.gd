@@ -73,6 +73,8 @@ func _ready() -> void:
 	mana = max_mana
 	stamina = max_stamina
 	emit_all()
+	# Rage glows, Frozen ices over, Ward puts a bubble round them (statuses.json "look").
+	statuses_changed.connect(func() -> void: StatusLook.refresh(get_parent(), self))
 
 
 func _process(delta: float) -> void:
@@ -94,6 +96,9 @@ func add_status(id: String, seconds: float, source: Node = null) -> void:
 	var d := status_data(id)
 	if d.is_empty():
 		push_warning("Stats: no status '%s' in data/statuses.json" % id)
+		return
+	var owner_node := get_parent()
+	if owner_node and owner_node.has_method("resists_status") and owner_node.resists_status(id):
 		return
 	var had := statuses.has(id)
 	var e: Dictionary = statuses.get(id, {"left": 0.0, "duration": 0.0})

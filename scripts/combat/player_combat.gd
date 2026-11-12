@@ -398,6 +398,10 @@ func _aim_animation() -> String:
 func _unhandled_input(event: InputEvent) -> void:
 	if GameSettings.menu_open:
 		return
+	if _picking and event.is_action_pressed("attack"):
+		_confirm_pick()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("attack"):
 		# Clicking an enemy targets it (that click doesn't attack; the next one does).
 		if event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE \
@@ -443,7 +447,13 @@ func use_hotbar(i: int) -> void:
 		return
 	var entry := String(inventory.hotbar[i])
 	if entry.begins_with("ability:"):
-		cast(Database.ability(entry.substr(8)))
+		var ab := Database.ability(entry.substr(8))
+		if _picking:
+			var same := _picking == ab
+			_end_pick()
+			if same:
+				return  # pressed again: put it away
+		cast(ab)
 	elif entry.begins_with("item:"):
 		if stats.is_dead():
 			return
@@ -465,6 +475,7 @@ func _physics_process(delta: float) -> void:
 			_set_combat(false)
 	_update_reload(delta)
 	_update_aim_point()
+	_update_pick()
 	# The upper body goes back to following the legs once nothing holds it.
 	if character.upper_role() != "" and _charging == null and not _aim_pose \
 			and (_current == null or player.state != PlayerController.State.ACTION):
@@ -605,7 +616,7 @@ func _start(ab: Ability, power: float, anim_start := 0.0) -> bool:
 	var target := _pick_target(ab, weapon_move)
 	# Nothing to shoot at: don't waste the arrow / shot / bolt. Aiming by hand (a weapon
 	# with auto-aim off, or while holding aim) still fires wherever the crosshair points.
-	if ab.delivery == Ability.Delivery.PROJECTILE and target == null \
+	if (ab.delivery == Ability.Delivery.PROJECTILE or ab.delivery == Ability.Delivery.CHAIN) and target == null \
 			and not (weapon_move and (is_manual_aim() or _aiming)) \
 			and float(_world_settings().get("require_target", 1.0)) >= 0.5:
 		notice.emit("No target")
@@ -659,6 +670,8 @@ func _base_gear_power(ab: Ability) -> float:
 	match ab.delivery:
 		Ability.Delivery.HEAL_OVER_TIME:
 			return stats.spell_power * 0.25
+		Ability.Delivery.HEAL:
+			return stats.spell_power * 1.5
 		_:
 			return stats.spell_power
 
@@ -679,7 +692,9 @@ func _pick_target(ab: Ability, weapon_move: bool) -> Node3D:
 			if weapon_move and is_manual_aim():
 				return targeting.target if targeting.is_locked() else null
 			return targeting.pick_for_attack(ab.reach)
-		Ability.Delivery.HEAL_OVER_TIME:
+		Ability.Delivery.CHAIN:
+			return targeting.pick_for_attack(ab.reach)
+		Ability.Delivery.HEAL_OVER_TIME, Ability.Delivery.HEAL:
 			return _friendly_target()
 		_:
 			return player
@@ -854,6 +869,17 @@ func _land(ab: Ability) -> void:
 			_land_area(ab)
 		Ability.Delivery.BUFF:
 			_land_buff(ab)
+		Ability.Delivery.CHAIN:
+			var first: Node3D = _target if _target and Combat.is_alive(_target) else null
+			MageSpells.chain(self, ab, _power, first, _hand_position(true))
+		Ability.Delivery.HEAL:
+			var who: Node3D = _target if _target and Combat.is_alive(_target) and not Combat.is_enemy_of(player, _target) else player
+			MageSpells.heal(self, ab, _power, who)
+		Ability.Delivery.CONE:
+			MageSpells.wave(self, ab, _power)
+		Ability.Delivery.GROUND:
+			MageSpells.ground(self, ab, _pick_point)
+			_clear_pick_marker()
 		Ability.Delivery.HEAL_OVER_TIME:
 			# Heals never go to an enemy: the targeted friend (follower, co-op player), else you.
 			var who: Node3D = _target if _target and Combat.is_alive(_target) and not Combat.is_enemy_of(player, _target) else player
@@ -1148,9 +1174,14 @@ func cast(ab: Ability) -> bool:
 	if stats.mana < ab.mana_cost:
 		notice.emit("Not enough mana")
 		return false
-	if ab.delivery == Ability.Delivery.PROJECTILE and targeting.pick_for_attack(ab.reach) == null:
+	if (ab.delivery == Ability.Delivery.PROJECTILE or ab.delivery == Ability.Delivery.CHAIN) and targeting.pick_for_attack(ab.reach) == null:
 		notice.emit("No target")
 		return false
+	# Teleports and clouds: pick the spot on the ground first (the click casts it).
+	if ab.delivery == Ability.Delivery.GROUND and not _pick_confirmed:
+		_begin_pick(ab)
+		return true
+	_pick_confirmed = false
 	if _current:
 		_finish_action()
 	if _blocking:
@@ -1185,13 +1216,16 @@ func _update_cast(delta: float) -> void:
 	if move_cancels_cast and _move_input().length() > 0.5:
 		_interrupt("Cancelled", false)
 		return
-	if targeting.has_target():
+	if _casting.delivery == Ability.Delivery.GROUND:
+		player.face_toward(_pick_point, delta)
+	elif targeting.has_target():
 		player.face_toward(targeting.target.global_position, delta)
 	if _cast_time >= _cast_len:
 		var ab := _casting
 		_end_cast()
 		player.end_action()
-		_start(ab, ab.power)
+		if not _start(ab, ab.power):
+			_clear_pick_marker()
 
 
 func _end_cast() -> void:
@@ -1313,6 +1347,93 @@ func bar_state() -> Dictionary:
 	if _reload_left > 0.0:
 		return {"name": "Reloading", "fraction": 1.0 - _reload_left / maxf(_reload_total, 0.01), "kind": "reload"}
 	return {}
+
+
+# --- Picking a spot on the ground (Blink, Dark Cloud) ----------------------------
+
+var _picking: Ability = null
+var _pick_confirmed := false
+var _pick_point := Vector3.ZERO
+var _pick_ok := false
+var _pick_why := ""
+var _pick_marker: MeshInstance3D = null
+
+
+## A GROUND spell waits for a click on the ground (attack); Esc or its key again puts it
+## away. The marker shows where it would go: its colour, red when it can't go there.
+func _begin_pick(ab: Ability) -> void:
+	_end_pick()
+	_clear_pick_marker()
+	_picking = ab
+	_pick_marker = SpellFX.ground_marker(MageSpells.ground_radius(ab))
+	Combat.world_root(player).add_child(_pick_marker)
+	_pick_marker.visible = false
+	HUD.notify(player, "%s: click the ground (Esc to cancel)" % ab.display_name, Color(0.85, 0.85, 1.0), 2.5)
+	_update_pick()
+
+
+func _end_pick() -> void:
+	if _picking == null:
+		return
+	_picking = null
+	_clear_pick_marker()
+
+
+func _clear_pick_marker() -> void:
+	if _pick_marker and is_instance_valid(_pick_marker):
+		_pick_marker.queue_free()
+	_pick_marker = null
+
+
+func _update_pick() -> void:
+	if _picking == null:
+		return
+	if stats.is_dead() or GameSettings.menu_open:
+		_end_pick()
+		return
+	var r := MageSpells.ground_point(self, _picking, _pick_screen_point())
+	_pick_ok = bool(r.get("ok", false))
+	_pick_why = String(r.get("why", ""))
+	if r.has("point"):
+		_pick_point = r.point
+		_pick_marker.visible = true
+		_pick_marker.global_position = _pick_point + Vector3.UP * 0.06
+		SpellFX.tint_marker(_pick_marker, _picking.projectile_color if _pick_ok else Color(1.0, 0.25, 0.2))
+	else:
+		_pick_marker.visible = false
+
+
+## Where the pointer is (the screen centre when the mouse is captured or on a controller).
+func _pick_screen_point() -> Vector2:
+	var vp := get_viewport()
+	if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
+		return vp.get_mouse_position()
+	return vp.get_visible_rect().size * 0.5
+
+
+func _confirm_pick() -> void:
+	_update_pick()
+	if not _pick_ok:
+		notice.emit(_pick_why if _pick_why != "" else "Can't go there")
+		UiSounds.play("error")
+		return
+	var ab := _picking
+	var marker := _pick_marker
+	_pick_marker = null  # stays up until the spell lands
+	_picking = null
+	_pick_confirmed = true
+	if not cast(ab):
+		_pick_confirmed = false
+		if marker:
+			marker.queue_free()
+		return
+	_pick_marker = marker
+	SpellFX.lock_marker(marker)
+
+
+## Spells: a spot is being picked for one.
+func is_picking() -> bool:
+	return _picking != null
 
 
 # --- Reloading -----------------------------------------------------------------
@@ -1505,7 +1626,10 @@ func _input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo or key.physical_keycode != KEY_ESCAPE:
 		return
-	if _casting or _channel or _charging:
+	if _picking:
+		_end_pick()
+		get_viewport().set_input_as_handled()
+	elif _casting or _channel or _charging:
 		_interrupt("Cancelled", false, false)
 		get_viewport().set_input_as_handled()
 	elif _aiming:
@@ -1515,6 +1639,8 @@ func _input(event: InputEvent) -> void:
 
 func _interrupt(reason: String, flinch := true, lockout := true) -> void:
 	var ab: Ability = _casting if _casting else (_charging if _charging else _current)
+	_end_pick()
+	_clear_pick_marker()
 	_stop_channel()
 	if _casting:
 		_end_cast()
@@ -1571,6 +1697,8 @@ func _set_combat(value: bool) -> void:
 
 
 func _cancel_all() -> void:
+	_end_pick()
+	_clear_pick_marker()
 	_stop_loop()
 	if _channel:
 		cast_interrupted.emit("Cancelled")

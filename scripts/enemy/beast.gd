@@ -162,8 +162,12 @@ func _physics_process(delta: float) -> void:
 	var g := _ground_below(global_position)
 	if g != INF:
 		_ground_y = g
+	if _frozen_tick(delta):
+		velocity.y = 0.0 if airborne else (velocity.y - gravity * delta if not is_on_floor() else -0.5)
+		move_and_slide()
+		return
 	_update_threat(delta)
-	var move := _ai_move(delta)
+	var move := _ai_move(delta) * stats.status_product("move_scale")
 	_walk.x = lerpf(_walk.x, move.x, 6.0 * delta)
 	_walk.z = lerpf(_walk.z, move.z, 6.0 * delta)
 	velocity.x = _walk.x + _push.x

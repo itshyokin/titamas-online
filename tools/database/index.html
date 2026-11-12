@@ -273,6 +273,9 @@ const isMelee = e => e.delivery === "melee";
 const isProjectile = e => e.delivery === "projectile";
 const isHeal = e => e.delivery === "heal_over_time";
 const isBuff = e => e.delivery === "buff";
+const isChain = e => e.delivery === "chain";
+const isCone = e => e.delivery === "cone";
+const isGround = e => e.delivery === "ground";
 // Effect sprite pictures: built-in ones first, then yours.
 const spriteOptions = () => (assets.sprites || []).slice().sort((a, b) => (a.includes("/custom/") - b.includes("/custom/")) || a.localeCompare(b))
 	.map(p => [p, (p.includes("/custom/") ? "Yours: " : "Built-in: ") + p.split("/").pop().replace(/\.png$/, "").replace(/_/g, " ")]);
@@ -425,9 +428,9 @@ const TABS = {
 			["General", [
 				{ key: "id", label: "ID", type: "text", help: "Used to refer to it (player loadout). Lowercase, no spaces." },
 				{ key: "display_name", label: "Name", type: "text" },
-				{ key: "delivery", label: "Type", type: "select", options: [["melee", "Melee swing"], ["projectile", "Projectile (bolt / arrow)"], ["heal_over_time", "Heal over time"], ["area", "Area around you (shockwave)"], ["buff", "Buff on yourself (status / weapon enchant)"]] },
+				{ key: "delivery", label: "Type", type: "select", options: [["melee", "Melee swing"], ["projectile", "Projectile (bolt / arrow)"], ["heal_over_time", "Heal over time"], ["area", "Area around you (shockwave)"], ["buff", "Buff on yourself (status / weapon enchant)"], ["chain", "Chain (lightning jumping between enemies)"], ["heal", "Heal at once"], ["cone", "Wave in front of you"], ["ground", "On a spot you click (teleport / cloud)"]] },
 				{ key: "color", label: "Button colour", type: "color" },
-				{ key: "icon", label: "Hotbar icon", type: "select", options: [["", "(first letter)"], ["slash", "Slash"], ["heavy", "Heavy blow"], ["arrow", "Arrow"], ["bullet", "Bullet"], ["fire", "Fire"], ["heal", "Heal"], ["frost", "Frost"], ["shield", "Shield"], ["lightning", "Lightning"], ["stealth", "Stealth"], ["quake", "Quake"]] },
+				{ key: "icon", label: "Hotbar icon", type: "select", options: [["", "(first letter)"], ["slash", "Slash"], ["heavy", "Heavy blow"], ["arrow", "Arrow"], ["bullet", "Bullet"], ["fire", "Fire"], ["heal", "Heal"], ["frost", "Frost"], ["shield", "Shield"], ["lightning", "Lightning"], ["stealth", "Stealth"], ["quake", "Quake"], ["rage", "Rage"], ["wave", "Wave"], ["teleport", "Teleport"], ["cloud", "Cloud"]] },
 				{ key: "technique", label: "Technique (not a spell)", type: "bool", help: "Silence doesn't stop it (Stealth, weapon enchants)." },
 				{ key: "cleaves", label: "Hits everyone in reach", type: "bool", help: "Melee: without this a swing hits only one enemy (the target, else the closest) unless the player has the Cleave skill." },
 				{ key: "description", label: "Description", type: "textarea", wide: true },
@@ -437,7 +440,7 @@ const TABS = {
 				{ key: "mana_cost", label: "Mana cost", type: "number", help: "Per charge level for spells." },
 				{ key: "cooldown", label: "Cooldown (s)", type: "number" },
 				{ key: "reach", label: "Reach / range (m)", type: "number" },
-				{ key: "arc", label: "Swing width (°)", type: "number", show: isMelee },
+				{ key: "arc", label: "Swing / wave width (°)", type: "number", show: e => isMelee(e) || isCone(e) },
 				{ key: "staggers", label: "Staggers enemies", type: "bool", help: "Heavy hit: interrupts attacks and spells." },
 				{ key: "applies", label: "Gives statuses on hit", type: "applies", wide: true, help: "Each with a chance (0–1) and how long. Statuses are in the Statuses tab." },
 				{ key: "knockback", label: "Knockback (m/s)", type: "number", help: "How hard a hit pushes the target back." },
@@ -466,6 +469,25 @@ const TABS = {
 				{ key: "enchant.color", label: "Weapon glow colour", type: "color" },
 				{ key: "enchant.applies", label: "Enchanted hits give", type: "applies", wide: true },
 			], isBuff],
+			["Chain", [
+				{ key: "chain.jumps", label: "Jumps", type: "int", def: 3, help: "How many more enemies it leaps to after the target." },
+				{ key: "chain.range", label: "Jump range (m)", type: "number", def: 8, help: "From one enemy to the next." },
+				{ key: "chain.falloff", label: "Power kept each jump", type: "number", def: 0.75, help: "0.75 = each jump hits for 75% of the one before." },
+			], isChain],
+			["Wave", [
+				{ key: "wave.seconds", label: "Seconds to reach the end", type: "number", def: 0.5 },
+				{ key: "wave.height", label: "Height (m)", type: "number", def: 1.6 },
+			], isCone],
+			["On a spot (click the ground first)", [
+				{ key: "ground.kind", label: "Does", type: "select", options: [["teleport", "Teleports you there"], ["cloud", "Dark cloud (blinds everyone inside)"]] },
+				{ key: "ground.radius", label: "Radius (m)", type: "number", def: 1, help: "Teleport: the size of the marker. Cloud: how big it is." },
+				{ key: "ground.arrive_sound", label: "Sound on arriving", type: "sound", show: e => (e.ground || {}).kind !== "cloud" },
+				{ key: "ground.seconds", label: "Lasts (s)", type: "number", def: 8, show: e => (e.ground || {}).kind === "cloud" },
+				{ key: "ground.status", label: "Status inside", type: "text", def: "darkness", help: "A status id from the Statuses tab, kept on everyone inside.", show: e => (e.ground || {}).kind === "cloud" },
+				{ key: "ground.blinds_allies", label: "Blinds friends too", type: "bool", def: true, show: e => (e.ground || {}).kind === "cloud" },
+				{ key: "ground.blinds_caster", label: "Blinds the caster", type: "bool", def: false, show: e => (e.ground || {}).kind === "cloud" },
+				{ key: "ground.outlines", label: "Caster sees outlines inside", type: "bool", def: true, help: "Coloured like the discs: hostile red, neutral grey, friendly green (Player → Discs).", show: e => (e.ground || {}).kind === "cloud" },
+			], isGround],
 			["Effect sprites (on top of the usual effects)", [
 				...fxFields("cast", "On the caster", "Shown at chest height: looping while a spell with a cast time is cast, or as a flash when an instant one goes off."),
 				...fxFields("projectile", "Flying with the projectile", "Replaces the glowing ball; always faces the camera."),
@@ -842,7 +864,7 @@ const TABS = {
 				{ key: "loadout.light_combo", label: "Bare-hands combo (in order)", type: "abilities", wide: true, help: "Weapons bring their own moves (Weapon Types tab)." },
 				{ key: "loadout.heavy_attack", label: "Bare-hands heavy (hold)", type: "ability" },
 				{ key: "loadout.ranged_attack", label: "Fallback ranged shot", type: "ability" },
-				{ key: "loadout.spells", label: "Spellbook (known spells)", type: "abilities", wide: true },
+				{ key: "loadout.spells", label: "Spellbook (known by every class)", type: "abilities", wide: true, help: "Usually empty: classes get theirs from their skill tree's starting node (and Classes → Also knows)." },
 				{ key: "hotbar", label: "Hotbar (boxes 1–10)", type: "hotbar", wide: true, help: "New characters start with this bar: spells, abilities and usable items (weapons don't go on the hotbar)." },
 			]],
 			["Thrown-away items", [
@@ -1200,6 +1222,7 @@ const TABS = {
 				{ key: "description", label: "Description", type: "textarea", wide: true },
 				{ key: "proficient", label: "Proficient with", type: "weapontypes", wide: true, help: "These weapon types hit 15% harder and swing, shoot and reload 10% faster." },
 				{ key: "cast_time_scale", label: "Spell cast time ×", type: "number", help: "0.75 = spells cast in 75% of the time (a 10 s spell takes 7.5 s)." },
+				{ key: "extra_spells", label: "Also knows (spellbook only)", type: "abilities", wide: true, help: "Known from the start but not put on the hotbar (drag them there from the Spellbook). The class's starting skill is the starting node in its skill tree." },
 			]],
 			["Starting kit (leave empty to use the Player tab's)", [
 				{ key: "starting_kit.gold", label: "Gold", type: "int" },
@@ -1418,7 +1441,7 @@ const TABS = {
 				{ key: "name", label: "Name", type: "text" },
 				{ key: "description", label: "What it does (tooltip)", type: "textarea", wide: true },
 				{ key: "kind", label: "Kind", type: "select", options: [["ailment", "Ailment"], ["debuff", "Debuff"], ["buff", "Buff"]] },
-				{ key: "icon", label: "Icon", type: "select", options: [["poison", "Drop (poison)"], ["blind", "Eye (blind)"], ["silence", "Mouth (silence)"], ["confuse", "Swirl (confuse)"], ["heal", "Cross (heal)"], ["frost", "Snowflake (frost)"], ["fire", "Flame"], ["shield", "Shield"], ["sword", "Sword"], ["stealth", "Hood (stealth)"], ["sun", "Sun (rested)"], ["moon", "Moon (tired)"]] },
+				{ key: "icon", label: "Icon", type: "select", options: [["poison", "Drop (poison)"], ["blind", "Eye (blind)"], ["silence", "Mouth (silence)"], ["confuse", "Swirl (confuse)"], ["heal", "Cross (heal)"], ["frost", "Snowflake (frost)"], ["fire", "Flame"], ["shield", "Shield"], ["sword", "Sword"], ["stealth", "Hood (stealth)"], ["sun", "Sun (rested)"], ["moon", "Moon (tired)"], ["rage", "Burst (rage)"]] },
 				{ key: "color", label: "Colour", type: "color" },
 			]],
 			["Effects", [
@@ -1430,6 +1453,13 @@ const TABS = {
 				{ key: "move_scale", label: "Movement speed × (1 = normal)", type: "number" },
 				{ key: "damage_scale", label: "Damage dealt × (1 = normal)", type: "number" },
 				{ key: "xp_scale", label: "Experience gained × (1 = normal)", type: "number" },
+				{ key: "frozen", label: "Frozen solid (can't move or act)", type: "bool", help: "Bosses and big beasts can't be frozen." },
+				{ key: "invulnerable", label: "Takes no damage from hits", type: "bool" },
+				{ key: "sightless", label: "Can't see (enemies lose track of you)", type: "bool" },
+			]],
+			["Look", [
+				{ key: "look", label: "Shows as", type: "select", options: [["", "(nothing)"], ["glow", "Glowing rim"], ["ice", "Icy coat"], ["bubble", "Bubble round them"]] },
+				{ key: "look_color", label: "Look colour", type: "color" },
 			]],
 		],
 	},
@@ -3276,6 +3306,11 @@ function skillTreeEditor(tree) {
 	num("cost", "Points per rank");
 	num("min_level", "Level needed");
 	num("points_above", "Points spent in this tree first");
+	const startLab = el("label", { className: "check" });
+	const startCb = el("input", { type: "checkbox", checked: !!node.starting });
+	startCb.onchange = () => { node.starting = startCb.checked; changed(true); };
+	startLab.append(startCb, document.createTextNode(" Starting skill (known from the start, free; its ability goes in hotbar box 1)"));
+	field("Starting", startLab);
 	const eff = selectOf([["stat", "Raises a stat"], ["ability", "Teaches an ability"], ["passive", "Passive (game code by key)"]], node.effect || "stat", false);
 	eff.onchange = () => { node.effect = eff.value; changed(true); };
 	field("Each rank", eff);

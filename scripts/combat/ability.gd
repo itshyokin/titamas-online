@@ -11,6 +11,10 @@ enum Delivery {
 	HEAL_OVER_TIME,  ## Heals the target (an ally, or yourself) in ticks.
 	AREA,            ## Around the caster: hits everyone within reach (Burst Quake).
 	BUFF,            ## On yourself: a status (Stealth) and/or a weapon enchant (Frost Edge).
+	CHAIN,           ## Lightning: hits the target, then jumps to enemies near it (data "chain").
+	HEAL,            ## Heals the target (an ally, or yourself) at once.
+	CONE,            ## A wave in front of you: hits everyone within reach and arc (data "wave").
+	GROUND,          ## Click a spot on the ground first (data "ground": teleport / cloud).
 }
 
 @export var id := ""

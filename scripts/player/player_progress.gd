@@ -262,7 +262,15 @@ func tree_of(id: String) -> Dictionary:
 
 
 func rank(id: String) -> int:
-	return int(skill_ranks.get(id, 0))
+	var r := int(skill_ranks.get(id, 0))
+	if r < 1 and is_starting(skill(id)):
+		return 1  # known from the start
+	return r
+
+
+## A class's starting skill (node "starting"): rank 1 for free, from the first moment.
+static func is_starting(n: Dictionary) -> bool:
+	return bool(n.get("starting", false))
 
 
 func points_total() -> int:
@@ -278,7 +286,8 @@ func points_spent(tree_id := "") -> int:
 			continue
 		if tree_id != "" and String(tree_of(id).get("id", "")) != tree_id:
 			continue
-		total += int(skill_ranks[id]) * int(n.get("cost", 1))
+		var paid := int(skill_ranks[id]) - (1 if is_starting(n) else 0)  # the first rank is free
+		total += maxi(paid, 0) * int(n.get("cost", 1))
 	return total
 
 
@@ -292,7 +301,7 @@ func cant_rank(id: String) -> String:
 	if n.is_empty():
 		return "Unknown skill"
 	if rank(id) >= int(n.get("max_rank", 1)):
-		return "Fully learned"
+		return "Known from the start" if is_starting(n) and int(n.get("max_rank", 1)) <= 1 else "Fully learned"
 	if level < int(n.get("min_level", 1)):
 		return "Needs level %d" % int(n.get("min_level", 1))
 	var above := int(n.get("points_above", 0))
@@ -311,7 +320,7 @@ func cant_rank(id: String) -> String:
 func rank_up(id: String) -> bool:
 	if cant_rank(id) != "":
 		return false
-	skill_ranks[id] = rank(id) + 1
+	skill_ranks[id] = rank(id) + 1  # (a starting skill counts its free rank)
 	_apply_skills()
 	_save()
 	var n := skill(id)
@@ -329,11 +338,21 @@ func respec() -> void:
 ## Rank of the skills with this passive key (0 = none), for game code: passive("cleave").
 func passive(key: String) -> int:
 	var total := 0
-	for id: String in skill_ranks:
+	for id: String in _ranked():
 		var n := skill(id)
 		if String(n.get("effect", "")) == "passive" and String(n.get("key", "")) == key:
-			total += int(skill_ranks[id])
+			total += rank(id)
 	return total
+
+
+## Every skill with a rank: those bought plus the class's starting skills.
+func _ranked() -> Array:
+	var ids := skill_ranks.keys()
+	for t: Dictionary in trees():
+		for n: Dictionary in t.get("nodes", []):
+			if is_starting(n) and not String(n.get("id", "")) in ids:
+				ids.append(String(n.get("id", "")))
+	return ids
 
 
 func _apply_skills() -> void:
@@ -354,9 +373,10 @@ func _apply_skills() -> void:
 		if ab:
 			learn.append(ab)
 			racial[ab.id] = float(r.get("power_per_level", 1.0)) * (level - 1)
-	for id: String in skill_ranks:
+	var from_skills: Array[Ability] = []
+	for id: String in _ranked():
 		var n := skill(id)
-		var r := int(skill_ranks[id])
+		var r := rank(id)
 		if n.is_empty() or r <= 0:
 			continue
 		match String(n.get("effect", "stat")):
@@ -367,6 +387,14 @@ func _apply_skills() -> void:
 				var ab := Database.ability(String(n.get("ability", "")))
 				if ab:
 					learn.append(ab)
+					from_skills.append(ab)
+	# The class's extra spells (classes.json extra_spells: known from the start, in the
+	# spellbook but not put on the hotbar).
+	var cls := String(save.get("class", "")) if not save.is_empty() else String(Database.player.get("default_class", "fighter"))
+	for sid in Database.class_data(cls).get("extra_spells", []):
+		var ab := Database.ability(String(sid))
+		if ab and not ab in learn:
+			learn.append(ab)
 	stats.set_skill_bonus(bonus)
 	if "skill_speed" in player:
 		player.set("skill_speed", 1.0 + float(bonus.get("move_speed", 0.0)) / 100.0)
@@ -380,7 +408,9 @@ func _apply_skills() -> void:
 			if not ab in combat.spells:
 				combat.spells.append(ab)
 		_skill_spells = learn
-		_offer_to_hotbar(learn)
+		# Only skill-tree abilities go on the bar by themselves (the class's starting
+		# skill lands in box 1); racial and extra ones wait in the spellbook.
+		_offer_to_hotbar(from_skills)
 		combat.loadout_changed.emit()
 	skills_changed.emit()
 

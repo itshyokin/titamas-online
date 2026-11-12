@@ -118,6 +118,50 @@
 			"color": "#8aa0c8",
 			"damage_scale": 0.92,
 			"move_scale": 0.92
+		},
+		{
+			"id": "rage",
+			"name": "Raging",
+			"description": "Seeing red: every blow deals double damage.",
+			"kind": "buff",
+			"icon": "rage",
+			"color": "#e8392a",
+			"damage_scale": 2.0,
+			"look": "glow",
+			"look_color": "#ff2a1a"
+		},
+		{
+			"id": "frozen",
+			"name": "Frozen",
+			"description": "Frozen solid: can't move, attack or cast until the ice breaks.",
+			"kind": "ailment",
+			"icon": "frost",
+			"color": "#a8e4ff",
+			"frozen": true,
+			"move_scale": 0.0,
+			"look": "ice",
+			"look_color": "#bfeaff"
+		},
+		{
+			"id": "warded",
+			"name": "Warded",
+			"description": "A magic shield: no damage gets through.",
+			"kind": "buff",
+			"icon": "shield",
+			"color": "#8fc8ff",
+			"invulnerable": true,
+			"look": "bubble",
+			"look_color": "#7fc0ff"
+		},
+		{
+			"id": "darkness",
+			"name": "In darkness",
+			"description": "Can't see: most attacks miss and enemies lose track of you.",
+			"kind": "ailment",
+			"icon": "blind",
+			"color": "#6a5a8a",
+			"miss_chance": 0.75,
+			"sightless": true
 		}
 	]
 }

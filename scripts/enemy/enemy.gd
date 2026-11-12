@@ -272,8 +272,11 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = -0.5
+	if _frozen_tick(delta):
+		move_and_slide()
+		return
 	var move := Vector3.ZERO
-	if stats.status_flag("confused") and ai in [AI.CHASE, AI.ATTACK]:
+	if (stats.status_flag("confused") or _lost_in_dark()) and ai in [AI.CHASE, AI.ATTACK]:
 		# Confused: stumbles about instead of fighting.
 		var t := Time.get_ticks_msec() / 900.0 + float(get_instance_id() % 100)
 		move = Vector3(cos(t), 0, sin(t * 1.3)) * walk_speed
@@ -281,6 +284,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		_update_threat(delta)
 		move = _ai_move(delta)
+	move *= stats.status_product("move_scale")  # Chilled
 	_walk.x = lerpf(_walk.x, move.x, 10.0 * delta)
 	_walk.z = lerpf(_walk.z, move.z, 10.0 * delta)
 	velocity.x = _walk.x + _push.x
@@ -479,6 +483,8 @@ func _target_valid() -> bool:
 
 
 func _nearest_player(radius: float) -> Node3D:
+	if stats and stats.status_flag("sightless"):
+		radius = minf(radius, 2.0)  # in a dark cloud: only notices what bumps into it
 	var best: Node3D = null
 	var best_d := radius
 	for n in Combat.enemies_near(self, global_position, radius):
@@ -495,6 +501,48 @@ func _nearest_player(radius: float) -> Node3D:
 			best_d = d
 			best = n
 	return best
+
+
+# --- Frozen / blinded -------------------------------------------------------------------
+
+var _was_frozen := false
+
+
+## Frozen solid (status flag "frozen"): no thinking, moving or attacking, the animation
+## stops where it was. True while frozen (the caller skips the rest of its frame).
+func _frozen_tick(_delta: float) -> bool:
+	var frozen := ai != AI.DEAD and ai != AI.DOWN and stats.status_flag("frozen")
+	if frozen != _was_frozen:
+		_was_frozen = frozen
+		var ch = get("character")
+		if ch:
+			ch.call("set_speed", 0.0 if frozen else 1.0)
+		elif model:
+			model.process_mode = Node.PROCESS_MODE_DISABLED if frozen else Node.PROCESS_MODE_INHERIT
+		if frozen and ai == AI.ATTACK:
+			ai = AI.CHASE  # the swing is lost
+			_cooldown = maxf(_cooldown, 0.6)
+	if not frozen:
+		return false
+	_walk = Vector3.ZERO
+	velocity.x = _push.x
+	velocity.z = _push.z
+	_push = _push.move_toward(Vector3.ZERO, 16.0 * _delta)
+	return true
+
+
+## Bosses and big beasts can't be frozen solid.
+func resists_status(id: String) -> bool:
+	if id != "frozen":
+		return false
+	return bool(Database.enemy(enemy_id).get("boss", false)) or get("big") == true or get("golem") == true
+
+
+## In a dark cloud with its target out of reach: it stumbles about instead.
+func _lost_in_dark() -> bool:
+	if not stats.status_flag("sightless") or target == null or not is_instance_valid(target):
+		return false
+	return target.global_position.distance_to(global_position) > attack_range + 1.5
 
 
 # --- Events -------------------------------------------------------------------
