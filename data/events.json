@@ -1027,6 +1027,108 @@
 			]
 		},
 		{
+			"id": "tut_campfire",
+			"name": "Tutorial: Campfire",
+			"note": "Walk-in area on the way to the quarry. The troll (Enemies/Troll) has Appear Switch = troll_awake and Emerge on.",
+			"pages": [
+				{
+					"commands": [],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				},
+				{
+					"commands": [
+						{
+							"cmd": "letterbox",
+							"on": true,
+							"seconds": 0.5
+						},
+						{
+							"cmd": "camera",
+							"look": "",
+							"marker": "CampfireCam",
+							"op": "move",
+							"seconds": 1.6,
+							"wait": true
+						},
+						{
+							"cmd": "wait",
+							"seconds": 2.4
+						},
+						{
+							"cmd": "say",
+							"log": true,
+							"name": "",
+							"npc": "katrina",
+							"seconds": 3.5,
+							"sound": "",
+							"text": "Let's take a break at that campfire. It'll give us time to patch up our wounds.",
+							"wait": false,
+							"who": "npc"
+						},
+						{
+							"cmd": "camera",
+							"op": "back",
+							"seconds": 1.2,
+							"wait": true
+						},
+						{
+							"cmd": "letterbox",
+							"on": false,
+							"seconds": 0.5
+						},
+						{
+							"cmd": "self_switch",
+							"letter": "A",
+							"value": true
+						}
+					],
+					"conditions": [
+						{
+							"id": "tut_bandits_done",
+							"is": true,
+							"type": "switch"
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "touch"
+				},
+				{
+					"commands": [],
+					"conditions": [
+						{
+							"id": "tut_bandits_done",
+							"is": true,
+							"type": "switch"
+						},
+						{
+							"is": true,
+							"letter": "A",
+							"type": "self"
+						}
+					],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "",
+					"solid": false,
+					"speaker": "",
+					"trigger": "none"
+				}
+			]
+		},
+		{
 			"id": "quarry_vines",
 			"name": "Quarry vines (blocked by the troll)",
 			"note": "Walk-in area in front of the vines. While the troll is up, the ground bursts and throws you back. The ClimbLock box on the vines unlocks with troll_defeated.",
@@ -1203,14 +1305,6 @@
 			"note": "Touch the Monolith: a light-blue flash, blue sparks drift down around everyone, full health and mana, ailments cured.",
 			"pages": [
 				{
-					"trigger": "action",
-					"prompt": "Touch the Monolith",
-					"speaker": "",
-					"model": "",
-					"solid": false,
-					"marker": false,
-					"freeze": true,
-					"conditions": [],
 					"commands": [
 						{
 							"cmd": "animation",
@@ -1228,14 +1322,14 @@
 						},
 						{
 							"cmd": "fade_out",
-							"seconds": 0.7,
-							"color": "#e4f6ff"
+							"color": "#e4f6ff",
+							"seconds": 0.7
 						},
 						{
 							"cmd": "heal",
-							"who": "party",
 							"cure": true,
-							"glow": false
+							"glow": false,
+							"who": "party"
 						},
 						{
 							"cmd": "wait",
@@ -1243,11 +1337,11 @@
 						},
 						{
 							"cmd": "sparkles",
-							"who": "party",
 							"color": "#8fd3ff",
+							"count": 30.0,
 							"seconds": 3.0,
-							"count": 30,
-							"wait": false
+							"wait": false,
+							"who": "party"
 						},
 						{
 							"cmd": "fade_in",
@@ -1255,14 +1349,22 @@
 						},
 						{
 							"cmd": "log",
-							"text": "The Monolith's light washes over you. You feel restored.",
-							"color": "#a8dcff"
+							"color": "#a8dcff",
+							"text": "The Monolith's light washes over you. You feel restored."
 						},
 						{
 							"cmd": "wait",
 							"seconds": 1.2
 						}
-					]
+					],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "Touch the Monolith",
+					"solid": false,
+					"speaker": "",
+					"trigger": "action"
 				}
 			]
 		}
