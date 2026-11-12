@@ -981,19 +981,27 @@ func _hop_movement(delta: float) -> void:
 		action_animation.emit("hanging_idle", 0.0, 0.3, 1.0)
 
 
-func _try_climb_up() -> bool:
+func _try_climb_up(ignore: Array = [], deeper := false) -> bool:
 	var length := character.get_animation_length("hanging_climb_up")
 	var hands: Vector3 = character.measure("hanging_climb_up", 0.0).get("hands", Vector3(0, 1.4, -0.45))
 	var feet: Vector3 = character.measure("hanging_climb_up", length).get("toes", Vector3(0, 2.0, -0.59))
-	# Where the clip's feet end up past the edge, but far enough in for the body to fit.
-	var target := _ledge_edge - _ledge_normal * maxf(climb_onto_distance, hands.z - feet.z)
-	# Room to stand on top?
+	# Where the clip's feet end up past the edge, but far enough in for the body to fit
+	# (ladders also try a little further in, past the ladder's top).
 	var params := PhysicsShapeQueryParameters3D.new()
 	params.shape = collision.shape
-	params.transform = Transform3D(Basis.IDENTITY, target + collision.position + Vector3.UP * 0.05)
 	params.collision_mask = WORLD_MASK
-	params.exclude = [get_rid()]
-	if not get_world_3d().direct_space_state.intersect_shape(params, 1).is_empty():
+	var skip: Array[RID] = [get_rid()]
+	for r in ignore:
+		skip.append(r)
+	params.exclude = skip
+	var target := Vector3.INF
+	for extra: float in ([0.0, 0.25, 0.5] if deeper else [0.0]):
+		var t := _ledge_edge - _ledge_normal * (maxf(climb_onto_distance, hands.z - feet.z) + extra)
+		params.transform = Transform3D(Basis.IDENTITY, t + collision.position + Vector3.UP * 0.05)
+		if get_world_3d().direct_space_state.intersect_shape(params, 1).is_empty():
+			target = t
+			break
+	if target == Vector3.INF:
 		return false
 	_climb_target = target
 	_climb_time = 0.0
@@ -1079,9 +1087,23 @@ func _climb_movement(delta: float) -> void:
 	var climb := Input.get_axis("move_back", "move_forward")
 
 	# Reached the top: pull up onto it.
-	if climb > 0.0:
+	if climb > 0.0 and ladder:
+		# Ladders: look for the floor at the top past the ladder (a hatch, a wall top) and
+		# climb onto it, never stopping to hang there.
+		var top := _ladder_top()
+		if not top.is_empty():
+			var before := global_position
+			_start_hang(top)
+			if _try_climb_up([_ladder_rid] if _ladder_rid.is_valid() else [], true):
+				return
+			# No room to stand up there: stay on the ladder.
+			state = State.LADDER
+			global_position = before
+			character.play("climbing_ladder", 0.2, 0.0)
+			return
+	elif climb > 0.0:
 		var ledge := _probe_ledge(global_position, -_surface_normal)
-		if not ledge.is_empty() and ledge.edge.y - global_position.y < (2.4 if ladder else 2.2):
+		if not ledge.is_empty() and ledge.edge.y - global_position.y < 2.2:
 			_start_hang(ledge)
 			_try_climb_up()
 			return
@@ -1102,6 +1124,8 @@ func _climb_movement(delta: float) -> void:
 	if hit.is_empty() or not _marked(hit.collider as Node, "ladder" if ladder else "wall"):
 		_let_go()
 		return
+	if ladder and hit.collider is CollisionObject3D:
+		_ladder_rid = (hit.collider as CollisionObject3D).get_rid()
 	_surface_normal = Vector3(hit.normal.x, 0, hit.normal.z).normalized()
 	var dist := _ladder_distance if ladder else wall_climb_distance
 	var flat: Vector3 = hit.position + _surface_normal * dist
@@ -1119,6 +1143,33 @@ func _climb_movement(delta: float) -> void:
 		character.play("climbing_down_wall", 0.2, rate)
 	else:
 		character.play(character.current_animation(), 0.2, 0.0)  # hold still on the wall
+
+
+var _ladder_rid := RID()
+
+
+## The floor at the top of a ladder: straight down a little past the ladder's face, a
+## walkable surface 1–2.4 m above the feet (the ladder itself doesn't count). Returns a
+## ledge like _probe_ledge ({edge, normal}) or {}.
+func _ladder_top() -> Dictionary:
+	var space := get_world_3d().direct_space_state
+	var fwd := -_surface_normal
+	var face := global_position + fwd * _ladder_distance
+	var skip: Array[RID] = [get_rid()]
+	if _ladder_rid.is_valid():
+		skip.append(_ladder_rid)
+	for d: float in [0.3, 0.55, 0.85]:
+		var p := face + fwd * d
+		var q := PhysicsRayQueryParameters3D.create(Vector3(p.x, global_position.y + 2.6, p.z), Vector3(p.x, global_position.y + 0.5, p.z), WORLD_MASK)
+		q.exclude = skip
+		var hit := space.intersect_ray(q)
+		if hit.is_empty() or hit.normal.y < 0.7:
+			continue
+		var h: float = hit.position.y - global_position.y
+		if h < 1.0 or h > 2.4:
+			continue
+		return {"edge": Vector3(face.x, hit.position.y, face.z), "normal": _surface_normal}
+	return {}
 
 
 ## Distance from the feet origin to the ladder so the fingertips meet the rungs
