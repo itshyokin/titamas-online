@@ -197,28 +197,28 @@
 			"id": "singed_plains",
 			"default": false,
 			"chunks": [
+				-5.0,
 				0.0,
-				0.0,
-				1.0,
-				1.0
+				4.0,
+				4.0
 			],
 			"region_name": "Singed Plains",
-			"fog_color": "#b8c7d9",
-			"fog_density": 0.004,
+			"fog_color": "#d9c3a0",
+			"fog_density": 0.006,
 			"fog_sky_affect": 0.5,
-			"sky_top": "#3d73c7",
-			"sky_horizon": "#b3cce6",
-			"sky_ground": "#525c66",
+			"sky_top": "#4f86c9",
+			"sky_horizon": "#e3cfa8",
+			"sky_ground": "#6b5a44",
 			"cloud_color": "#ffffff",
 			"cloud_shade": "#b3bdd1",
 			"cloud_coverage": 0.45,
-			"sun_color": "#fff2d9",
-			"sun_energy": 1.1,
+			"sun_color": "#ffe6bf",
+			"sun_energy": 1.25,
 			"ambient_energy": 0.6,
 			"shadow_strength": 0.6,
-			"shadow_color": "#55637f",
+			"shadow_color": "#6b5a52",
 			"shadow_fill": 0.55,
-			"saturation": 1.2,
+			"saturation": 1.1,
 			"night_sky_top": "#050916",
 			"night_sky_horizon": "#12172e",
 			"night_fog": "#0f1424",
@@ -228,27 +228,23 @@
 			"weather": [
 				{
 					"type": "clear",
-					"weight": 3.0
+					"weight": 5.0
 				},
 				{
 					"type": "cloudy",
-					"weight": 2.0
-				},
-				{
-					"type": "rain",
 					"weight": 1.0
 				}
 			],
 			"weather_minutes_min": 6.0,
 			"weather_minutes_max": 14.0,
-			"contrast": 1.05,
+			"contrast": 1.08,
 			"brightness": 1.0,
 			"god_rays": 0.35,
 			"grass_density": 1.6,
 			"grass_height": 0.8,
 			"grass_ground_match": 0.85,
-			"grass_base": "#2a5c1f",
-			"grass_tip": "#8cc74d",
+			"grass_base": "#5a6a2a",
+			"grass_tip": "#c2c46a",
 			"ambient_loop": "",
 			"ambient_loop_night": "",
 			"music": "",
