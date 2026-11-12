@@ -67,6 +67,39 @@ LAYER_KEYWORDS = (("grass", 0), ("dirt", 1), ("path", 1), ("cliff", 2), ("rock",
 LAYER_NAMES = ("grass", "dirt", "cliff")
 
 
+class TitamasGroundSettings(bpy.types.PropertyGroup):
+	"""Per terrain object: which ground set it uses and the pictures that preview its layers."""
+	ground_set: StringProperty(
+		name="Ground Set", default="",
+		description="Empty = the standard grass / dirt / cliff. Otherwise the ID of a set in Godot's "
+		"Database -> Ground Sets (e.g. desert); chunks then export with the material terrain_<id>. "
+		"Press Setup Terrain Painting after changing it")
+	image_1: PointerProperty(type=bpy.types.Image, name="Layer 1 (red)", description="Preview picture for layer 1 (Godot uses the Ground Set's own textures)")
+	image_2: PointerProperty(type=bpy.types.Image, name="Layer 2 (green)", description="Preview picture for layer 2")
+	image_3: PointerProperty(type=bpy.types.Image, name="Layer 3 (blue)", description="Preview picture for layer 3 (also shown on steep slopes in the game)")
+
+
+def _ground_id(obj) -> str:
+	g = getattr(obj, "titamas_ground", None)
+	raw = g.ground_set if g else ""
+	return re.sub(r"[^a-z0-9_]+", "_", raw.strip().lower()).strip("_")
+
+
+def _layer_image(obj, i):
+	"""The preview picture of layer i: the one picked on the object, else the old
+	grass / dirt / cliff material's."""
+	g = getattr(obj, "titamas_ground", None)
+	img = getattr(g, f"image_{i + 1}", None) if g else None
+	return img or _first_image(bpy.data.materials.get(LAYER_NAMES[i]))
+
+
+def _layer_label(obj, i) -> str:
+	if obj is None or not _ground_id(obj):
+		return LAYER_NAMES[i].title()
+	img = getattr(obj.titamas_ground, f"image_{i + 1}", None)
+	return os.path.splitext(img.name)[0].replace("_color", "").replace("_", " ").title() if img else f"Layer {i + 1}"
+
+
 class TitamasTerrainSettings(bpy.types.PropertyGroup):
 	chunk_size: FloatProperty(name="Chunk Size (m)", default=64.0, min=8.0)
 	spacing: FloatProperty(name="Vertex Spacing (m)", default=2.0, min=0.25)
@@ -611,9 +644,12 @@ def _first_image(material):
 	return None
 
 
-def _build_preview_material():
-	"""A Blender material that previews the painted mix (Godot uses its own shader)."""
-	mat = bpy.data.materials.get("terrain") or bpy.data.materials.new("terrain")
+def _build_preview_material(obj):
+	"""A Blender material that previews the painted mix (Godot uses its own shader).
+	Named "terrain", or "terrain_<set>" for a ground set: that name is what Godot swaps."""
+	gid = _ground_id(obj)
+	name = f"terrain_{gid}" if gid else "terrain"
+	mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
 	mat.use_nodes = True
 	nt = mat.node_tree
 	nt.nodes.clear()
@@ -636,7 +672,7 @@ def _build_preview_material():
 		tex = nt.nodes.new("ShaderNodeTexImage")
 		tex.location = (-400, 300 - i * 260)
 		tex.interpolation = "Closest"
-		tex.image = _first_image(bpy.data.materials.get(name))
+		tex.image = _layer_image(obj, i)
 		tex.label = name
 		texs.append(tex)
 
@@ -713,10 +749,10 @@ class TITAMAS_OT_setup_painting(bpy.types.Operator):
 		for slot in obj.material_slots:
 			if slot.material:
 				slot.material.use_fake_user = True
-		preview = _build_preview_material()
+		preview = _build_preview_material(obj)
 		mesh.materials.clear()
 		mesh.materials.append(preview)
-		self.report({"INFO"}, ("Created and filled" if created else "Kept existing") + " TerrainPaint layer; terrain now uses the 'terrain' material")
+		self.report({"INFO"}, ("Created and filled" if created else "Kept existing") + f" TerrainPaint layer; terrain now uses the '{preview.name}' material")
 		return {"FINISHED"}
 
 
@@ -747,7 +783,7 @@ class TITAMAS_OT_paint_layer(bpy.types.Operator):
 		brush = ts.vertex_paint.brush if ts.vertex_paint else None
 		if brush:
 			brush.color = color
-		self.report({"INFO"}, f"Painting {LAYER_NAMES[self.layer]}")
+		self.report({"INFO"}, f"Painting {_layer_label(obj, self.layer)}")
 		return {"FINISHED"}
 
 
@@ -1193,10 +1229,20 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 
 		box = layout.box()
 		box.label(text="Paint ground", icon="BRUSH_DATA")
-		box.operator(TITAMAS_OT_setup_painting.bl_idname, icon="VPAINT_HLT")
+		obj = context.active_object
+		if obj is not None and obj.type == "MESH":
+			g = obj.titamas_ground
+			box.prop(g, "ground_set")
+			if _ground_id(obj):
+				col = box.column(align=True)
+				col.label(text="Preview pictures (the game uses the Database's):")
+				for i in range(3):
+					col.template_ID(g, f"image_{i + 1}", open="image.open")
+				box.label(text=f"Exports as material terrain_{_ground_id(obj)}", icon="INFO")
+		box.operator(TITAMAS_OT_setup_painting.bl_idname, text="Setup / Update Terrain Painting", icon="VPAINT_HLT")
 		row = box.row(align=True)
-		for i, name in enumerate(LAYER_NAMES):
-			row.operator(TITAMAS_OT_paint_layer.bl_idname, text=name.title()).layer = i
+		for i in range(3):
+			row.operator(TITAMAS_OT_paint_layer.bl_idname, text=_layer_label(obj, i)).layer = i
 
 		box = layout.box()
 		box.label(text="3. Export", icon="EXPORT")
@@ -1216,6 +1262,7 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 
 
 classes = (
+	TitamasGroundSettings,
 	TITAMAS_OT_chunk_from_cursor,
 	TITAMAS_OT_chunk_beside,
 	TitamasTerrainSettings,
@@ -1235,10 +1282,12 @@ def register():
 	for cls in classes:
 		bpy.utils.register_class(cls)
 	bpy.types.Scene.titamas_terrain = PointerProperty(type=TitamasTerrainSettings)
+	bpy.types.Object.titamas_ground = PointerProperty(type=TitamasGroundSettings)
 
 
 def unregister():
 	del bpy.types.Scene.titamas_terrain
+	del bpy.types.Object.titamas_ground
 	for cls in reversed(classes):
 		bpy.utils.unregister_class(cls)
 
