@@ -122,8 +122,10 @@ func _unhandled_input(event: InputEvent) -> void:
 # --- Building --------------------------------------------------------------------
 
 ## Fixed sizes, so the window never jumps around as you point at things.
-const DETAILS_SIZE := Vector2(300, 176)
-const GEAR_WIDTH := 262.0
+const DETAILS_SIZE := Vector2(300, 132)
+const GEAR_WIDTH := 330.0
+const BAG_COLUMNS := 12
+const PREVIEW_SIZE := Vector2i(200, 270)
 ## Paper doll: slots down the left and right of the character, weapons underneath.
 const DOLL_LEFT := ["head", "shoulders", "chest"]
 const DOLL_RIGHT := ["hands", "legs", "feet"]
@@ -186,11 +188,11 @@ func _build() -> void:
 	var right := VBoxContainer.new()
 	for col: Array in [[left, DOLL_LEFT], [right, DOLL_RIGHT]]:
 		var box: VBoxContainer = col[0]
-		box.add_theme_constant_override("separation", 14)
+		box.add_theme_constant_override("separation", 30)
 		box.alignment = BoxContainer.ALIGNMENT_CENTER
 		for slot: String in col[1]:
 			box.add_child(_equip_box(slot))
-	_preview = CharacterPreview.new(Vector2i(150, 196))
+	_preview = CharacterPreview.new(PREVIEW_SIZE)
 	doll.add_child(left)
 	doll.add_child(_preview)
 	doll.add_child(right)
@@ -247,7 +249,7 @@ func _build() -> void:
 	page_box.add_theme_constant_override("separation", 8)
 	page.add_child(page_box)
 	_grid = GridContainer.new()
-	_grid.columns = 6
+	_grid.columns = BAG_COLUMNS
 	_grid.add_theme_constant_override("h_separation", 4)
 	_grid.add_theme_constant_override("v_separation", 4)
 	page_box.add_child(_grid)
@@ -382,7 +384,7 @@ func _fill_grid() -> void:
 		_bag_slots.append(slot)
 		_grid.add_child(slot)
 		slot.refresh()
-	# Always 24 boxes, so the page keeps its size (the rest belong to other tabs).
+	# Always Inventory.SIZE boxes, so the page keeps its size (the rest belong to other tabs).
 	for _i in Inventory.SIZE - shown.size():
 		var filler := Panel.new()
 		filler.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)

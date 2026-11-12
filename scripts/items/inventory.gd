@@ -18,7 +18,7 @@ signal hotbar_changed
 ## The weapon in use changed (primary/secondary).
 signal weapon_swapped(slot: String)
 
-const SIZE := 24
+const SIZE := 60  # 12 columns x 5 rows in the Codex backpack (was 24; old saves fill the start)
 ## Equipment slots, in the order the character window shows them.
 const SLOTS := ["head", "shoulders", "chest", "hands", "legs", "feet", "primary", "off_hand"]
 const SLOT_NAMES := {
