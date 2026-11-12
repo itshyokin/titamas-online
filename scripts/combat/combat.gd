@@ -94,7 +94,7 @@ static func scaled_power(power: float, attacker_level: int, defender_level: int)
 ## `knockback` pushes the target away (m/s) if it has `apply_knockback(velocity)`.
 ## Returns the damage dealt.
 ## `applies`: statuses the blow may give, [{status, chance (0–1), seconds}].
-static func hit(source: Node3D, target: Node3D, power: float, stagger := false, knockback := 0.0, applies: Array = []) -> float:
+static func hit(source: Node3D, target: Node3D, power: float, stagger := false, knockback := 0.0, applies: Array = [], element := "") -> float:
 	var ts := stats_of(target)
 	if ts == null or ts.is_dead():
 		return 0.0
@@ -124,6 +124,10 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 	var crit := randf() < CRIT_CHANCE + (ss.crit_bonus if ss else 0.0)
 	if crit:
 		amount *= CRIT_MULTIPLIER
+	# Elements: fire / frost / water / shock / earth / holy / arcane against what the target
+	# is weak to or resists (enemies.json / npcs.json "elements" {element: ×}).
+	var elem := element_scale(target, element)
+	amount *= elem
 	# Armour: each point takes a little off (100 armour halves damage).
 	amount *= 100.0 / (100.0 + maxf(ts.armor, 0.0))
 	var before := amount
@@ -140,6 +144,10 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 			return 0.0
 		amount = ts.health - 1.0
 	_tag(source, target)
+	if elem >= 1.25:
+		FloatingText.spawn(target, "Weak!", Color(1.0, 0.65, 0.25), 0.9)
+	elif elem <= 0.8:
+		FloatingText.spawn(target, "Resisted", Color(0.7, 0.72, 0.78), 0.9)
 	ts.take_damage(amount, source, crit)
 	var blocked := amount < before * 0.75
 	play_sound(target, BLOCK_SOUND if blocked else HIT_SOUND, -2.0)
@@ -159,6 +167,24 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 			else:
 				ts.add_status(String(a.get("status", "")), float(a.get("seconds", 8.0)), source)
 	return amount
+
+
+## How hard `element` hits `target` (1 = normal): its "elements" entry in its data file.
+static func element_scale(target: Node, element: String) -> float:
+	if element == "" or target == null:
+		return 1.0
+	var d: Dictionary = {}
+	var db := target.get_node_or_null("/root/Database")
+	if db == null:
+		return 1.0
+	var eid = target.get("enemy_id")
+	var nid = target.get("npc_id")
+	if eid is String and eid != "":
+		d = db.call("enemy", eid)
+	elif nid is String and nid != "":
+		d = db.call("npc", nid)
+	var el = d.get("elements", {})
+	return float((el as Dictionary).get(element, 1.0)) if el is Dictionary else 1.0
 
 
 static var _ward_sound: AudioStream = null

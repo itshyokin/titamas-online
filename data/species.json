@@ -29,7 +29,8 @@
 					"power_per_level": 1.0
 				}
 			],
-			"traits": "Versatile: +1 to every attribute."
+			"traits": "Versatile: +1 to every attribute.",
+			"hand_build": 0.0
 		},
 		{
 			"id": "elf",
@@ -60,7 +61,8 @@
 					"power_per_level": 1.5
 				}
 			],
-			"traits": "Graceful: faster on foot and in water, jumps higher."
+			"traits": "Graceful: faster on foot and in water, jumps higher.",
+			"hand_build": 0.0
 		},
 		{
 			"id": "dwarf",
@@ -91,7 +93,8 @@
 					"power_per_level": 1.5
 				}
 			],
-			"traits": "Sturdy: extra armour; slower runners and poor swimmers."
+			"traits": "Sturdy: extra armour; slower runners and poor swimmers.",
+			"hand_build": 1.0
 		},
 		{
 			"id": "halfling",
@@ -122,7 +125,8 @@
 					"power_per_level": 1.0
 				}
 			],
-			"traits": "Lucky: +3% critical chance."
+			"traits": "Lucky: +3% critical chance.",
+			"hand_build": 0.0
 		},
 		{
 			"id": "orc",
@@ -153,7 +157,8 @@
 					"power_per_level": 2.0
 				}
 			],
-			"traits": "Brutal: +15 health."
+			"traits": "Brutal: +15 health.",
+			"hand_build": 0.0
 		}
 	]
 }

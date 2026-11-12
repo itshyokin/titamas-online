@@ -315,7 +315,13 @@ func sit_on(s: Node3D, spot: int) -> void:
 		sp.seat_drop = maxf(hip_y - (float(s.call("height")) + 0.08), 0.0)
 		sp.seat_back = 0.38
 		sp.ground = false
+		# Hands in the lap; held out to warm them when a lit campfire is close in front.
 		sp.activity = "relax"
+		for fire in get_tree().get_nodes_in_group("campfires"):
+			var to: Vector3 = (fire as Node3D).global_position - global_position
+			if fire.get("lit") != false and to.length() < 3.5 and Vector2(to.x, to.z).normalized().dot(Vector2(f.x, f.z).normalized()) > 0.3:
+				sp.activity = "warm"
+				break
 		sp.sitting = true
 	action_animation.emit("idle", 0.0, 0.3, 1.0)
 

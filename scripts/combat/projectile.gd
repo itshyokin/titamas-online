@@ -195,7 +195,7 @@ func _combatant(node: Node) -> Node3D:
 
 func _hit(who: Node3D) -> void:
 	if who and Combat.is_alive(who) and is_instance_valid(source):
-		Combat.hit(source, who, power, ability.staggers, ability.knockback, Ability.applies_of(ability))
+		Combat.hit(source, who, power, ability.staggers, ability.knockback, Ability.applies_of(ability), Ability.element_of(ability))
 	if who and is_instance_valid(who):
 		AbilityFX.landed(ability, who, global_position)
 	match _style:

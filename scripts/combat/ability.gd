@@ -97,3 +97,9 @@ static func applies_of(ab: Ability) -> Array:
 ## The ability's abilities.json entry (for extras without their own field).
 static func data_of(ab: Ability) -> Dictionary:
 	return ab.get_meta("data") if ab and ab.has_meta("data") else {}
+
+
+## The ability's element (abilities.json "element": fire / frost / water / shock / earth /
+## holy / arcane; "" = plain), for Combat.hit's weaknesses and resistances.
+static func element_of(ab: Ability) -> String:
+	return String(data_of(ab).get("element", "")) if ab else ""

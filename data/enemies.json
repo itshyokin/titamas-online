@@ -229,7 +229,11 @@
 			"turn_speed": 1.6,
 			"walk_speed": 2.2,
 			"wander_radius": 4.0,
-			"xp": 600.0
+			"xp": 600.0,
+			"elements": {
+				"fire": 0.5,
+				"frost": 1.5
+			}
 		},
 		{
 			"aggro_radius": 26.0,
@@ -315,7 +319,10 @@
 			"turn_speed": 1.5,
 			"walk_speed": 0.0,
 			"wander_radius": 4.0,
-			"xp": 250.0
+			"xp": 250.0,
+			"elements": {
+				"fire": 1.5
+			}
 		},
 		{
 			"aggro_radius": 20.0,
@@ -417,6 +424,11 @@
 				"block_seconds": 1.8,
 				"block_cooldown": 5.0,
 				"block_arc": 140
+			},
+			"elements": {
+				"shock": 0.5,
+				"water": 1.5,
+				"frost": 1.5
 			}
 		},
 		{
@@ -522,6 +534,11 @@
 					"rock_uv_scale": 3.0,
 					"glow": "#ffb050"
 				}
+			},
+			"elements": {
+				"shock": 0.5,
+				"water": 1.5,
+				"frost": 1.5
 			}
 		}
 	]
