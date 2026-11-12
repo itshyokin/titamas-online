@@ -1,0 +1,106 @@
+{
+	"cell_w": 96,
+	"cell_h": 48,
+	"columns": 8,
+	"rows": 2,
+	"pictures": [
+		{
+			"name": "ant_2",
+			"file": "assets/effects/builtin/ant_2.png",
+			"w": 24,
+			"h": 12,
+			"cell": 0
+		},
+		{
+			"name": "burst_4",
+			"file": "assets/effects/builtin/burst_4.png",
+			"w": 96,
+			"h": 24,
+			"cell": 1
+		},
+		{
+			"name": "diamond",
+			"file": "assets/effects/builtin/diamond.png",
+			"w": 24,
+			"h": 24,
+			"cell": 2
+		},
+		{
+			"name": "firefly_2",
+			"file": "assets/effects/builtin/firefly_2.png",
+			"w": 24,
+			"h": 12,
+			"cell": 3
+		},
+		{
+			"name": "flame",
+			"file": "assets/effects/builtin/flame.png",
+			"w": 24,
+			"h": 24,
+			"cell": 4
+		},
+		{
+			"name": "glow",
+			"file": "assets/effects/builtin/glow.png",
+			"w": 24,
+			"h": 24,
+			"cell": 5
+		},
+		{
+			"name": "insect_fly_2",
+			"file": "assets/effects/builtin/insect_fly_2.png",
+			"w": 32,
+			"h": 16,
+			"cell": 6
+		},
+		{
+			"name": "insect_mosquito_2",
+			"file": "assets/effects/builtin/insect_mosquito_2.png",
+			"w": 32,
+			"h": 16,
+			"cell": 7
+		},
+		{
+			"name": "puff",
+			"file": "assets/effects/builtin/puff.png",
+			"w": 24,
+			"h": 24,
+			"cell": 8
+		},
+		{
+			"name": "ring",
+			"file": "assets/effects/builtin/ring.png",
+			"w": 24,
+			"h": 24,
+			"cell": 9
+		},
+		{
+			"name": "rune_circle",
+			"file": "assets/effects/builtin/rune_circle.png",
+			"w": 48,
+			"h": 48,
+			"cell": 10
+		},
+		{
+			"name": "slash",
+			"file": "assets/effects/builtin/slash.png",
+			"w": 24,
+			"h": 24,
+			"cell": 11
+		},
+		{
+			"name": "snowflake",
+			"file": "assets/effects/builtin/snowflake.png",
+			"w": 24,
+			"h": 24,
+			"cell": 12
+		},
+		{
+			"name": "spark",
+			"file": "assets/effects/builtin/spark.png",
+			"w": 24,
+			"h": 24,
+			"cell": 13
+		}
+	]
+}

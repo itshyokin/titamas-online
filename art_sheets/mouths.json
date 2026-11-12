@@ -1,0 +1,134 @@
+{
+	"cell_w": 64,
+	"cell_h": 80,
+	"columns": 8,
+	"rows": 3,
+	"pictures": [
+		{
+			"name": "anime_mouth_cat",
+			"file": "assets/characters/face/anime_mouth_cat.png",
+			"w": 64,
+			"h": 80,
+			"cell": 0
+		},
+		{
+			"name": "anime_mouth_fang",
+			"file": "assets/characters/face/anime_mouth_fang.png",
+			"w": 64,
+			"h": 80,
+			"cell": 1
+		},
+		{
+			"name": "anime_mouth_grin",
+			"file": "assets/characters/face/anime_mouth_grin.png",
+			"w": 64,
+			"h": 80,
+			"cell": 2
+		},
+		{
+			"name": "anime_mouth_o",
+			"file": "assets/characters/face/anime_mouth_o.png",
+			"w": 64,
+			"h": 80,
+			"cell": 3
+		},
+		{
+			"name": "anime_mouth_shout",
+			"file": "assets/characters/face/anime_mouth_shout.png",
+			"w": 64,
+			"h": 80,
+			"cell": 4
+		},
+		{
+			"name": "anime_mouth_smile",
+			"file": "assets/characters/face/anime_mouth_smile.png",
+			"w": 64,
+			"h": 80,
+			"cell": 5
+		},
+		{
+			"name": "anime_mouth_tongue",
+			"file": "assets/characters/face/anime_mouth_tongue.png",
+			"w": 64,
+			"h": 80,
+			"cell": 6
+		},
+		{
+			"name": "anime_mouth_wavy",
+			"file": "assets/characters/face/anime_mouth_wavy.png",
+			"w": 64,
+			"h": 80,
+			"cell": 7
+		},
+		{
+			"name": "mouth_frown",
+			"file": "assets/characters/face/mouth_frown.png",
+			"w": 64,
+			"h": 80,
+			"cell": 8
+		},
+		{
+			"name": "mouth_full",
+			"file": "assets/characters/face/mouth_full.png",
+			"w": 64,
+			"h": 80,
+			"cell": 9
+		},
+		{
+			"name": "mouth_neutral",
+			"file": "assets/characters/face/mouth_neutral.png",
+			"w": 64,
+			"h": 80,
+			"cell": 10
+		},
+		{
+			"name": "mouth_open_wide",
+			"file": "assets/characters/face/mouth_open_wide.png",
+			"w": 64,
+			"h": 80,
+			"cell": 11
+		},
+		{
+			"name": "mouth_smile",
+			"file": "assets/characters/face/mouth_smile.png",
+			"w": 64,
+			"h": 80,
+			"cell": 12
+		},
+		{
+			"name": "mouth_smirk",
+			"file": "assets/characters/face/mouth_smirk.png",
+			"w": 64,
+			"h": 80,
+			"cell": 13
+		},
+		{
+			"name": "mouth_talk_small",
+			"file": "assets/characters/face/mouth_talk_small.png",
+			"w": 64,
+			"h": 80,
+			"cell": 14
+		},
+		{
+			"name": "mouth_talk_wide",
+			"file": "assets/characters/face/mouth_talk_wide.png",
+			"w": 64,
+			"h": 80,
+			"cell": 15
+		},
+		{
+			"name": "mouth_thin",
+			"file": "assets/characters/face/mouth_thin.png",
+			"w": 64,
+			"h": 80,
+			"cell": 16
+		},
+		{
+			"name": "mouth_wide",
+			"file": "assets/characters/face/mouth_wide.png",
+			"w": 64,
+			"h": 80,
+			"cell": 17
+		}
+	]
+}

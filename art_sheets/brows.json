@@ -1,0 +1,85 @@
+{
+	"cell_w": 64,
+	"cell_h": 80,
+	"columns": 8,
+	"rows": 2,
+	"pictures": [
+		{
+			"name": "anime_brows_angry",
+			"file": "assets/characters/face/anime_brows_angry.png",
+			"w": 64,
+			"h": 80,
+			"cell": 0
+		},
+		{
+			"name": "anime_brows_dots",
+			"file": "assets/characters/face/anime_brows_dots.png",
+			"w": 64,
+			"h": 80,
+			"cell": 1
+		},
+		{
+			"name": "anime_brows_high",
+			"file": "assets/characters/face/anime_brows_high.png",
+			"w": 64,
+			"h": 80,
+			"cell": 2
+		},
+		{
+			"name": "anime_brows_sad",
+			"file": "assets/characters/face/anime_brows_sad.png",
+			"w": 64,
+			"h": 80,
+			"cell": 3
+		},
+		{
+			"name": "anime_brows_soft",
+			"file": "assets/characters/face/anime_brows_soft.png",
+			"w": 64,
+			"h": 80,
+			"cell": 4
+		},
+		{
+			"name": "brows_angry",
+			"file": "assets/characters/face/brows_angry.png",
+			"w": 64,
+			"h": 80,
+			"cell": 5
+		},
+		{
+			"name": "brows_arched",
+			"file": "assets/characters/face/brows_arched.png",
+			"w": 64,
+			"h": 80,
+			"cell": 6
+		},
+		{
+			"name": "brows_natural",
+			"file": "assets/characters/face/brows_natural.png",
+			"w": 64,
+			"h": 80,
+			"cell": 7
+		},
+		{
+			"name": "brows_thick",
+			"file": "assets/characters/face/brows_thick.png",
+			"w": 64,
+			"h": 80,
+			"cell": 8
+		},
+		{
+			"name": "brows_thin",
+			"file": "assets/characters/face/brows_thin.png",
+			"w": 64,
+			"h": 80,
+			"cell": 9
+		},
+		{
+			"name": "brows_worried",
+			"file": "assets/characters/face/brows_worried.png",
+			"w": 64,
+			"h": 80,
+			"cell": 10
+		}
+	]
+}

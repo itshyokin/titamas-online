@@ -1,0 +1,148 @@
+{
+	"cell_w": 32,
+	"cell_h": 24,
+	"columns": 16,
+	"rows": 2,
+	"pictures": [
+		{
+			"name": "almond_iris",
+			"file": "assets/characters/eyes/almond_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 0
+		},
+		{
+			"name": "anime_bright_iris",
+			"file": "assets/characters/eyes/anime_bright_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 1
+		},
+		{
+			"name": "anime_droopy_iris",
+			"file": "assets/characters/eyes/anime_droopy_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 2
+		},
+		{
+			"name": "anime_sharp_iris",
+			"file": "assets/characters/eyes/anime_sharp_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 3
+		},
+		{
+			"name": "anime_sleepy_iris",
+			"file": "assets/characters/eyes/anime_sleepy_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 4
+		},
+		{
+			"name": "anime_small_iris_iris",
+			"file": "assets/characters/eyes/anime_small_iris_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 5
+		},
+		{
+			"name": "anime_soft_iris",
+			"file": "assets/characters/eyes/anime_soft_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 6
+		},
+		{
+			"name": "anime_sparkle_iris",
+			"file": "assets/characters/eyes/anime_sparkle_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 7
+		},
+		{
+			"name": "anime_upturned_iris",
+			"file": "assets/characters/eyes/anime_upturned_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 8
+		},
+		{
+			"name": "cat_slit_iris",
+			"file": "assets/characters/eyes/cat_slit_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 9
+		},
+		{
+			"name": "cat_slit_round_iris",
+			"file": "assets/characters/eyes/cat_slit_round_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 10
+		},
+		{
+			"name": "closed_calm_iris",
+			"file": "assets/characters/eyes/closed_calm_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 11
+		},
+		{
+			"name": "closed_happy_iris",
+			"file": "assets/characters/eyes/closed_happy_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 12
+		},
+		{
+			"name": "dizzy_iris",
+			"file": "assets/characters/eyes/dizzy_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 13
+		},
+		{
+			"name": "dot_eyes_iris",
+			"file": "assets/characters/eyes/dot_eyes_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 14
+		},
+		{
+			"name": "fierce_iris",
+			"file": "assets/characters/eyes/fierce_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 15
+		},
+		{
+			"name": "large_iris",
+			"file": "assets/characters/eyes/large_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 16
+		},
+		{
+			"name": "narrow_iris",
+			"file": "assets/characters/eyes/narrow_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 17
+		},
+		{
+			"name": "round_iris",
+			"file": "assets/characters/eyes/round_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 18
+		},
+		{
+			"name": "sleepy_iris",
+			"file": "assets/characters/eyes/sleepy_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 19
+		}
+	]
+}

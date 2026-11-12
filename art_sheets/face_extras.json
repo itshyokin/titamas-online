@@ -1,0 +1,113 @@
+{
+	"cell_w": 64,
+	"cell_h": 80,
+	"columns": 8,
+	"rows": 2,
+	"pictures": [
+		{
+			"name": "anime_anger",
+			"file": "assets/characters/face/anime_anger.png",
+			"w": 64,
+			"h": 80,
+			"cell": 0
+		},
+		{
+			"name": "anime_blush",
+			"file": "assets/characters/face/anime_blush.png",
+			"w": 64,
+			"h": 80,
+			"cell": 1
+		},
+		{
+			"name": "anime_sweat",
+			"file": "assets/characters/face/anime_sweat.png",
+			"w": 64,
+			"h": 80,
+			"cell": 2
+		},
+		{
+			"name": "anime_tears",
+			"file": "assets/characters/face/anime_tears.png",
+			"w": 64,
+			"h": 80,
+			"cell": 3
+		},
+		{
+			"name": "anime_whiskers",
+			"file": "assets/characters/face/anime_whiskers.png",
+			"w": 64,
+			"h": 80,
+			"cell": 4
+		},
+		{
+			"name": "beauty_mark",
+			"file": "assets/characters/face/beauty_mark.png",
+			"w": 64,
+			"h": 80,
+			"cell": 5
+		},
+		{
+			"name": "blush",
+			"file": "assets/characters/face/blush.png",
+			"w": 64,
+			"h": 80,
+			"cell": 6
+		},
+		{
+			"name": "chin_dimple",
+			"file": "assets/characters/face/chin_dimple.png",
+			"w": 64,
+			"h": 80,
+			"cell": 7
+		},
+		{
+			"name": "freckles",
+			"file": "assets/characters/face/freckles.png",
+			"w": 64,
+			"h": 80,
+			"cell": 8
+		},
+		{
+			"name": "scar_cheek",
+			"file": "assets/characters/face/scar_cheek.png",
+			"w": 64,
+			"h": 80,
+			"cell": 9
+		},
+		{
+			"name": "scar_eye",
+			"file": "assets/characters/face/scar_eye.png",
+			"w": 64,
+			"h": 80,
+			"cell": 10
+		},
+		{
+			"name": "scar_lip",
+			"file": "assets/characters/face/scar_lip.png",
+			"w": 64,
+			"h": 80,
+			"cell": 11
+		},
+		{
+			"name": "stubble_shadow",
+			"file": "assets/characters/face/stubble_shadow.png",
+			"w": 64,
+			"h": 80,
+			"cell": 12
+		},
+		{
+			"name": "tired_eyes",
+			"file": "assets/characters/face/tired_eyes.png",
+			"w": 64,
+			"h": 80,
+			"cell": 13
+		},
+		{
+			"name": "wrinkles",
+			"file": "assets/characters/face/wrinkles.png",
+			"w": 64,
+			"h": 80,
+			"cell": 14
+		}
+	]
+}

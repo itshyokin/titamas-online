@@ -1,0 +1,148 @@
+{
+	"cell_w": 32,
+	"cell_h": 24,
+	"columns": 16,
+	"rows": 2,
+	"pictures": [
+		{
+			"name": "almond",
+			"file": "assets/characters/eyes/almond.png",
+			"w": 32,
+			"h": 24,
+			"cell": 0
+		},
+		{
+			"name": "anime_bright",
+			"file": "assets/characters/eyes/anime_bright.png",
+			"w": 32,
+			"h": 24,
+			"cell": 1
+		},
+		{
+			"name": "anime_droopy",
+			"file": "assets/characters/eyes/anime_droopy.png",
+			"w": 32,
+			"h": 24,
+			"cell": 2
+		},
+		{
+			"name": "anime_sharp",
+			"file": "assets/characters/eyes/anime_sharp.png",
+			"w": 32,
+			"h": 24,
+			"cell": 3
+		},
+		{
+			"name": "anime_sleepy",
+			"file": "assets/characters/eyes/anime_sleepy.png",
+			"w": 32,
+			"h": 24,
+			"cell": 4
+		},
+		{
+			"name": "anime_small_iris",
+			"file": "assets/characters/eyes/anime_small_iris.png",
+			"w": 32,
+			"h": 24,
+			"cell": 5
+		},
+		{
+			"name": "anime_soft",
+			"file": "assets/characters/eyes/anime_soft.png",
+			"w": 32,
+			"h": 24,
+			"cell": 6
+		},
+		{
+			"name": "anime_sparkle",
+			"file": "assets/characters/eyes/anime_sparkle.png",
+			"w": 32,
+			"h": 24,
+			"cell": 7
+		},
+		{
+			"name": "anime_upturned",
+			"file": "assets/characters/eyes/anime_upturned.png",
+			"w": 32,
+			"h": 24,
+			"cell": 8
+		},
+		{
+			"name": "cat_slit",
+			"file": "assets/characters/eyes/cat_slit.png",
+			"w": 32,
+			"h": 24,
+			"cell": 9
+		},
+		{
+			"name": "cat_slit_round",
+			"file": "assets/characters/eyes/cat_slit_round.png",
+			"w": 32,
+			"h": 24,
+			"cell": 10
+		},
+		{
+			"name": "closed_calm",
+			"file": "assets/characters/eyes/closed_calm.png",
+			"w": 32,
+			"h": 24,
+			"cell": 11
+		},
+		{
+			"name": "closed_happy",
+			"file": "assets/characters/eyes/closed_happy.png",
+			"w": 32,
+			"h": 24,
+			"cell": 12
+		},
+		{
+			"name": "dizzy",
+			"file": "assets/characters/eyes/dizzy.png",
+			"w": 32,
+			"h": 24,
+			"cell": 13
+		},
+		{
+			"name": "dot_eyes",
+			"file": "assets/characters/eyes/dot_eyes.png",
+			"w": 32,
+			"h": 24,
+			"cell": 14
+		},
+		{
+			"name": "fierce",
+			"file": "assets/characters/eyes/fierce.png",
+			"w": 32,
+			"h": 24,
+			"cell": 15
+		},
+		{
+			"name": "large",
+			"file": "assets/characters/eyes/large.png",
+			"w": 32,
+			"h": 24,
+			"cell": 16
+		},
+		{
+			"name": "narrow",
+			"file": "assets/characters/eyes/narrow.png",
+			"w": 32,
+			"h": 24,
+			"cell": 17
+		},
+		{
+			"name": "round",
+			"file": "assets/characters/eyes/round.png",
+			"w": 32,
+			"h": 24,
+			"cell": 18
+		},
+		{
+			"name": "sleepy",
+			"file": "assets/characters/eyes/sleepy.png",
+			"w": 32,
+			"h": 24,
+			"cell": 19
+		}
+	]
+}

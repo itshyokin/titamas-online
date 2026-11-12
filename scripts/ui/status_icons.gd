@@ -124,7 +124,12 @@ class StatusIcon:
 			pts.append(c + Vector2(cos(a), sin(a)) * (r - 2.0))
 		if frac > 0.01 and pts.size() >= 3:
 			draw_colored_polygon(pts, color.darkened(0.1))
-		if PixelIcons.pixels() > 0:
+		var art := IconArt.status(glyph)
+		if art:
+			# Exported at the pixel size: the glyph reaches ±0.4 of the picture.
+			var art_side := r * 0.55 / 0.4
+			draw_texture_rect(art, Rect2(c - Vector2(art_side, art_side) * 0.5, Vector2(art_side, art_side)), false)
+		elif PixelIcons.pixels() > 0:
 			var g := glyph
 			var tex := PixelIcons.get_texture("status:" + g, func() -> Control:
 				var icon := StatusIcon.new()

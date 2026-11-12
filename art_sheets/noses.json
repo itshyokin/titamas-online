@@ -1,0 +1,64 @@
+{
+	"cell_w": 64,
+	"cell_h": 80,
+	"columns": 8,
+	"rows": 1,
+	"pictures": [
+		{
+			"name": "anime_nose_dot",
+			"file": "assets/characters/face/anime_nose_dot.png",
+			"w": 64,
+			"h": 80,
+			"cell": 0
+		},
+		{
+			"name": "anime_nose_hook",
+			"file": "assets/characters/face/anime_nose_hook.png",
+			"w": 64,
+			"h": 80,
+			"cell": 1
+		},
+		{
+			"name": "anime_nose_shadow",
+			"file": "assets/characters/face/anime_nose_shadow.png",
+			"w": 64,
+			"h": 80,
+			"cell": 2
+		},
+		{
+			"name": "nose_broad",
+			"file": "assets/characters/face/nose_broad.png",
+			"w": 64,
+			"h": 80,
+			"cell": 3
+		},
+		{
+			"name": "nose_button",
+			"file": "assets/characters/face/nose_button.png",
+			"w": 64,
+			"h": 80,
+			"cell": 4
+		},
+		{
+			"name": "nose_hooked",
+			"file": "assets/characters/face/nose_hooked.png",
+			"w": 64,
+			"h": 80,
+			"cell": 5
+		},
+		{
+			"name": "nose_pointed",
+			"file": "assets/characters/face/nose_pointed.png",
+			"w": 64,
+			"h": 80,
+			"cell": 6
+		},
+		{
+			"name": "nose_straight",
+			"file": "assets/characters/face/nose_straight.png",
+			"w": 64,
+			"h": 80,
+			"cell": 7
+		}
+	]
+}

@@ -1,0 +1,246 @@
+{
+	"cell_w": 24,
+	"cell_h": 24,
+	"columns": 16,
+	"rows": 3,
+	"pictures": [
+		{
+			"name": "arrow_shot",
+			"file": "assets/icons/abilities/arrow_shot.png",
+			"w": 24,
+			"h": 24,
+			"cell": 0
+		},
+		{
+			"name": "burst_quake",
+			"file": "assets/icons/abilities/burst_quake.png",
+			"w": 24,
+			"h": 24,
+			"cell": 1
+		},
+		{
+			"name": "crossbow_shot",
+			"file": "assets/icons/abilities/crossbow_shot.png",
+			"w": 24,
+			"h": 24,
+			"cell": 2
+		},
+		{
+			"name": "firebolt",
+			"file": "assets/icons/abilities/firebolt.png",
+			"w": 24,
+			"h": 24,
+			"cell": 3
+		},
+		{
+			"name": "frost_edge",
+			"file": "assets/icons/abilities/frost_edge.png",
+			"w": 24,
+			"h": 24,
+			"cell": 4
+		},
+		{
+			"name": "gs_heavy",
+			"file": "assets/icons/abilities/gs_heavy.png",
+			"w": 24,
+			"h": 24,
+			"cell": 5
+		},
+		{
+			"name": "gs_slash",
+			"file": "assets/icons/abilities/gs_slash.png",
+			"w": 24,
+			"h": 24,
+			"cell": 6
+		},
+		{
+			"name": "gs_slash_2",
+			"file": "assets/icons/abilities/gs_slash_2.png",
+			"w": 24,
+			"h": 24,
+			"cell": 7
+		},
+		{
+			"name": "heavy_strike",
+			"file": "assets/icons/abilities/heavy_strike.png",
+			"w": 24,
+			"h": 24,
+			"cell": 8
+		},
+		{
+			"name": "lucky_stone",
+			"file": "assets/icons/abilities/lucky_stone.png",
+			"w": 24,
+			"h": 24,
+			"cell": 9
+		},
+		{
+			"name": "mend",
+			"file": "assets/icons/abilities/mend.png",
+			"w": 24,
+			"h": 24,
+			"cell": 10
+		},
+		{
+			"name": "pistol_shot",
+			"file": "assets/icons/abilities/pistol_shot.png",
+			"w": 24,
+			"h": 24,
+			"cell": 11
+		},
+		{
+			"name": "rifle_shot",
+			"file": "assets/icons/abilities/rifle_shot.png",
+			"w": 24,
+			"h": 24,
+			"cell": 12
+		},
+		{
+			"name": "savage_blow",
+			"file": "assets/icons/abilities/savage_blow.png",
+			"w": 24,
+			"h": 24,
+			"cell": 13
+		},
+		{
+			"name": "second_wind",
+			"file": "assets/icons/abilities/second_wind.png",
+			"w": 24,
+			"h": 24,
+			"cell": 14
+		},
+		{
+			"name": "slash_1",
+			"file": "assets/icons/abilities/slash_1.png",
+			"w": 24,
+			"h": 24,
+			"cell": 15
+		},
+		{
+			"name": "slash_2",
+			"file": "assets/icons/abilities/slash_2.png",
+			"w": 24,
+			"h": 24,
+			"cell": 16
+		},
+		{
+			"name": "slash_3",
+			"file": "assets/icons/abilities/slash_3.png",
+			"w": 24,
+			"h": 24,
+			"cell": 17
+		},
+		{
+			"name": "smite",
+			"file": "assets/icons/abilities/smite.png",
+			"w": 24,
+			"h": 24,
+			"cell": 18
+		},
+		{
+			"name": "starlight_bolt",
+			"file": "assets/icons/abilities/starlight_bolt.png",
+			"w": 24,
+			"h": 24,
+			"cell": 19
+		},
+		{
+			"name": "stealth",
+			"file": "assets/icons/abilities/stealth.png",
+			"w": 24,
+			"h": 24,
+			"cell": 20
+		},
+		{
+			"name": "stone_heart",
+			"file": "assets/icons/abilities/stone_heart.png",
+			"w": 24,
+			"h": 24,
+			"cell": 21
+		},
+		{
+			"name": "blind",
+			"file": "assets/icons/statuses/blind.png",
+			"w": 24,
+			"h": 24,
+			"cell": 22
+		},
+		{
+			"name": "confuse",
+			"file": "assets/icons/statuses/confuse.png",
+			"w": 24,
+			"h": 24,
+			"cell": 23
+		},
+		{
+			"name": "fire",
+			"file": "assets/icons/statuses/fire.png",
+			"w": 24,
+			"h": 24,
+			"cell": 24
+		},
+		{
+			"name": "frost",
+			"file": "assets/icons/statuses/frost.png",
+			"w": 24,
+			"h": 24,
+			"cell": 25
+		},
+		{
+			"name": "heal",
+			"file": "assets/icons/statuses/heal.png",
+			"w": 24,
+			"h": 24,
+			"cell": 26
+		},
+		{
+			"name": "moon",
+			"file": "assets/icons/statuses/moon.png",
+			"w": 24,
+			"h": 24,
+			"cell": 27
+		},
+		{
+			"name": "poison",
+			"file": "assets/icons/statuses/poison.png",
+			"w": 24,
+			"h": 24,
+			"cell": 28
+		},
+		{
+			"name": "silence",
+			"file": "assets/icons/statuses/silence.png",
+			"w": 24,
+			"h": 24,
+			"cell": 29
+		},
+		{
+			"name": "stealth",
+			"file": "assets/icons/statuses/stealth.png",
+			"w": 24,
+			"h": 24,
+			"cell": 30
+		},
+		{
+			"name": "sun",
+			"file": "assets/icons/statuses/sun.png",
+			"w": 24,
+			"h": 24,
+			"cell": 31
+		},
+		{
+			"name": "sword",
+			"file": "assets/icons/statuses/sword.png",
+			"w": 24,
+			"h": 24,
+			"cell": 32
+		},
+		{
+			"name": "glyph_gun_6a6a72",
+			"file": "assets/icons/custom/glyph_gun_6a6a72.png",
+			"w": 24,
+			"h": 24,
+			"cell": 33
+		}
+	]
+}

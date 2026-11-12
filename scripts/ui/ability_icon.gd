@@ -24,6 +24,11 @@ func show_ability(ab: Ability) -> void:
 func _draw() -> void:
 	if ability == null:
 		return
+	var art := IconArt.ability(ability.id) if not raw else null
+	if art:
+		var side := minf(size.x, size.y)
+		draw_texture_rect(art, Rect2((size - Vector2(side, side)) * 0.5, Vector2(side, side)), false)
+		return
 	if not raw and PixelIcons.pixels() > 0:
 		var ab := ability
 		var tex := PixelIcons.get_texture("ability:%s:%s:%s" % [ab.id, ab.icon, ab.color.to_html()], func() -> Control:
