@@ -73,7 +73,7 @@ func _ready() -> void:
 	golem = kind == "golem"
 	gilded = golem and bool(cfg.get("gold", false))
 	big = kind == "dragon" or troll
-	body = BeastModel.create(kind, DataFiles.color_from(cfg.get("color", "#4a3a34")), float(cfg.get("scale", 1.0)), gilded)
+	body = BeastModel.create(kind, DataFiles.color_from(cfg.get("color", "#4a3a34")), float(cfg.get("scale", 1.0)), gilded, String(cfg.get("model", "")))
 	model.add_child(body)
 	flying = bool(cfg.get("flying", not big and not golem))
 	fly_height = float(cfg.get("fly_height", 2.6))

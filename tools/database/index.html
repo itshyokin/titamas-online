@@ -633,6 +633,7 @@ const TABS = {
 				{ key: "beast.smash_power", label: "Troll: smash × attack power", type: "number" },
 				{ key: "beast.smash_knockback", label: "Troll: smash knockback (m/s)", type: "number" },
 				{ key: "beast.smash_down", label: "Troll: knocked down for (s)", type: "number" },
+				{ key: "beast.model", label: "Golem: model (.glb, rigged)", type: "select", empty: true, options: () => (assets.creature_models || []).map(p => [p, p.split("/").pop()]), help: "Empty = built from stone shapes. A model needs the golem bones (body, torso, head, shoulder/elbow/hand _L/_R, hip/knee _L/_R): tools/blender/prepare_golem.py rigs one." },
 				{ key: "beast.ambush", label: "Golem: buried until someone comes near", type: "bool", def: true },
 				{ key: "beast.burst_range", label: "Golem: bursts out when someone is within (m)", type: "number", def: 7 },
 				{ key: "beast.burst_radius", label: "Golem: bursting throws back everyone within (m)", type: "number", def: 3.5 },

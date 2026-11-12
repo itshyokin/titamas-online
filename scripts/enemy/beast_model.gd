@@ -50,10 +50,15 @@ var _base_y := 2.2         # body height when standing (troll 2.2, golem 2.0)
 # Golem: gilded variant's glow (veins) and light.
 var gold := false
 var _glow_mat: StandardMaterial3D
+var _glow_base := 0.9
 var _aura: OmniLight3D
+# Golem from a rigged model (enemies.json beast "model"): the same invisible pivots the
+# shape golem moves, copied onto the model's bones each frame.
+var _skel: Skeleton3D
+var _rig: Array = []  # [bone index, pivot, rest pose in model space]
 
 
-static func create(body_kind: String, body_color: Color, body_scale := 1.0, gilded := false) -> BeastModel:
+static func create(body_kind: String, body_color: Color, body_scale := 1.0, gilded := false, model_path := "") -> BeastModel:
 	var m := BeastModel.new()
 	m.kind = body_kind
 	m.color = body_color
@@ -65,7 +70,10 @@ static func create(body_kind: String, body_color: Color, body_scale := 1.0, gild
 	elif body_kind == "troll":
 		m._build_troll()
 	elif body_kind == "golem":
-		m._build_golem()
+		if model_path != "" and ResourceLoader.exists(model_path) and m._build_golem_model(model_path):
+			pass
+		else:
+			m._build_golem()
 	else:
 		m._build_bat()
 	return m
@@ -340,6 +348,7 @@ func _build_golem() -> void:
 	_glow_mat.emission_enabled = true
 	_glow_mat.emission = glow_col
 	_glow_mat.emission_energy_multiplier = 3.0 if gold else 0.9
+	_glow_base = 3.0 if gold else 0.9
 	if gold:
 		stone.metallic = 0.6
 		stone.roughness = 0.45
@@ -410,6 +419,106 @@ func _build_golem() -> void:
 		_aura.omni_range = 7.0
 		_aura.position = Vector3(0, 3.2, -0.6)
 		add_child(_aura)
+
+
+## Bone names a golem model needs (tools/blender/prepare_golem.py makes them).
+const GOLEM_BONES := ["body", "torso", "head", "shoulder_L", "elbow_L", "hand_L", "shoulder_R", "elbow_R", "hand_R", "hip_L", "knee_L", "hip_R", "knee_R"]
+
+
+## A golem from a rigged model: invisible pivots at its joints (moved like the shape
+## golem's) drive the skeleton. False if the model lacks the bones.
+func _build_golem_model(path: String) -> bool:
+	var scene := (load(path) as PackedScene).instantiate() as Node3D
+	var skel := scene.find_children("*", "Skeleton3D", true, false)
+	if skel.is_empty():
+		scene.free()
+		return false
+	_skel = skel[0] as Skeleton3D
+	var rest := {}
+	for b in GOLEM_BONES:
+		var i := _skel.find_bone(b)
+		if i < 0:
+			push_warning("Golem model %s has no bone '%s': using the stone shapes" % [path, b])
+			scene.free()
+			_skel = null
+			return false
+		rest[b] = _skel.get_bone_global_rest(i)
+	add_child(scene)
+	# Skeleton space -> this model's space (the glb's own nodes may move it).
+	var to_model := Transform3D.IDENTITY
+	var walk: Node = _skel
+	while walk != self and walk is Node3D:
+		to_model = (walk as Node3D).transform * to_model
+		walk = walk.get_parent()
+	var parents := {"body": "", "torso": "body", "head": "torso", "shoulder_L": "torso", "elbow_L": "shoulder_L", "hand_L": "elbow_L",
+		"shoulder_R": "torso", "elbow_R": "shoulder_R", "hand_R": "elbow_R", "hip_L": "body", "knee_L": "hip_L", "hip_R": "body", "knee_R": "hip_R"}
+	var pivots := {}
+	for b: String in GOLEM_BONES:
+		var at: Vector3 = (to_model * (rest[b] as Transform3D)).origin
+		var parent_name: String = parents[b]
+		var parent_node: Node3D = self if parent_name == "" else pivots[parent_name]
+		var parent_at: Vector3 = Vector3.ZERO if parent_name == "" else (to_model * (rest[parent_name] as Transform3D)).origin
+		pivots[b] = _pivot(parent_node, at - parent_at, b)
+		_rig.append([_skel.find_bone(b), pivots[b], to_model * (rest[b] as Transform3D)])
+	_base_y = (pivots.body as Node3D).position.y
+	_body = pivots.body
+	_torso = pivots.torso
+	head = pivots.head
+	_shoulders = [pivots.shoulder_L, pivots.shoulder_R]
+	_elbows = [pivots.elbow_L, pivots.elbow_R]
+	_legs = [pivots.hip_L, pivots.hip_R]
+	_knees = [pivots.knee_L, pivots.knee_R]
+	hand_r = pivots.hand_R
+	mouth = _pivot(head, Vector3(0, 0.1, -0.4), "Mouth")
+	_held = _part(hand_r, GolemShard.needle_mesh(1.0, 0.13), Vector3(0, -0.5, -0.25), _mat(Color(0.7, 0.74, 0.8)), Vector3(-PI * 0.5, 0, 0))
+	_held.visible = false
+	# Gilded: the model's own colours turned to gold, glowing (pulses with the fuse).
+	if gold:
+		for mi in scene.find_children("*", "MeshInstance3D", true, false):
+			var m := mi as MeshInstance3D
+			for i in m.mesh.get_surface_count():
+				var src := m.get_active_material(i) as StandardMaterial3D
+				if src == null:
+					continue
+				var gm := src.duplicate() as StandardMaterial3D
+				gm.albedo_color = Color(1.0, 0.86, 0.5)
+				gm.metallic = 0.7
+				gm.roughness = 0.45
+				gm.emission_enabled = true
+				gm.emission = Color(1.0, 0.72, 0.25)
+				gm.emission_texture = src.albedo_texture
+				m.set_surface_override_material(i, gm)
+				_glow_mat = gm
+		_glow_base = 0.25
+		_aura = OmniLight3D.new()
+		_aura.light_color = Color(1.0, 0.8, 0.3)
+		_aura.omni_range = 7.0
+		_aura.position = Vector3(0, 3.0, -0.4)
+		add_child(_aura)
+	return true
+
+
+## Copies the pivots' movement onto the model's bones.
+func _apply_rig() -> void:
+	if _skel == null:
+		return
+	var inv_self := global_transform.affine_inverse()
+	var skel_model := inv_self * _skel.global_transform
+	var to_skel := skel_model.affine_inverse()
+	var globals := {}
+	for e: Array in _rig:
+		var idx: int = e[0]
+		var pivot: Node3D = e[1]
+		var rest_model: Transform3D = e[2]
+		var p := inv_self * pivot.global_transform
+		var pose := Transform3D(p.basis.orthonormalized() * rest_model.basis, p.origin)
+		var in_skel := to_skel * pose
+		globals[idx] = in_skel
+		var parent := _skel.get_bone_parent(idx)
+		var local := (globals[parent] as Transform3D).affine_inverse() * in_skel if globals.has(parent) else \
+			(_skel.get_bone_global_rest(parent).affine_inverse() * in_skel if parent >= 0 else in_skel)
+		_skel.set_bone_pose_rotation(idx, local.basis.get_rotation_quaternion())
+		_skel.set_bone_pose_position(idx, local.origin)
 
 
 ## Eases `node`'s rotation toward `to` (x, y, z) at `rate`.
@@ -540,8 +649,8 @@ func _process_troll(delta: float) -> void:
 	if _glow_mat:
 		var fuse := clampf(pose_t, 0.0, 1.0) if pose == "explode" else 0.0
 		var pulse := 0.5 + 0.5 * sin(_t * lerpf(2.0, 22.0, fuse))
-		var base := 3.0 if gold else 0.9
-		_glow_mat.emission_energy_multiplier = 0.2 if pose == "dead" else base * (0.7 + 0.5 * pulse) + fuse * 6.0
+		var base := _glow_base
+		_glow_mat.emission_energy_multiplier = 0.2 * base / 3.0 if pose == "dead" else base * (0.7 + 0.5 * pulse) + fuse * base * 2.0
 		if _aura:
 			_aura.light_energy = 0.0 if pose == "dead" else 1.2 + 0.8 * pulse + fuse * 5.0
 	# Dead: topples forward onto its face.
@@ -550,6 +659,7 @@ func _process_troll(delta: float) -> void:
 	else:
 		_dead = maxf(_dead - delta * 2.0, 0.0)
 	rotation.x = -smoothstep(0.0, 1.0, _dead) * 1.35
+	_apply_rig()
 
 
 # --- Animation ------------------------------------------------------------------------

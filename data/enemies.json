@@ -364,9 +364,9 @@
 				"color": "#7d776c",
 				"scale": 1.0,
 				"radius": 1.0,
-				"height": 3.4,
-				"aim_height": 2.2,
-				"plate_height": 4.4,
+				"height": 3.6,
+				"aim_height": 2.3,
+				"plate_height": 4.5,
 				"ambush": true,
 				"burst_range": 7.0,
 				"burst_radius": 3.5,
@@ -392,7 +392,8 @@
 				"shard_lead": 0.5,
 				"shard_power": 0.6,
 				"shard_knockback": 2.0,
-				"shard_color": "#a8b0bc"
+				"shard_color": "#a8b0bc",
+				"model": "res://assets/models/creatures/stone_golem.glb"
 			}
 		},
 		{
@@ -443,9 +444,9 @@
 				"color": "#a8842f",
 				"scale": 1.0,
 				"radius": 1.0,
-				"height": 3.4,
-				"aim_height": 2.2,
-				"plate_height": 4.4,
+				"height": 3.6,
+				"aim_height": 2.3,
+				"plate_height": 4.5,
 				"ambush": true,
 				"burst_range": 7.0,
 				"burst_radius": 3.5,
@@ -478,7 +479,8 @@
 				"explode_radius": 5.5,
 				"explode_power": 2.4,
 				"explode_knockback": 9.0,
-				"explode_down": 1.6
+				"explode_down": 1.6,
+				"model": "res://assets/models/creatures/stone_golem.glb"
 			}
 		}
 	]

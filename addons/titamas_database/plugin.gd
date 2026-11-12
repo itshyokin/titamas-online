@@ -247,7 +247,7 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 				"props": props, "levels": levels, "markers": _markers(levels),
 				"glbs": _files("res://assets/models/characters/src", ["glb"]), "glb_meshes": _glb_meshes(), "glb_bones": _glb_bones(),
 				"pieces": _files("res://assets/characters/lowpoly", ["scn"]), "sprites": _files(SPRITE_DIR, ["png"]), "videos": _files("res://assets", ["ogv"]),
-				"item_icons": _item_icon_groups(), "ground_textures": _files("res://assets/materials/terrain", ["jpg", "png", "webp"]), "custom_icons": _files(ICON_DIR.path_join("custom"), ["png"])})
+				"item_icons": _item_icon_groups(), "ground_textures": _files("res://assets/materials/terrain", ["jpg", "png", "webp"]), "creature_models": _files("res://assets/models/creatures", ["glb", "gltf"]), "custom_icons": _files(ICON_DIR.path_join("custom"), ["png"])})
 		["POST", "/api/upload_sprite"]:
 			# "Load PNG…" on an effect sprite field: {name, data (base64)} → assets/effects/custom/<name>.png
 			var up = JSON.parse_string(req.body)
