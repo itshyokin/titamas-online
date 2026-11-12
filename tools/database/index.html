@@ -1511,6 +1511,9 @@ const TABS = {
 				{ key: "sun_height", label: "Sun height at noon (°)", type: "number" },
 				{ key: "night_brightness", label: "Night brightness (0–1)", type: "number", help: "How much ambient light is left at night." },
 			]],
+			["Sea", [
+				{ key: "sea_level", label: "Sea level (m)", type: "number", def: -5, help: "Height of the endless ocean in Blender metres (Blender Z). Anything below it is water you swim in. Changes show live; grass already grown near the coast updates when you walk away and back." },
+			]],
 			["Ambient occlusion (Settings → Graphics turns it on/off)", [
 				{ key: "ambient_occlusion.intensity", label: "Strength", type: "number", help: "How dark the contact shadows get (Godot default 2)." },
 				{ key: "ambient_occlusion.radius", label: "Reach (m)", type: "number", help: "How far from a surface it darkens." },

@@ -105,9 +105,12 @@ func _show() -> void:
 
 ## Builds (once per level) the map picture from every chunk's terrain grid.
 static func build(streamer: Node) -> Dictionary:
+	var ocean := streamer.get_tree().get_first_node_in_group("ocean") if streamer.is_inside_tree() else null
+	var sea := float(ocean.get("sea_level")) if ocean else Ocean.world_sea_level()
 	var dir := String(streamer.get("chunk_dir"))
-	if _cache.has(dir):
-		return _cache[dir]
+	var key := dir + "@%.2f" % sea  # a new sea level redraws the map
+	if _cache.has(key):
+		return _cache[key]
 	var cs := float(streamer.get("chunk_size"))
 	var spacing := 2.0
 	var n := int(streamer.call("_paint_grid_size"))
@@ -203,7 +206,7 @@ static func build(streamer: Node) -> Dictionary:
 					img.resize(1, 1, Image.INTERPOLATE_BILINEAR)
 					tex[t] = img.get_pixel(0, 0)
 		palettes[id] = tex
-	var sea_level := -5.0
+	var sea_level := sea
 	var image := Image.create(w, h, false, Image.FORMAT_RGB8)
 	for y in h:
 		for x in w:
@@ -236,7 +239,7 @@ static func build(streamer: Node) -> Dictionary:
 		"origin": Vector2(lo.x * cs - half, lo.y * cs - half),
 		"size": Vector2((hi.x - lo.x + 1) * cs, (hi.y - lo.y + 1) * cs),
 	}
-	_cache[dir] = map
+	_cache[key] = map
 	return map
 
 

@@ -11,6 +11,7 @@
 	"day_length_minutes": 24.0,
 	"night_brightness": 0.3,
 	"start_hour": 9.0,
+	"sea_level": -5.0,
 	"sun_height": 65.0,
 	"wind": {
 		"calm": 0.4,
