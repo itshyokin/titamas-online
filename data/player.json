@@ -289,5 +289,27 @@
 		"size": 0.45,
 		"spin": 2.2,
 		"pickup_sound": ""
+	},
+	"camp": {
+		"rest_hours": [
+			2,
+			4,
+			6,
+			8
+		],
+		"rested_hours": 6,
+		"well_rested_hours": 8,
+		"buff_hours": 1.0,
+		"well_rested_status": "well_rested",
+		"tired_status": "tired",
+		"rest_text": "The fire crackles. Rest a while?",
+		"rested_text": "You wake rested.",
+		"well_rested_text": "You wake well rested.",
+		"tired_text": "A short rest. You're still tired.",
+		"fade_out": 0.9,
+		"fade_in": 1.4,
+		"death_choice": true,
+		"revive_seconds": 3.0,
+		"revive_health": 0.4
 	}
 }

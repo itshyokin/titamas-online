@@ -174,5 +174,13 @@ class StatusIcon:
 				draw_circle(c + Vector2(0, s * 0.15), s * 0.3, Color(0, 0, 0, 0.8))
 			"shield":
 				draw_colored_polygon(PackedVector2Array([c + Vector2(-s * 0.7, -s * 0.7), c + Vector2(s * 0.7, -s * 0.7), c + Vector2(s * 0.6, s * 0.2), c + Vector2(0, s * 0.85), c + Vector2(-s * 0.6, s * 0.2)]), ink)
+			"sun":
+				draw_circle(c, s * 0.42, ink)
+				for i in 8:
+					var a := TAU * i / 8.0
+					draw_line(c + Vector2(cos(a), sin(a)) * s * 0.6, c + Vector2(cos(a), sin(a)) * s * 0.92, ink, 2.0)
+			"moon":
+				draw_circle(c, s * 0.75, ink)
+				draw_circle(c + Vector2(s * 0.35, -s * 0.25), s * 0.6, Color(0.1, 0.12, 0.2, 1.0))
 			_:
 				draw_line(c + Vector2(-s * 0.7, s * 0.7), c + Vector2(s * 0.7, -s * 0.7), ink, 3.0)

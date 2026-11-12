@@ -642,6 +642,29 @@ func _on_died() -> void:
 		is_sprinting = false
 		action_animation.emit("death", 0.0, 0.15, 1.0)
 		wait = death_time
+	# Fallen in a fight: choose to wait for a companion to revive you, or go back to camp.
+	var camp_cfg: Dictionary = Database.player.get("camp", {})
+	if reason == "died" and state == State.DEAD and bool(camp_cfg.get("death_choice", true)):
+		await get_tree().create_timer(wait).timeout
+		if not is_inside_tree() or state != State.DEAD:
+			_dying = false
+			return
+		var has_camp := GameSession.active() and not (GameSession.data.get("camp", {}) as Dictionary).is_empty()
+		var choice := DeathChoice.open(self, "Return to camp" if has_camp or has_meta("camp") else "Return home", can_be_revived)
+		GameSettings.menu_open = true
+		var waiting: bool = await choice.chose
+		while waiting:
+			# Stay down until someone revives you or you give up.
+			waiting = await choice.chose if is_instance_valid(choice) else false
+			if state != State.DEAD:
+				_dying = false
+				return
+		DeathChoice.close()
+		GameSettings.menu_open = false
+		if state != State.DEAD:
+			_dying = false
+			return
+		wait = 0.0
 	# The screen fades to black, home, then back in.
 	var fade_out := float(d.get("fade_out", 1.2))
 	await get_tree().create_timer(maxf(wait - fade_out * 0.5, 0.0)).timeout
@@ -656,6 +679,42 @@ func _on_died() -> void:
 		return
 	await get_tree().create_timer(0.2).timeout
 	ScreenFade.clear(self, float(d.get("fade_in", 1.0)))
+
+
+## Someone could come and revive you: a follower that's up, or another player (co-op).
+func can_be_revived() -> bool:
+	for f in get_tree().get_nodes_in_group("followers"):
+		if f.get("leader") == self and Combat.is_alive(f):
+			return true
+	return Net.active and not Net.peers.is_empty()
+
+
+## True while dead and waiting for help (followers come to revive).
+func awaiting_help() -> bool:
+	return state == State.DEAD and DeathChoice.is_waiting()
+
+
+## A companion (or another player) brings you back where you fell: some health back,
+## you get up, the choice panel goes away.
+func revive(by: Node = null) -> void:
+	if state != State.DEAD:
+		return
+	var cfg: Dictionary = Database.player.get("camp", {})
+	stats.health = maxf(stats.max_health * float(cfg.get("revive_health", 0.4)), 1.0)
+	stats.mana = maxf(stats.mana, stats.max_mana * float(cfg.get("revive_health", 0.4)))
+	stats.emit_all()
+	state = State.NORMAL
+	_dying = false
+	DeathChoice.close()
+	GameSettings.menu_open = false
+	action_animation.emit("getting_up" if character.has_animation("getting_up") else "idle", 0.0, 0.2, 1.0)
+	Effects.heal_glow(self, 1.5)
+	var who := String(by.get("display_name")) if by and by.get("display_name") != null else ""
+	if who == "" and by:
+		var st := Combat.stats_of(by)
+		who = st.display_name if st else ""
+	GameLog.post("%s revived you." % who if who != "" else "You were revived.", Color(0.7, 1.0, 0.7))
+	respawned.emit("revived")
 
 
 # --- Dodge -------------------------------------------------------------------
@@ -1158,17 +1217,23 @@ func _respawn(reason: String) -> void:
 		var progress := get_node_or_null("Progress")
 		if progress:
 			progress.call("apply_death_penalty")
+		# The last campfire you used, else home.
+		var which := "home"
 		var home: Dictionary = GameSession.data.get("home", {}) if GameSession.active() else {}
+		var camp: Dictionary = GameSession.data.get("camp", {}) if GameSession.active() else (get_meta("camp", {}) as Dictionary)
+		if not camp.is_empty():
+			home = camp
+			which = "camp"
 		var scene := get_tree().current_scene
 		var here := scene != null and String(home.get("scene", "")) == scene.scene_file_path
 		var p: Array = home.get("position", [])
 		if here and p.size() == 3:
 			spot = Vector3(p[0], p[1], p[2]) + Vector3.UP * 0.3
-		elif not home.is_empty() and not Net.active:
+		elif not home.is_empty() and not Net.active and GameSession.active():
 			stats.restore()
 			_going_home = true
 			# Home is in another level: it fades in from black there.
-			GameSession.travel_home.call_deferred(Color.BLACK, 0.0, float(Database.player.get("death", {}).get("fade_in", 1.0)))
+			GameSession.travel_home.call_deferred(Color.BLACK, 0.0, float(Database.player.get("death", {}).get("fade_in", 1.0)), which)
 	global_position = spot
 	velocity = Vector3.ZERO
 	state = State.NORMAL

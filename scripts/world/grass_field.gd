@@ -120,7 +120,14 @@ func _build_tile(tx: int, ty: int) -> MultiMeshInstance3D:
 	return null
 
 
+## Round patches kept bare (campfires, seats): [Vector2 world xz, radius].
+static var clearings: Array = []
+
+
 static func _under_water(p: Vector3, water: Array) -> bool:
+	for c: Array in clearings:
+		if Vector2(p.x, p.z).distance_to(c[0]) < float(c[1]):
+			return true
 	for w: Array in water:
 		if (w[0] as Rect2).has_point(Vector2(p.x, p.z)) and p.y < float(w[1]) + 0.1:
 			return true

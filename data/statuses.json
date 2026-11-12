@@ -98,6 +98,26 @@
 			"icon": "heal",
 			"color": "#e07a5a",
 			"injured": true
+		},
+		{
+			"id": "well_rested",
+			"name": "Well rested",
+			"description": "A good night by the fire: you hit a little harder and learn a little faster.",
+			"kind": "buff",
+			"icon": "sun",
+			"color": "#ffd27a",
+			"damage_scale": 1.1,
+			"xp_scale": 1.1
+		},
+		{
+			"id": "tired",
+			"name": "Tired",
+			"description": "Too little sleep: you're a bit slower and your blows are weaker.",
+			"kind": "debuff",
+			"icon": "moon",
+			"color": "#8aa0c8",
+			"damage_scale": 0.92,
+			"move_scale": 0.92
 		}
 	]
 }

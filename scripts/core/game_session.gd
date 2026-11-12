@@ -124,8 +124,8 @@ func hearth_cooldown_left() -> float:
 
 ## Hearthstone / death: reload at home (its level, its spot). With `fade_out` > 0 the
 ## screen first fades to `color`; the new level fades in from it over `fade_in`.
-func travel_home(color := Color.BLACK, fade_out := 0.0, fade_in := 0.0) -> void:
-	var home: Dictionary = data.get("home", {})
+func travel_home(color := Color.BLACK, fade_out := 0.0, fade_in := 0.0, which := "home") -> void:
+	var home: Dictionary = data.get(which, {})
 	if home.is_empty():
 		return
 	var tree := get_tree()

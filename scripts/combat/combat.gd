@@ -115,6 +115,7 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 	var amount := scaled_power(power, ss.level if ss else 1, ts.level)
 	if ss:
 		amount *= ss.damage_scale  # Weakened
+		amount *= ss.status_product("damage_scale")  # Well rested / Tired
 	amount *= randf_range(0.9, 1.1)
 	var crit := randf() < CRIT_CHANCE + (ss.crit_bonus if ss else 0.0)
 	if crit:

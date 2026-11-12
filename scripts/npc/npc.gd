@@ -283,6 +283,9 @@ func _physics_process(delta: float) -> void:
 		_scan = 0.3
 		_look_for_threats()
 	var move := Vector3.ZERO
+	if ai == AI.FIGHT and _should_revive():
+		ai = AI.FOLLOW
+		target = null
 	match ai:
 		AI.IDLE:
 			move = _idle(delta)
@@ -317,6 +320,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _look_for_threats() -> void:
+	if _should_revive():
+		return
 	if leader and is_instance_valid(leader):
 		var pick := _choose_target()
 		if pick:
@@ -657,17 +662,12 @@ func _find_cover() -> Vector3:
 func spares_kill(victim: Node) -> bool:
 	if not bool(Database.player.get("companions", {}).get("leave_kills", true)):
 		return false
-	if leader == null or not is_instance_valid(leader):
-		# Guards and other NPCs: leave the player's enemies to the player when they're near.
-		var p := get_tree().get_first_node_in_group("player") as Node3D
-		return p != null and victim.has_meta("player_struck") and Combat.is_alive(p) \
-			and (victim as Node3D).global_position.distance_to(p.global_position) < 25.0
-	var lstats := Combat.stats_of(leader)
-	if lstats == null or lstats.is_dead():
+	# NPCs finish enemies off, except the one the player has targeted (theirs to kill).
+	var p := (leader if leader and is_instance_valid(leader) else get_tree().get_first_node_in_group("player")) as Node3D
+	if p == null or not Combat.is_alive(p):
 		return false
-	if victim is Node3D and (victim as Node3D).global_position.distance_to(leader.global_position) > 25.0:
-		return false
-	return lstats.health / maxf(lstats.max_health, 1.0) >= float(Database.player.get("companions", {}).get("help_below", 0.5)) * 0.6
+	var tg := p.get_node_or_null("Targeting")
+	return tg != null and tg.get("target") == victim
 
 
 ## Following with a heal ready: patch up whoever needs it.
@@ -953,6 +953,9 @@ func _follow(delta: float) -> Vector3:
 		follow(null)
 		return Vector3.ZERO
 	_mirror_leader_weapon(delta)
+	if _should_revive():
+		return _revive_move(delta)
+	_revive_time = 0.0
 	var to_leader := leader.global_position - global_position
 	var far := Vector2(to_leader.x, to_leader.z).length()
 	if far > FOLLOW_TELEPORT or (far > 12.0 and absf(to_leader.y) > 8.0):
@@ -987,6 +990,47 @@ func _follow(delta: float) -> Vector3:
 	if far > 7.0 or to.length() > 4.0:
 		speed = _f("run_speed", 4.2) * 1.25  # catching up
 	return to.normalized() * minf(speed, to.length() * 4.0)
+
+
+# --- Reviving the player ----------------------------------------------------------
+# When the player has fallen and chose to wait for help, the nearest follower that's up
+# runs over, kneels for camp.revive_seconds and brings them back (PlayerController.revive).
+
+var _revive_time := 0.0
+
+
+func _should_revive() -> bool:
+	if leader == null or not is_instance_valid(leader) or not leader.has_method("awaiting_help"):
+		return false
+	if not bool(leader.call("awaiting_help")) or not is_alive():
+		return false
+	# Only the nearest one that's up goes.
+	var best: Node3D = null
+	var best_d := INF
+	for f in get_tree().get_nodes_in_group("followers"):
+		if f.get("leader") != leader or not f.has_method("is_alive") or not f.is_alive():
+			continue
+		var d := (f as Node3D).global_position.distance_to(leader.global_position)
+		if d < best_d:
+			best_d = d
+			best = f
+	return best == self
+
+
+func _revive_move(delta: float) -> Vector3:
+	var to := leader.global_position - global_position
+	to.y = 0.0
+	if to.length() > 1.1:
+		_revive_time = 0.0
+		return to.normalized() * _f("run_speed", 4.2)
+	_face(leader.global_position, delta)
+	if _revive_time == 0.0:
+		character.play("loot" if character.has_animation("loot") else "idle", 0.2)
+	_revive_time += delta
+	if _revive_time >= float(Database.player.get("camp", {}).get("revive_seconds", 3.0)):
+		_revive_time = 0.0
+		leader.call("revive", self)
+	return Vector3.ZERO
 
 
 # --- Ladders (followers) -----------------------------------------------------------
@@ -1148,7 +1192,7 @@ func _face(point: Vector3, delta: float) -> void:
 
 
 func _animate() -> void:
-	if ai == AI.DEAD or _attack_time >= 0.0 or _stagger > 0.0:
+	if ai == AI.DEAD or _attack_time >= 0.0 or _stagger > 0.0 or _revive_time > 0.0:
 		return
 	var current := character.current_animation()
 	# Let a talking gesture finish.

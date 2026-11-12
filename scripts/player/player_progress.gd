@@ -130,6 +130,10 @@ func credit_kill(enemy: Node) -> void:
 func add_xp(amount: int, from := "") -> void:
 	if amount <= 0 or is_max_level():
 		return
+	# Statuses like Well rested give more.
+	var st := player.get_node_or_null("Stats") as Stats if player else null
+	if st:
+		amount = maxi(roundi(amount * st.status_product("xp_scale")), 1)
 	xp += amount
 	FloatingText.spawn(player, "+%d XP" % amount, Color(0.75, 0.55, 1.0), 0.9)
 	GameLog.post("You gain %d experience%s." % [amount, (" (%s)" % from) if not from.is_empty() else ""], Color(0.78, 0.62, 1.0))

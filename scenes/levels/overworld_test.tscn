@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/map_event.tscn" id="98_event"]
 [ext_resource type="PackedScene" path="res://scenes/world/safe_area.tscn" id="99_safe"]
 [ext_resource type="PackedScene" path="res://scenes/world/swarm_spot.tscn" id="100_swarm"]
+[ext_resource type="PackedScene" path="res://scenes/world/campfire.tscn" id="106_campfire"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="101_troll"]
 [ext_resource type="PackedScene" path="res://scenes/world/climb_lock.tscn" id="102_climb"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/golem.tscn" id="102_golem"]
@@ -318,3 +319,13 @@ indoors = true
 [node name="FliesByTheRoad" parent="Areas" unique_id=1073066422 instance=ExtResource("100_swarm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51, 2.1, 74)
 visible = false
+
+[node name="Campfires" type="Node3D" parent="." unique_id=1902733415]
+
+[node name="VillageCampfire" parent="Campfires" unique_id=1902733416 instance=ExtResource("106_campfire")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 3, 62)
+camp_name = "Village Campfire"
+
+[node name="PlainsCampfire" parent="Campfires" unique_id=1902733417 instance=ExtResource("106_campfire")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -228, 4, 196)
+camp_name = "Singed Plains Camp"

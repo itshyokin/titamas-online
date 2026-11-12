@@ -20,3 +20,4 @@ When adding a sound from elsewhere, add a row here with its source and licence.
 | `creatures/golem_*.ogg`, `shard_*.ogg`, `gold_blast.ogg` | Original, synthesised | `tools/audio/make_golem_sounds.py`. |
 | `sfx/pick_herb.ogg` | Original, synthesised | `tools/audio/make_herb_sounds.py`. |
 | `ambience/river_loop.ogg`, `ambience/waterfall_loop.ogg` | Original, synthesised | `tools/audio/make_river_sounds.py`. |
+| `ambience/campfire_loop.ogg` | Original, synthesised | `tools/audio/make_campfire_sounds.py`. |
