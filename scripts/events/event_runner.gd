@@ -13,9 +13,10 @@ extends Node
 ##   if {conditions[], then[], else[]}       switch {id, value}      self_switch {letter, value}
 ##   variable {id, op set/add/sub/mul/random, value, max}
 ##   give_item {item, count, silent}         take_item {item, count}  gold {op add/take/set, value, silent}
-##   xp {value}   heal {}   wait {seconds}   sound {sound}   log {text, color}
+##   xp {value}   heal {who player/party, cure, glow}   sparkles {who, color, seconds, count, wait}
+##   wait {seconds}   sound {sound}   log {text, color}
 ##   animation {role, wait}                  effect {color}
-##   teleport {scene, marker, position, fade}   set_home {name}   fade_out / fade_in {seconds}
+##   teleport {scene, marker, position, fade}   set_home {name}   fade_out {seconds, color} / fade_in {seconds}
 ##   follower {npc, op join/leave}           call {event}   erase {}   stop {}
 ##   achievement {id}                        (Achievements.unlock)
 ##   quest {id, op offer/start/complete/fail/reset} (Quests; offer shows QuestOffer and runs
@@ -221,10 +222,30 @@ func _execute(c: Dictionary, list: Array, top: Dictionary) -> void:
 			if progress:
 				progress.call("add_xp", int(c.get("value", 0)), "")
 		"heal":
-			var stats := player.get_node_or_null("Stats") if player else null
-			if stats:
-				stats.call("restore")
-				Effects.heal_glow(player, 1.5)
+			# who: "player" or "party" (the player and followers); cure: ailments go too.
+			var healed: Array = [player] if player else []
+			if String(c.get("who", "player")) == "party":
+				healed += get_tree().get_nodes_in_group("followers")
+			for who in healed:
+				var st := Combat.stats_of(who)
+				if st == null:
+					continue
+				st.restore()
+				if bool(c.get("cure", false)):
+					st.cure_all()
+					if who == player and GameSession.active():
+						GameSession.data.erase("weakened_until")
+				if bool(c.get("glow", true)):
+					Effects.heal_glow(who, 1.5)
+		"sparkles":
+			var color := Color.from_string(String(c.get("color", "#8fd3ff")), Color(0.55, 0.82, 1.0))
+			var on: Array = [player] if player else []
+			if String(c.get("who", "party")) == "party":
+				on += get_tree().get_nodes_in_group("followers")
+			for who in on:
+				Effects.sparkle_down(who, color, float(c.get("seconds", 2.5)), int(c.get("count", 28)))
+			if bool(c.get("wait", false)):
+				_wait = float(c.get("seconds", 2.5))
 		"wait":
 			_wait = float(c.get("seconds", 1.0))
 		"sound":
@@ -271,7 +292,7 @@ func _execute(c: Dictionary, list: Array, top: Dictionary) -> void:
 			if ach:
 				ach.call("unlock", String(c.get("id", "")))
 		"fade_out":
-			ScreenFade.to_black(self, float(c.get("seconds", 0.6)))
+			ScreenFade.to_black(self, float(c.get("seconds", 0.6)), Color.from_string(String(c.get("color", "#000000")), Color.BLACK))
 			_wait = float(c.get("seconds", 0.6))
 		"fade_in":
 			ScreenFade.clear(self, float(c.get("seconds", 0.6)))

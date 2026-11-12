@@ -1196,6 +1196,75 @@
 					"trigger": "none"
 				}
 			]
+		},
+		{
+			"id": "monolith_touch",
+			"name": "The Monolith: restores the party",
+			"note": "Touch the Monolith: a light-blue flash, blue sparks drift down around everyone, full health and mana, ailments cured.",
+			"pages": [
+				{
+					"trigger": "action",
+					"prompt": "Touch the Monolith",
+					"speaker": "",
+					"model": "",
+					"solid": false,
+					"marker": false,
+					"freeze": true,
+					"conditions": [],
+					"commands": [
+						{
+							"cmd": "animation",
+							"role": "touch",
+							"wait": false
+						},
+						{
+							"cmd": "wait",
+							"seconds": 0.6
+						},
+						{
+							"cmd": "sound",
+							"sound": "res://assets/audio/sfx/hearth_teleport.ogg",
+							"volume_db": -2.0
+						},
+						{
+							"cmd": "fade_out",
+							"seconds": 0.7,
+							"color": "#e4f6ff"
+						},
+						{
+							"cmd": "heal",
+							"who": "party",
+							"cure": true,
+							"glow": false
+						},
+						{
+							"cmd": "wait",
+							"seconds": 0.3
+						},
+						{
+							"cmd": "sparkles",
+							"who": "party",
+							"color": "#8fd3ff",
+							"seconds": 3.0,
+							"count": 30,
+							"wait": false
+						},
+						{
+							"cmd": "fade_in",
+							"seconds": 1.2
+						},
+						{
+							"cmd": "log",
+							"text": "The Monolith's light washes over you. You feel restored.",
+							"color": "#a8dcff"
+						},
+						{
+							"cmd": "wait",
+							"seconds": 1.2
+						}
+					]
+				}
+			]
 		}
 	],
 	"switches": [

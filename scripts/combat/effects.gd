@@ -667,3 +667,74 @@ class BloodSpray:
 				_drops.remove_at(i)
 		if _drops.is_empty() or _age > 3.0:
 			queue_free()
+
+
+## Glittering motes that drift down around `who` in slow spirals (blessings, the Monolith).
+static func sparkle_down(who: Node3D, color: Color, seconds := 2.5, count := 28) -> void:
+	if who == null or not who.is_inside_tree():
+		return
+	var fx := SparkleDown.new()
+	fx.color = color
+	fx.seconds = seconds
+	fx.count = count
+	fx.who = who
+	Combat.world_root(who).add_child(fx)
+	fx.global_position = who.global_position
+
+
+## Moved by hand (so it shows in every renderer): each mote starts above the head and
+## twirls down round the body, twinkling, then fades.
+class SparkleDown extends Node3D:
+	var color := Color(0.5, 0.8, 1.0)
+	var seconds := 2.5
+	var count := 28
+	var who: Node3D
+	var _motes: Array = []  # [MeshInstance3D, delay, angle, radius, speed]
+	var _t := 0.0
+	var _light: OmniLight3D
+
+	func _ready() -> void:
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		mat.albedo_color = color
+		mat.emission_enabled = true
+		mat.emission = color
+		mat.albedo_texture = Effects._mote_texture(true)
+		mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+		for i in count:
+			var q := QuadMesh.new()
+			q.size = Vector2.ONE * randf_range(0.09, 0.17)
+			var m := MeshInstance3D.new()
+			m.mesh = q
+			m.material_override = mat
+			m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(m)
+			_motes.append([m, randf_range(0.0, seconds * 0.45), randf() * TAU, randf_range(0.35, 0.8), randf_range(0.8, 1.4)])
+		_light = OmniLight3D.new()
+		_light.light_color = color
+		_light.light_energy = 0.0
+		_light.omni_range = 4.0
+		_light.position = Vector3.UP * 1.2
+		add_child(_light)
+
+	func _process(delta: float) -> void:
+		_t += delta
+		if is_instance_valid(who):
+			global_position = who.global_position
+		var life := seconds * 0.6
+		for e: Array in _motes:
+			var m: MeshInstance3D = e[0]
+			var k := (_t - float(e[1])) / life
+			m.visible = k > 0.0 and k < 1.0
+			if not m.visible:
+				continue
+			var a := float(e[2]) + k * TAU * 1.2 * float(e[4])
+			var r := float(e[3]) * (1.0 - k * 0.4)
+			m.position = Vector3(cos(a) * r, lerpf(2.4, 0.1, k), sin(a) * r)
+			var twinkle := 0.6 + 0.4 * sin(_t * 18.0 + float(e[2]) * 5.0)
+			m.scale = Vector3.ONE * twinkle * (1.0 - k * 0.5)
+		_light.light_energy = sin(clampf(_t / seconds, 0.0, 1.0) * PI) * 1.6
+		if _t > seconds:
+			queue_free()

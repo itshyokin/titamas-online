@@ -253,6 +253,12 @@ size = Vector3(1, 2, 1)
 [node name="LookoutPoint" type="Marker3D" parent="Events" unique_id=593464410]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.00539, 7, 60)
 
+[node name="Monolith" parent="Events" unique_id=1844102931 instance=ExtResource("98_event")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49.4, 1.5, 95.2)
+visible = false
+event_id = "monolith_touch"
+size = Vector3(3.5, 3, 3.5)
+
 [node name="Tutorial" type="Node3D" parent="Events" unique_id=1487523754]
 
 [node name="TutWake" parent="Events/Tutorial" unique_id=65192816 instance=ExtResource("98_event")]

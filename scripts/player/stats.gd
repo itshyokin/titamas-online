@@ -106,6 +106,18 @@ func add_status(id: String, seconds: float, source: Node = null) -> void:
 		FloatingText.spawn(get_parent() as Node3D, String(d.get("name", id)), Color.html(String(d.get("color", "#ffffff"))), 1.0)
 
 
+## Clears every ailment and debuff (buffs stay). Returns how many went.
+func cure_all() -> int:
+	var gone := 0
+	for id: String in statuses.keys():
+		if String(status_data(id).get("kind", "ailment")) != "buff":
+			statuses.erase(id)
+			gone += 1
+	if gone > 0:
+		statuses_changed.emit()
+	return gone
+
+
 func remove_status(id: String) -> void:
 	if statuses.erase(id):
 		statuses_changed.emit()

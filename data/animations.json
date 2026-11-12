@@ -1154,7 +1154,8 @@
 		"injured_walk": "injured_walk",
 		"getting_up": "getting_up",
 		"enchant": "enchant_weapon",
-		"ground_quake": "ground_quake"
+		"ground_quake": "ground_quake",
+		"touch": "cast_1h_a"
 	},
 	"look": {
 		"range": 6.0,
