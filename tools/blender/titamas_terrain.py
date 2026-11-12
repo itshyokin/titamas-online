@@ -547,25 +547,33 @@ def _paint_to_uv(bm) -> None:
 	loop_layer = bm.loops.layers.float_color.get(PAINT_ATTR) or bm.loops.layers.color.get(PAINT_ATTR)
 	if vert_layer is None and loop_layer is None:
 		return
+	def weights_of(loop):
+		c = loop[loop_layer] if loop_layer is not None else loop.vert[vert_layer]
+		r, g, b = max(c[0], 0.0), max(c[1], 0.0), max(c[2], 0.0)
+		total = r + g + b
+		fourth = 0.0
+		if total < 1.0:
+			fourth = 1.0 - total
+			total = 1.0
+		if fourth < 0.004:  # rounding: not painted black
+			fourth = 0.0
+		return g / total, b / total, fourth
+
+	# Every UV layer is added before any loop is touched: adding a layer reallocates the
+	# loop data, and loops held from before it are then "removed".
+	uses_fourth = any(weights_of(loop)[2] > 0.0 for face in bm.faces for loop in face.loops)
 	uv = bm.loops.layers.uv.get("TerrainPaintUV") or bm.loops.layers.uv.new("TerrainPaintUV")
-	weights = []
+	uv4 = None
+	if uses_fourth:
+		uv4 = bm.loops.layers.uv.get("TerrainPaintUV2") or bm.loops.layers.uv.new("TerrainPaintUV2")
+	vert_layer = bm.verts.layers.float_color.get(PAINT_ATTR) or bm.verts.layers.color.get(PAINT_ATTR)
+	loop_layer = bm.loops.layers.float_color.get(PAINT_ATTR) or bm.loops.layers.color.get(PAINT_ATTR)
 	for face in bm.faces:
 		for loop in face.loops:
-			c = loop[loop_layer] if loop_layer is not None else loop.vert[vert_layer]
-			r, g, b = max(c[0], 0.0), max(c[1], 0.0), max(c[2], 0.0)
-			total = r + g + b
-			fourth = 0.0
-			if total < 1.0:
-				fourth = 1.0 - total
-				total = 1.0
-			if fourth < 0.004:  # rounding: not painted black
-				fourth = 0.0
-			loop[uv].uv = (g / total, 1.0 - b / total)
-			weights.append((loop, fourth))
-	if any(f > 0.0 for _, f in weights):
-		uv4 = bm.loops.layers.uv.get("TerrainPaintUV2") or bm.loops.layers.uv.new("TerrainPaintUV2")
-		for loop, f in weights:
-			loop[uv4].uv = (f, 0.0)
+			g, b, fourth = weights_of(loop)
+			loop[uv].uv = (g, 1.0 - b)
+			if uv4 is not None:
+				loop[uv4].uv = (fourth, 0.0)
 
 
 # Blender (Z up) -> Godot (Y up): x -> x, z -> y, y -> -z
