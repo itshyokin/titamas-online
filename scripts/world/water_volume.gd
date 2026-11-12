@@ -26,6 +26,9 @@ const WATER_LAYER := 8  # layer 4
 		lava = value
 		_rebuild()
 
+## Running water (rivers): swimmers are carried along at this velocity (m/s, world).
+@export var flow := Vector3.ZERO
+
 const LAVA_MATERIAL := preload("res://assets/materials/lava.tres")
 
 var _shape: CollisionShape3D

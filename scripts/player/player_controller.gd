@@ -1076,6 +1076,10 @@ func _swim_movement(delta: float) -> void:
 	var target := direction * (swim_sprint_speed if is_sprinting else swim_speed) * speed_scale
 	if _is_lava(_water):
 		target *= lava_speed
+	# Rivers carry you along.
+	var current = _water.get("flow")
+	if current is Vector3:
+		target += current
 	velocity.x = lerpf(velocity.x, target.x, 3.0 * delta)
 	velocity.z = lerpf(velocity.z, target.z, 3.0 * delta)
 	if direction != Vector3.ZERO:

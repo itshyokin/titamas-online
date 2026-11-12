@@ -19,3 +19,4 @@ When adding a sound from elsewhere, add a row here with its source and licence.
 | `ambience/desert_day_loop.ogg`, `desert_night_loop.ogg`, `hawk_cry.ogg`, `sand_gust.ogg`, `lava_rumble.ogg` | Original, synthesised | `tools/audio/make_desert_sounds.py`. |
 | `creatures/golem_*.ogg`, `shard_*.ogg`, `gold_blast.ogg` | Original, synthesised | `tools/audio/make_golem_sounds.py`. |
 | `sfx/pick_herb.ogg` | Original, synthesised | `tools/audio/make_herb_sounds.py`. |
+| `ambience/river_loop.ogg`, `ambience/waterfall_loop.ogg` | Original, synthesised | `tools/audio/make_river_sounds.py`. |

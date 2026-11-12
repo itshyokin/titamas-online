@@ -41,6 +41,11 @@ var _ground := {}  # Vector2i -> ground set id ("" = standard), from the chunk's
 var _props: PropLibrary
 const WATER_MATERIAL := preload("res://assets/materials/water.tres")
 const LAVA_MATERIAL := preload("res://assets/materials/lava.tres")
+const RIVER_MATERIAL := preload("res://assets/materials/river.tres")
+const RIVER_CELL := 4.0         # m: one swimmable box (with its own current) per cell
+const RIVER_PUSH := 0.6         # share of the shader's flow speed that pushes swimmers
+const RIVER_SOUND := "res://assets/audio/ambience/river_loop.ogg"
+const FALLS_SOUND := "res://assets/audio/ambience/waterfall_loop.ogg"
 ## How deep the swimmable box under a Blender water plane reaches.
 const WATER_PLANE_DEPTH := 30.0
 ## Terrain vertex spacing (m), matching the Blender add-on.
@@ -334,7 +339,7 @@ func _read_terrain(chunk: Node3D) -> Array:
 	for pass_index in 2:
 		for node in chunk.find_children("*", "MeshInstance3D", true, false):
 			var mi := node as MeshInstance3D
-			if String(mi.name).ends_with("-water") or String(mi.name).ends_with("-lava") or mi.mesh == null or mi.get_parent().name == "Props":
+			if String(mi.name).ends_with("-water") or String(mi.name).ends_with("-lava") or String(mi.name).ends_with("-river") or mi.mesh == null or mi.get_parent().name == "Props":
 				continue
 			if _is_prop(mi, chunk):
 				continue
@@ -430,6 +435,9 @@ func _add_chunk(cell: Vector2i, scene: PackedScene, props_now := true) -> void:
 		var mi := mesh as MeshInstance3D
 		if String(mi.name).ends_with("-water") or String(mi.name).ends_with("-lava"):
 			_make_water(mi, cell, chunk, String(mi.name).ends_with("-lava"))
+			continue
+		if String(mi.name).ends_with("-river"):
+			_make_river(mi, cell, chunk)
 			continue
 		for s in mi.mesh.get_surface_count():
 			var mat := mi.mesh.surface_get_material(s)
@@ -543,6 +551,147 @@ func _make_water(mi: MeshInstance3D, cell: Vector2i, chunk: Node3D, lava := fals
 	mi.add_child(volume)
 	if lava:
 		_lava_glow(mi, box)
+
+
+## A Blender river / stream / waterfall plane ("<name>-river"): running water (river.gdshader,
+## downstream = the mesh's +V), swimmable boxes on its flat parts with a current that
+## carries swimmers along, the sound of running water and, below steep parts, a waterfall's
+## roar and mist.
+func _make_river(mi: MeshInstance3D, cell: Vector2i, chunk: Node3D) -> void:
+	mi.material_override = RIVER_MATERIAL
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var xf := Transform3D.IDENTITY
+	var walk: Node = mi
+	while walk != chunk and walk is Node3D:
+		xf = (walk as Node3D).transform * xf
+		walk = walk.get_parent()
+	var world_box := (chunk.transform * xf) * mi.get_aabb()
+	if not _water_rects.has(cell):
+		_water_rects[cell] = []
+	_water_rects[cell].append([Rect2(world_box.position.x, world_box.position.z, world_box.size.x, world_box.size.z), world_box.end.y])
+	var sp = RIVER_MATERIAL.get_shader_parameter("flow_speed")
+	var speed: float = float(sp) if sp != null else 1.6
+	var cells := {}  # Vector2i -> [top, flow sum, count]
+	var falls: Array[Vector3] = []
+	var flat_sum := Vector3.ZERO
+	var flat_n := 0
+	for si in mi.mesh.get_surface_count():
+		var a := mi.mesh.surface_get_arrays(si)
+		var v: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+		var nrm: PackedVector3Array = a[Mesh.ARRAY_NORMAL]
+		var tan = a[Mesh.ARRAY_TANGENT]
+		var idx = a[Mesh.ARRAY_INDEX]
+		var count: int = idx.size() if idx else v.size()
+		for t in range(0, count - 2, 3):
+			var ids := [idx[t], idx[t + 1], idx[t + 2]] if idx else [t, t + 1, t + 2]
+			var c := (v[ids[0]] + v[ids[1]] + v[ids[2]]) / 3.0
+			var n := (v[ids[1]] - v[ids[0]]).cross(v[ids[2]] - v[ids[0]]).normalized()
+			if n.y < 0.0:
+				n = -n
+			if n.y < 0.7:
+				falls.append(c)
+				continue
+			var f := Vector3.ZERO
+			if tan and tan.size() >= v.size() * 4:
+				for k in ids:
+					var tv := Vector3(tan[k * 4], tan[k * 4 + 1], tan[k * 4 + 2])
+					f += nrm[k].cross(tv) * float(tan[k * 4 + 3])
+			flat_sum += c
+			flat_n += 1
+			var key := Vector2i(floori(c.x / RIVER_CELL), floori(c.z / RIVER_CELL))
+			if not cells.has(key):
+				cells[key] = [c.y, Vector3.ZERO, 0]
+			cells[key][0] = maxf(float(cells[key][0]), c.y)
+			cells[key][1] += Vector3(f.x, 0.0, f.z)
+			cells[key][2] += 1
+	var made := 0
+	for key: Vector2i in cells:
+		if made >= 160:
+			break
+		made += 1
+		var e: Array = cells[key]
+		var flow: Vector3 = e[1]
+		flow = (xf.basis * flow).normalized() * speed * RIVER_PUSH if flow.length() > 0.01 else Vector3.ZERO
+		var volume := WaterVolume.new()
+		volume.show_surface = false
+		volume.size = Vector3(RIVER_CELL, 3.0, RIVER_CELL)
+		volume.position = Vector3((key.x + 0.5) * RIVER_CELL, float(e[0]) + 0.05 - 1.5, (key.y + 0.5) * RIVER_CELL)
+		volume.flow = flow
+		mi.add_child(volume)
+	if Engine.is_editor_hint():
+		return
+	if flat_n > 0:
+		_river_sound(mi, flat_sum / flat_n, RIVER_SOUND, -6.0, 26.0)
+	if not falls.is_empty():
+		var mid := Vector3.ZERO
+		var low := falls[0]
+		for p in falls:
+			mid += p
+			if p.y < low.y:
+				low = p
+		_river_sound(mi, mid / falls.size(), FALLS_SOUND, 0.0, 45.0)
+		_falls_mist(mi, low)
+
+
+func _river_sound(mi: Node3D, at: Vector3, path: String, db: float, reach: float) -> void:
+	if not ResourceLoader.exists(path):
+		return
+	var p := AudioStreamPlayer3D.new()
+	p.stream = load(path)
+	p.bus = "Ambience"
+	p.volume_db = db
+	p.max_distance = reach
+	p.unit_size = 6.0
+	p.position = at
+	p.autoplay = true
+	mi.add_child(p)
+
+
+## White spray where a waterfall lands.
+func _falls_mist(mi: Node3D, at: Vector3) -> void:
+	var mist := GPUParticles3D.new()
+	mist.amount = 40
+	mist.lifetime = 1.6
+	mist.position = at
+	mist.visibility_aabb = AABB(Vector3(-4, -1, -4), Vector3(8, 6, 8))
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	pm.emission_sphere_radius = 1.2
+	pm.direction = Vector3.UP
+	pm.spread = 70.0
+	pm.initial_velocity_min = 0.8
+	pm.initial_velocity_max = 2.2
+	pm.gravity = Vector3(0, -0.6, 0)
+	pm.scale_min = 0.8
+	pm.scale_max = 1.6
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1, 1, 1, 0.45))
+	fade.set_color(1, Color(1, 1, 1, 0.0))
+	var ramp := GradientTexture1D.new()
+	ramp.gradient = fade
+	pm.color_ramp = ramp
+	mist.process_material = pm
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.8, 0.8)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.vertex_color_use_as_albedo = true
+	var soft := GradientTexture2D.new()
+	soft.fill = GradientTexture2D.FILL_RADIAL
+	soft.fill_from = Vector2(0.5, 0.5)
+	soft.fill_to = Vector2(1.0, 0.5)
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 1))
+	g.set_color(1, Color(1, 1, 1, 0))
+	soft.gradient = g
+	soft.width = 32
+	soft.height = 32
+	mat.albedo_texture = soft
+	quad.material = mat
+	mist.draw_pass_1 = quad
+	mi.add_child(mist)
 
 
 ## Orange light over a lava pool (one per ~24 m, at most 4) and embers rising off it.

@@ -25,6 +25,9 @@ bl_info = {
 #
 # Water: flat mesh planes in a collection named "Water" are cut per chunk too and exported
 # as "<name>-water"; Godot turns them into swimmable water with the water shader.
+# Named or textured "river" / "stream" / "falls" / "waterfall": running water ("<name>-river")
+# flowing toward the plane's UV +V (a plain plane: its own +Y; strips: Follow Active Quads);
+# steep faces become waterfalls (white water, roar, mist), swimmers are carried along.
 #
 # Match Edges: when starting a region next to one that's already exported, snaps this
 # terrain's border to the neighbour's exported edge heights (and blends inward).
@@ -507,7 +510,7 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 						piece.free()
 						continue
 					bmesh.ops.translate(piece, verts=piece.verts, vec=(-cx, -cy, 0.0))
-					kind = "lava" if _is_lava(wname, wmats) else "water"
+					kind = "lava" if _is_lava(wname, wmats) else ("river" if _is_river(wname, wmats) else "water")
 					wmesh = bpy.data.meshes.new(f"{wname}-{kind}")
 					piece.to_mesh(wmesh)
 					piece.free()
@@ -686,6 +689,15 @@ def _export_glb(path: str, include_textures: bool) -> None:
 			if bad is None:
 				raise
 			del extras[bad]
+
+
+def _is_river(name, materials) -> bool:
+	"""Planes in the water collection named or textured "river", "stream", "falls" or
+	"waterfall" export as running water. Downstream is the plane's UV up (+V): a plain
+	plane flows along its own +Y; for a winding strip use UV > Follow Active Quads.
+	Steep parts become waterfalls on their own."""
+	words = ("river", "stream", "falls", "waterfall")
+	return any(w in name.lower() for w in words) or any(m and any(w in m.name.lower() for w in words) for m in materials)
 
 
 def _is_lava(name, materials) -> bool:

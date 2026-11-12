@@ -1,0 +1,20 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://assets/materials/river.gdshader" id="1_epjfw"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_epjfw")
+shader_parameter/shallow_color = null
+shader_parameter/deep_color = null
+shader_parameter/foam_color = null
+shader_parameter/shore_color = null
+shader_parameter/flow_speed = null
+shader_parameter/fall_speed = null
+shader_parameter/streak_scale = null
+shader_parameter/foam_amount = null
+shader_parameter/shore_width = null
+shader_parameter/foam_width = null
+shader_parameter/deep_distance = null
+shader_parameter/roughness_value = null
+shader_parameter/specular_value = null
