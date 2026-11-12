@@ -186,6 +186,21 @@ def _check_spacing(op, s) -> bool:
 	return True
 
 
+class TITAMAS_OT_chunk_from_cursor(bpy.types.Operator):
+	bl_idname = "titamas.chunk_from_cursor"
+	bl_label = "Chunk at 3D Cursor"
+	bl_description = "Set Chunk X / Chunk Y to the chunk under the 3D cursor (Shift+right-click to place the cursor first)"
+	bl_options = {"REGISTER", "UNDO"}
+
+	def execute(self, context):
+		s = context.scene.titamas_terrain
+		c = context.scene.cursor.location
+		s.start_i = round(c.x / s.chunk_size)
+		s.start_j = -round(c.y / s.chunk_size)
+		self.report({"INFO"}, f"Chunk X {s.start_i}, Chunk Y {s.start_j}")
+		return {"FINISHED"}
+
+
 class TITAMAS_OT_new_terrain(bpy.types.Operator):
 	bl_idname = "titamas.new_terrain"
 	bl_label = "New Terrain"
@@ -1112,8 +1127,16 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 		row = box.row(align=True)
 		row.prop(s, "start_i")
 		row.prop(s, "start_j")
+		box.operator(TITAMAS_OT_chunk_from_cursor.bl_idname, icon="PIVOT_CURSOR")
 		box.prop(s, "columns")
 		box.prop(s, "rows")
+		# Where that lands: the grid is fixed in the world (chunk_I_J = its place in the game).
+		i1, j1 = s.start_i + s.columns - 1, s.start_j + s.rows - 1
+		col = box.column(align=True)
+		col.scale_y = 0.8
+		col.label(text=f"chunk_{s.start_i}_{s.start_j} to chunk_{i1}_{j1}")
+		col.label(text=f"X {s.start_i * s.chunk_size - s.chunk_size / 2:g} to {i1 * s.chunk_size + s.chunk_size / 2:g} m, "
+			f"Y {-s.start_j * s.chunk_size + s.chunk_size / 2:g} to {-j1 * s.chunk_size - s.chunk_size / 2:g} m")
 		box.operator(TITAMAS_OT_extend_terrain.bl_idname, icon="ADD")
 		box.operator(TITAMAS_OT_new_terrain.bl_idname, icon="MESH_PLANE")
 		box.prop(s, "lock_sculpt")
@@ -1153,6 +1176,7 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 
 
 classes = (
+	TITAMAS_OT_chunk_from_cursor,
 	TitamasTerrainSettings,
 	TITAMAS_OT_new_terrain,
 	TITAMAS_OT_extend_terrain,
