@@ -61,6 +61,34 @@ var _moods: Array = []
 var _model: CharacterModel  # the speaker's face (talking mouth, moods)
 
 
+static var _frozen: Array = []
+
+
+## Conversations stop the fight: enemies (and hostile NPCs), enemy missiles and their AI are
+## paused (PROCESS_MODE_DISABLED) until the talk ends. WorldPerf leaves them alone meanwhile.
+static func _freeze(tree: SceneTree, on: bool) -> void:
+	if not on:
+		for n in _frozen:
+			if is_instance_valid(n) and n.has_meta("talk_frozen"):
+				n.process_mode = n.get_meta("talk_frozen")
+				n.remove_meta("talk_frozen")
+		_frozen.clear()
+		return
+	var player := tree.get_first_node_in_group("player")
+	if player == null or Net.active:
+		return  # in co-op the others are still fighting
+	var nodes: Array = tree.get_nodes_in_group("hostile_missiles")
+	for n in tree.get_nodes_in_group(Combat.GROUP):
+		if n != player and Combat.is_enemy_of(player, n):
+			nodes.append(n)
+	for n in nodes:
+		if n.has_meta("talk_frozen") or n.has_meta("perf_asleep"):
+			continue
+		n.set_meta("talk_frozen", n.process_mode)
+		n.process_mode = Node.PROCESS_MODE_DISABLED
+		_frozen.append(n)
+
+
 static func open(from: Node, speaker: String, title: String, lines: Array, on_done: Callable, choices: Array = [], moods: Array = []) -> DialogueBox:
 	var box := DialogueBox.new()
 	box._moods = moods
@@ -199,6 +227,8 @@ func _set_bubble(on: bool) -> void:
 func _ready() -> void:
 	GameSettings.menu_open = true
 	is_open = true
+	if bool(_settings().get("freeze_enemies", true)):
+		_freeze(get_tree(), true)
 	var d := _settings()
 	_cps = float(d.get("chars_per_second", CHARS_PER_SECOND))
 	var path := String(d.get("tick_sound", ""))
@@ -387,6 +417,11 @@ func _finish() -> void:
 	TalkCamera.release()
 	closed_at = Time.get_ticks_msec()
 	is_open = false
+	# Thaw a moment later unless another box opens (an event's next line).
+	var tree := get_tree()
+	tree.create_timer(0.25).timeout.connect(func() -> void:
+		if not DialogueBox.is_open:
+			DialogueBox._freeze(tree, false))
 	GameSettings.menu_open = false
 	if _on_done.is_valid():
 		_on_done.call()

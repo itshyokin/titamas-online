@@ -131,7 +131,12 @@
 		"camera_height": 0.1,
 		"camera_aim": 0.22,
 		"camera_fov": 45.0,
-		"camera_glide": 0.45
+		"camera_glide": 0.45,
+		"vignette": 0.6,
+		"dof": true,
+		"dof_amount": 0.12,
+		"dof_behind": 1.5,
+		"freeze_enemies": true
 	},
 	"discs": {
 		"enabled": true,

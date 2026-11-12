@@ -189,7 +189,8 @@ func _update_sleep() -> void:
 	asleep = 0
 	var seen := {}
 	for n in get_tree().get_nodes_in_group(Combat.GROUP) + get_tree().get_nodes_in_group("npcs"):
-		if seen.has(n) or not n is CharacterBody3D or n.is_in_group("player") or n.is_in_group("party_members"):
+		if seen.has(n) or not n is CharacterBody3D or n.is_in_group("player") or n.is_in_group("party_members") \
+				or n.has_meta("talk_frozen"):
 			continue
 		seen[n] = true
 		var body := n as CharacterBody3D

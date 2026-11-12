@@ -49,6 +49,7 @@ static func needle_mesh(length := 1.1, radius := 0.12) -> Mesh:
 
 
 func _ready() -> void:
+	add_to_group("hostile_missiles")  # paused during conversations (DialogueBox)
 	top_level = true
 	_mesh = MeshInstance3D.new()
 	_mesh.mesh = needle_mesh()

@@ -6,6 +6,8 @@ extends Camera3D
 ## back to the game camera. Boxes opened one after another (an event's texts and choices)
 ## keep the same shot. Settings: player.json "dialogue" camera, camera_back, camera_side,
 ## camera_height, camera_aim, camera_fov, camera_range, camera_glide (Database → Player).
+## The shot also darkens the screen's edges (`vignette`) and blurs what's behind the
+## speaker (`dof`, `dof_amount`, `dof_behind`; depth of field needs Forward+).
 
 static var _cam: TalkCamera
 
@@ -16,6 +18,9 @@ var _from: Camera3D  # the game camera to hand back to
 var _blend := 0.0     # 0 = at the game camera, 1 = at the talk shot
 var _leaving := false
 var _leave_at := 0
+var _veil: CanvasLayer
+var _veil_mat: ShaderMaterial
+var _attrs: CameraAttributesPractical
 
 
 ## Starts (or re-aims) the talk shot. Does nothing while another camera (a cutscene) is in
@@ -44,6 +49,7 @@ static func engage(who: Node3D, talker: Node3D, settings: Dictionary) -> void:
 	who.get_tree().root.add_child(c)
 	c.global_transform = current.global_transform
 	c.current = true
+	c._build_mood()
 	_cam = c
 	# The player turns to face whoever they're talking to.
 	var model = who.get("model")
@@ -74,6 +80,35 @@ func _process(delta: float) -> void:
 	var k := smoothstep(0.0, 1.0, _blend)
 	global_transform = _from.global_transform.interpolate_with(shot, k)
 	fov = lerpf(_from.fov, float(cfg.get("camera_fov", 45.0)), k)
+	_update_mood(k)
+
+
+## Vignette overlay + depth of field on this camera.
+func _build_mood() -> void:
+	_veil = CanvasLayer.new()
+	_veil.layer = 0  # over the world, under the HUD and speech bubbles
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_veil_mat = ShaderMaterial.new()
+	_veil_mat.shader = load("res://assets/materials/talk_vignette.gdshader")
+	rect.material = _veil_mat
+	_veil.add_child(rect)
+	get_tree().root.add_child(_veil)
+	var base := _from.attributes if _from else null
+	_attrs = (base.duplicate() as CameraAttributesPractical) if base is CameraAttributesPractical else CameraAttributesPractical.new()
+	attributes = _attrs
+
+
+func _update_mood(k: float) -> void:
+	if _veil_mat:
+		_veil_mat.set_shader_parameter("strength", float(cfg.get("vignette", 0.6)) * k)
+	if _attrs and is_instance_valid(speaker):
+		var on := bool(cfg.get("dof", true))
+		_attrs.dof_blur_far_enabled = on and k > 0.01
+		_attrs.dof_blur_far_distance = global_position.distance_to(speaker.global_position) + float(cfg.get("dof_behind", 1.5))
+		_attrs.dof_blur_far_transition = 3.0
+		_attrs.dof_blur_amount = float(cfg.get("dof_amount", 0.12)) * k
 
 
 ## Behind and beside the player's head, aimed so the speaker sits right of centre.
@@ -89,6 +124,11 @@ func _shot() -> Transform3D:
 		+ Vector3.UP * float(cfg.get("camera_height", 0.1))
 	var aim := b - right * dist * float(cfg.get("camera_aim", 0.22))
 	return Transform3D(Basis.looking_at(aim - pos, Vector3.UP), pos)
+
+
+func _exit_tree() -> void:
+	if is_instance_valid(_veil):
+		_veil.queue_free()
 
 
 func _hand_back() -> void:

@@ -39,6 +39,7 @@ static func throw_at(from: Vector3, at: Vector3, seconds: float, thrower: Node3D
 
 
 func _ready() -> void:
+	add_to_group("hostile_missiles")  # paused during conversations (DialogueBox)
 	top_level = true
 	_mesh = MeshInstance3D.new()
 	_mesh.mesh = BeastModel.rock_mesh(0.55)

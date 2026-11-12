@@ -67,6 +67,7 @@ static func ballistic(from: Vector3, to: Vector3, speed: float, g: float) -> Vec
 
 
 func _ready() -> void:
+	add_to_group("hostile_missiles")  # paused during conversations (DialogueBox)
 	_style = ability.projectile_style
 	var color := ability.projectile_color
 	match _style:

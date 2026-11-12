@@ -866,6 +866,11 @@ const TABS = {
 				{ key: "dialogue.camera_aim", label: "Talk camera: speaker off-centre (0 = middle)", type: "number", def: 0.22 },
 				{ key: "dialogue.camera_fov", label: "Talk camera: field of view (°)", type: "number", def: 45 },
 				{ key: "dialogue.camera_glide", label: "Talk camera: glide in/out (s)", type: "number", def: 0.45 },
+				{ key: "dialogue.vignette", label: "Talking: dark edges (0–1)", type: "number", def: 0.6 },
+				{ key: "dialogue.dof", label: "Talking: blur behind the speaker", type: "bool", def: true, help: "Depth of field (Forward+ renderer only)." },
+				{ key: "dialogue.dof_amount", label: "Blur strength", type: "number", def: 0.12 },
+				{ key: "dialogue.dof_behind", label: "Blur starts this far behind the speaker (m)", type: "number", def: 1.5 },
+				{ key: "dialogue.freeze_enemies", label: "Enemies freeze while talking", type: "bool", def: true, help: "Enemies, hostile NPCs and anything thrown or fired stop until the conversation ends." },
 			]],
 			["Item rarity colours", [
 				{ key: "rarity_colors.common", label: "Common", type: "color" },
