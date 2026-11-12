@@ -313,5 +313,23 @@
 		"death_choice": true,
 		"revive_seconds": 3.0,
 		"revive_health": 0.4
+	},
+	"ui_sounds": {
+		"enabled": true,
+		"volume_db": -4.0,
+		"hover_db": 0.0,
+		"click_db": 0.0,
+		"tab_db": 0.0,
+		"open_db": 0.0,
+		"close_db": 0.0,
+		"hover": "res://assets/audio/ui/ui_hover.ogg",
+		"click": "res://assets/audio/ui/ui_click.ogg",
+		"toggle": "res://assets/audio/ui/ui_toggle.ogg",
+		"slider": "res://assets/audio/ui/ui_slider.ogg",
+		"tab": "res://assets/audio/ui/ui_tab.ogg",
+		"open": "res://assets/audio/ui/ui_open.ogg",
+		"close": "res://assets/audio/ui/ui_close.ogg",
+		"back": "res://assets/audio/ui/ui_back.ogg",
+		"error": "res://assets/audio/ui/ui_error.ogg"
 	}
 }

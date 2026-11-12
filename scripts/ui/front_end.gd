@@ -824,7 +824,8 @@ func _fill_achievements() -> void:
 		pts.add_theme_color_override("font_color", Color(1.0, 0.82, 0.48) if got else Color(0.42, 0.44, 0.53))
 		right.add_child(pts)
 		if got:
-			var when := _note(Time.get_date_string_from_unix_time(int(ach.call("unlocked_at", id))))
+			var when := _note(_date(float(ach.call("unlocked_at", id))).get_slice(",", 0))
+			when.autowrap_mode = TextServer.AUTOWRAP_OFF
 			when.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			when.add_theme_font_size_override("font_size", 12)
 			right.add_child(when)

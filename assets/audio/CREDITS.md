@@ -21,3 +21,4 @@ When adding a sound from elsewhere, add a row here with its source and licence.
 | `sfx/pick_herb.ogg` | Original, synthesised | `tools/audio/make_herb_sounds.py`. |
 | `ambience/river_loop.ogg`, `ambience/waterfall_loop.ogg` | Original, synthesised | `tools/audio/make_river_sounds.py`. |
 | `ambience/campfire_loop.ogg` | Original, synthesised | `tools/audio/make_campfire_sounds.py`. |
+| `ui/ui_hover`, `ui_click`, `ui_toggle`, `ui_slider`, `ui_tab`, `ui_open`, `ui_close`, `ui_back`, `ui_error` | Original, synthesised | `tools/audio/make_menu_sounds.py`. |

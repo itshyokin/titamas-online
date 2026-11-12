@@ -1,6 +1,6 @@
 class_name Codex
 extends CanvasLayer
-## The Codex (book button, top right; Esc / Start): one book with pages down the left —
+## The Codex (book button, top right; Esc / Start): one book with tabs along the top —
 ## Character (a 3D view of you and your stats), Quests, Spells, Skills, Achievements, Lore
 ## and Settings — plus Save game / Quit to title. Quests, Spells and Skills are the quest
 ## log, spellbook and skill trees shown inside the book (L opens the quest log on its own;
@@ -11,6 +11,7 @@ extends CanvasLayer
 const PANEL := Color(0.075, 0.068, 0.09, 0.97)
 const PAGE := Color(0.12, 0.11, 0.14, 1.0)
 const ACCENT := Color(1.0, 0.85, 0.45)
+const WINDOW_SIZE := Vector2(1100, 650)
 const PAGES := [["character", "Character"], ["backpack", "Backpack"], ["quests", "Quests"], ["spells", "Spells"], ["skills", "Skills"],
 	["achievements", "Achievements"], ["lore", "Lore"], ["settings", "Settings"]]
 
@@ -22,6 +23,7 @@ var character_window: CharacterWindow  # the backpack + gear, shown as the Backp
 var targeting: Node
 
 var _window: PanelContainer
+var _backdrop: ColorRect  # dims the game behind the open book
 var _page: PanelContainer
 var _nav := {}  # page id -> Button
 var _current := ""
@@ -52,7 +54,10 @@ func is_open() -> bool:
 func open(page := "") -> void:
 	if page == "":
 		page = _current if _current != "" else "character"
+	if not _window.visible:
+		UiSounds.play("open")
 	_window.visible = true
+	_backdrop.visible = true
 	GameSettings.menu_open = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	show_page(page)
@@ -62,7 +67,10 @@ func close() -> void:
 	_release_embedded()
 	if settings:
 		settings.call("_cancel_wait")
+	if _window.visible:
+		UiSounds.play("close")
 	_window.visible = false
+	_backdrop.visible = false
 	GameSettings.menu_open = false
 
 
@@ -126,6 +134,12 @@ func _build_book_button() -> void:
 
 
 func _build_window() -> void:
+	_backdrop = ColorRect.new()
+	_backdrop.color = Color(0.02, 0.015, 0.03, 0.55)
+	_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_backdrop.visible = false
+	add_child(_backdrop)
 	_window = PanelContainer.new()
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = PANEL
@@ -137,54 +151,54 @@ func _build_window() -> void:
 	sb.shadow_size = 14
 	_window.add_theme_stylebox_override("panel", sb)
 	_window.set_anchors_preset(Control.PRESET_CENTER)
-	_window.custom_minimum_size = Vector2(1000, 620)
-	_window.position = Vector2(-500, -310)
+	_window.custom_minimum_size = WINDOW_SIZE
+	_window.position = -WINDOW_SIZE * 0.5
 	add_child(_window)
-	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 14)
-	_window.add_child(h)
-	# The page list.
-	var nav := VBoxContainer.new()
-	nav.custom_minimum_size = Vector2(170, 0)
-	nav.add_theme_constant_override("separation", 6)
-	h.add_child(nav)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 0)
+	_window.add_child(v)
+	# Tabs along the top: picture + name; the chosen one joins the page below it.
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 4)
+	v.add_child(top)
 	var title := Label.new()
 	title.text = "Codex"
-	title.add_theme_font_size_override("font_size", 26)
+	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_color", ACCENT)
-	nav.add_child(title)
-	nav.add_child(HSeparator.new())
+	title.custom_minimum_size = Vector2(92, 0)
+	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top.add_child(title)
 	for p: Array in PAGES:
 		var b := Button.new()
 		b.text = p[1]
 		b.toggle_mode = true
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.custom_minimum_size = Vector2(0, 38)
-		b.add_theme_font_size_override("font_size", 17)
+		b.focus_mode = Control.FOCUS_ALL
+		b.custom_minimum_size = Vector2(0, 42)
+		b.add_theme_font_size_override("font_size", 15)
+		b.add_theme_constant_override("h_separation", 6)
+		var pic := IconArt.texture("res://assets/icons/codex/%s.png" % p[0])
+		if pic:
+			b.icon = pic
+			b.expand_icon = false
+			b.add_theme_constant_override("icon_max_width", 24)
+		b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_style_tab(b)
+		b.set_meta("ui_sound", "tab")
+		b.tooltip_text = _tab_tip(String(p[0]))
 		b.pressed.connect(show_page.bind(String(p[0])))
-		nav.add_child(b)
+		top.add_child(b)
 		_nav[p[0]] = b
 	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	nav.add_child(spacer)
-	if GameSession.active():
-		var save := Button.new()
-		save.text = "Save game"
-		save.pressed.connect(func() -> void:
-			GameSession.save_game()
-			save.text = "Saved ✓"
-			get_tree().create_timer(1.5).timeout.connect(_reset_save_label.bind(save)))
-		nav.add_child(save)
-		var leave := Button.new()
-		leave.text = "Quit to title"
-		leave.pressed.connect(func() -> void:
-			close()
-			GameSession.quit_to_title())
-		nav.add_child(leave)
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(spacer)
 	var close_button := Button.new()
-	close_button.text = "Close"
+	close_button.text = "✕"
+	close_button.tooltip_text = "Close (%s)" % GameSettings.binding_label("menu")
+	close_button.custom_minimum_size = Vector2(40, 40)
+	close_button.add_theme_font_size_override("font_size", 18)
+	close_button.set_meta("ui_sound", "")
 	close_button.pressed.connect(close)
-	nav.add_child(close_button)
+	top.add_child(close_button)
 	# The page.
 	_page = PanelContainer.new()
 	var ps := StyleBoxFlat.new()
@@ -192,17 +206,86 @@ func _build_window() -> void:
 	ps.border_color = ACCENT.darkened(0.55)
 	ps.set_border_width_all(1)
 	ps.set_corner_radius_all(6)
+	ps.corner_radius_top_left = 0
 	ps.set_content_margin_all(12)
 	_page.add_theme_stylebox_override("panel", ps)
 	_page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_page.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	h.add_child(_page)
+	v.add_child(_page)
+	# Save / quit along the bottom.
+	var bottom := HBoxContainer.new()
+	bottom.add_theme_constant_override("separation", 8)
+	bottom.alignment = BoxContainer.ALIGNMENT_END
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 8)
+	v.add_child(gap)
+	v.add_child(bottom)
+	if GameSession.active():
+		var save := Button.new()
+		save.text = "Save game"
+		save.custom_minimum_size = Vector2(130, 34)
+		save.pressed.connect(func() -> void:
+			GameSession.save_game()
+			save.text = "Saved ✓"
+			get_tree().create_timer(1.5).timeout.connect(_reset_save_label.bind(save)))
+		bottom.add_child(save)
+		var leave := Button.new()
+		leave.text = "Quit to title"
+		leave.custom_minimum_size = Vector2(130, 34)
+		leave.pressed.connect(func() -> void:
+			close()
+			GameSession.quit_to_title())
+		bottom.add_child(leave)
 	_pages["character"] = _character_page()
 	_pages["achievements"] = _achievements_page()
 	_pages["lore"] = _lore_page()
 	for c: Control in _pages.values():
 		c.visible = false
 		_page.add_child(c)
+
+
+## Tab looks: dark when not chosen, the page's colour with a gold top edge when chosen.
+func _style_tab(b: Button) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.1, 0.09, 0.12, 1.0)
+	normal.border_color = ACCENT.darkened(0.7)
+	normal.set_border_width_all(1)
+	normal.border_width_bottom = 0
+	normal.corner_radius_top_left = 6
+	normal.corner_radius_top_right = 6
+	normal.content_margin_left = 10
+	normal.content_margin_right = 12
+	normal.content_margin_top = 6
+	normal.content_margin_bottom = 6
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color(0.17, 0.15, 0.19, 1.0)
+	hover.border_color = ACCENT.darkened(0.45)
+	var chosen := normal.duplicate() as StyleBoxFlat
+	chosen.bg_color = PAGE
+	chosen.border_color = ACCENT.darkened(0.55)
+	chosen.border_width_top = 3
+	chosen.border_color = ACCENT.darkened(0.1)
+	var focus := StyleBoxFlat.new()
+	focus.draw_center = false
+	focus.border_color = ACCENT
+	focus.set_border_width_all(1)
+	focus.corner_radius_top_left = 6
+	focus.corner_radius_top_right = 6
+	b.add_theme_stylebox_override("normal", normal)
+	b.add_theme_stylebox_override("hover", hover)
+	b.add_theme_stylebox_override("pressed", chosen)
+	b.add_theme_stylebox_override("hover_pressed", chosen)
+	b.add_theme_stylebox_override("focus", focus)
+	b.add_theme_color_override("font_color", Color(0.78, 0.74, 0.68))
+	b.add_theme_color_override("font_hover_color", Color(0.95, 0.92, 0.85))
+	b.add_theme_color_override("font_pressed_color", ACCENT)
+	b.add_theme_color_override("font_hover_pressed_color", ACCENT)
+
+
+## Tooltip with the key that opens the page straight away, if it has one.
+func _tab_tip(page: String) -> String:
+	var action: String = {"backpack": "inventory", "quests": "quest_log", "spells": "spellbook", "skills": "skills"}.get(page, "")
+	return "" if action == "" else "%s (%s)" % [page.capitalize(), GameSettings.binding_label(action)]
 
 
 func _reset_save_label(button: Button) -> void:
@@ -253,8 +336,27 @@ func _embed(win: Node) -> void:
 	win.set("embedded", true)
 	panel.reparent(_page, false)
 	panel.visible = true
+	# Inside the book: no frame of its own and no Close button (the book has one).
+	if panel is PanelContainer:
+		panel.set_meta("own_panel", panel.get_theme_stylebox("panel"))
+		var bare := StyleBoxEmpty.new()
+		panel.add_theme_stylebox_override("panel", bare)
+	for b in panel.find_children("*", "Button", true, false):
+		if (b as Button).text in ["Close", "✕"] and (b as Button).visible:
+			b.visible = false
+			b.set_meta("codex_hid", true)
 	win.call("_fill")
 	_embedded = win
+	_center_embedded.call_deferred(panel)
+
+
+## A window narrower than the page sits in its middle instead of at the left.
+func _center_embedded(panel: Control) -> void:
+	if not is_instance_valid(panel) or panel.get_parent() != _page:
+		return
+	var room := _page.size.x - 24.0
+	if panel.size.x < room - 80.0:
+		panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 
 func _release_embedded() -> void:
@@ -263,6 +365,14 @@ func _release_embedded() -> void:
 		return
 	var panel := _embedded.get("_window") as Control
 	panel.visible = false
+	if panel.has_meta("own_panel"):
+		panel.add_theme_stylebox_override("panel", panel.get_meta("own_panel"))
+		panel.remove_meta("own_panel")
+	for b in panel.find_children("*", "Button", true, false):
+		if b.has_meta("codex_hid"):
+			b.visible = true
+			b.remove_meta("codex_hid")
+	panel.size_flags_horizontal = Control.SIZE_FILL
 	panel.reparent(_embedded, false)
 	_embedded.set("embedded", false)
 	_embedded = null

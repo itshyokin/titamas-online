@@ -22,6 +22,7 @@ Database="*res://scripts/core/database.gd"
 GameSession="*res://scripts/core/game_session.gd"
 Net="*res://scripts/core/net.gd"
 Achievements="*res://scripts/core/achievements.gd"
+UiSounds="*res://scripts/ui/ui_sounds.gd"
 
 [display]
 

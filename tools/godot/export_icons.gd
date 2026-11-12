@@ -2,6 +2,7 @@ extends SceneTree
 ## Saves the icons that are drawn in code as pictures, so they can be drawn over:
 ##   assets/icons/abilities/<ability id>.png   (every ability in abilities.json)
 ##   assets/icons/statuses/<glyph>.png         (every glyph statuses.json uses, white)
+##   assets/icons/codex/<page>.png             (the Codex tabs)
 ##   assets/icons/custom/glyph_<name>.png      (items still using an old glyph name; the
 ##                                              items' "icon" is pointed at the picture)
 ## At player.json hud.icon_pixels (24), stepped like the in-game pixel icons. Existing
@@ -52,6 +53,14 @@ func _start() -> void:
 			var c = status_script.StatusIcon.new()
 			c.raw = true
 			c.glyph = g
+			_jobs.append([path, c])
+	# Codex tab pictures.
+	var codex_script = load("res://scripts/ui/codex_icon.gd")
+	for page in ["character", "backpack", "quests", "spells", "skills", "achievements", "lore", "settings"]:
+		var path := "res://assets/icons/codex/%s.png" % page
+		if overwrite or not FileAccess.file_exists(path):
+			var c: Control = codex_script.new()
+			c.set("page", page)
 			_jobs.append([path, c])
 	# Items with an old glyph name: one picture per glyph + colour.
 	var items_file := "res://data/items.json"

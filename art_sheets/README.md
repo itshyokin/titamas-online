@@ -18,7 +18,7 @@ labelled copy to look at (don't edit it); `<name>.json` says which game file eac
 | brows, noses, mouths, face_extras | face layers: grey 128 = skin/hair colour as it is, darker/lighter = shade it; `anime_*` are drawn as they are | 64 × 80 |
 | effects | spell, weather and insect sprites: white on clear (the game colours them); `_2`/`_4` = frames side by side | 96 × 48 |
 | item_icons | the 16 px item icons | 16 × 16 |
-| icons | ability icons (`assets/icons/abilities/<ability id>`), status glyphs (white) and two old item glyphs | 24 × 24 |
+| icons | ability icons (`assets/icons/abilities/<ability id>`), status glyphs (white), the Codex tab pictures and two old item glyphs | 24 × 24 |
 
 A picture keeps its own size inside its cell (the yellow box in the guide); anything drawn
 outside it is ignored. To make new sheets after adding pictures: `python3 tools/art/sheets.py make`

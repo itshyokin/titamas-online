@@ -10,15 +10,8 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Avoid "Revert this commit" in GitHub Desktop's History unless an update really should be undone.
 
 ## Next up, in order
-1. **New region east of Monolith** (owner does the Blender part when home).
-   - Monolith is chunks I −1..2, J 0..3. The new one: I 3..6, J 0..3.
-   - Blender add-on: Export Folder = `assets/levels/overworld`, Chunk X 3, Chunk Y 0, 4 × 4, New Terrain, then Match Edges to Exported Chunks, sculpt/paint, Export Chunks (+ Export Prop Library for new props).
-   - Claude then adds the regions.json entry (name, sky, music, weather, wildlife, random sounds). The M map picks the chunks up by itself.
-2. **Face parts** (owner is drawing them now): separate objects in the body .glb.
-   - Creator choices: `eyes_<name>`, `nose_<name>`, `mouth_<name>` → three new creator rows (new piece uses eyes / nose / mouth).
-   - Shared by everyone, not in the creator: `eyes_closed`, `mouth_talk_1..3` (optional `eyes_half`, `eyes_hurt`, `mouth_shout`).
-   - All in the same spot on the face; skin-coloured parts use a material with `skin` in the name; iris on its own `iris` material if eye colour should still tint it.
-   - Claude adds: blinking every few seconds (player, NPCs, enemies) by swapping to `eyes_closed`; mouths cycling the talk meshes as dialogue types out.
+1. **Your own art over Claude's** (art_sheets/, see its README): eyes, brows, noses, mouths, face extras, effects, item icons, ability/status/Codex icons. Draw over a sheet, save, run `python3 tools/art/sheets.py split`. (The Singed Plains region is done.)
+2. **Menus**: menu sounds and the Codex top tabs with icons are in (12 Nov). Keep checking every menu in the editor (title screen, creator, Codex pages, loot, dialogue, death choice, map) and list anything cramped or broken. Ideas noted: the Backpack page could use its spare width (more bag columns, bigger doll); class page attributes need scrolling to reach Vitality/Spirit.
 
 ## To test in the editor (done 10 Nov, batch L: safe areas + indoor weather)
 - Test level: the village is a safe area (green box `Areas/VillageSafeArea`). Lead the bats or bandits to it: they should give up at the edge and walk home; "You are safe here." / "You are no longer safe." show on the way in and out; blows either way do nothing while you stand inside (the training dummy still takes hits).
@@ -140,11 +133,10 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - **Rename the Hearthstone** (Blizzard's trademark). Owner picks the new name; then Claude renames the item, its Database fields, messages and the `use_hearth` wording, keeping old saves working (item id mapped).
 
 ## Backlog (agreed, not started)
-- Owner may replace Claude-made art with their own: effect sprites (`tools/art/make_effect_sprites.py`), item/status/ability glyph icons (drawn in code), face parts and anime faces (`tools/art/make_face_parts.py`, `make_anime_face.py`), eyes, grass card; and the synthesised sounds/music. Same file names = drop-in replacements. Until then, list them on Steam's AI disclosure to be safe.
+- (See Next up 1.) Owner may replace Claude-made art with their own: effect sprites (`tools/art/make_effect_sprites.py`), item/status/ability glyph icons (drawn in code), face parts and anime faces (`tools/art/make_face_parts.py`, `make_anime_face.py`), eyes, grass card; and the synthesised sounds/music. Same file names = drop-in replacements. Until then, list them on Steam's AI disclosure to be safe.
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
 - Icicles on branches in snow (needs a small icicle model or sprite).
 - Wet rain look: more saturation, darker colours, drips from trees.
-- Menu navigation sounds (hover, click, tab, open/close).
 - Collectables: hidden cats to pet (Codex page "Cats found n/N", achievement), coin caches, XP shrines; counts on the region map.
 - Campfires: heal nearby over time; burn out after x hours unless fed items with a "flame fuel" toggle + hours in the Database; "permanent flame" toggle; relighting a dead one. (Checkpoint + rest + rested/tired are done.)
 - Player houses much later (always Well Rested). Lying in beds.
