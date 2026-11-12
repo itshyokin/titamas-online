@@ -15,9 +15,9 @@
 [ext_resource type="PackedScene" path="res://scenes/world/safe_area.tscn" id="99_safe"]
 [ext_resource type="PackedScene" path="res://scenes/world/swarm_spot.tscn" id="100_swarm"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="101_troll"]
+[ext_resource type="PackedScene" path="res://scenes/world/climb_lock.tscn" id="102_climb"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/golem.tscn" id="102_golem"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/gold_golem.tscn" id="103_gold_golem"]
-[ext_resource type="PackedScene" path="res://scenes/world/climb_lock.tscn" id="102_climb"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
@@ -228,8 +228,8 @@ event_id = "road_sign"
 size = Vector3(1, 1.6, 0.4)
 
 [node name="RoadSign2" parent="Events" unique_id=225981188 instance=ExtResource("98_event")]
-transform = Transform3D(-0.97263, 0, 0.23235896, 0, 1, 0, -0.23235896, 0, -0.97263, 64.55227, 13.139618, 124.72793)
-event_id = "road_sign"
+transform = Transform3D(0.9181632, 0, -0.3962025, 0, 1, 0, 0.3962025, 0, 0.9181632, 64.55227, 13.139618, 124.72793)
+event_id = "road_sign_copy"
 size = Vector3(1, 1.6, 0.4)
 
 [node name="WelcomeArea" parent="Events" unique_id=1215007725 instance=ExtResource("98_event")]
