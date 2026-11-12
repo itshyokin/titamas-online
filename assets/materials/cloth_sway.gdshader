@@ -16,6 +16,9 @@ uniform float amount = 1.0;
 // Movement trail, in mesh space (set each frame by CharacterModel, spring-smoothed).
 uniform vec3 trail = vec3(0.0);
 uniform float flutter = 0.012;
+// Capes and hair hang behind: they never swing forward into the body. Beards and mustaches
+// hang in front of the face and chest: they never swing back into them.
+uniform bool in_front = false;
 
 void vertex() {
 	float w = clamp((top - VERTEX.y) / max(hang, 0.01), 0.0, 1.0);
@@ -23,8 +26,14 @@ void vertex() {
 	float t = TIME * (2.0 + wind_strength * 2.0) + VERTEX.y * 4.0 + VERTEX.x * 3.0;
 	vec3 wave = vec3(sin(t) * 0.6, sin(t * 0.7) * 0.2, sin(t * 1.3 + 1.7)) * flutter * (0.35 + wind_strength);
 	vec3 move = (trail + wave) * w * amount;
-	// Never swing forward into the body (models face -Z): only back and to the sides.
-	move.z = max(move.z, -0.005);
+	// Never swing into the body (models face -Z): capes only back and to the sides, beards
+	// only forward and to the sides (and not up into the face).
+	if (in_front) {
+		move.z = min(move.z, 0.005);
+		move.y = min(move.y, 0.0);
+	} else {
+		move.z = max(move.z, -0.005);
+	}
 	VERTEX += move;
 }
 

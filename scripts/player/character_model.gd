@@ -311,7 +311,7 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 		_tint(nodes, item.tint)
 	var sway := float(item.get("sway", 0.0))
 	if sway > 0.0 and not Engine.is_editor_hint():
-		_add_sway(nodes, sway, String(item.get("sway_anchors", SWAY_ANCHORS)))
+		_add_sway(nodes, sway, String(item.get("sway_anchors", SWAY_ANCHORS)), tag == "facial_hair")
 	var hides: Array = _hides_of(item)
 	for part in hides:
 		_hidden_parts[part] = int(_hidden_parts.get(part, 0)) + 1
@@ -664,7 +664,9 @@ func _apply_look_parts() -> void:
 				item["tint"] = Color.html(String(entry.get("color", "#cbbd9f")))
 			else:
 				item["tint"] = _look.get("facial_color" if tag == "facial_hair" else "hair_color", Color(0.3, 0.2, 0.1))
-				item["sway"] = float(entry.get("sway", 0.25 if tag == "hair" else 0.1))
+				# Mustaches sit on the lip: they don't swing unless their piece says so.
+				var short := tag == "facial_hair" and String(entry.get("id", "")).contains("stache")
+				item["sway"] = float(entry.get("sway", 0.25 if tag == "hair" else (0.0 if short else 0.1)))
 				if entry.has("sway_anchors"):
 					item["sway_anchors"] = entry.sway_anchors
 			var nodes := wear(item, tag)
@@ -1226,7 +1228,7 @@ const SWAY_ANCHORS := "hair_clip,hat_clip,gold,metal,anchor"
 ## swing with movement and flutter in the wind (items/looks with "sway" > 0). Surfaces whose
 ## material (or mesh) name contains one of `anchors` (comma list) stay still: a cape's metal
 ## pauldrons, a hair style's hair_clip. Each swaying surface hangs from its own top edge.
-func _add_sway(nodes: Array, amount: float, anchors := SWAY_ANCHORS) -> void:
+func _add_sway(nodes: Array, amount: float, anchors := SWAY_ANCHORS, in_front := false) -> void:
 	var keys: Array[String] = []
 	for k in anchors.split(",", false):
 		if k.strip_edges() != "":
@@ -1264,6 +1266,7 @@ func _add_sway(nodes: Array, amount: float, anchors := SWAY_ANCHORS) -> void:
 				sm.set_shader_parameter("top", top)
 				sm.set_shader_parameter("hang", maxf(top - bottom, 0.05))
 				sm.set_shader_parameter("amount", amount)
+				sm.set_shader_parameter("in_front", in_front)
 				sm.set_shader_parameter("flutter", float(sway_settings.get("flutter", 0.012)))
 				mats.append([i, sm])
 			if mats.is_empty():
