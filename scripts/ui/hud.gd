@@ -126,6 +126,17 @@ static func notify(from: Node, text: String, color := Color(1, 0.95, 0.85), seco
 		hud.call("show_message", text, seconds, color)
 
 
+var _quest_banner: QuestBanner
+
+
+## Big centred quest news (Quests: accepted / complete / failed / ready to hand in).
+func quest_banner(caption: String, title: String, color: Color) -> void:
+	if _quest_banner:
+		_quest_banner.show_banner(caption, title, color)
+	else:
+		show_message("%s: %s" % [caption, title], 3.0, color)
+
+
 func show_message(text: String, seconds := 3.0, color := Color(1, 0.95, 0.85)) -> void:
 	if text.is_empty():
 		return
@@ -427,6 +438,8 @@ func _build_hotbar() -> void:
 	add_child(quest_log)
 	_codex.quest_log = quest_log
 	add_child(QuestTracker.new())
+	_quest_banner = QuestBanner.new()
+	add_child(_quest_banner)
 	# Experience bar and the Weakened marker.
 	var progress := _combat.player.get_node_or_null("Progress") as PlayerProgress
 	if progress:

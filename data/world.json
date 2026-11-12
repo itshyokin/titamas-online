@@ -38,5 +38,22 @@
 		"calm": 0.4,
 		"gust_seconds": 25.0,
 		"gusty": 1.5
+	},
+	"sky": {
+		"planet": true,
+		"planet_bearing": 0.0,
+		"planet_elevation": 24.0,
+		"planet_size": 9.0,
+		"planet_tilt": 18.0,
+		"planet_roll": 0.22,
+		"planet_band_a": "#eed6a8",
+		"planet_band_b": "#bd946a",
+		"ring_color": "#e0d2b4",
+		"planet_day": 0.45,
+		"moon_size": 2.4,
+		"moon_hull": "#9ea3ad",
+		"moon_lines": "#40c7ff",
+		"moon_line_glow": 1.6,
+		"shooting_stars": 4.0
 	}
 }

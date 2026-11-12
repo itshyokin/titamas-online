@@ -14,7 +14,7 @@ var _dragging := false
 var _yaw := PI  # models face -Z; turn them to the camera
 ## How much of the body the camera frames (1 = head to toe).
 var framing := 1.0
-## Portrait (HUD frames): head and shoulders, no dragging, redrawn only now and then.
+## Portrait (HUD frames): head and shoulders, no dragging, a still picture.
 var portrait := false
 var _redraw := 0.0
 
@@ -63,21 +63,30 @@ func _ready() -> void:
 	if portrait:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_yaw = PI - 0.35  # a little three-quarter turn
-		_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	_pivot.rotation.y = _yaw
 	_frame()
 	if _model.has_method("play"):
 		_model.call_deferred("play", "idle")
+	if portrait:
+		_snapshot()
+
+
+## Portraits are still pictures: drawn for a moment (until the idle pose has settled),
+## then the view stops redrawing and the model stops animating. Redrawn when the look
+## or gear changes.
+func _snapshot() -> void:
+	_redraw = 0.35
+	_model.process_mode = Node.PROCESS_MODE_INHERIT
+	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
 
 func _process(delta: float) -> void:
-	# Portraits redraw a few times a second (enough for blinking-free idling, cheap).
-	if not portrait:
+	if not portrait or _redraw <= 0.0:
 		return
 	_redraw -= delta
-	if _redraw <= 0.0 and is_visible_in_tree():
-		_redraw = 0.25
-		_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	if _redraw <= 0.0:
+		_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE  # this last frame stays
+		_model.set_deferred("process_mode", Node.PROCESS_MODE_DISABLED)
 
 
 func _frame() -> void:
@@ -115,6 +124,8 @@ func show_look(look: Dictionary, equipment: Dictionary) -> void:
 		if not item.is_empty():
 			_model.wear(item, slot)
 	_frame()
+	if portrait and is_inside_tree():
+		_snapshot()
 
 
 ## Height of the head (model space), from the head bone when there is one.

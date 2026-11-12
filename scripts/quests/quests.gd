@@ -84,7 +84,7 @@ static func start(id: String) -> void:
 	_store()[id] = {"state": "active", "kills": {}}
 	_changed()
 	_play("start_sound")
-	_announce("Quest accepted: %s" % q.get("name", id), Color(1.0, 0.85, 0.35))
+	_banner("Quest accepted", String(q.get("name", id)), Color(1.0, 0.85, 0.35))
 
 
 ## Hands the quest in: takes the carried quest items (take_items), gives gold, XP and
@@ -116,7 +116,7 @@ static func complete(id: String) -> String:
 	e["state"] = "done"
 	_store()[id] = e
 	_play("complete_sound")
-	_announce("Quest complete: %s" % q.get("name", id), Color(0.6, 1.0, 0.55))
+	_banner("Quest complete", String(q.get("name", id)), Color(0.6, 1.0, 0.55))
 	if inv:
 		var gold := int(q.get("reward_gold", 0))
 		if gold > 0:
@@ -180,7 +180,7 @@ static func fail(id: String) -> void:
 		return
 	_store()[id]["state"] = "failed"
 	_changed()
-	_announce("Quest failed: %s" % q.get("name", id), Color(1.0, 0.5, 0.45))
+	_banner("Quest failed", String(q.get("name", id)), Color(1.0, 0.5, 0.45))
 
 
 ## Forgets a quest (back to not started).
@@ -203,7 +203,7 @@ static func count_kill(enemy_id: String) -> void:
 		e["kills"] = kills
 		any = true
 		if ready(id) and not before:
-			_announce("%s: ready to hand in" % get_quest(id).get("name", id), Color(0.6, 1.0, 0.55))
+			_banner("Ready to hand in", String(get_quest(id).get("name", id)), Color(0.6, 1.0, 0.55))
 	if any:
 		_changed()
 
@@ -276,6 +276,17 @@ static func active_quests() -> Array:
 static func _changed() -> void:
 	revision += 1
 	EventState.changed()
+
+
+## The big centred banner (HUD.quest_banner) plus a game log line.
+static func _banner(caption: String, title: String, color: Color) -> void:
+	var loop := Engine.get_main_loop() as SceneTree
+	var hud := loop.get_first_node_in_group("hud") if loop else null
+	if hud and hud.has_method("quest_banner"):
+		hud.call("quest_banner", caption, title, color)
+	elif hud:
+		hud.call("show_message", "%s: %s" % [caption, title], 3.0, color)
+	GameLog.post("%s: %s" % [caption, title], color)
 
 
 static func _announce(text: String, color: Color) -> void:

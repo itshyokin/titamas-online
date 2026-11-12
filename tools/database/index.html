@@ -1681,6 +1681,23 @@ const TABS = {
 			["Sea", [
 				{ key: "sea_level", label: "Sea level (m)", type: "number", def: -5, help: "Height of the endless ocean in Blender metres (Blender Z). Anything below it is water you swim in. Changes show live; grass already grown near the coast updates when you walk away and back." },
 			]],
+			["Sky (every region)", [
+				{ key: "sky.planet", label: "Ringed planet in the sky", type: "bool", def: true },
+				{ key: "sky.planet_bearing", label: "Planet direction (° from north, 90 = east)", type: "number", def: 0 },
+				{ key: "sky.planet_elevation", label: "Planet height above the horizon (°)", type: "number", def: 24 },
+				{ key: "sky.planet_size", label: "Planet size (° across its radius)", type: "number", def: 9 },
+				{ key: "sky.planet_tilt", label: "Rings tipped toward you (°)", type: "number", def: 18 },
+				{ key: "sky.planet_roll", label: "Rings leaning sideways", type: "number", def: 0.22 },
+				{ key: "sky.planet_band_a", label: "Planet light bands", type: "color" },
+				{ key: "sky.planet_band_b", label: "Planet dark bands", type: "color" },
+				{ key: "sky.ring_color", label: "Ring colour", type: "color" },
+				{ key: "sky.planet_day", label: "How clearly it shows by day (0–1)", type: "number", def: 0.45 },
+				{ key: "sky.moon_size", label: "Moon size (° radius)", type: "number", def: 2.4 },
+				{ key: "sky.moon_hull", label: "Moon hull colour", type: "color" },
+				{ key: "sky.moon_lines", label: "Moon line colour", type: "color" },
+				{ key: "sky.moon_line_glow", label: "Moon line glow", type: "number", def: 1.6 },
+				{ key: "sky.shooting_stars", label: "Shooting stars per minute (night)", type: "number", def: 4 },
+			]],
 			["Ambient occlusion (Settings → Graphics turns it on/off)", [
 				{ key: "ambient_occlusion.intensity", label: "Strength", type: "number", help: "How dark the contact shadows get (Godot default 2)." },
 				{ key: "ambient_occlusion.radius", label: "Reach (m)", type: "number", help: "How far from a surface it darkens." },

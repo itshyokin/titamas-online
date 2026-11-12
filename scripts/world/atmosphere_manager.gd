@@ -470,6 +470,27 @@ func _update_wind(delta: float) -> void:
 	_wind.volume_db = lerpf(_wind.volume_db, goal, 1.0 - exp(-delta * 1.5))
 
 
+## The ringed planet in the north, the moon station and shooting stars (data/world.json
+## "sky", Database → World → Sky): every region's sky shows them.
+func _apply_sky_extras(sky: Dictionary) -> void:
+	if _sky == null:
+		return
+	var b := deg_to_rad(float(sky.get("planet_bearing", 0.0)))
+	var e := deg_to_rad(float(sky.get("planet_elevation", 24.0)))
+	_sky.set_shader_parameter("planet_on", bool(sky.get("planet", true)))
+	_sky.set_shader_parameter("planet_dir", Vector3(sin(b) * cos(e), sin(e), -cos(b) * cos(e)))
+	_sky.set_shader_parameter("planet_radius", sin(deg_to_rad(float(sky.get("planet_size", 9.0)))))
+	_sky.set_shader_parameter("planet_tilt", deg_to_rad(float(sky.get("planet_tilt", 18.0))))
+	_sky.set_shader_parameter("planet_roll", float(sky.get("planet_roll", 0.22)))
+	_sky.set_shader_parameter("planet_day", float(sky.get("planet_day", 0.45)))
+	for pair in [["planet_band_a", "#eed6a8"], ["planet_band_b", "#bd946a"], ["ring_color", "#e0d2b4"], ["moon_hull", "#9ea3ad"]]:
+		_sky.set_shader_parameter(pair[0], Color.html(String(sky.get(pair[0], pair[1]))))
+	_sky.set_shader_parameter("moon_line_color", Color.html(String(sky.get("moon_lines", "#40c7ff"))))
+	_sky.set_shader_parameter("moon_line_glow", float(sky.get("moon_line_glow", 1.6)))
+	_sky.set_shader_parameter("moon_radius", sin(deg_to_rad(float(sky.get("moon_size", 2.4)))))
+	_sky.set_shader_parameter("shooting_stars", float(sky.get("shooting_stars", 4.0)))
+
+
 ## Ambient occlusion (Settings → Graphics): contact shadows where things meet (grass
 ## roots, rocks on the ground, corners). Strength in data/world.json "ambient_occlusion"
 ## (Database → World). Forward+ only (the Compatibility renderer has none).
@@ -478,6 +499,7 @@ func _apply_ssao() -> void:
 		return
 	_world_time = DataFiles.modified_time(DataFiles.WORLD)
 	var world = DataFiles.read(DataFiles.WORLD)
+	_apply_sky_extras(world.get("sky", {}) if world is Dictionary else {})
 	var ao: Dictionary = world.get("ambient_occlusion", {}) if world is Dictionary else {}
 	_env.ssao_enabled = GameSettings.ssao
 	_env.ssao_radius = float(ao.get("radius", 2.0))
