@@ -48,6 +48,7 @@ bl_info = {
 import json
 import math
 import os
+import random
 import re
 import struct
 
@@ -140,6 +141,28 @@ class TitamasTerrainSettings(bpy.types.PropertyGroup):
 		name="Props Collection",
 		default="Props",
 		description="Objects in this collection (and its sub-collections) are placed as props",
+	)
+	# Prop painter.
+	paint_radius: FloatProperty(name="Brush Radius (m)", default=8.0, min=0.5, max=200.0)
+	paint_density: FloatProperty(
+		name="Density", default=1.0, min=0.01, max=50.0,
+		description="Props per 100 square metres each time the brush lands (trees ~1, flowers ~10)",
+	)
+	paint_spacing: FloatProperty(
+		name="Min Spacing (m)", default=3.0, min=0.0, max=50.0,
+		description="No new prop closer than this to another prop of the same kind",
+	)
+	paint_scale_min: FloatProperty(name="Scale Min", default=0.85, min=0.05, max=10.0)
+	paint_scale_max: FloatProperty(name="Scale Max", default=1.2, min=0.05, max=10.0)
+	paint_rotate: BoolProperty(name="Random Turn", default=True, description="Turn each prop a random amount around its up axis")
+	paint_tilt: FloatProperty(
+		name="Follow Slope", default=0.0, min=0.0, max=1.0,
+		description="0 = always upright (trees), 1 = lean with the ground (rocks, flowers)",
+	)
+	paint_sink: FloatProperty(name="Sink (m)", default=0.05, min=-5.0, max=5.0, description="Push each prop this far into the ground")
+	paint_max_slope: FloatProperty(
+		name="Max Slope (°)", default=40.0, min=0.0, max=90.0,
+		description="Nothing is placed on ground steeper than this (cliffs stay bare)",
 	)
 	props_dir: StringProperty(
 		name="Prop Library Folder",
@@ -1180,6 +1203,217 @@ class TITAMAS_OT_set_height_brush(bpy.types.Operator):
 		gpu.state.line_width_set(1.0)
 
 
+class TITAMAS_OT_paint_props(bpy.types.Operator):
+	bl_idname = "titamas.paint_props"
+	bl_label = "Paint Props"
+	bl_description = (
+		"Select the props to paint with (trees, bushes, herbs...), then drag over the ground "
+		"to scatter linked copies of them into the Props collection. Shift+drag erases those "
+		"kinds of props, Wheel = radius, Shift+Wheel = density, Esc / Right-click / Enter = done"
+	)
+	bl_options = {"REGISTER", "UNDO"}
+
+	@classmethod
+	def poll(cls, context):
+		return context.area and context.area.type == "VIEW_3D" and any(o.type == "MESH" for o in context.selected_objects)
+
+	def invoke(self, context, event):
+		s = context.scene.titamas_terrain
+		if context.object and context.object.mode != "OBJECT":
+			bpy.ops.object.mode_set(mode="OBJECT")
+		self.palette = [o for o in context.selected_objects if o.type == "MESH"]
+		# Copies share the mesh, and shared meshes export under the mesh's name: give a
+		# not-yet-shared mesh its object's name first so the prop keeps the same name.
+		for o in self.palette:
+			if o.data.users == 1:
+				o.data.name = re.sub(r"\.\d+$", "", o.name)
+		self.kinds = {prop_name(o) for o in self.palette}
+		coll = bpy.data.collections.get(s.props_collection)
+		if coll is None:
+			coll = bpy.data.collections.new(s.props_collection)
+			context.scene.collection.children.link(coll)
+		self.coll = coll
+		self.hit = None
+		self.painting = False
+		self.erasing = False
+		self.last = None
+		self.placed = 0
+		self.removed = 0
+		self._rebuild_index()
+		self._handle = bpy.types.SpaceView3D.draw_handler_add(self._draw, (context,), "WINDOW", "POST_VIEW")
+		context.window_manager.modal_handler_add(self)
+		self._update_header(context)
+		return {"RUNNING_MODAL"}
+
+	def _rebuild_index(self):
+		"""Where the props of the painted kinds already stand (for spacing and erasing)."""
+		self.existing = [o for o in self.coll.all_objects if o.type == "MESH" and prop_name(o) in self.kinds]
+		self.kd = KDTree(max(len(self.existing), 1))
+		for i, o in enumerate(self.existing):
+			loc = o.matrix_world.translation
+			self.kd.insert((loc.x, loc.y, 0.0), i)
+		self.kd.balance()
+		self.fresh = []  # placed during this stroke (not in the tree yet)
+
+	def modal(self, context, event):
+		s = context.scene.titamas_terrain
+		context.area.tag_redraw()
+		if event.type == "MOUSEMOVE":
+			self.hit = self._ray(context, event)
+			if (self.painting or self.erasing) and self.hit:
+				self._maybe_dab(context, s)
+			return {"RUNNING_MODAL"}
+		if event.type == "LEFTMOUSE":
+			if event.value == "PRESS":
+				self.hit = self._ray(context, event)
+				if self.hit is None:
+					return {"RUNNING_MODAL"}
+				self.erasing = event.shift
+				self.painting = not event.shift
+				self.last = None
+				self._maybe_dab(context, s)
+			elif event.value == "RELEASE" and (self.painting or self.erasing):
+				self.painting = self.erasing = False
+				self._rebuild_index()
+				bpy.ops.ed.undo_push(message="Paint props")
+				self._update_header(context)
+			return {"RUNNING_MODAL"}
+		if event.type in {"WHEELUPMOUSE", "WHEELDOWNMOUSE"} and not event.ctrl:
+			up = event.type == "WHEELUPMOUSE"
+			if event.shift:
+				s.paint_density = min(max(s.paint_density * (1.15 if up else 1 / 1.15), 0.01), 50.0)
+			else:
+				s.paint_radius = min(max(s.paint_radius * (1.1 if up else 1 / 1.1), 0.5), 200.0)
+			self._update_header(context)
+			return {"RUNNING_MODAL"}
+		if event.type in {"ESC", "RIGHTMOUSE", "RET", "NUMPAD_ENTER"} and event.value == "PRESS":
+			self._finish(context)
+			self.report({"INFO"}, f"Placed {self.placed}, removed {self.removed} props")
+			return {"FINISHED"}
+		return {"PASS_THROUGH"}
+
+	def _update_header(self, context):
+		s = context.scene.titamas_terrain
+		names = ", ".join(sorted(self.kinds))
+		context.area.header_text_set(
+			f"Paint props: {names}   Radius {s.paint_radius:.1f} m   Density {s.paint_density:.2f}   Placed {self.placed}  Removed {self.removed}"
+			"   |   Drag: paint   Shift+drag: erase   Wheel: radius   Shift+Wheel: density   Esc: done")
+
+	def _finish(self, context):
+		if self._handle:
+			bpy.types.SpaceView3D.draw_handler_remove(self._handle, "WINDOW")
+			self._handle = None
+		context.area.header_text_set(None)
+		context.area.tag_redraw()
+
+	def _skip(self, obj) -> bool:
+		"""Things the brush doesn't land on: props, the painted objects, water planes."""
+		if obj is None:
+			return True
+		if obj in self.palette or obj.name in self.coll.all_objects:
+			return True
+		water = bpy.data.collections.get(bpy.context.scene.titamas_terrain.water_collection)
+		return water is not None and obj.name in water.all_objects
+
+	def _cast(self, origin, direction):
+		"""First hit along a ray that isn't a prop or water: (location, normal) or None."""
+		depsgraph = bpy.context.evaluated_depsgraph_get()
+		scene = bpy.context.scene
+		o = origin.copy()
+		for _ in range(16):
+			ok, loc, normal, _i, obj, _m = scene.ray_cast(depsgraph, o, direction)
+			if not ok:
+				return None
+			if not self._skip(obj):
+				return loc, normal
+			o = loc + direction * 0.01
+		return None
+
+	def _ray(self, context, event):
+		region, rv3d = context.region, context.region_data
+		coord = (event.mouse_region_x, event.mouse_region_y)
+		origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
+		direction = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord).normalized()
+		hit = self._cast(origin, direction)
+		return hit[0] if hit else None
+
+	def _maybe_dab(self, context, s):
+		# A new dab each time the brush has moved half its radius.
+		if self.last is not None and (Vector((self.hit.x, self.hit.y)) - self.last).length < s.paint_radius * 0.5:
+			return
+		self.last = Vector((self.hit.x, self.hit.y))
+		if self.erasing:
+			self._erase(s)
+		else:
+			self._scatter(s)
+		self._update_header(context)
+
+	def _too_close(self, x, y, spacing, kind) -> bool:
+		if spacing <= 0.0:
+			return False
+		for _co, i, _d in self.kd.find_range((x, y, 0.0), spacing):
+			if i < len(self.existing) and prop_name(self.existing[i]) == kind:
+				return True
+		return any((Vector((x, y)) - Vector((f[0], f[1]))).length < spacing and f[2] == kind for f in self.fresh)
+
+	def _scatter(self, s):
+		area = math.pi * s.paint_radius ** 2
+		expected = s.paint_density * area / 100.0
+		count = int(expected) + (1 if random.random() < expected - int(expected) else 0)
+		max_slope = math.cos(math.radians(s.paint_max_slope))
+		for _ in range(count):
+			a = random.random() * math.tau
+			r = s.paint_radius * math.sqrt(random.random())
+			x, y = self.hit.x + math.cos(a) * r, self.hit.y + math.sin(a) * r
+			down = self._cast(Vector((x, y, self.hit.z + 200.0)), Vector((0.0, 0.0, -1.0)))
+			if down is None:
+				continue
+			loc, normal = down
+			if normal.z < max_slope:
+				continue
+			src = random.choice(self.palette)
+			kind = prop_name(src)
+			if self._too_close(x, y, s.paint_spacing, kind):
+				continue
+			obj = src.copy()  # linked duplicate: same mesh, so it exports as the same prop
+			for c in obj.users_collection:
+				c.objects.unlink(obj)
+			self.coll.objects.link(obj)
+			rest = src.matrix_world.to_3x3()
+			spin = Matrix.Rotation(random.random() * math.tau if s.paint_rotate else 0.0, 3, "Z")
+			tilt = Vector((0.0, 0.0, 1.0)).rotation_difference(Vector((0.0, 0.0, 1.0)).lerp(normal, s.paint_tilt).normalized()).to_matrix()
+			scale = random.uniform(min(s.paint_scale_min, s.paint_scale_max), max(s.paint_scale_min, s.paint_scale_max))
+			basis = tilt @ spin @ Matrix.Diagonal((scale, scale, scale)) @ rest
+			m = basis.to_4x4()
+			m.translation = loc - Vector((0.0, 0.0, s.paint_sink))
+			obj.matrix_world = m
+			self.fresh.append((x, y, kind))
+			self.placed += 1
+
+	def _erase(self, s):
+		doomed = []
+		for _co, i, _d in self.kd.find_range((self.hit.x, self.hit.y, 0.0), s.paint_radius):
+			if i < len(self.existing):
+				doomed.append(self.existing[i])
+		for obj in doomed:
+			if obj.name in bpy.data.objects:
+				bpy.data.objects.remove(obj, do_unlink=True)
+				self.removed += 1
+		self._rebuild_index()
+
+	def _draw(self, context):
+		if self.hit is None:
+			return
+		s = context.scene.titamas_terrain
+		pts = [(self.hit.x + math.cos(k / 48.0 * math.tau) * s.paint_radius, self.hit.y + math.sin(k / 48.0 * math.tau) * s.paint_radius, self.hit.z + 0.2) for k in range(49)]
+		shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+		gpu.state.line_width_set(2.0)
+		gpu.state.depth_test_set("NONE")
+		shader.uniform_float("color", (1.0, 0.35, 0.3, 1.0) if self.erasing else (0.4, 1.0, 0.45, 1.0))
+		batch_for_shader(shader, "LINE_STRIP", {"pos": pts}).draw(shader)
+		gpu.state.line_width_set(1.0)
+
+
 class TITAMAS_OT_export_props(bpy.types.Operator):
 	bl_idname = "titamas.export_props"
 	bl_label = "Export Prop Library"
@@ -1310,6 +1544,23 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 		box.prop(s, "props_dir", text="")
 		box.operator(TITAMAS_OT_export_props.bl_idname, icon="OUTLINER_COLLECTION")
 
+		box = layout.box()
+		box.label(text="Paint props", icon="BRUSH_DATA")
+		box.label(text="Select trees / bushes / herbs to paint with:")
+		col = box.column(align=True)
+		col.prop(s, "paint_radius")
+		col.prop(s, "paint_density")
+		col.prop(s, "paint_spacing")
+		row = box.row(align=True)
+		row.prop(s, "paint_scale_min")
+		row.prop(s, "paint_scale_max")
+		col = box.column(align=True)
+		col.prop(s, "paint_rotate")
+		col.prop(s, "paint_tilt")
+		col.prop(s, "paint_sink")
+		col.prop(s, "paint_max_slope")
+		box.operator(TITAMAS_OT_paint_props.bl_idname, icon="OUTLINER_OB_POINTCLOUD")
+
 		col = layout.column()
 		col.prop(s, "uv_tile")
 		col.prop(s, "spacing")
@@ -1329,6 +1580,7 @@ classes = (
 	TITAMAS_OT_setup_painting,
 	TITAMAS_OT_paint_layer,
 	TITAMAS_OT_export_props,
+	TITAMAS_OT_paint_props,
 	TITAMAS_PT_terrain,
 )
 

@@ -31,6 +31,46 @@
 			"respawn_seconds": 600,
 			"xp": 2,
 			"wrong_tool": "You need a hammer to break this."
+		},
+		"pick_berries": {
+			"name": "Pick",
+			"pick": true,
+			"item": "red_berries",
+			"min": 2,
+			"max": 4,
+			"regrow_days": 1.0,
+			"xp": 1,
+			"sound": "res://assets/audio/sfx/pick_herb.ogg"
+		},
+		"pick_blue_leaf": {
+			"name": "Pick",
+			"pick": true,
+			"item": "blue_leaf",
+			"min": 1,
+			"max": 3,
+			"regrow_days": 2.0,
+			"xp": 1,
+			"sound": "res://assets/audio/sfx/pick_herb.ogg"
+		},
+		"pick_yellow_flower": {
+			"name": "Pick",
+			"pick": true,
+			"item": "yellow_flower",
+			"min": 1,
+			"max": 3,
+			"regrow_days": 1.5,
+			"xp": 1,
+			"sound": "res://assets/audio/sfx/pick_herb.ogg"
+		},
+		"pick_lavender": {
+			"name": "Pick",
+			"pick": true,
+			"item": "lavender",
+			"min": 1,
+			"max": 2,
+			"regrow_days": 3.0,
+			"xp": 2,
+			"sound": "res://assets/audio/sfx/pick_herb.ogg"
 		}
 	},
 	"props": {
@@ -49,7 +89,11 @@
 		"pine_tree_tall": "chop",
 		"birch_tree_dead": "chop",
 		"maple_tree_dead": "chop",
-		"pine_tree_dead": "chop"
+		"pine_tree_dead": "chop",
+		"herb_redberry_bush": "pick_berries",
+		"herb_blueleaf_bush": "pick_blue_leaf",
+		"herb_goldenbloom": "pick_yellow_flower",
+		"herb_lavender": "pick_lavender"
 	},
 	"fall_seconds": 1.6,
 	"fade_seconds": 2.5

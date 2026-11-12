@@ -155,6 +155,30 @@ def mouth(curve=0, width=7, upper=1, lower=1, smirk=False):
 	return im
 
 
+INNER = m(0.28, 0.36, 0.30)
+TEETH = m(1.7)
+
+
+def open_mouth(width, depth, curve=0.0, teeth=False):
+	"""An open mouth (talking frames, surprise): dark inside between the lips."""
+	im = new()
+	top = MOUTH_Y - depth // 2
+	bot = top + depth
+	for x in range(CX - width, CX + width):
+		t = abs((x + 0.5) - CX) / width
+		lift = curve * t * t
+		y0 = round(top - lift + t * t * depth * 0.35)
+		y1 = round(bot - lift - t * t * depth * 0.45)
+		if y1 < y0:
+			y0 = y1 = round((y0 + y1) / 2)
+		px(im, x, y0 - 1, LIP)
+		for y in range(y0, y1 + 1):
+			px(im, x, y, TEETH if teeth and y == y0 and t < 0.6 else INNER)
+		px(im, x, y1 + 1, LIP_HI if t < 0.4 else LIP)
+	hline(im, CX - 2, CX + 1, bot + 2, SHADE)
+	return im
+
+
 # --- Brows (tinted with the hair colour) ---------------------------------------------------
 
 def brows(thick=1, arch=1.5, tilt=0.0, gap=3, length=11):
@@ -292,6 +316,8 @@ PARTS = {
 	"mouth_frown": lambda: mouth(-1.6, 7, 1, 1), "mouth_full": lambda: mouth(0.4, 7, 2, 2),
 	"mouth_thin": lambda: mouth(0, 6, 0, 0), "mouth_smirk": lambda: mouth(2.0, 7, 1, 1, smirk=True),
 	"mouth_wide": lambda: mouth(1.0, 9, 1, 1),
+	"mouth_talk_small": lambda: open_mouth(5, 2), "mouth_talk_wide": lambda: open_mouth(6, 4, teeth=True),
+	"mouth_open_wide": lambda: open_mouth(6, 6, teeth=True),
 	"brows_natural": lambda: brows(2, 1.2, 0.0), "brows_thin": lambda: brows(1, 1.6, 0.0),
 	"brows_thick": lambda: brows(3, 0.8, 0.0, 2, 12), "brows_arched": lambda: brows(2, 2.6, 0.0),
 	"brows_angry": lambda: brows(2, 0.4, 1.2), "brows_worried": lambda: brows(2, 0.8, -1.0),

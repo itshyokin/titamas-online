@@ -46,7 +46,7 @@ const REGION_FIELDS := [
 	"region_name", "fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
 	"shadow_strength", "shadow_color", "shadow_fill", "night_sky_top", "night_sky_horizon", "night_fog", "stars",
-	"sky_panorama", "sky_panorama_strength", "weather", "weather_minutes_min", "weather_minutes_max", "saturation", "contrast", "brightness", "god_rays", "grass_density", "grass_base",
+	"sky_panorama", "sky_panorama_strength", "weather", "weather_minutes_min", "weather_minutes_max", "saturation", "contrast", "brightness", "god_rays", "heat_haze", "grass_density", "grass_base",
 	"grass_tip", "grass_height", "grass_ground_match", "ambient_loop", "ambient_loop_night", "ambient_volume_db", "wind_volume_db", "music", "music_night", "music_volume_db",
 ]
 

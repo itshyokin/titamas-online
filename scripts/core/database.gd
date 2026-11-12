@@ -25,7 +25,7 @@ const ENEMY_FIELDS := [
 ]
 const PLAYER_STATS := ["max_health", "max_mana", "max_stamina", "stamina_regen", "stamina_regen_delay", "mana_regen"]
 const PLAYER_MOVEMENT := ["injured_speed", "injured_sprint_speed", "injured_health", "run_speed", "walk_speed", "sprint_speed", "jump_velocity", "sprint_stamina_cost", "swim_speed",
-	"swim_sprint_speed", "swim_sprint_stamina_cost", "double_tap_time", "lock_on_hops", "grab_any_ledge", "fall_safe_height", "fall_damage", "fall_fatal_height", "lava_speed", "lava_damage", "lava_burn_seconds"]
+	"swim_sprint_speed", "swim_sprint_stamina_cost", "double_tap_time", "lock_on_hops", "grab_any_ledge", "fall_safe_height", "fall_damage", "fall_fatal_height", "lava_speed", "lava_damage", "lava_burn_seconds", "fall_injury_seconds"]
 const PLAYER_COMBAT := ["tap_time", "quick_shot_power", "block_reduction", "lunge_range", "parry_window",
 	"counter_window", "perfect_dodge_window", "cast_pushback", "interrupt_share", "proficiency_damage", "proficiency_speed",
 	"arrow_gravity", "combat_linger", "block_arc"]  # world_* / gash_time are read from Database.player directly
@@ -259,6 +259,7 @@ func _merge_pieces() -> void:
 			opt["sway_anchors"] = String(piece.sway_anchors)
 		list.append(opt)
 		appearance[list_key] = list
+	CharacterModel.face_library = appearance
 
 
 ## One entry of an appearance list ("hair_styles", "eyes", "heights"...) by id ({} if unknown).

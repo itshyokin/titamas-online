@@ -29,5 +29,14 @@
 		"occluder_step": 4,
 		"occluder_sink": 1.0,
 		"props_per_frame": 12
+	},
+	"music": {
+		"combat": "res://assets/audio/music/combat.ogg",
+		"boss": "res://assets/audio/music/boss.ogg",
+		"combat_volume_db": -10.0,
+		"boss_volume_db": -9.0,
+		"linger": 5.0,
+		"fade_in": 1.2,
+		"fade_out": 4.0
 	}
 }

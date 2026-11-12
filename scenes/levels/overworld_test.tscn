@@ -18,6 +18,8 @@
 [ext_resource type="PackedScene" path="res://scenes/world/climb_lock.tscn" id="102_climb"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/golem.tscn" id="102_golem"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/gold_golem.tscn" id="103_gold_golem"]
+[ext_resource type="PackedScene" path="res://scenes/world/music_zone.tscn" id="104_music_zone"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/monolith.ogg" id="105_monolith_music"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
 shader = ExtResource("1_7jqck")
@@ -284,6 +286,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 69.08765, 4.499998, 92.402565
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, 8, 40)
 
 [node name="Areas" type="Node3D" parent="." unique_id=2049325193]
+
+
+[node name="MonolithMusic" parent="Areas" unique_id=1610023003 instance=ExtResource("104_music_zone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 2, 89)
+radius = 22.0
+music = ExtResource("105_monolith_music")
+volume_db = -11.0
 
 [node name="VillageSafeArea" parent="Areas" unique_id=845066492 instance=ExtResource("99_safe")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -59.371716, -4, 78.35388)

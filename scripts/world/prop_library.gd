@@ -9,7 +9,7 @@ extends RefCounted
 ##   their exact shape, small plants none.
 ## Everything is worked out once per prop and shared by every instance.
 
-const FOLIAGE_WORDS := ["tree", "bush", "shrub", "grass", "fern", "flower", "plant", "leaf", "leaves", "reed", "vine"]
+const FOLIAGE_WORDS := ["tree", "bush", "shrub", "grass", "fern", "flower", "plant", "leaf", "leaves", "reed", "vine", "herb"]
 const NO_COLLISION_WORDS := ["grass", "fern", "flower", "reed", "vine", "small", "pebble"]
 const TRUNK_WORDS := ["trunk", "bark", "wood", "stem", "log"]
 ## Props named with these become ladders (walk into them) or climbable walls (jump onto them).
@@ -145,7 +145,10 @@ func _info(prop_name: String):
 	# Things you can chop or smash (data/harvest.json, or _chop / _smash in the name) are
 	# always solid, so a swing can reach them.
 	var harvest := harvest_kind(prop_name)
-	var solid := harvest != "" or ladder or climbable or not NO_COLLISION_WORDS.any(func(w: String) -> bool: return lower.contains(w))
+	# Herbs to pick (harvest kinds with "pick") are walked through.
+	var kinds: Dictionary = harvest_data().get("kinds", {})
+	var pick := harvest != "" and bool((kinds.get(harvest, {}) as Dictionary).get("pick", false))
+	var solid := not pick and (harvest != "" or ladder or climbable or not NO_COLLISION_WORDS.any(func(w: String) -> bool: return lower.contains(w)))
 
 	# Bounds of the whole prop in its own space.
 	var bounds := AABB()

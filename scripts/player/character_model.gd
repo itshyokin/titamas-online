@@ -411,7 +411,8 @@ func _update_hidden_parts() -> void:
 			(node as Node3D).visible = not hide
 	for eye in _eye_nodes:
 		if is_instance_valid(eye):
-			(eye as Node3D).visible = int(_hidden_parts.get("eyes", 0)) <= 0
+			(eye as Node3D).visible = int(_hidden_parts.get("eyes", 0)) <= 0 \
+				and not (eye == _face_node and _face_mat and _face_mat.albedo_texture == null)
 
 
 ## Where a bone sits in the rest pose, in this model's space.
@@ -573,6 +574,32 @@ const THIN_PULL := 0.013
 var weight := 0.0
 var _look := {}
 var _eye_nodes: Array[Node] = []
+
+## Face animation (in game only): blinking, a talking mouth while `talking` (dialogue,
+## speech bubbles) and a `mood` (appearance.json "face_moods": happy, angry, sad, shy,
+## surprised, smug, nervous) that swaps the mouth/brows, adds extras and narrows the eyes.
+## Timings: appearance.json "face_motion". `face_library` = the merged appearance lists,
+## set by Database.
+static var face_library := {}
+var talking := false:
+	set(value):
+		talking = value
+		if not value:
+			_set_talk_frame(-1)
+var mood := "":
+	set(value):
+		if value != mood:
+			mood = value
+			_compose_face()
+var _face_parts: Array = []  # [part ("" = extra), entry]
+var _face_mat: StandardMaterial3D
+var _face_node: Node3D
+var _eye_mats: Array[ShaderMaterial] = []
+var _blink_left := 2.5
+var _blink_t := -1.0
+var _lid := -1.0
+var _talk_frame := -1
+var _talk_left := 0.0
 var _morph_cache := {}  # "body:weight" -> {part name: Mesh}
 var _batch := false
 
@@ -593,6 +620,11 @@ func _apply_look_parts() -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 	_eye_nodes.clear()
+	_eye_mats.clear()
+	_face_parts.clear()
+	_face_mat = null
+	_face_node = null
+	_lid = -1.0
 	if _look.is_empty() or get_skeleton() == null:
 		return
 	for tag: String in LOOK_TAGS:
@@ -669,6 +701,8 @@ func _build_eyes() -> void:
 			# +x is the character's right.
 			var col: Color = _look.get("eye_color_right" if side > 0.0 else "eye_color", _look.get("eye_color", Color(0.3, 0.5, 0.8)))
 			mat.set_shader_parameter("eye_color", col)
+			mat.set_shader_parameter("lid_color", _look.get("skin", skin_color))
+			_eye_mats.append(mat)
 			var cx := side * apart
 			# u = 0 at the inner corner, 1 at the outer one (the texture's outer corner is on the right).
 			var mesh := _face_mesh(head_arrays, cx - side * w, cx + side * w, y + h, y - h, float(place.forward), 6, 4)
@@ -682,26 +716,13 @@ func _build_face_layers(head_arrays: Array) -> void:
 	var area: Dictionary = _look.get("face_area", {})
 	if area.is_empty():
 		return
-	var layers: Array = []  # [entry, placement Vector3 (x, y, scale), split in two halves (brows)]
 	var parts := [["brows", _look.get("brows", {})]]
 	for e in (_look.get("extras", []) as Array):
 		parts.append(["", e])
 	parts.append(["nose", _look.get("nose", {})])
 	parts.append(["mouth", _look.get("mouth", {})])
-	for pair: Array in parts:
-		var o = pair[1]
-		if o is Dictionary and ResourceLoader.exists(String(o.get("texture", ""))):
-			var part: String = pair[0]
-			layers.append([o, part_placement(_look, part) if part != "" else Vector3(0, 0, 1), part == "brows"])
-	if layers.is_empty():
-		return
-	var skin: Color = _look.get("skin", skin_color)
-	var hair: Color = _look.get("hair_color", Color(0.25, 0.15, 0.1))
-	var tex := _face_texture(layers, skin, hair)
-	if tex == null:
-		return
+	_face_parts = parts.filter(func(p: Array) -> bool: return p[1] is Dictionary)
 	var mat := StandardMaterial3D.new()
-	mat.albedo_texture = tex
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	mat.alpha_scissor_threshold = 0.5
@@ -712,7 +733,111 @@ func _build_face_layers(head_arrays: Array) -> void:
 	var hh := float(area.get("tall", 0.2)) * 0.5
 	# Pictures are drawn seen from the front: their left is the character's right (+x).
 	var mesh := _face_mesh(head_arrays, hw, -hw, cy + hh, cy - hh, float(area.get("forward", 0.0015)), 24, 30)
-	_add_face_part(mesh, mat, "FaceLayers")
+	_face_mat = mat
+	_face_node = _add_face_part(mesh, mat, "FaceLayers")
+	_compose_face()
+
+
+## The face picture for the current mood and talking frame (cached per combination).
+func _compose_face() -> void:
+	if _face_mat == null:
+		return
+	var anime := _is_anime_face()
+	var m := _mood_data()
+	var frames: Array = (face_library.get("face_motion", {}) as Dictionary).get("talk_frames_anime" if anime else "talk_frames", [])
+	var layers: Array = []  # [entry, placement Vector3 (x, y, scale), split in two halves (brows)]
+	for pair: Array in _face_parts:
+		var part: String = pair[0]
+		var o: Dictionary = pair[1]
+		var place := part_placement(_look, part) if part != "" else Vector3(0, 0, 1)
+		if part == "mouth":
+			var id := ""
+			if _talk_frame >= 0 and _talk_frame < frames.size():
+				id = String(frames[_talk_frame])
+			elif not m.is_empty():
+				id = String(m.get("mouth_anime" if anime else "mouth", m.get("mouth", "")))
+			var alt := _face_option("mouths", id)
+			if not alt.is_empty():
+				o = alt
+		elif part == "brows" and not m.is_empty():
+			var alt := _face_option("brows", String(m.get("brows_anime" if anime else "brows", m.get("brows", ""))))
+			if not alt.is_empty():
+				o = alt
+			place.y = clampf(place.y + float(m.get("brows_y", 0.0)), -1.0, 1.0)
+		if ResourceLoader.exists(String(o.get("texture", ""))):
+			layers.append([o, place, part == "brows"])
+		if part == "brows":
+			# Mood extras (blush, tears, sweat...) go just above the brows.
+			for eid in m.get("extras_anime" if anime else "extras", []):
+				var e := _face_option("face_extras", String(eid))
+				if ResourceLoader.exists(String(e.get("texture", ""))):
+					layers.append([e, Vector3(0, 0, 1), false])
+	var tex: Texture2D = _face_texture(layers, _look.get("skin", skin_color), _look.get("hair_color", Color(0.25, 0.15, 0.1))) if not layers.is_empty() else null
+	_face_mat.albedo_texture = tex
+	if is_instance_valid(_face_node):
+		_face_node.visible = tex != null and int(_hidden_parts.get("eyes", 0)) <= 0
+
+
+func _mood_data() -> Dictionary:
+	if mood == "":
+		return {}
+	var d = (face_library.get("face_moods", {}) as Dictionary).get(mood, {})
+	return d if d is Dictionary else {}
+
+
+## Anime-style faces swap to anime mouths / brows for talking and moods.
+func _is_anime_face() -> bool:
+	for key in ["mouth", "eyes", "brows"]:
+		var o = _look.get(key, {})
+		if o is Dictionary and String(o.get("id", "")).begins_with("anime_"):
+			return true
+	return false
+
+
+static func _face_option(list: String, id: String) -> Dictionary:
+	if id == "":
+		return {}
+	for o in face_library.get(list, []):
+		if o is Dictionary and String(o.get("id", "")) == id:
+			return o
+	return {}
+
+
+func _set_talk_frame(f: int) -> void:
+	if f != _talk_frame:
+		_talk_frame = f
+		_compose_face()
+
+
+## Blinks now and then; flaps the mouth between talking frames while `talking`.
+func _animate_face(delta: float) -> void:
+	var fm: Dictionary = face_library.get("face_motion", {})
+	if not _eye_mats.is_empty():
+		_blink_left -= delta
+		if _blink_left <= 0.0:
+			_blink_left = randf_range(float(fm.get("blink_every_min", 2.0)), float(fm.get("blink_every_max", 5.5)))
+			_blink_t = 0.0
+		var b := 0.0
+		if _blink_t >= 0.0:
+			var length := maxf(float(fm.get("blink_seconds", 0.14)), 0.02)
+			_blink_t += delta
+			b = sin(clampf(_blink_t / length, 0.0, 1.0) * PI)
+			if _blink_t >= length:
+				_blink_t = -1.0
+		var lid := maxf(b, float(_mood_data().get("squint", 0.0)))
+		if absf(lid - _lid) > 0.01:
+			_lid = lid
+			for mat in _eye_mats:
+				mat.set_shader_parameter("blink", lid)
+	if talking and _face_mat:
+		_talk_left -= delta
+		if _talk_left <= 0.0:
+			_talk_left = float(fm.get("talk_frame_seconds", 0.1)) * randf_range(0.8, 1.4)
+			var count := ((fm.get("talk_frames_anime" if _is_anime_face() else "talk_frames", []) as Array).size())
+			var next := randi_range(-1, count - 1)
+			if next == _talk_frame:
+				next = -1 if _talk_frame >= 0 else 0
+			_set_talk_frame(mini(next, count - 1))
 
 
 static var _face_cache := {}
@@ -811,9 +936,9 @@ static func _placed(img: Image, place: Vector3, halves: bool) -> Image:
 	return out
 
 
-func _add_face_part(mesh: Mesh, mat: Material, node_name: String) -> void:
+func _add_face_part(mesh: Mesh, mat: Material, node_name: String) -> Node3D:
 	if mesh == null:
-		return
+		return null
 	var mi := MeshInstance3D.new()
 	mi.name = node_name
 	mi.mesh = mesh
@@ -823,6 +948,7 @@ func _add_face_part(mesh: Mesh, mat: Material, node_name: String) -> void:
 	if attach:
 		attach.name = node_name
 		_eye_nodes.append(attach)
+	return attach
 
 
 ## A grid over the face from x0 (u = 0) to x1 (u = 1) and y_top (v = 0) to y_bottom, each
@@ -1098,6 +1224,8 @@ static func _sway_anchor(label: String, keys: Array[String]) -> bool:
 
 
 func _process(delta: float) -> void:
+	if (_face_mat or not _eye_mats.is_empty()) and not Engine.is_editor_hint():
+		_animate_face(delta)
 	if _sway.is_empty() or delta <= 0.0:
 		return
 	# Trail behind the way the body moves (spring, so it overshoots and settles).

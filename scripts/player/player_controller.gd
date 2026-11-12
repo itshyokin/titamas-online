@@ -105,6 +105,8 @@ const WATER_MASK := 8  # layer 4
 @export var swim_sprint_speed := 3.8
 ## Lava (WaterVolume.lava): swimming speed × this, share of max health lost per second while
 ## in it, and seconds of Burning after climbing out (player.json movement lava_*).
+## A fall that hurts but doesn't kill leaves the player limping this long (s).
+@export var fall_injury_seconds := 5.0
 @export var lava_speed := 0.3
 @export var lava_damage := 0.08
 @export var lava_burn_seconds := 3.0
@@ -265,6 +267,9 @@ func _watch_fall() -> void:
 	GameLog.post("You hit the ground hard (%d)." % int(amount), Color(1.0, 0.6, 0.5))
 	if state == State.NORMAL and not stats.is_dead():
 		action_animation.emit("hit_react", 0.0, 0.15, 1.1)
+	# Lives through it, but limps for a while (status "sprained": injured).
+	if not stats.is_dead() and fall_injury_seconds > 0.0:
+		stats.add_status("sprained", fall_injury_seconds)
 
 
 func _apply_push(delta: float) -> void:

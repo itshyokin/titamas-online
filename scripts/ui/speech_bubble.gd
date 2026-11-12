@@ -105,6 +105,10 @@ func _settings() -> Dictionary:
 
 func _process(delta: float) -> void:
 	_age += delta
+	# The speaker's mouth moves while the line types out.
+	var model := DialogueBox.model_of(speaker) if is_instance_valid(speaker) else null
+	if model:
+		model.talking = _text.visible_characters >= 0
 	if _text.visible_characters >= 0:
 		_shown += delta * _cps
 		_text.visible_characters = int(_shown)
@@ -120,6 +124,8 @@ func _process(delta: float) -> void:
 	_panel.modulate.a = fade
 	_tail.modulate.a = fade
 	if _age >= seconds:
+		if model:
+			model.talking = false
 		queue_free()
 		return
 	_place()

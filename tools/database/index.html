@@ -503,7 +503,7 @@ const TABS = {
 			["General", [
 				{ key: "id", label: "ID", type: "text", help: "Used by loot tables and the starting kit." },
 				{ key: "name", label: "Name", type: "text" },
-				{ key: "kind", label: "Kind", type: "select", options: [["weapon", "Weapon"], ["armor", "Armour"], ["consumable", "Consumable / potion (usable)"], ["food", "Food (usable)"], ["material", "Material"], ["junk", "Junk (sell)"], ["quest", "Quest item"], ["key", "Key item"]], help: "Also picks its group here and in the backpack: Consumables (potions, food), Weapons, Armour, Key items (quest/key, or Can't be thrown away), Misc (materials, junk)." },
+				{ key: "kind", label: "Kind", type: "select", options: [["weapon", "Weapon"], ["armor", "Armour"], ["consumable", "Consumable / potion (usable)"], ["food", "Food (usable)"], ["material", "Material"], ["herb", "Herb (alchemy)"], ["junk", "Junk (sell)"], ["quest", "Quest item"], ["key", "Key item"]], help: "Also picks its group here and in the backpack: Consumables (potions, food), Weapons, Armour, Key items (quest/key, or Can't be thrown away), Misc (materials, junk)." },
 				{ key: "slot", label: "Equips to", type: "select", options: [["", "(not equippable)"], ["head", "Head"], ["shoulders", "Shoulders"], ["chest", "Chest"], ["hands", "Hands"], ["legs", "Legs"], ["feet", "Feet"], ["weapon", "Weapon (primary or secondary)"], ["off_hand", "Off hand (shield)"]] },
 				{ key: "rarity", label: "Rarity", type: "select", options: [["common", "Common (grey)"], ["uncommon", "Uncommon (green)"], ["rare", "Rare (blue)"], ["epic", "Epic (purple)"], ["legendary", "Legendary (orange)"]] },
 				{ key: "value", label: "Worth (gold)", type: "int" },
@@ -745,6 +745,7 @@ const TABS = {
 				{ key: "movement.fall_safe_height", label: "Falls hurt past (m)", type: "number", help: "Drop further than this and you take damage on landing. 0 = never." },
 				{ key: "movement.fall_damage", label: "Fall damage per metre past that", type: "number" },
 				{ key: "movement.fall_fatal_height", label: "Deadly fall (m)", type: "number", help: "A drop this long always kills." },
+				{ key: "movement.fall_injury_seconds", label: "Hurt by a fall: limps for (s)", type: "number", def: 5, help: "A fall that hurts (but doesn't kill) leaves you injured (slow, limping) this long." },
 				{ key: "movement.lava_speed", label: "Speed in lava × (of swimming)", type: "number", def: 0.3 },
 				{ key: "movement.lava_damage", label: "Lava damage (share of max health per second)", type: "number", def: 0.08, help: "0.08 = 8% a second: about 12 s to die from full." },
 				{ key: "movement.lava_burn_seconds", label: "Burning after leaving lava (s)", type: "number", def: 3 },
@@ -847,6 +848,14 @@ const TABS = {
 				{ key: "dialogue.tick_sound", label: "Typing tick", type: "sound", help: "Played every few letters while a line types out; each speaker gets their own pitch." },
 				{ key: "dialogue.tick_every", label: "Tick every N letters", type: "int" },
 				{ key: "dialogue.tick_db", label: "Tick volume (dB)", type: "number" },
+				{ key: "dialogue.camera", label: "Talk camera (over the shoulder)", type: "bool", def: true, help: "Talking to someone close: the view moves behind the player's shoulder, the speaker on the right." },
+				{ key: "dialogue.camera_range", label: "Talk camera: only within (m)", type: "number", def: 7 },
+				{ key: "dialogue.camera_back", label: "Talk camera: behind the player (m)", type: "number", def: 1.3 },
+				{ key: "dialogue.camera_side", label: "Talk camera: to the side (m)", type: "number", def: 0.75 },
+				{ key: "dialogue.camera_height", label: "Talk camera: above the head (m)", type: "number", def: 0.1 },
+				{ key: "dialogue.camera_aim", label: "Talk camera: speaker off-centre (0 = middle)", type: "number", def: 0.22 },
+				{ key: "dialogue.camera_fov", label: "Talk camera: field of view (°)", type: "number", def: 45 },
+				{ key: "dialogue.camera_glide", label: "Talk camera: glide in/out (s)", type: "number", def: 0.45 },
 			]],
 			["Item rarity colours", [
 				{ key: "rarity_colors.common", label: "Common", type: "color" },
@@ -1217,6 +1226,38 @@ const TABS = {
 				{ key: "kinds.smash.respawn_seconds", label: "Comes back after (s, 0 = never)", type: "number" },
 				{ key: "kinds.smash.wrong_tool", label: "Hint with the wrong weapon", type: "text", wide: true },
 			]],
+			["Herbs: red berries (bush)", [
+				{ key: "kinds.pick_berries.item", label: "Gives", type: "select", empty: true, options: () => itemOptions() },
+				{ key: "kinds.pick_berries.min", label: "At least", type: "int" },
+				{ key: "kinds.pick_berries.max", label: "At most", type: "int" },
+				{ key: "kinds.pick_berries.regrow_days", label: "Grows back after (game days)", type: "number", help: "One game day = World → Real minutes per game day. Counts your play time, so it keeps growing between sessions only while you play." },
+				{ key: "kinds.pick_berries.xp", label: "Experience", type: "int" },
+				{ key: "kinds.pick_berries.sound", label: "Sound", type: "sound" },
+			]],
+			["Herbs: blue leaves (bush)", [
+				{ key: "kinds.pick_blue_leaf.item", label: "Gives", type: "select", empty: true, options: () => itemOptions() },
+				{ key: "kinds.pick_blue_leaf.min", label: "At least", type: "int" },
+				{ key: "kinds.pick_blue_leaf.max", label: "At most", type: "int" },
+				{ key: "kinds.pick_blue_leaf.regrow_days", label: "Grows back after (game days)", type: "number", help: "One game day = World → Real minutes per game day. Counts your play time, so it keeps growing between sessions only while you play." },
+				{ key: "kinds.pick_blue_leaf.xp", label: "Experience", type: "int" },
+				{ key: "kinds.pick_blue_leaf.sound", label: "Sound", type: "sound" },
+			]],
+			["Herbs: yellow flowers", [
+				{ key: "kinds.pick_yellow_flower.item", label: "Gives", type: "select", empty: true, options: () => itemOptions() },
+				{ key: "kinds.pick_yellow_flower.min", label: "At least", type: "int" },
+				{ key: "kinds.pick_yellow_flower.max", label: "At most", type: "int" },
+				{ key: "kinds.pick_yellow_flower.regrow_days", label: "Grows back after (game days)", type: "number", help: "One game day = World → Real minutes per game day. Counts your play time, so it keeps growing between sessions only while you play." },
+				{ key: "kinds.pick_yellow_flower.xp", label: "Experience", type: "int" },
+				{ key: "kinds.pick_yellow_flower.sound", label: "Sound", type: "sound" },
+			]],
+			["Herbs: lavender", [
+				{ key: "kinds.pick_lavender.item", label: "Gives", type: "select", empty: true, options: () => itemOptions() },
+				{ key: "kinds.pick_lavender.min", label: "At least", type: "int" },
+				{ key: "kinds.pick_lavender.max", label: "At most", type: "int" },
+				{ key: "kinds.pick_lavender.regrow_days", label: "Grows back after (game days)", type: "number", help: "One game day = World → Real minutes per game day. Counts your play time, so it keeps growing between sessions only while you play." },
+				{ key: "kinds.pick_lavender.xp", label: "Experience", type: "int" },
+				{ key: "kinds.pick_lavender.sound", label: "Sound", type: "sound" },
+			]],
 			["Which props", [
 				{ key: "props", label: "Props and what they are", type: "propkinds", wide: true, help: "Anything else counts by name: put _chop or _smash in an object's name in Blender (e.g. oak_chop, boulder_smash)." },
 				{ key: "fall_seconds", label: "Tree falling time (s)", type: "number" },
@@ -1511,6 +1552,15 @@ const TABS = {
 				{ key: "sun_height", label: "Sun height at noon (°)", type: "number" },
 				{ key: "night_brightness", label: "Night brightness (0–1)", type: "number", help: "How much ambient light is left at night." },
 			]],
+			["Battle music", [
+				{ key: "music.combat", label: "Battle music", type: "sound", help: "Plays while an enemy is fighting you or a companion." },
+				{ key: "music.combat_volume_db", label: "Battle music volume (dB)", type: "number", def: -10 },
+				{ key: "music.boss", label: "Boss music", type: "sound", help: "Instead of the battle music while a boss (Enemies → Boss) fights you." },
+				{ key: "music.boss_volume_db", label: "Boss music volume (dB)", type: "number", def: -9 },
+				{ key: "music.linger", label: "Keeps playing after the fight (s)", type: "number", def: 5 },
+				{ key: "music.fade_in", label: "Fades in over (s)", type: "number", def: 1.2 },
+				{ key: "music.fade_out", label: "Fades back to the area's music over (s)", type: "number", def: 4 },
+			]],
 			["Sea", [
 				{ key: "sea_level", label: "Sea level (m)", type: "number", def: -5, help: "Height of the endless ocean in Blender metres (Blender Z). Anything below it is water you swim in. Changes show live; grass already grown near the coast updates when you walk away and back." },
 			]],
@@ -1597,6 +1647,7 @@ const TABS = {
 				{ key: "contrast", label: "Contrast", type: "number" },
 				{ key: "brightness", label: "Brightness", type: "number" },
 				{ key: "god_rays", label: "God rays (0–1)", type: "number", help: "Light shafts through the air." },
+				{ key: "heat_haze", label: "Heat haze (0–1)", type: "number", def: 0, help: "Hot air shimmering in the distance (deserts, lava). Daytime only." },
 			]],
 			["Grass", [
 				{ key: "grass_density", label: "Clumps per m²", type: "number", help: "Where the ground is painted grass. 0 = none. Each clump is about 0.9 m across." },
@@ -2356,7 +2407,7 @@ function fieldControl(t, entry, f) {
 			wrap.className += " list-field";
 			wrap.appendChild(label);
 			const obj = (value && typeof value === "object" && !Array.isArray(value)) ? Object.assign({}, value) : {};
-			const kinds = [["chop", "Chop (trees)"], ["smash", "Smash (stones)"]];
+			const kinds = [["chop", "Chop (trees)"], ["smash", "Smash (stones)"]].concat(Object.entries((data.harvest || {}).kinds || {}).filter(([k, v]) => v && v.pick).map(([k, v]) => [k, "Pick: " + itemName(v.item)]));
 			const props = (assets.props || []).map(p => [p, p]);
 			for (const name of Object.keys(obj).sort()) {
 				const row = el("div", { className: "row" });
@@ -2902,11 +2953,13 @@ const CMDS = {
 	achievement: { label: "Unlock achievement", make: () => ({ cmd: "achievement", id: "" }),
 		fields: [["id", "Achievement", "select", achievementOptions]], show: c => "Achievement: " + nameOf(achievementOptions(), c.id) },
 	text: { label: "Show text", make: () => ({ cmd: "text", speaker: "", text: "" }),
-		fields: [["speaker", "Speaker (empty = the event's name)", "text"], ["text", "Text", "textarea", "{player}, {they}/{them}/{their}, {var:id}, {item:id}, {gold}. Texts in a row share one box."]],
+		fields: [["speaker", "Speaker (empty = the event's name)", "text"], ["text", "Text", "textarea", "{player}, {they}/{them}/{their}, {var:id}, {item:id}, {gold}. Texts in a row share one box."],
+			["mood", "Speaker's face", "select", () => [["", "Normal"]].concat(Object.entries((data.appearance || {}).face_moods || {}).map(([k, v]) => [k, v.name || k]))]],
 		show: c => "Text: " + (c.speaker ? c.speaker + ": " : "") + (c.text || "") },
 	choice: { label: "Show choices", make: () => ({ cmd: "choice", options: ["Yes", "No"], branches: [[], []], cancel: 1 }),
-		fields: [["options", "Choices", "options"], ["cancel", "Esc / B picks", "cancel"]],
-		show: c => "Show choices: " + (c.options || []).join(", ") },
+		fields: [["options", "Choices", "options"], ["cancel", "Esc / B picks", "cancel"],
+			["loop", "Loop: after an answer, come back to these choices (that answer greyed out)", "bool"], ["ends", "With loop on, these answers move on:", "choiceends"]],
+		show: c => "Show choices" + (c.loop ? " (loop)" : "") + ": " + (c.options || []).join(", ") },
 	log: { label: "Game log line", make: () => ({ cmd: "log", text: "", color: "#e6e6e0" }),
 		fields: [["text", "Text", "text"], ["color", "Colour", "color"]], show: c => "Log: " + (c.text || "") },
 	if: { label: "Conditional branch", make: () => ({ cmd: "if", conditions: [{ type: "switch", id: "", is: true }], then: [], else: [] }),
@@ -3409,6 +3462,18 @@ function commandEditor(c) {
 				const add = el("button", { textContent: "+ Choice" });
 				add.onclick = () => { c.options.push("Choice " + (c.options.length + 1)); c.branches.push([]); changed(true); };
 				ctl.appendChild(add);
+				break;
+			}
+			case "choiceends": {
+				c[key] = Array.isArray(c[key]) ? c[key] : [];
+				ctl = el("div", { className: "row" });
+				(c.options || []).forEach((o, i) => {
+					const lab2 = el("label", { className: "check" });
+					const cb = el("input", { type: "checkbox", checked: c[key].includes(i) });
+					cb.onchange = () => { const s = new Set(c[key]); cb.checked ? s.add(i) : s.delete(i); setv([...s].sort((a, b) => a - b)); };
+					lab2.append(cb, document.createTextNode(" [" + o + "]  "));
+					ctl.appendChild(lab2);
+				});
 				break;
 			}
 			case "cancel": {

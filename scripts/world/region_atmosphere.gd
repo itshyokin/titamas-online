@@ -52,6 +52,8 @@ extends Resource
 
 ## Light shafts through the air (god rays): 0 = none, 1 = strong.
 @export_range(0.0, 1.0) var god_rays := 0.3
+## Hot air shimmering in the distance (deserts): 0 none, 1 strong. Daytime only.
+@export_range(0.0, 1.0) var heat_haze := 0.0
 
 @export_group("Grass")
 ## Grass clumps per square metre where the ground is painted grass (0 = none).

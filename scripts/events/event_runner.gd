@@ -7,7 +7,9 @@ extends Node
 ## says otherwise ("freeze": false).
 ##
 ## Commands are dictionaries with "cmd" (see data/events.json and the Database Events tab):
-##   text {speaker, text}                    choice {options[], branches[[...]], cancel}
+##   text {speaker, text, mood}              choice {options[], branches[[...]], cancel, loop, ends[]}
+##        loop: after an answer's branch the choices come back with that answer greyed
+##        out; only the answers listed in ends (indices) move on
 ##   if {conditions[], then[], else[]}       switch {id, value}      self_switch {letter, value}
 ##   variable {id, op set/add/sub/mul/random, value, max}
 ##   give_item {item, count, silent}         take_item {item, count}  gold {op add/take/set, value, silent}
@@ -111,6 +113,13 @@ func _step(delta: float) -> void:
 			var i := _picked
 			_choice = {}
 			_picked = -2
+			var cc: Dictionary = _choice_cmd
+			if bool(cc.get("loop", false)) and i >= 0 and not i in _ends_of(cc):
+				# Back to the same choices afterwards, this answer greyed out.
+				var used: Array = (_choice_used.duplicate() as Array)
+				if not i in used:
+					used.append(i)
+				_stack.append({"list": [{"cmd": "_rechoice", "choice": cc, "used": used, "lines": _choice_lines, "who": _choice_who, "moods": _choice_moods}], "i": 0})
 			if i >= 0 and i < branches.size() and branches[i] is Array and not (branches[i] as Array).is_empty():
 				_stack.append({"list": branches[i], "i": 0})
 			continue
@@ -136,18 +145,22 @@ func _execute(c: Dictionary, list: Array, top: Dictionary) -> void:
 			# right after shows under the last line.
 			var who := String(c.get("speaker", ""))
 			var lines := [_format(String(c.get("text", "")))]
+			var moods := [String(c.get("mood", ""))]
 			while int(top.i) < list.size() and list[top.i] is Dictionary and String(list[top.i].get("cmd", "")) == "text" \
 					and String(list[top.i].get("speaker", "")) == who:
 				lines.append(_format(String(list[top.i].get("text", ""))))
+				moods.append(String(list[top.i].get("mood", "")))
 				top.i = int(top.i) + 1
 			var next = list[top.i] if int(top.i) < list.size() else null
 			if next is Dictionary and String(next.get("cmd", "")) == "choice":
 				top.i = int(top.i) + 1
-				_open_choice(next, lines, who)
+				_open_choice(next, lines, who, moods)
 			else:
-				_box = DialogueBox.open(self, who if who != "" else speaker, String(c.get("title", "")), lines, Callable())
+				_box = DialogueBox.open(self, who if who != "" else speaker, String(c.get("title", "")), lines, Callable(), [], moods)
 		"choice":
 			_open_choice(c, [], "")
+		"_rechoice":
+			_open_choice(c.choice, c.lines, String(c.who), c.moods, c.used)
 		"if":
 			var ok := EventState.test_all(c.get("conditions", []), self_key, player)
 			var branch = c.get("then", []) if ok else c.get("else", [])
@@ -429,15 +442,36 @@ func _toss(c: Dictionary) -> void:
 			st.call("take_damage", hurt, source)
 
 
-func _open_choice(c: Dictionary, lines: Array, who: String) -> void:
+var _choice_cmd := {}
+var _choice_used: Array = []
+var _choice_lines: Array = []
+var _choice_who := ""
+var _choice_moods: Array = []
+
+
+func _open_choice(c: Dictionary, lines: Array, who: String, moods: Array = [], used: Array = []) -> void:
 	_choice = c
+	_choice_cmd = c
+	_choice_used = used
+	_choice_lines = lines
+	_choice_who = who
+	_choice_moods = moods
 	_picked = -2
 	var choices := []
 	var options: Array = c.get("options", [])
 	for i in options.size():
-		choices.append([_format(String(options[i])), _choose.bind(i)])
+		choices.append([_format(String(options[i])), _choose.bind(i), i in used])
 	var cancel := int(c.get("cancel", -1))
-	_box = DialogueBox.open(self, who if who != "" else speaker, "", lines, _box_closed.bind(cancel), choices)
+	_box = DialogueBox.open(self, who if who != "" else speaker, "", lines, _box_closed.bind(cancel), choices, moods)
+
+
+## The answers of a looping choice that move on (none marked: only Esc / the cancel
+## answer leaves).
+static func _ends_of(c: Dictionary) -> Array:
+	var out: Array = []
+	for v in c.get("ends", []):
+		out.append(int(v))
+	return out
 
 
 func _choose(i: int) -> String:
