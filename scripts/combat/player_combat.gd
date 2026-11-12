@@ -137,6 +137,7 @@ var _channel_play_at := -1.0  # timed channels: when the held pose starts playin
 var _channel_speed := 1.0
 var _cooldowns := {}  # Ability -> seconds left
 var _combat_timer := 0.0
+var _stow_until := 0  # msec: putting away, the weapon stays in hand until then
 
 # Reloading (crossbows, guns): weapon slot -> id of the item in it that still needs reloading.
 var _unloaded := {}
@@ -331,7 +332,8 @@ func _equip_weapons() -> void:
 func _show_weapons() -> void:
 	var slot := active_slot()
 	for s: String in _models:
-		var drawn := in_combat and s == slot and Time.get_ticks_msec() >= _draw_until
+		var now := Time.get_ticks_msec()
+		var drawn := s == slot and ((in_combat and now >= _draw_until) or (not in_combat and now < _stow_until))
 		var m: Dictionary = _models[s]
 		if m.hand and is_instance_valid(m.hand):
 			m.hand.visible = drawn
@@ -355,6 +357,28 @@ func _play_draw() -> void:
 	_draw_until = Time.get_ticks_msec() + int(grip * 1000.0)
 	player.action_animation.emit(anim, 0.0, 0.12, 1.0)
 	get_tree().create_timer(grip + 0.02).timeout.connect(_show_weapons)
+
+
+## Z: draws the weapon, or puts it away (the draw clip again: the hand reaches back, the
+## weapon goes on the back at `draw_grip`). Followers copy it.
+func toggle_weapon() -> void:
+	if not in_combat:
+		_enter_combat(false)
+		return
+	if _current != null or _charging != null or _casting != null or _channel != null:
+		return
+	_blocking = false
+	if _aiming:
+		_set_aiming(false)
+	var anim := String(weapon_type.get("draw_anim", ""))
+	var still := Vector2(player.velocity.x, player.velocity.z).length() < 0.5
+	_stow_until = 0
+	if not anim.is_empty() and _models.has(active_slot()) and player.state == PlayerController.State.NORMAL and still:
+		var grip := float(weapon_type.get("draw_grip", 0.3))
+		_stow_until = Time.get_ticks_msec() + int(grip * 1000.0)
+		player.action_animation.emit(anim, 0.0, 0.12, 1.0)
+		get_tree().create_timer(grip + 0.02).timeout.connect(_show_weapons)
+	_set_combat(false)
 
 
 ## Weapons appear in the hand straight away (an attack started mid-draw).
@@ -385,6 +409,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_press_time = 0.0
 	elif event.is_action_pressed("danger_mode"):
 		set_danger_mode(not Combat.danger_mode)
+	elif event.is_action_pressed("toggle_weapon"):
+		toggle_weapon()
+		get_viewport().set_input_as_handled()
 	else:
 		for i in Inventory.HOTBAR_SIZE:
 			if event.is_action_pressed("hotbar_%d" % (i + 1)):
@@ -432,7 +459,7 @@ func _physics_process(delta: float) -> void:
 		_cooldowns[ab] -= delta
 		if _cooldowns[ab] <= 0.0:
 			_cooldowns.erase(ab)
-	if in_combat:
+	if in_combat and combat_linger > 0.0:  # 0 = the weapon stays out until Z
 		_combat_timer -= delta
 		if _combat_timer <= 0.0 and _current == null and _charging == null and _casting == null and not _blocking and not _aiming:
 			_set_combat(false)

@@ -156,9 +156,33 @@ func _dress() -> void:
 
 
 ## Weapons stay in hand unless the NPC's entry says to keep them away until a fight.
+## Followers copy the player: weapon out while the player's is drawn (Z), away otherwise.
 func _show_weapon() -> void:
 	if _weapon and is_instance_valid(_weapon):
-		_weapon.visible = ai == AI.FIGHT or not bool(data.get("weapon_hidden", false))
+		if leader and is_instance_valid(leader) and ai != AI.FIGHT:
+			_weapon.visible = _leader_drawn
+		else:
+			_weapon.visible = ai == AI.FIGHT or not bool(data.get("weapon_hidden", false))
+
+
+var _leader_drawn := false
+var _mirror_at := -1.0
+
+
+## Followers draw / put away a moment after the player does (not all at once).
+func _mirror_leader_weapon(delta: float) -> void:
+	var lc: Node = leader.get_node_or_null("PlayerCombat") if leader else null
+	var drawn := bool(lc.get("in_combat")) if lc else false
+	if drawn == _leader_drawn:
+		_mirror_at = -1.0
+		return
+	if _mirror_at < 0.0:
+		_mirror_at = randf_range(0.25, 0.7)
+	_mirror_at -= delta
+	if _mirror_at <= 0.0:
+		_mirror_at = -1.0
+		_leader_drawn = drawn
+		_show_weapon()
 
 
 func _f(key: String, fallback: float) -> float:
@@ -244,6 +268,9 @@ func _physics_process(delta: float) -> void:
 	if data.is_empty():
 		return
 	_regen(delta)
+	if _climbing(delta):
+		_update_head(delta)
+		return
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	for ab: Ability in _spell_cooldowns:
 		_spell_cooldowns[ab] = maxf(float(_spell_cooldowns[ab]) - delta, 0.0)
@@ -884,6 +911,7 @@ func follow(who: Node3D, quietly := false) -> void:
 		_wander_to = _home
 		ai = AI.IDLE
 		_wait = 2.0
+	_show_weapon()
 	if not quietly:
 		_remember_follower(leader != null)
 	follow_changed.emit(leader != null)
@@ -924,13 +952,18 @@ func _follow(delta: float) -> Vector3:
 	if leader == null or not is_instance_valid(leader):
 		follow(null)
 		return Vector3.ZERO
+	_mirror_leader_weapon(delta)
 	var to_leader := leader.global_position - global_position
 	var far := Vector2(to_leader.x, to_leader.z).length()
 	if far > FOLLOW_TELEPORT or (far > 12.0 and absf(to_leader.y) > 8.0):
 		_appear_near_leader()
 		return Vector3.ZERO
-	# The player is swimming or climbing: wait at the edge, catch up afterwards.
 	var leader_state = leader.get("state")
+	_watch_leader_ladder(leader_state)
+	var climb_move: Variant = _walk_to_ladder()
+	if climb_move != null:
+		return climb_move
+	# The player is swimming or climbing: wait at the edge, catch up afterwards.
 	if leader_state != null and leader_state not in [PlayerController.State.NORMAL, PlayerController.State.ACTION, PlayerController.State.DODGE]:
 		_face(leader.global_position, delta)
 		return Vector3.ZERO
@@ -954,6 +987,100 @@ func _follow(delta: float) -> Vector3:
 	if far > 7.0 or to.length() > 4.0:
 		speed = _f("run_speed", 4.2) * 1.25  # catching up
 	return to.normalized() * minf(speed, to.length() * 4.0)
+
+
+# --- Ladders (followers) -----------------------------------------------------------
+# The player's climb is recorded: where they got on (`from`, already on the ladder's
+# face), the last spot on it (`last`) and where they got off (`to`). Once they're off,
+# followers walk to `from`, climb to `last` and step to `to`.
+
+var _ladder_trip := {}
+var _climb := {}  # active climb: {from, last, to, phase}
+
+
+func _watch_leader_ladder(leader_state) -> void:
+	var on_ladder: bool = leader_state == PlayerController.State.LADDER
+	if on_ladder:
+		if _ladder_trip.is_empty() or _ladder_trip.has("to"):
+			_ladder_trip = {"from": leader.global_position, "normal": leader.get("_surface_normal")}
+		_ladder_trip["last"] = leader.global_position
+	elif not _ladder_trip.is_empty() and not _ladder_trip.has("to"):
+		if leader.is_on_floor() or leader_state != PlayerController.State.LEDGE_CLIMB:
+			_ladder_trip["to"] = leader.global_position
+			_ladder_trip["at"] = Time.get_ticks_msec()
+
+
+## Walking to the foot (or top) of the ladder the player used; starts the climb there.
+## null = not following a ladder trip.
+func _walk_to_ladder() -> Variant:
+	if not _ladder_trip.has("to"):
+		return null
+	var from: Vector3 = _ladder_trip.from
+	var to: Vector3 = _ladder_trip.to
+	var flat := Vector2(from.x - global_position.x, from.z - global_position.z)
+	# Already up there, too far from the ladder, or it was long ago: forget it.
+	if absf(global_position.y - to.y) < 1.2 or flat.length() > 14.0 \
+			or Time.get_ticks_msec() - int(_ladder_trip.at) > 30000:
+		_ladder_trip = {}
+		return null
+	if flat.length() < 0.9:
+		_climb = {"from": from, "last": _ladder_trip.last, "to": to, "phase": 0, "normal": _ladder_trip.get("normal")}
+		_ladder_trip = {}
+		global_position = Vector3(from.x, global_position.y, from.z)
+		var n = _climb_normal()
+		if n != Vector3.ZERO:
+			model.rotation.y = atan2(n.x, n.z)
+		return Vector3.ZERO
+	var dir := Vector3(flat.x, 0.0, flat.y).normalized()
+	return dir * _f("run_speed", 4.2) * minf(1.0, flat.length() / 1.5)
+
+
+func _climb_normal() -> Vector3:
+	var n = _climb.get("normal", null)
+	if n is Vector3:
+		return n
+	var to: Vector3 = _climb.to
+	var last: Vector3 = _climb.last
+	var off := Vector3(last.x - to.x, 0, last.z - to.z)  # getting off goes away from the face
+	return off.normalized() if off.length() > 0.05 else Vector3.ZERO
+
+
+## Climbing (no physics): up/down the ladder's face, then a step onto `to`.
+## Returns true while climbing.
+func _climbing(delta: float) -> bool:
+	if _climb.is_empty():
+		return false
+	if ai != AI.FOLLOW:
+		_climb = {}
+		return false
+	var last: Vector3 = _climb.last
+	var to: Vector3 = _climb.to
+	velocity = Vector3.ZERO
+	_walk = Vector3.ZERO
+	if int(_climb.phase) == 0:
+		var dy := last.y - global_position.y
+		var step := 1.6 * delta
+		var rate := 1.6 / 0.8
+		character.play("climbing_ladder", 0.2, rate * signf(dy) if absf(dy) > 0.01 else 0.0)
+		if absf(dy) <= step:
+			global_position = last
+			_climb.phase = 1
+			_climb["t"] = 0.0
+		else:
+			global_position.y += signf(dy) * step
+			global_position.x = lerpf(global_position.x, last.x, minf(delta * 4.0, 1.0))
+			global_position.z = lerpf(global_position.z, last.z, minf(delta * 4.0, 1.0))
+	else:
+		_climb.t = float(_climb.t) + delta / 0.5
+		var k := minf(float(_climb.t), 1.0)
+		var up := maxf(to.y - last.y, 0.0)
+		# Up and over the top edge, or a short drop off the bottom rung.
+		global_position = last.lerp(to, k) + Vector3.UP * (sin(k * PI) * 0.3 if up < 0.2 else 0.0)
+		if up >= 0.2:
+			global_position.y = lerpf(last.y, to.y, minf(k * 2.0, 1.0))
+		if k >= 1.0:
+			_climb = {}
+	return true
 
 
 ## Running at a fight but not getting anywhere (caught on a rock): after a moment, appear
