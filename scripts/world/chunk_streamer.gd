@@ -36,9 +36,11 @@ extends Node3D
 			_refresh_editor_preview()
 
 var _shared_materials := {}  # name -> Material (or null if none)
+var _fourth := {}  # Vector2i -> PackedFloat32Array: 4th paint layer (black) per grid point, or empty
 var _ground := {}  # Vector2i -> ground set id ("" = standard), from the chunk's terrain material
 var _props: PropLibrary
 const WATER_MATERIAL := preload("res://assets/materials/water.tres")
+const LAVA_MATERIAL := preload("res://assets/materials/lava.tres")
 ## How deep the swimmable box under a Blender water plane reaches.
 const WATER_PLANE_DEPTH := 30.0
 ## Terrain vertex spacing (m), matching the Blender add-on.
@@ -112,6 +114,7 @@ func _physics_process(_delta: float) -> void:
 				_paint.erase(cell)
 				_heights.erase(cell)
 				_ground.erase(cell)
+				_fourth.erase(cell)
 				_water_rects.erase(cell)
 				_grass.erase(cell)
 
@@ -211,6 +214,38 @@ func paint_at(point: Vector3) -> Vector2:
 	return grid[gz * n + gx]
 
 
+## Share of the 4th paint layer (black paint) under a point, 0..1.
+func fourth_at(point: Vector3) -> float:
+	var cell := _cell_of(point)
+	var grid: PackedFloat32Array = _fourth.get(cell, PackedFloat32Array())
+	if grid.is_empty():
+		return 0.0
+	var n := _paint_grid_size()
+	var half := chunk_size * 0.5
+	var gx := clampi(roundi((point.x - cell.x * chunk_size + half) / PAINT_SPACING), 0, n - 1)
+	var gz := clampi(roundi((point.z - cell.y * chunk_size + half) / PAINT_SPACING), 0, n - 1)
+	return grid[gz * n + gx]
+
+
+## The paint grid GrassField grows from: its "grass" (1 - x - y) is how grassy each point is
+## for this chunk's ground set (layer 1 × the set's grass, plus layer 4 × the 4th's grass).
+func _grass_paint(cell: Vector2i) -> PackedVector2Array:
+	var paint: PackedVector2Array = _paint.get(cell, PackedVector2Array())
+	var fourth: PackedFloat32Array = _fourth.get(cell, PackedFloat32Array())
+	var scales := GroundSets.grass_scales(String(_ground.get(cell, "")))
+	if fourth.is_empty() and scales.x == 1.0:
+		return paint
+	var n := _paint_grid_size()
+	var out := PackedVector2Array()
+	out.resize(n * n)
+	for k in n * n:
+		var p := paint[k] if not paint.is_empty() else Vector2.ZERO
+		var a := fourth[k] if not fourth.is_empty() else 0.0
+		var g := clampf(maxf(1.0 - p.x - p.y - a, 0.0) * scales.x + a * scales.y, 0.0, 1.0)
+		out[k] = Vector2(1.0 - g, 0.0)
+	return out
+
+
 ## Grows grass on the chunks near the player (one chunk per frame) and removes it further away.
 func _update_grass(center: Vector2i) -> void:
 	for cell: Vector2i in _grass.keys():
@@ -220,7 +255,7 @@ func _update_grass(center: Vector2i) -> void:
 			_grass.erase(cell)
 	for cell in _cells_around(center, grass_radius):
 		if _loaded.has(cell) and not _grass.has(cell) and _heights.has(cell):
-			var field := GrassField.create(cell, chunk_size, PAINT_SPACING, _heights[cell], _paint.get(cell, PackedVector2Array()),
+			var field := GrassField.create(cell, chunk_size, PAINT_SPACING, _heights[cell], _grass_paint(cell),
 				_water_rects.get(cell, []), _sea_level(), _grass_density_at(cell))
 			_loaded[cell].add_child(field)
 			_grass[cell] = field
@@ -274,7 +309,7 @@ func _grass_density_at(cell: Vector2i) -> float:
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings:
 		density *= float(settings.call("grass_multiplier"))
-	return density * GroundSets.grass_scale(String(_ground.get(cell, "")))
+	return density
 
 
 func _paint_grid_size() -> int:
@@ -291,12 +326,15 @@ func _read_terrain(chunk: Node3D) -> Array:
 	var heights := PackedFloat32Array()
 	heights.resize(n * n)
 	heights.fill(-INF)
+	var fourth := PackedFloat32Array()
+	fourth.resize(n * n)
+	var any_fourth := false
 	var found := false
 	var half := chunk_size * 0.5
 	for pass_index in 2:
 		for node in chunk.find_children("*", "MeshInstance3D", true, false):
 			var mi := node as MeshInstance3D
-			if String(mi.name).ends_with("-water") or mi.mesh == null or mi.get_parent().name == "Props":
+			if String(mi.name).ends_with("-water") or String(mi.name).ends_with("-lava") or mi.mesh == null or mi.get_parent().name == "Props":
 				continue
 			if _is_prop(mi, chunk):
 				continue
@@ -313,6 +351,9 @@ func _read_terrain(chunk: Node3D) -> Array:
 				if pass_index == 0 and not painted:
 					continue
 				var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+				# Third UV map (Godot: CUSTOM0, two floats per vertex): the 4th paint layer.
+				var c0 = arrays[Mesh.ARRAY_CUSTOM0] if painted else null
+				var has_c0: bool = c0 is PackedFloat32Array and (c0 as PackedFloat32Array).size() >= verts.size() * 2
 				for i in verts.size():
 					var p := xf * verts[i]
 					var gx := roundi((p.x + half) / PAINT_SPACING)
@@ -321,12 +362,15 @@ func _read_terrain(chunk: Node3D) -> Array:
 						var k := gz * n + gx
 						if painted:
 							paint[k] = uv2[i]
+							if has_c0:
+								fourth[k] = c0[i * 2]
+								any_fourth = any_fourth or c0[i * 2] > 0.001
 						heights[k] = maxf(heights[k], p.y)
 						found = true
 		if found:
 			break
 	if not found:
-		return [PackedVector2Array(), PackedFloat32Array()]
+		return [PackedVector2Array(), PackedFloat32Array(), PackedFloat32Array()]
 	# Holes (no vertex landed there): borrow a neighbour's height.
 	for k in heights.size():
 		if heights[k] == -INF:
@@ -336,7 +380,7 @@ func _read_terrain(chunk: Node3D) -> Array:
 		if v != Vector2.ZERO:
 			any_paint = true
 			break
-	return [paint if any_paint else PackedVector2Array(), heights]
+	return [paint if any_paint else PackedVector2Array(), heights, fourth if any_fourth else PackedFloat32Array()]
 
 
 func _is_prop(node: Node, chunk: Node) -> bool:
@@ -384,8 +428,8 @@ func _add_chunk(cell: Vector2i, scene: PackedScene, props_now := true) -> void:
 	chunk.position = Vector3(cell.x * chunk_size, 0, cell.y * chunk_size)
 	for mesh in chunk.find_children("*", "MeshInstance3D", true, false):
 		var mi := mesh as MeshInstance3D
-		if String(mi.name).ends_with("-water"):
-			_make_water(mi, cell, chunk)
+		if String(mi.name).ends_with("-water") or String(mi.name).ends_with("-lava"):
+			_make_water(mi, cell, chunk, String(mi.name).ends_with("-lava"))
 			continue
 		for s in mi.mesh.get_surface_count():
 			var mat := mi.mesh.surface_get_material(s)
@@ -404,6 +448,7 @@ func _add_chunk(cell: Vector2i, scene: PackedScene, props_now := true) -> void:
 		var terrain := _read_terrain(chunk)
 		_paint[cell] = terrain[0]
 		_heights[cell] = terrain[1]
+		_fourth[cell] = terrain[2]
 		var occluder := WorldPerf.make_occluder(terrain[1], _paint_grid_size(), PAINT_SPACING, chunk_size)
 		if occluder:
 			chunk.add_child(occluder)
@@ -470,8 +515,8 @@ func _apply_range(prop: Node3D) -> void:
 
 ## A Blender water plane (object named "<name>-water"): give it the water look and a
 ## swimmable volume beneath its surface.
-func _make_water(mi: MeshInstance3D, cell: Vector2i, chunk: Node3D) -> void:
-	mi.material_override = WATER_MATERIAL
+func _make_water(mi: MeshInstance3D, cell: Vector2i, chunk: Node3D, lava := false) -> void:
+	mi.material_override = LAVA_MATERIAL if lava else WATER_MATERIAL
 	# Remember where it is (world XZ rectangle and surface height) so grass stays out.
 	var xf := Transform3D.IDENTITY
 	var walk: Node = mi
@@ -489,7 +534,64 @@ func _make_water(mi: MeshInstance3D, cell: Vector2i, chunk: Node3D) -> void:
 	volume.size = Vector3(box.size.x, WATER_PLANE_DEPTH, box.size.z)
 	var top := box.position.y + box.size.y
 	volume.position = Vector3(box.get_center().x, top - WATER_PLANE_DEPTH * 0.5, box.get_center().z)
+	volume.lava = lava
 	mi.add_child(volume)
+	if lava:
+		_lava_glow(mi, box)
+
+
+## Orange light over a lava pool (one per ~24 m, at most 4) and embers rising off it.
+func _lava_glow(mi: MeshInstance3D, box: AABB) -> void:
+	var nx := clampi(ceili(box.size.x / 24.0), 1, 2)
+	var nz := clampi(ceili(box.size.z / 24.0), 1, 2)
+	var top := box.position.y + box.size.y
+	for ix in nx:
+		for iz in nz:
+			var light := OmniLight3D.new()
+			light.light_color = Color(1.0, 0.45, 0.12)
+			light.light_energy = 2.2
+			light.omni_range = maxf(box.size.x / nx, box.size.z / nz) * 0.9 + 4.0
+			light.omni_attenuation = 1.4
+			light.shadow_enabled = false
+			light.position = Vector3(box.position.x + box.size.x * (ix + 0.5) / nx, top + 1.5, box.position.z + box.size.z * (iz + 0.5) / nz)
+			mi.add_child(light)
+	if Engine.is_editor_hint():
+		return
+	var embers := GPUParticles3D.new()
+	embers.amount = clampi(int(box.size.x * box.size.z / 12.0), 6, 64)
+	embers.lifetime = 2.5
+	embers.position = Vector3(box.get_center().x, top + 0.1, box.get_center().z)
+	embers.visibility_aabb = AABB(Vector3(-box.size.x * 0.5, -1, -box.size.z * 0.5), Vector3(box.size.x, 6, box.size.z))
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(box.size.x * 0.5, 0.05, box.size.z * 0.5)
+	pm.direction = Vector3.UP
+	pm.spread = 20.0
+	pm.initial_velocity_min = 0.6
+	pm.initial_velocity_max = 1.6
+	pm.gravity = Vector3(0, 0.3, 0)
+	pm.turbulence_enabled = true
+	pm.turbulence_noise_strength = 0.6
+	pm.scale_min = 0.6
+	pm.scale_max = 1.2
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1.0, 0.8, 0.3, 1.0))
+	fade.set_color(1, Color(1.0, 0.3, 0.05, 0.0))
+	var ramp := GradientTexture1D.new()
+	ramp.gradient = fade
+	pm.color_ramp = ramp
+	embers.process_material = pm
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.06, 0.06)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.vertex_color_use_as_albedo = true
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	quad.material = m
+	embers.draw_pass_1 = quad
+	mi.add_child(embers)
 
 
 func _shared_material(mat_name: String) -> Material:

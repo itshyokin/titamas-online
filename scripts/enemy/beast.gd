@@ -6,6 +6,10 @@ extends Enemy
 ## and the troll boss: from afar it hurls rocks (a red ring marks where each will land:
 ## dodge it); up close it raises both fists and smashes the ground, knocking everyone near
 ## it off their feet. The wind-up is long: hit it a few times, then roll clear.
+## Golems ("golem" body) lie buried (`ambush`) until someone comes near, then burst out of
+## the ground; they club up close and fling stone shards at anyone who keeps away. The
+## gilded golem (`gold`) runs at you instead and, once close, glows brighter and brighter
+## and explodes (kill it during the fuse to stop it).
 ## Everything else (health, loot, respawn, co-op, xp) is Enemy's. Settings are the
 ## enemies.json entry's "beast" block (Database → Enemies → Beast).
 
@@ -19,11 +23,18 @@ const TROLL_GRUNT := preload("res://assets/audio/creatures/troll_grunt.ogg")
 const SMASH := preload("res://assets/audio/creatures/ground_smash.ogg")
 const WHOOSH := preload("res://assets/audio/creatures/rock_whoosh.ogg")
 const RING := "res://assets/effects/builtin/ring.png"
+const GOLEM_BURST := preload("res://assets/audio/creatures/golem_burst.ogg")
+const GOLEM_GROAN := preload("res://assets/audio/creatures/golem_groan.ogg")
+const SHARD_FIRE := preload("res://assets/audio/creatures/shard_fire.ogg")
+const GOLEM_FUSE := preload("res://assets/audio/creatures/golem_fuse.ogg")
+const GOLD_BLAST := preload("res://assets/audio/creatures/gold_blast.ogg")
 
 var body: BeastModel
 var cfg := {}
 var big := false            # the dragon / troll: no knockback/knockdown, bigger hit radius
 var troll := false
+var golem := false
+var gilded := false         # golem "gold": explodes when it reaches you
 var flying := false         # always in the air (bats)
 var airborne := false
 var fly_height := 2.6
@@ -50,16 +61,21 @@ var _fireball: Ability
 var _throw_left := 0.0      # troll: seconds until it may throw again
 var _smash_marker: MeshInstance3D
 var _steps_heard := 0
+var _buried := false        # golem ambush: under the ground until someone comes near
+var _sinking := false
+var _exploded := false
 
 
 func _ready() -> void:
 	cfg = Database.enemy(enemy_id).get("beast", {})
 	var kind := String(cfg.get("body", "bat"))
 	troll = kind == "troll"
+	golem = kind == "golem"
+	gilded = golem and bool(cfg.get("gold", false))
 	big = kind == "dragon" or troll
-	body = BeastModel.create(kind, DataFiles.color_from(cfg.get("color", "#4a3a34")), float(cfg.get("scale", 1.0)))
+	body = BeastModel.create(kind, DataFiles.color_from(cfg.get("color", "#4a3a34")), float(cfg.get("scale", 1.0)), gilded)
 	model.add_child(body)
-	flying = bool(cfg.get("flying", not big))
+	flying = bool(cfg.get("flying", not big and not golem))
 	fly_height = float(cfg.get("fly_height", 2.6))
 	airborne = flying
 	hide_disc = flying
@@ -68,15 +84,15 @@ func _ready() -> void:
 		collision_mask = 1
 	_alt = fly_height if airborne else 0.0
 	_alt_goal = _alt
-	body_radius = float(cfg.get("radius", (1.5 if troll else 2.2) if big else 0.3))
+	body_radius = float(cfg.get("radius", ((1.5 if troll else 2.2) if big else (1.0 if golem else 0.3))))
 	var shape := get_node_or_null("CollisionShape3D") as CollisionShape3D
 	if shape:
 		var cap := CapsuleShape3D.new()
 		cap.radius = body_radius
-		cap.height = maxf(float(cfg.get("height", (5.2 if troll else 4.6) if big else 0.7)), body_radius * 2.0)
+		cap.height = maxf(float(cfg.get("height", ((5.2 if troll else 4.6) if big else (3.4 if golem else 0.7)))), body_radius * 2.0)
 		shape.shape = cap
 		shape.position = Vector3.UP * cap.height * 0.5
-	body.position.y = 0.0 if big else 0.35
+	body.position.y = 0.0 if big or golem else 0.35
 	_fireball = Ability.new()
 	_fireball.id = "beast_fireball"
 	_fireball.display_name = "Fireball"
@@ -92,7 +108,9 @@ func _ready() -> void:
 		_plate.position.y = float(cfg.get("plate_height", 1.0 if not big else 6.0))
 	var disc := get_node_or_null("DispositionDisc") as Node3D
 	if disc:
-		disc.scale = Vector3.ONE * (body_radius / 0.45 if big else 1.0)
+		disc.scale = Vector3.ONE * (body_radius / 0.45 if big or golem else 1.0)
+	if golem and bool(cfg.get("ambush", true)) and not _is_puppet():
+		_bury.call_deferred()
 
 
 func _equip() -> void:
@@ -100,7 +118,7 @@ func _equip() -> void:
 
 
 func aim_point() -> Vector3:
-	return global_position + Vector3.UP * float(cfg.get("aim_height", (3.2 if troll else 2.6) if big else 0.35))
+	return global_position + Vector3.UP * float(cfg.get("aim_height", ((3.2 if troll else 2.6) if big else (2.2 if golem else 0.35))))
 
 
 # --- Movement ---------------------------------------------------------------------
@@ -126,6 +144,19 @@ func _physics_process(delta: float) -> void:
 		_home = global_position
 		_wander_to = _home
 	_cooldown = maxf(_cooldown - delta, 0.0)
+	if _sinking:
+		velocity = Vector3.ZERO
+		return
+	if _buried:
+		velocity = Vector3.ZERO
+		var near := _nearest_player(float(cfg.get("burst_range", 7.0)))
+		if near:
+			_burst_out(near)
+		return
+	if golem and bool(cfg.get("ambush", true)) and ai == AI.IDLE and target == null and not _sinking \
+			and global_position.distance_to(_home) < 1.5 and stats.health >= stats.max_health * 0.99:
+		_sink()
+		return
 	var g := _ground_below(global_position)
 	if g != INF:
 		_ground_y = g
@@ -169,6 +200,8 @@ func _chase(delta: float) -> Vector3:
 	var d := to.length()
 	if troll:
 		return _troll_chase(delta, to, d)
+	if golem:
+		return _golem_chase(delta, to, d)
 	if big:
 		return _dragon_chase(delta, to, d)
 	# Bats: hover over to the target, then swoop.
@@ -238,6 +271,153 @@ func _troll_chase(delta: float, to: Vector3, d: float) -> Vector3:
 	if d > smash_reach * 0.7:
 		return to.normalized() * (run_speed if d > 16.0 else walk_speed)
 	return Vector3.ZERO
+
+
+## Golems: club up close, shards from afar; the gilded one runs in and blows up.
+func _golem_chase(delta: float, to: Vector3, d: float) -> Vector3:
+	_throw_left = maxf(_throw_left - delta, 0.0)
+	if gilded:
+		if d <= float(cfg.get("explode_range", 2.8)) + body_radius:
+			_begin("explode", float(cfg.get("explode_fuse", 1.6)) + 0.05)
+			return Vector3.ZERO
+		_face(target.global_position, delta * 2.0)
+		return to.normalized() * run_speed
+	var smash_reach := float(cfg.get("smash_range", 2.4)) + body_radius
+	if _cooldown <= 0.0:
+		if d <= smash_reach:
+			_begin("smash", _smash_length())
+			return Vector3.ZERO
+		if int(cfg.get("shard_count", 3)) > 0 and d >= float(cfg.get("shard_min", 8.0)) and d <= float(cfg.get("shard_max", 30.0)) and _throw_left <= 0.0:
+			_begin("shards", float(cfg.get("shard_time", 1.5)))
+			return Vector3.ZERO
+	_face(target.global_position, delta * 1.2)
+	if d > smash_reach * 0.8:
+		return to.normalized() * (run_speed if d > 12.0 else walk_speed)
+	return Vector3.ZERO
+
+
+## A fan of stone needles from the right fist at the target (and where it's heading).
+func _fire_shards() -> void:
+	if not _target_valid() or body.hand_r == null:
+		return
+	var from := body.hand_r.global_position
+	var aim := Combat.aim_point(target)
+	var speed := float(cfg.get("shard_speed", 26.0))
+	if target is CharacterBody3D:
+		var v := (target as CharacterBody3D).velocity
+		aim += Vector3(v.x, 0.0, v.z) * from.distance_to(aim) / speed * float(cfg.get("shard_lead", 0.5))
+	var count := maxi(int(cfg.get("shard_count", 3)), 1)
+	var spread := deg_to_rad(float(cfg.get("shard_spread", 9.0)))
+	var tint := DataFiles.color_from(cfg.get("shard_color", "#a8b0bc"))
+	for i in count:
+		var off := (i - (count - 1) * 0.5) * spread
+		var at := from + (aim - from).rotated(Vector3.UP, off)
+		GolemShard.fire(from, at, speed, self, attack_power * float(cfg.get("shard_power", 0.6)), float(cfg.get("shard_knockback", 2.0)), tint, gilded)
+	Combat.play_sound(self, SHARD_FIRE, 2.0, randf_range(0.9, 1.1))
+	_throw_left = float(cfg.get("shard_every", 4.0))
+
+
+## Golem ambush: hidden under the ground, not targetable, until someone comes near.
+func _bury() -> void:
+	_buried = true
+	_sinking = false
+	visible = false
+	model.visible = false
+	collision_layer = 0
+	remove_from_group(Combat.GROUP)
+	ai = AI.IDLE
+	target = null
+	threat.clear()
+	if body:
+		body.position.y = -float(cfg.get("height", 3.4)) * 1.1
+
+
+## Back to its hiding place: sinks into the ground.
+func _sink() -> void:
+	_sinking = true
+	_dust(global_position, 0.6)
+	var tw := create_tween()
+	tw.tween_property(body, "position:y", -float(cfg.get("height", 3.4)) * 1.1, 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw.tween_callback(_bury)
+
+
+## Bursts up out of the ground right by whoever came near: stones fly and anyone close is
+## thrown back.
+func _burst_out(who: Node3D) -> void:
+	_buried = false
+	visible = true
+	model.visible = true
+	collision_layer = 4
+	add_to_group(Combat.GROUP)
+	var root := Combat.world_root(self)
+	var tw := create_tween()
+	tw.tween_property(body, "position:y", 0.0, float(cfg.get("burst_time", 0.6))).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	Combat.play_sound(self, GOLEM_BURST, 6.0, randf_range(0.9, 1.05))
+	Effects.shockwave(root, global_position + Vector3.UP * 0.1, float(cfg.get("burst_radius", 3.5)) + 1.5, Color(0.66, 0.6, 0.5))
+	_dust(global_position, 1.0)
+	for i in 12:
+		var chip := TrollRock.Chip.new()
+		chip.velocity = Vector3(randf_range(-6, 6), randf_range(5, 10), randf_range(-6, 6))
+		root.add_child(chip)
+		chip.global_position = global_position + Vector3.UP * 0.4
+	_shake(0.7)
+	for n in Combat.enemies_near(self, global_position, float(cfg.get("burst_radius", 3.5))):
+		Combat.hit(self, n, attack_power * float(cfg.get("burst_power", 0.5)), true, float(cfg.get("burst_knockback", 6.0)))
+	_engage(who)
+	_begin("roar", float(cfg.get("burst_time", 0.6)) + 0.8)
+
+
+func _dust(at: Vector3, amount: float) -> void:
+	var dust := Effects.SparkBurst.new()
+	dust.count = int(30 * amount)
+	dust.speed = 5.0 * amount
+	dust.out = Vector3.UP
+	dust.color = Color(0.62, 0.56, 0.46)
+	dust.life = 0.9
+	Combat.world_root(self).add_child(dust)
+	dust.global_position = at + Vector3.UP * 0.2
+
+
+## The gilded golem bursts: everyone near is hurt and thrown down, and it's gone.
+func _explode() -> void:
+	if _exploded or ai == AI.DEAD:
+		return
+	_exploded = true
+	var root := Combat.world_root(self)
+	var at := global_position
+	var radius := float(cfg.get("explode_radius", 5.5))
+	var power := attack_power * float(cfg.get("explode_power", 3.0))
+	for n in Combat.enemies_near(self, at, radius):
+		var near := 1.0 - clampf(n.global_position.distance_to(at) / radius, 0.0, 1.0) * 0.5
+		Combat.hit(self, n, power * near, true, float(cfg.get("explode_knockback", 9.0)),
+			[{"status": "knockdown", "chance": 1.0, "seconds": float(cfg.get("explode_down", 1.6))}])
+	Combat.play_sound(self, GOLD_BLAST, 8.0, randf_range(0.95, 1.05))
+	Effects.shockwave(root, at + Vector3.UP * 0.1, radius, Color(1.0, 0.8, 0.3))
+	var flash := Effects.SparkBurst.new()
+	flash.count = 60
+	flash.speed = 11.0
+	flash.out = Vector3.UP
+	flash.color = Color(1.0, 0.85, 0.35)
+	flash.life = 0.8
+	root.add_child(flash)
+	flash.global_position = at + Vector3.UP * 1.8
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.8, 0.35)
+	light.light_energy = 10.0
+	light.omni_range = radius * 3.0
+	root.add_child(light)
+	light.global_position = at + Vector3.UP * 2.0
+	var fade := light.create_tween()
+	fade.tween_property(light, "light_energy", 0.0, 0.7)
+	fade.tween_callback(light.queue_free)
+	for i in 16:
+		var chip := TrollRock.Chip.new()
+		chip.velocity = Vector3(randf_range(-9, 9), randf_range(5, 12), randf_range(-9, 9))
+		root.add_child(chip)
+		chip.global_position = at + Vector3.UP * 1.5
+	_shake(1.0)
+	model.visible = false
+	stats.take_damage(stats.health + 1.0, self)
 
 
 func _smash_length() -> float:
@@ -376,11 +556,24 @@ func _begin(plan: String, seconds: float) -> void:
 		_face(target.global_position, 0.0)
 	match plan:
 		"roar":
-			Combat.play_sound(self, TROLL_ROAR if troll else ROAR, 6.0)
+			if golem:
+				Combat.play_sound(self, GOLEM_GROAN, 4.0, randf_range(0.85, 1.0) * (1.2 if gilded else 1.0))
+			else:
+				Combat.play_sound(self, TROLL_ROAR if troll else ROAR, 6.0)
+		"shards":
+			Combat.play_sound(self, GOLEM_GROAN, 0.0, 1.3)
+			body.release_at = clampf(float(cfg.get("shard_release", 0.62)), 0.4, 0.85)
+		"explode":
+			Effects.flash(model, Color(1.0, 0.85, 0.3), float(cfg.get("explode_fuse", 1.6)), 0.8)
+			FloatingText.spawn(self, "!!", Color(1.0, 0.85, 0.3), 1.6)
+			Combat.play_sound(self, GOLEM_FUSE, 4.0)
 		"smash":
 			Effects.flash(model, Color(1.0, 0.55, 0.1), 0.6, 0.6)
 			FloatingText.spawn(self, "!", Color(1.0, 0.6, 0.2), 1.6)
-			Combat.play_sound(self, TROLL_GRUNT, 4.0, 0.8)
+			if golem:
+				Combat.play_sound(self, GOLEM_GROAN, 2.0, 1.15)
+			else:
+				Combat.play_sound(self, TROLL_GRUNT, 4.0, 0.8)
 			_show_smash_marker()
 			if _target_valid():
 				_face(target.global_position, 0.0)
@@ -404,8 +597,21 @@ func _attack_move(delta: float) -> Vector3:
 	var power := attack_power
 	match _plan:
 		"roar":
-			if _attack_time > 0.5 and _attack_time - delta <= 0.5:
+			if _attack_time > 0.5 and _attack_time - delta <= 0.5 and not golem:
 				_shake(0.5)
+		"shards":
+			if _target_valid():
+				_face(target.global_position, delta * 2.0)
+			body.holding_rock = k > 0.3 and not _attack_hit
+			if not _attack_hit and k >= body.release_at:
+				_attack_hit = true
+				body.holding_rock = false
+				_fire_shards()
+		"explode":
+			if not _attack_hit and _attack_time >= float(cfg.get("explode_fuse", 1.6)):
+				_attack_hit = true
+				_explode()
+				return Vector3.ZERO
 		"throw":
 			if _target_valid():
 				_face(target.global_position, delta * 1.5)
@@ -545,13 +751,13 @@ func _shake(amount: float) -> void:
 # --- Reactions --------------------------------------------------------------------
 
 func apply_knockback(push: Vector3) -> void:
-	if big:
+	if big or (golem and bool(cfg.get("heavy", true))):
 		return
 	super.apply_knockback(push)
 
 
 func knock_down(push: Vector3, seconds := 1.8) -> void:
-	if big or ai == AI.DEAD or ai == AI.DOWN or _is_puppet():
+	if big or (golem and bool(cfg.get("heavy", true))) or ai == AI.DEAD or ai == AI.DOWN or _is_puppet():
 		return
 	# Flyers drop out of the air and flap about on the ground for a moment.
 	ai = AI.DOWN
@@ -571,18 +777,20 @@ func _get_up() -> void:
 func stagger(seconds := 0.7) -> void:
 	if ai == AI.DEAD or ai == AI.DOWN:
 		return
-	if big and ai == AI.ATTACK:
-		return  # too big to interrupt mid-attack
+	if (big or golem) and ai == AI.ATTACK:
+		return  # too big / heavy to interrupt mid-attack (and the gilded golem's fuse burns on)
 	if ai == AI.ATTACK:
 		_end_attack()
 	ai = AI.STAGGER
-	_stagger = seconds * (0.4 if big else 1.0)
+	_stagger = seconds * (0.4 if big or golem else 1.0)
 	body.pose = "hurt"
 	body.pose_t = 0.0
 	FloatingText.spawn(self, "Staggered", Color(1.0, 0.8, 0.4), 0.8)
 
 
 func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
+	if source == self:
+		return  # its own blast
 	_note_damage(_amount, source)
 	if source is Node3D:
 		var away := global_position - (source as Node3D).global_position
@@ -606,7 +814,8 @@ func _on_died() -> void:
 	_hide_smash_marker()
 	body.holding_rock = false
 	_plan = ""
-	_loot = LootBag.drop_for(Database.enemy(enemy_id), Combat.world_root(self), global_position, self)
+	# Blown apart: its loot lies where it stood (there's no body to lie with).
+	_loot = LootBag.drop_for(Database.enemy(enemy_id), Combat.world_root(self), global_position, null if _exploded else self)
 	credit_kill()
 	var forever := _record_death()
 	target = null
@@ -616,6 +825,8 @@ func _on_died() -> void:
 		Combat.play_sound(self, death_sounds.pick_random(), 2.0, randf_range(0.92, 1.08) * (0.5 if big else 1.6))
 	elif big:
 		Combat.play_sound(self, TROLL_ROAR if troll else ROAR, 6.0, 0.75)
+	elif golem and not _exploded:
+		Combat.play_sound(self, GOLEM_BURST, 2.0, 1.3)
 	body.pose = "dead"
 	body.flapping = false
 	airborne = false
@@ -653,6 +864,9 @@ func _respawn() -> void:
 	_throw_left = 0.0
 	body.pose = ""
 	_wait = randf_range(1.0, 3.0)
+	_exploded = false
+	if golem and bool(cfg.get("ambush", true)):
+		_bury()
 
 
 func _give_up() -> void:
@@ -698,7 +912,7 @@ func apply_net_state(s: Array) -> void:
 	stats.health_changed.emit(stats.health, stats.max_health)
 	ai = int(s[9]) as AI
 	model.visible = bool(s[10])
-	collision_layer = 0 if ai == AI.DEAD else 4
+	collision_layer = 0 if ai == AI.DEAD or not model.visible else 4
 	if not was_dead and stats.is_dead():
 		target = null
 
@@ -716,7 +930,7 @@ func _pose_tick(delta: float) -> void:
 	if ai == AI.DEAD:
 		body.pose = "dead"
 	elif ai == AI.ATTACK:
-		body.pose = _plan
+		body.pose = "throw" if _plan == "shards" else _plan
 		body.pose_t = _attack_time / maxf(_att_len, 0.01)
 	elif ai == AI.STAGGER and body.pose == "hurt":
 		body.pose_t = minf(body.pose_t + delta * 2.0, 1.0)
@@ -726,10 +940,10 @@ func _pose_tick(delta: float) -> void:
 	hide_disc = flying or airborne
 	body.flap_speed = 1.6 if _plan == "swoop" else 1.0
 	# The troll's heavy footsteps: a thud and a little shake each stride.
-	if troll and body.steps != _steps_heard:
+	if (troll or golem) and body.steps != _steps_heard:
 		_steps_heard = body.steps
-		Combat.play_sound(self, LAND, -4.0, randf_range(1.25, 1.45))
-		_shake(0.06)
+		Combat.play_sound(self, LAND, -8.0 if golem else -4.0, randf_range(1.25, 1.45) * (1.25 if golem else 1.0))
+		_shake(0.03 if golem else 0.06)
 	# Wing beats are heard on the big one.
 	if big and body.flapping:
 		_flap_t -= delta

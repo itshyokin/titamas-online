@@ -103,6 +103,11 @@ const WATER_MASK := 8  # layer 4
 @export var swim_speed := 2.2
 ## Sprinting while swimming: faster, and it uses stamina.
 @export var swim_sprint_speed := 3.8
+## Lava (WaterVolume.lava): swimming speed × this, share of max health lost per second while
+## in it, and seconds of Burning after climbing out (player.json movement lava_*).
+@export var lava_speed := 0.3
+@export var lava_damage := 0.08
+@export var lava_burn_seconds := 3.0
 @export var swim_sprint_stamina_cost := 18.0
 ## Water deeper than this (surface above the feet) makes the character swim.
 @export var swim_depth := 1.3
@@ -1032,6 +1037,10 @@ func _water_at(point: Vector3) -> Node3D:
 	return null
 
 
+func _is_lava(water) -> bool:
+	return water is WaterVolume and (water as WaterVolume).lava
+
+
 ## Depth of water at the character's spot (surface to floor), capped at 10 m.
 func _water_depth(water) -> float:
 	var surface: float = water.surface_height()
@@ -1060,6 +1069,8 @@ func _swim_movement(delta: float) -> void:
 	var direction := _input_direction()
 	_update_sprint(direction != Vector3.ZERO, delta, true)
 	var target := direction * (swim_sprint_speed if is_sprinting else swim_speed) * speed_scale
+	if _is_lava(_water):
+		target *= lava_speed
 	velocity.x = lerpf(velocity.x, target.x, 3.0 * delta)
 	velocity.z = lerpf(velocity.z, target.z, 3.0 * delta)
 	if direction != Vector3.ZERO:
@@ -1106,6 +1117,13 @@ func _update_survival(delta: float) -> void:
 		_safe_timer = 0.0
 		if _water_at(global_position + Vector3.UP * 0.5) == null:
 			_last_safe = global_position
+
+	# Lava burns while any of the body is in it (wading or swimming).
+	var molten = _water_at(global_position + Vector3.UP * 0.15)
+	if _is_lava(molten) and not stats.is_dead():
+		stats.take_damage(stats.max_health * lava_damage * delta)
+		if lava_burn_seconds > 0.0:
+			stats.add_status("burning", lava_burn_seconds)
 
 	# Fatigue: swimming far out at sea.
 	var far := false

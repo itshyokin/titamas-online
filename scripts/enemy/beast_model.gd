@@ -2,7 +2,9 @@ class_name BeastModel
 extends Node3D
 ## A creature body built from simple shapes and animated in code (no skeleton or clips):
 ## "bat" (a small flyer), "dragon" (a boss with neck, jaw, four legs, wings and tail) and
-## "troll" (a hunched giant on two legs with long arms: throws rocks, smashes the ground).
+## "troll" (a hunched giant on two legs with long arms: throws rocks, smashes the ground)
+## and "golem" (blocky stone with club hands, same joints and poses as the troll; `gold`:
+## gilded with glowing veins and a pulsing light, "explode" pose = trembling, arms wide).
 ## Beast sets the animation inputs each frame: flapping, moving, pose, look_point.
 ## Faces -Z like the other models.
 
@@ -13,7 +15,7 @@ var color := Color(0.35, 0.25, 0.22)
 var flapping := true
 var flap_speed := 1.0
 var moving := 0.0         # 0..1 how much the legs walk
-var pose := ""            # "", "bite", "breath", "tail", "roar", "hurt", "dead", "swoop", "throw", "smash"
+var pose := ""            # "", "bite", "breath", "tail", "roar", "hurt", "dead", "swoop", "throw", "smash", "explode"
 var pose_t := 0.0         # 0..1 through the pose
 var look_point := Vector3.INF
 ## Troll: where in its pose (0..1) the rock leaves the hand / the fists hit the ground.
@@ -44,18 +46,26 @@ var _elbows: Array[Node3D] = []
 var _knees: Array[Node3D] = []
 var _held: MeshInstance3D
 var _last_step := 0
+var _base_y := 2.2         # body height when standing (troll 2.2, golem 2.0)
+# Golem: gilded variant's glow (veins) and light.
+var gold := false
+var _glow_mat: StandardMaterial3D
+var _aura: OmniLight3D
 
 
-static func create(body_kind: String, body_color: Color, body_scale := 1.0) -> BeastModel:
+static func create(body_kind: String, body_color: Color, body_scale := 1.0, gilded := false) -> BeastModel:
 	var m := BeastModel.new()
 	m.kind = body_kind
 	m.color = body_color
+	m.gold = gilded
 	m.name = "BeastModel"
 	m.scale = Vector3.ONE * body_scale
 	if body_kind == "dragon":
 		m._build_dragon()
 	elif body_kind == "troll":
 		m._build_troll()
+	elif body_kind == "golem":
+		m._build_golem()
 	else:
 		m._build_bat()
 	return m
@@ -317,6 +327,91 @@ func _build_troll() -> void:
 		_knees.append(knee)
 
 
+## A stone golem: slabs and boulders, a small head sunk between the shoulders with a
+## glowing slit, and huge club fists. Same joints as the troll so it shares its poses.
+func _build_golem() -> void:
+	_base_y = 2.0
+	var stone := _mat(color)
+	var dark := _mat(color.darkened(0.35))
+	var light := _mat(color.lightened(0.15))
+	_glow_mat = StandardMaterial3D.new()
+	var glow_col := Color(1.0, 0.95, 0.62) if gold else Color(0.95, 0.42, 0.12)
+	_glow_mat.albedo_color = glow_col
+	_glow_mat.emission_enabled = true
+	_glow_mat.emission = glow_col
+	_glow_mat.emission_energy_multiplier = 3.0 if gold else 0.9
+	if gold:
+		stone.metallic = 0.6
+		stone.roughness = 0.45
+		light.metallic = 0.6
+		light.roughness = 0.4
+	_body = _pivot(self, Vector3(0, _base_y, 0), "Body")
+	_part(_body, _box(Vector3(1.5, 0.7, 1.0)), Vector3(0, -0.1, 0), dark, Vector3(0, 0.1, 0))
+	_torso = _pivot(_body, Vector3(0, 0.2, 0), "Torso")
+	_part(_torso, _box(Vector3(1.7, 1.2, 1.2)), Vector3(0, 0.6, 0), stone, Vector3(0.05, 0, 0.04))
+	_part(_torso, _box(Vector3(2.3, 1.1, 1.4)), Vector3(0, 1.55, -0.1), stone, Vector3(-0.08, 0.06, 0))
+	_part(_torso, _box(Vector3(1.2, 0.8, 0.5)), Vector3(0.1, 1.6, 0.65), light, Vector3(0.2, -0.3, 0.1))
+	for i in 4:  # rocks jutting from the back
+		_part(_torso, _box(Vector3(0.5, 0.5, 0.5)), Vector3(-0.7 + i * 0.45, 2.15, 0.35 - (i % 2) * 0.3), dark, Vector3(0.6 * i, 0.8, 0.4))
+	# Glowing seams: faint cracks on the stone one, gold veins over the gilded one.
+	var veins := [[Vector3(0.3, 1.4, -0.81), Vector3(0.08, 0.9, 0.04), Vector3(0, 0, 0.5)],
+		[Vector3(-0.4, 1.7, -0.81), Vector3(0.07, 0.7, 0.04), Vector3(0, 0, -0.8)],
+		[Vector3(-0.1, 0.7, -0.61), Vector3(0.06, 0.6, 0.04), Vector3(0, 0, 0.3)],
+		[Vector3(0.55, 0.55, -0.61), Vector3(0.5, 0.06, 0.04), Vector3(0, 0, 0.4)]]
+	if gold:
+		veins.append_array([[Vector3(-0.75, 1.3, -0.81), Vector3(0.6, 0.06, 0.04), Vector3(0, 0, -0.3)],
+			[Vector3(0.9, 1.9, -0.81), Vector3(0.06, 0.6, 0.04), Vector3(0, 0, 0.9)],
+			[Vector3(0, 2.05, -0.5), Vector3(1.4, 0.06, 0.04), Vector3(0.3, 0, 0.05)],
+			[Vector3(1.16, 1.5, 0.0), Vector3(0.04, 0.7, 0.06), Vector3(0.5, 0, 0)],
+			[Vector3(-1.16, 1.4, 0.1), Vector3(0.04, 0.8, 0.06), Vector3(-0.4, 0, 0)]])
+	for v in veins:
+		_part(_torso, _box(v[1]), v[0], _glow_mat, v[2])
+	# Head: a small block low between the shoulders, a glowing slit for eyes.
+	head = _pivot(_torso, Vector3(0, 2.05, -0.75), "Head")
+	_part(head, _box(Vector3(0.7, 0.55, 0.65)), Vector3.ZERO, light, Vector3(0, 0.1, 0))
+	_part(head, _box(Vector3(0.45, 0.07, 0.05)), Vector3(0, 0.05, -0.34), _glow_mat)
+	_part(head, _box(Vector3(0.8, 0.18, 0.4)), Vector3(0, 0.3, -0.12), dark, Vector3(0.15, 0, 0))
+	mouth = _pivot(head, Vector3(0, -0.1, -0.4), "Mouth")
+	# Arms with club fists that hang near the ground.
+	for s in [-1.0, 1.0]:
+		var sh := _pivot(_torso, Vector3(1.45 * s, 1.75, -0.1), "Shoulder" + ("L" if s < 0 else "R"))
+		_part(sh, _box(Vector3(0.95, 0.85, 0.95)), Vector3(0.1 * s, 0.05, 0), dark, Vector3(0.2, 0.3 * s, 0.2 * s))
+		_part(sh, _box(Vector3(0.55, 1.2, 0.6)), Vector3(0, -0.75, 0), stone)
+		var el := _pivot(sh, Vector3(0, -1.35, 0))
+		_part(el, _sphere(0.36), Vector3.ZERO, dark)
+		_part(el, _box(Vector3(0.6, 1.0, 0.65)), Vector3(0, -0.55, 0), stone, Vector3(0, 0.2 * s, 0))
+		var hand := _pivot(el, Vector3(0, -1.25, 0), "Hand" + ("L" if s < 0 else "R"))
+		# The club: a great knuckled block with stone knobs.
+		_part(hand, _box(Vector3(1.0, 1.05, 1.0)), Vector3(0, -0.2, 0), light, Vector3(0.1, 0.35, 0.1))
+		for k in 3:
+			_part(hand, _box(Vector3(0.38, 0.38, 0.38)), Vector3(-0.32 + k * 0.32, -0.55, -0.42), dark, Vector3(0.5, 0.7 * k, 0.3))
+		if gold:
+			_part(hand, _box(Vector3(0.05, 0.9, 0.05)), Vector3(0.3 * s, -0.2, -0.51), _glow_mat, Vector3(0, 0, 0.4))
+		_shoulders.append(sh)
+		_elbows.append(el)
+		if s > 0.0:
+			hand_r = hand
+	# The shard it's about to fling, held in the right fist.
+	_held = _part(hand_r, GolemShard.needle_mesh(1.0, 0.13), Vector3(0, -0.85, -0.25), _mat(Color(0.7, 0.74, 0.8)), Vector3(-PI * 0.5, 0, 0))
+	_held.visible = false
+	# Stubby legs.
+	for s in [-1.0, 1.0]:
+		var hip := _pivot(_body, Vector3(0.55 * s, -0.35, 0))
+		_part(hip, _box(Vector3(0.7, 1.0, 0.75)), Vector3(0, -0.45, 0), stone)
+		var knee := _pivot(hip, Vector3(0, -0.85, 0))
+		_part(knee, _box(Vector3(0.62, 0.7, 0.68)), Vector3(0, -0.3, 0), stone)
+		_part(knee, _box(Vector3(0.85, 0.3, 1.05)), Vector3(0, -0.65, -0.15), dark)
+		_legs.append(hip)
+		_knees.append(knee)
+	if gold:
+		_aura = OmniLight3D.new()
+		_aura.light_color = Color(1.0, 0.8, 0.3)
+		_aura.light_energy = 1.6
+		_aura.omni_range = 7.0
+		_aura.position = Vector3(0, 3.2, -0.6)
+		add_child(_aura)
+
+
 ## Eases `node`'s rotation toward `to` (x, y, z) at `rate`.
 func _ease_rot(node: Node3D, to: Vector3, rate: float, delta: float) -> void:
 	var k := 1.0 - exp(-rate * delta)
@@ -335,7 +430,7 @@ func _process_troll(delta: float) -> void:
 	# Rest pose, walking.
 	var torso := Vector3(-0.35 + breathe, 0, 0)
 	var head_rot := Vector3(0.25, 0, 0)
-	var body_y := 2.2 + absf(sin(phase)) * 0.1 * moving + breathe
+	var body_y := _base_y + absf(sin(phase)) * 0.1 * moving + breathe
 	var jaw := 0.05
 	var sh := [Vector3(-sin(phase) * 0.35 * moving + 0.05, 0, -0.15), Vector3(sin(phase) * 0.35 * moving + 0.05, 0, 0.15)]
 	var el := [Vector3(0.35, 0, 0), Vector3(0.35, 0, 0)]
@@ -414,6 +509,18 @@ func _process_troll(delta: float) -> void:
 				rate = 34.0 if k < s + 0.08 else 6.0
 		"hurt":
 			torso.x += sin(clampf(k, 0.0, 1.0) * PI) * 0.3
+		"explode":
+			# Rears back, arms flung wide, shaking harder and harder.
+			var a := smoothstep(0.0, 0.3, k)
+			var shake := sin(_t * 55.0) * 0.08 * k
+			torso.x = lerpf(-0.35, 0.25, a) + shake
+			body_y += 0.2 * a
+			sh[0] = Vector3(0.3 * a, shake, -1.4 * a)
+			sh[1] = Vector3(0.3 * a, -shake, 1.4 * a)
+			el[0] = Vector3(0.4 * a, 0, 0)
+			el[1] = Vector3(0.4 * a, 0, 0)
+			head_rot.x = -0.4 * a + shake
+			rate = 20.0
 	# Looks toward what it's fighting.
 	if look_point != Vector3.INF and head and _torso:
 		var local := _torso.global_transform.affine_inverse() * look_point
@@ -429,6 +536,14 @@ func _process_troll(delta: float) -> void:
 	if _jaw:
 		_jaw.rotation.x = lerp_angle(_jaw.rotation.x, jaw, 1.0 - exp(-14.0 * delta))
 	_held.visible = holding_rock
+	# The glow pulses; on the gilded golem faster and brighter as it's about to burst.
+	if _glow_mat:
+		var fuse := clampf(pose_t, 0.0, 1.0) if pose == "explode" else 0.0
+		var pulse := 0.5 + 0.5 * sin(_t * lerpf(2.0, 22.0, fuse))
+		var base := 3.0 if gold else 0.9
+		_glow_mat.emission_energy_multiplier = 0.2 if pose == "dead" else base * (0.7 + 0.5 * pulse) + fuse * 6.0
+		if _aura:
+			_aura.light_energy = 0.0 if pose == "dead" else 1.2 + 0.8 * pulse + fuse * 5.0
 	# Dead: topples forward onto its face.
 	if pose == "dead":
 		_dead = minf(_dead + delta * 0.9, 1.0)
@@ -441,7 +556,7 @@ func _process_troll(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	if kind == "troll":
+	if kind == "troll" or kind == "golem":
 		_process_troll(delta)
 		return
 	var big := kind == "dragon"

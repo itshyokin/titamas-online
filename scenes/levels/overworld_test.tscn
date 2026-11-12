@@ -15,6 +15,8 @@
 [ext_resource type="PackedScene" path="res://scenes/world/safe_area.tscn" id="99_safe"]
 [ext_resource type="PackedScene" path="res://scenes/world/swarm_spot.tscn" id="100_swarm"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="101_troll"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/golem.tscn" id="102_golem"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/gold_golem.tscn" id="103_gold_golem"]
 [ext_resource type="PackedScene" path="res://scenes/world/climb_lock.tscn" id="102_climb"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_suk2g"]
@@ -140,6 +142,12 @@ appear_switch = "troll_awake"
 emerge = true
 defeat_switch = "troll_defeated"
 stays_dead = true
+
+[node name="Golem" parent="Enemies" unique_id=1610023001 instance=ExtResource("102_golem")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 2, 160)
+
+[node name="GildedGolem" parent="Enemies" unique_id=1610023002 instance=ExtResource("103_gold_golem")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2, 172)
 
 [node name="NPCs" type="Node3D" parent="." unique_id=1939955384]
 

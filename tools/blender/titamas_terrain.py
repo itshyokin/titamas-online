@@ -40,7 +40,7 @@ bl_info = {
 # "titamas_rest") are baked into the model, and placements are stored relative to it.
 #
 # Terrain painting: a colour attribute "TerrainPaint" (red = grass, green = dirt, blue =
-# cliff, alpha = optional 4th layer) painted in Vertex Paint mode. Godot's terrain shader
+# cliff, black = 4th layer: whatever red + green + blue leave short of 1) painted in Vertex Paint mode. Godot's terrain shader
 # mixes the textures by it. Chunks use a single material called "terrain". On export the
 # paint is written into a second UV map ("TerrainPaintUV": U = dirt, V = cliff, grass =
 # the rest), because UV maps survive every glTF exporter version; vertex colours don't.
@@ -64,7 +64,8 @@ EPS = 1e-4
 PAINT_ATTR = "TerrainPaint"
 # Which paint channel each of the old per-face materials becomes (matched by name).
 LAYER_KEYWORDS = (("grass", 0), ("dirt", 1), ("path", 1), ("cliff", 2), ("rock", 2), ("stone", 2))
-LAYER_NAMES = ("grass", "dirt", "cliff")
+LAYER_NAMES = ("grass", "dirt", "cliff", "patch")
+LAYER_COLORS = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0), (0.0, 0.0, 0.0))
 
 
 class TitamasGroundSettings(bpy.types.PropertyGroup):
@@ -77,6 +78,7 @@ class TitamasGroundSettings(bpy.types.PropertyGroup):
 	image_1: PointerProperty(type=bpy.types.Image, name="Layer 1 (red)", description="Preview picture for layer 1 (Godot uses the Ground Set's own textures)")
 	image_2: PointerProperty(type=bpy.types.Image, name="Layer 2 (green)", description="Preview picture for layer 2")
 	image_3: PointerProperty(type=bpy.types.Image, name="Layer 3 (blue)", description="Preview picture for layer 3 (also shown on steep slopes in the game)")
+	image_4: PointerProperty(type=bpy.types.Image, name="Layer 4 (black)", description="Preview picture for layer 4 (black paint), e.g. grass patches in the desert")
 
 
 def _ground_id(obj) -> str:
@@ -90,12 +92,12 @@ def _layer_image(obj, i):
 	grass / dirt / cliff material's."""
 	g = getattr(obj, "titamas_ground", None)
 	img = getattr(g, f"image_{i + 1}", None) if g else None
-	return img or _first_image(bpy.data.materials.get(LAYER_NAMES[i]))
+	return img or _first_image(bpy.data.materials.get(LAYER_NAMES[i] if i < 3 else "grass"))
 
 
 def _layer_label(obj, i) -> str:
 	if obj is None or not _ground_id(obj):
-		return LAYER_NAMES[i].title()
+		return ("Grass", "Dirt", "Cliff", "Grass 2")[i]
 	img = getattr(obj.titamas_ground, f"image_{i + 1}", None)
 	return os.path.splitext(img.name)[0].replace("_color", "").replace("_", " ").title() if img else f"Layer {i + 1}"
 
@@ -327,7 +329,14 @@ class TITAMAS_OT_extend_terrain(bpy.types.Operator):
 
 		bm = bmesh.new()
 		bm.from_mesh(obj.data)
+		old_verts = set(bm.verts)
 		added, skipped = _add_grid(bm, s)
+		# New ground starts as layer 1 (red); unpainted black would read as the 4th layer.
+		paint = bm.verts.layers.float_color.get(PAINT_ATTR) or bm.verts.layers.color.get(PAINT_ATTR)
+		if paint is not None:
+			for v in bm.verts:
+				if v not in old_verts:
+					v[paint] = (1.0, 0.0, 0.0, 1.0)
 		_world_uvs(bm, s.uv_tile)
 		bm.to_mesh(obj.data)
 		bm.free()
@@ -475,12 +484,13 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 						piece.free()
 						continue
 					bmesh.ops.translate(piece, verts=piece.verts, vec=(-cx, -cy, 0.0))
-					wmesh = bpy.data.meshes.new(f"{wname}-water")
+					kind = "lava" if _is_lava(wname, wmats) else "water"
+					wmesh = bpy.data.meshes.new(f"{wname}-{kind}")
 					piece.to_mesh(wmesh)
 					piece.free()
 					for mat in wmats:
 						wmesh.materials.append(mat)
-					wo = bpy.data.objects.new(f"{wname}-water", wmesh)
+					wo = bpy.data.objects.new(f"{wname}-{kind}", wmesh)
 					context.scene.collection.objects.link(wo)
 					temp.append(wo)
 					water_pieces += 1
@@ -531,20 +541,31 @@ class TITAMAS_OT_export_chunks(bpy.types.Operator):
 def _paint_to_uv(bm) -> None:
 	"""Copy the TerrainPaint weights into a second UV map: U = dirt, V = cliff (stored as
 	1 - cliff because glTF flips V, so Godot reads UV2 = (dirt, cliff); missing data reads
-	as all grass). Weights are normalised so grass = 1 - dirt - cliff."""
+	as all grass), and the 4th layer (black: 1 - red - green - blue) into a third UV map's U
+	(Godot: CUSTOM0.x). Grass = 1 - dirt - cliff - 4th."""
 	vert_layer = bm.verts.layers.float_color.get(PAINT_ATTR) or bm.verts.layers.color.get(PAINT_ATTR)
 	loop_layer = bm.loops.layers.float_color.get(PAINT_ATTR) or bm.loops.layers.color.get(PAINT_ATTR)
 	if vert_layer is None and loop_layer is None:
 		return
 	uv = bm.loops.layers.uv.get("TerrainPaintUV") or bm.loops.layers.uv.new("TerrainPaintUV")
+	weights = []
 	for face in bm.faces:
 		for loop in face.loops:
 			c = loop[loop_layer] if loop_layer is not None else loop.vert[vert_layer]
 			r, g, b = max(c[0], 0.0), max(c[1], 0.0), max(c[2], 0.0)
 			total = r + g + b
-			if total < 1e-6:
-				r, g, b, total = 1.0, 0.0, 0.0, 1.0
+			fourth = 0.0
+			if total < 1.0:
+				fourth = 1.0 - total
+				total = 1.0
+			if fourth < 0.004:  # rounding: not painted black
+				fourth = 0.0
 			loop[uv].uv = (g / total, 1.0 - b / total)
+			weights.append((loop, fourth))
+	if any(f > 0.0 for _, f in weights):
+		uv4 = bm.loops.layers.uv.get("TerrainPaintUV2") or bm.loops.layers.uv.new("TerrainPaintUV2")
+		for loop, f in weights:
+			loop[uv4].uv = (f, 0.0)
 
 
 # Blender (Z up) -> Godot (Y up): x -> x, z -> y, y -> -z
@@ -636,6 +657,11 @@ def _export_glb(path: str, include_textures: bool) -> None:
 			del extras[bad]
 
 
+def _is_lava(name, materials) -> bool:
+	"""Planes in the water collection named or textured "lava" export as lava."""
+	return "lava" in name.lower() or any(m and "lava" in m.name.lower() for m in materials)
+
+
 def _first_image(material):
 	if material and material.use_nodes:
 		for node in material.node_tree.nodes:
@@ -690,6 +716,8 @@ def _build_preview_material(obj):
 	r, g, b = sep.outputs[0], sep.outputs[1], sep.outputs[2]
 	rg = math("ADD", r, g, (-200, -400))
 	rgb = math("ADD", rg, b, (-200, -520))
+	fourth = math("SUBTRACT", 1.0, rgb, (0, -640))
+	fourth = math("MAXIMUM", fourth, 0.0, (150, -640))
 	f1 = math("DIVIDE", g, math("ADD", rg, 0.0001, (0, -400)), (150, -400))
 	f2 = math("DIVIDE", b, math("ADD", rgb, 0.0001, (0, -520)), (150, -520))
 
@@ -702,7 +730,8 @@ def _build_preview_material(obj):
 		return n.outputs["Color"]
 
 	grass_dirt = mix(f1, texs[0].outputs["Color"], texs[1].outputs["Color"], (300, 200))
-	final = mix(f2, grass_dirt, texs[2].outputs["Color"], (450, 100))
+	three = mix(f2, grass_dirt, texs[2].outputs["Color"], (450, 100))
+	final = mix(fourth, three, texs[3].outputs["Color"], (520, 0))
 	nt.links.new(final, bsdf.inputs["Base Color"])
 	return mat
 
@@ -790,7 +819,7 @@ class TITAMAS_OT_paint_layer(bpy.types.Operator):
 		_activate_paint(obj.data)
 		if obj.mode != "VERTEX_PAINT":
 			bpy.ops.object.mode_set(mode="VERTEX_PAINT")
-		color = [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)][self.layer]
+		color = LAYER_COLORS[self.layer]
 		ts = context.tool_settings
 		try:
 			ts.unified_paint_settings.color = color
@@ -1252,13 +1281,14 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 			if _ground_id(obj):
 				col = box.column(align=True)
 				col.label(text="Preview pictures (the game uses the Database's):")
-				for i in range(3):
+				for i in range(4):
 					col.template_ID(g, f"image_{i + 1}", open="image.open")
 				box.label(text=f"Exports as material terrain_{_ground_id(obj)}", icon="INFO")
 		box.operator(TITAMAS_OT_setup_painting.bl_idname, text="Setup / Update Terrain Painting", icon="VPAINT_HLT")
 		row = box.row(align=True)
 		for i in range(3):
 			row.operator(TITAMAS_OT_paint_layer.bl_idname, text=_layer_label(obj, i)).layer = i
+		box.operator(TITAMAS_OT_paint_layer.bl_idname, text=f"{_layer_label(obj, 3)} (black paint)").layer = 3
 		_draw_paint_brush(context, box)
 
 		box = layout.box()

@@ -277,7 +277,7 @@ func _surface_of_hit(hit: Dictionary) -> String:
 	if streamer and streamer.is_ancestor_of(node):
 		var normal: Vector3 = hit.normal
 		var paint := streamer.paint_at(hit.position)
-		return GroundSets.surface(streamer.ground_at(hit.position), paint, normal.y)
+		return GroundSets.surface(streamer.ground_at(hit.position), paint, normal.y, streamer.fourth_at(hit.position))
 	return "stone"
 
 

@@ -106,6 +106,12 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - In game: sand + desert stone + the old cliff texture, no grass, footsteps dirt/stone. Database → Ground Sets edits show live. Region map colours.
 - Still to do for the east region: regions.json entry (chunk rect [3,0,4,4]?) once exported.
 
+## To test in the editor (done 11 Nov night, batch X: grass patches, lava, golems)
+- Blender: reinstall the add-on; "Grass 2 (black paint)" paints layer 4 (grass in the desert set; Database → Ground Sets → Layer 4). Existing paint is unchanged.
+- Lava: a plane in the water collection named "...lava..." (or with a material named lava) exports as lava: glow, embers, very slow swimming, burning. Tunables Database → Player → movement lava_*.
+- Golems: Enemies/Golem (16, 2, 160) and Enemies/GildedGolem (2, 2, 172) in overworld_test: walk within 7 m. Move them / use scenes/enemies/golem.tscn and gold_golem.tscn in the east region.
+- The ladder's show_switch was lost when chunk_1_2 props were re-exported: set the custom property `show_switch` = `troll_defeated` on the ladder object in Blender so it survives exports.
+
 ## Backlog (agreed, not started)
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
 - Icicles on branches in snow (needs a small icicle model or sprite).
