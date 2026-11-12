@@ -471,6 +471,8 @@ func _physics_process(delta: float) -> void:
 			_cooldowns.erase(ab)
 	if in_combat and combat_linger > 0.0:  # 0 = the weapon stays out until Z
 		_combat_timer -= delta
+		if _combat_timer < 2.0 and _fighting_me():
+			_combat_timer = 2.0  # not while something's still after you
 		if _combat_timer <= 0.0 and _current == null and _charging == null and _casting == null and not _blocking and not _aiming:
 			_set_combat(false)
 	_update_reload(delta)
@@ -815,7 +817,7 @@ func _land(ab: Ability) -> void:
 				power *= float(_world_settings().get("sneak_attack", 2.0))
 				FloatingText.spawn(in_reach[0], "Sneak attack!", Color(0.75, 0.6, 1.0), 1.2)
 			for n in in_reach:
-				if Combat.hit(player, n, power, staggers, push, Ability.applies_of(ab)) > 0.0:
+				if Combat.hit(player, n, power, staggers, push, Ability.applies_of(ab), Ability.element_of(ab)) > 0.0:
 					landed = true
 					AbilityFX.landed(ab, n)
 					_use_enchant(n)
@@ -915,7 +917,7 @@ func _land_area(ab: Ability) -> void:
 	for n in Combat.enemies_near(player, at, ab.reach):
 		if absf(n.global_position.y - at.y) > 2.5:
 			continue
-		if Combat.hit(player, n, _power, true, ab.knockback, Ability.applies_of(ab)) > 0.0:
+		if Combat.hit(player, n, _power, true, ab.knockback, Ability.applies_of(ab), Ability.element_of(ab)) > 0.0:
 			AbilityFX.burst(ab, "impact", Combat.world_root(player), Combat.aim_point(n))
 
 
@@ -967,7 +969,7 @@ func _use_enchant(target: Node3D) -> void:
 		return
 	var bonus := float(_enchant.get("bonus_power", 6.0)) + stats.spell_power * 0.5
 	var col := Color.html(String(_enchant.get("color", "#9fd8ff")))
-	Combat.hit(player, target, bonus, false, 0.0, _enchant.get("applies", []))
+	Combat.hit(player, target, bonus, false, 0.0, _enchant.get("applies", []), String(_enchant.get("element", "")))
 	Effects.burst(Combat.world_root(player), Combat.aim_point(target), col, 0.6)
 	_enchant.left = int(_enchant.left) - 1
 	if int(_enchant.left) <= 0:
@@ -1431,6 +1433,24 @@ func _confirm_pick() -> void:
 		return
 	_pick_marker = marker
 	SpellFX.lock_marker(marker)
+
+
+var _fight_check := 0.0
+var _fight_seen := false
+
+
+## Something hostile within 25 m has the player as its target (checked twice a second).
+func _fighting_me() -> bool:
+	_fight_check -= get_physics_process_delta_time()
+	if _fight_check > 0.0:
+		return _fight_seen
+	_fight_check = 0.5
+	_fight_seen = false
+	for n in Combat.enemies_near(player, player.global_position, 25.0):
+		if n.get("target") == player:
+			_fight_seen = true
+			break
+	return _fight_seen
 
 
 ## Spells: a spot is being picked for one.

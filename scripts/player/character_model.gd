@@ -591,6 +591,10 @@ const THIN_PULL := 0.013
 ## -1 thin, 0 medium, 1 heavy. Uses "thin"/"heavy" shape keys if the body has them,
 ## otherwise pushes the mesh in or out (more at the belly, less on the limbs).
 var weight := 0.0
+## How much of the build reaches the hands (species "hand_build": 0 = hands keep their
+## size on thin and heavy builds, 1 = they follow it, like a dwarf's).
+var hand_build := 0.0
+var _wrist_x := INF  # |x| where the hands start (rest pose), from the body's hands mesh
 ## Body type: 0 = type 1 (as modelled), 1 = type 2 (narrower shoulders and waist, wider
 ## hips, a bust): the same body and rig, its rest shape moved (_figure_offset). Gear cut
 ## from the body moves with it.
@@ -635,6 +639,7 @@ func apply_appearance(look: Dictionary) -> void:
 	_batch = true
 	scale = Vector3.ONE * float(look.get("height_scale", 1.0))
 	weight = float(look.get("weight", 0.0))
+	hand_build = float(look.get("hand_build", 0.0))
 	figure = float(look.get("figure", 0.0))
 	body_type = BodyType.FEMME if String(look.get("body", "masc")) == "femme" else BodyType.MASC
 	skin_color = look.get("skin", skin_color)
@@ -1077,7 +1082,13 @@ func _apply_morph() -> void:
 				mi.set_blend_shape_value(thin, maxf(-weight, 0.0))
 	if (keyed or weight == 0.0) and figure == 0.0:
 		return
-	var key := "%d:%.2f:%.2f:%d" % [body_type, weight, figure, int(keyed)]
+	_wrist_x = INF
+	for mi: MeshInstance3D in parts:
+		if String(mi.name).to_lower().contains("hand"):
+			var v: PackedVector3Array = (mi.get_meta("base_mesh") as Mesh).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+			for q in v:
+				_wrist_x = minf(_wrist_x, absf(q.x))
+	var key := "%d:%.2f:%.2f:%d:%.2f" % [body_type, weight, figure, int(keyed), hand_build]
 	if not _morph_cache.has(key):
 		var morphed := _morph_meshes(parts.map(func(mi: MeshInstance3D) -> Mesh: return mi.get_meta("base_mesh")))
 		var by_name := {}
@@ -1119,7 +1130,11 @@ func _morph_meshes(meshes: Array) -> Array:
 		for i in v.size():
 			var nrm: Vector3 = pooled[Vector3i((v[i] * 1000.0).round())].normalized()
 			var base := v[i]
-			v[i] += nrm * push * _build_factor(base)
+			var hands := 1.0
+			if _wrist_x != INF:
+				# Fade the build out over the last few cm of the forearm into the hands.
+				hands = lerpf(1.0, hand_build, smoothstep(_wrist_x - 0.06, _wrist_x + 0.01, absf(base.x)))
+			v[i] += nrm * push * _build_factor(base) * hands
 			if figure != 0.0:
 				v[i] += _figure_offset(base, nrm) * figure
 		arrays[Mesh.ARRAY_VERTEX] = v

@@ -5,7 +5,7 @@ extends SkeletonModifier3D
 ## arms and head. CharacterModel.sit_pose() adds it to the skeleton (before HeadLook).
 ## Set `sitting` (eases in and out), `forward` (world facing), `seat_drop` (how far the hips
 ## go down, m) and `activity`:
-##   relax   hands on the knees            warm    hands held out to the fire
+##   relax   hands together in the lap     warm    hands held out to the fire
 ##   read    a book held up, head bowed    eat     bread raised to the mouth now and then
 ##   drink   a cup raised now and then     talk    relaxed, with the odd gesture
 ## `ground`: sitting on the ground (legs out in front, lower).
@@ -77,9 +77,11 @@ func _process_modification() -> void:
 	var lean := 0.0
 	var head := 0.0
 	var arms := {"LeftArm": 30.0, "LeftForeArm": 35.0, "RightArm": 30.0, "RightForeArm": 35.0}
+	var reach := ""  # "lap" / "fire": the hands are placed (two-bone reach) instead
 	match activity:
 		"warm":
-			arms = {"LeftArm": 62.0, "LeftForeArm": 18.0, "RightArm": 62.0, "RightForeArm": 18.0}
+			reach = "fire"
+			arms = {}
 			lean = -10.0 + sin(_t * 0.8) * 2.0
 		"read":
 			arms = {"LeftArm": 48.0, "LeftForeArm": 70.0, "RightArm": 48.0, "RightForeArm": 70.0}
@@ -101,13 +103,78 @@ func _process_modification() -> void:
 			arms.RightForeArm = 35.0 + g * 45.0
 			head = sin(_t * 1.7) * 4.0
 		_:
-			lean = sin(_t * 0.5) * 1.5
+			reach = "lap"
+			arms = {}
+			lean = -4.0 + sin(_t * 0.5) * 1.5
+			head = -6.0
 	_turn(skel, "Spine", right, lean * 0.5 * w)
 	_turn(skel, "Spine1", right, lean * 0.5 * w)
 	for b: String in arms:
 		_turn(skel, b, right, float(arms[b]) * w)
 	if head != 0.0:
 		_turn(skel, "Head", right, head * w)
+	if reach != "":
+		_place_hands(skel, reach, fwd, right, w)
+
+
+## Hands resting together in the lap, or held out toward the fire (rubbing a little).
+func _place_hands(skel: Skeleton3D, where: String, fwd: Vector3, right: Vector3, w: float) -> void:
+	var to_skel := skel.global_transform.basis.inverse()
+	var hips: Vector3 = skel.get_bone_global_pose(_bones.Hips).origin
+	var chest_bone: int = _bones.get("Spine2", -1)
+	var chest: Vector3 = skel.get_bone_global_pose(chest_bone).origin if chest_bone >= 0 else hips
+	for side in ["Left", "Right"]:
+		var sgn := -1.0 if side == "Left" else 1.0  # the character's left is -right
+		var goal: Vector3
+		if where == "lap":
+			# On the thighs near the knees' inner side, nearly touching.
+			goal = hips + to_skel * (fwd * 0.3 + Vector3.UP * 0.1 + right * sgn * 0.045)
+		else:
+			var rub := sin(_t * 3.0 + (0.0 if side == "Left" else PI)) * 0.025
+			goal = chest + to_skel * (fwd * 0.46 + Vector3.DOWN * 0.1 + right * sgn * (0.1 + rub))
+		var pole := to_skel * (right * sgn * 0.5 - fwd * 0.25 + Vector3.DOWN * 0.4)
+		_reach(skel, side, goal, pole, w)
+
+
+## Two-bone reach: turns the upper arm and forearm so the hand lands on `goal` (skeleton
+## space), the elbow bending toward `pole` (a direction from the shoulder).
+func _reach(skel: Skeleton3D, side: String, goal: Vector3, pole: Vector3, w: float) -> void:
+	var ua: int = _bones.get(side + "Arm", -1)
+	var fa: int = _bones.get(side + "ForeArm", -1)
+	var hd: int = _bones.get(side + "Hand", -1)
+	if ua < 0 or fa < 0 or hd < 0:
+		return
+	var s := skel.get_bone_global_pose(ua).origin
+	var e := skel.get_bone_global_pose(fa).origin
+	var h := skel.get_bone_global_pose(hd).origin
+	var a := s.distance_to(e)
+	var b := e.distance_to(h)
+	var to := goal - s
+	var d := clampf(to.length(), absf(a - b) + 0.001, a + b - 0.001)
+	var dir := to.normalized()
+	var pd := pole - dir * dir.dot(pole)
+	if pd.length() < 0.0001:
+		pd = Vector3.DOWN
+	pd = pd.normalized()
+	var cos_a := clampf((a * a + d * d - b * b) / (2.0 * a * d), -1.0, 1.0)
+	var elbow := s + dir * a * cos_a + pd * a * sqrt(1.0 - cos_a * cos_a)
+	_aim_bone(skel, ua, (e - s).normalized(), (elbow - s).normalized(), w)
+	var e2 := skel.get_bone_global_pose(fa).origin
+	var h2 := skel.get_bone_global_pose(hd).origin
+	_aim_bone(skel, fa, (h2 - e2).normalized(), (s + dir * d - e2).normalized(), w)
+
+
+## Turns a bone (skeleton space) so `from` points along `to`, blended by `w`.
+func _aim_bone(skel: Skeleton3D, bone: int, from: Vector3, to: Vector3, w: float) -> void:
+	if from.length() < 0.5 or to.length() < 0.5:
+		return
+	var q := Quaternion(from, to)
+	q = Quaternion.IDENTITY.slerp(q, w)
+	var gp := skel.get_bone_global_pose(bone)
+	var new_global := Basis(q) * gp.basis
+	var parent := skel.get_bone_parent(bone)
+	var parent_basis := skel.get_bone_global_pose(parent).basis if parent >= 0 else Basis()
+	skel.set_bone_pose_rotation(bone, (parent_basis.inverse() * new_global).orthonormalized().get_rotation_quaternion())
 
 
 ## Turns a bone about a world axis by `degrees` (on top of its current pose).

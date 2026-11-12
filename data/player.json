@@ -63,7 +63,7 @@
 		"blood_seconds": 30.0,
 		"cast_pushback": 0.35,
 		"click_radius": 48.0,
-		"combat_linger": 0.0,
+		"combat_linger": 15.0,
 		"counter_window": 1.5,
 		"finisher_chance": 0.35,
 		"finisher_seconds": 1.4,

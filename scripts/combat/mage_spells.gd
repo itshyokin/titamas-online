@@ -46,7 +46,7 @@ static func chain(pc: PlayerCombat, ab: Ability, power: float, first: Node3D, ha
 				return
 			var to := Combat.aim_point(target)
 			SpellFX.lightning(root, start, to, ab.projectile_color)
-			Combat.hit(player, target, amount, ab.staggers, ab.knockback, Ability.applies_of(ab))
+			Combat.hit(player, target, amount, ab.staggers, ab.knockback, Ability.applies_of(ab), Ability.element_of(ab))
 			AbilityFX.landed(ab, target)
 			if i > 0 and ab.release_sound:
 				Combat.play_sound(target, ab.release_sound, -9.0, randf_range(1.1, 1.3))
@@ -120,7 +120,7 @@ static func wave(pc: PlayerCombat, ab: Ability, power: float) -> void:
 		player.get_tree().create_timer(seconds * clampf(dist / maxf(ab.reach, 0.1), 0.05, 1.0)).timeout.connect(func() -> void:
 			if not is_instance_valid(target) or not is_instance_valid(player):
 				return
-			if Combat.hit(player, target, power, ab.staggers, ab.knockback, Ability.applies_of(ab)) > 0.0:
+			if Combat.hit(player, target, power, ab.staggers, ab.knockback, Ability.applies_of(ab), Ability.element_of(ab)) > 0.0:
 				Effects.splash(root, target.global_position + Vector3.UP * 0.3, 1.2)
 				AbilityFX.burst(ab, "impact", root, Combat.aim_point(target)))
 

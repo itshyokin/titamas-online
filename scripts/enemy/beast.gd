@@ -776,7 +776,7 @@ func _breath_damage(power: float) -> void:
 		var to := Combat.aim_point(n) - from
 		var flat := Vector3(to.x, 0, to.z)
 		if flat.length() < 0.5 or rad_to_deg(dir.angle_to(flat.normalized())) < float(cfg.get("breath_angle", 22.0)):
-			Combat.hit(self, n, power, false, 1.0, [{"status": "burning", "chance": 0.35, "seconds": 4.0}])
+			Combat.hit(self, n, power, false, 1.0, [{"status": "burning", "chance": 0.35, "seconds": 4.0}], "fire")
 
 
 func _shake(amount: float) -> void:

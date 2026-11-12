@@ -233,7 +233,8 @@
 					"frames": 4,
 					"look": "glow"
 				}
-			}
+			},
+			"element": "fire"
 		},
 		{
 			"animation": "cast_heal",
@@ -568,7 +569,8 @@
 			"windup_time": 0.45,
 			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
 			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
-			"racial": true
+			"racial": true,
+			"element": "arcane"
 		},
 		{
 			"animation": "cast_heal",
@@ -640,7 +642,8 @@
 			"cast_time": 0.0,
 			"icon": "arrow",
 			"windup_time": 0.45,
-			"racial": true
+			"racial": true,
+			"element": "earth"
 		},
 		{
 			"animation": "attack_heavy",
@@ -775,7 +778,8 @@
 						"chance": 1.0,
 						"seconds": 4
 					}
-				]
+				],
+				"element": "frost"
 			},
 			"fx": {
 				"impact": {
@@ -838,7 +842,8 @@
 					"frames": 1,
 					"look": "glow"
 				}
-			}
+			},
+			"element": "earth"
 		},
 		{
 			"animation": "cast_release",
@@ -875,7 +880,8 @@
 			"icon": "heal",
 			"windup_time": 0.45,
 			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg"
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
+			"element": "holy"
 		},
 		{
 			"animation": "cast_area",
@@ -967,7 +973,8 @@
 				"range": 8.0,
 				"falloff": 0.75
 			},
-			"applies": []
+			"applies": [],
+			"element": "shock"
 		},
 		{
 			"animation": "cast_release",
@@ -1030,7 +1037,8 @@
 					"frames": 1,
 					"look": "glow"
 				}
-			}
+			},
+			"element": "frost"
 		},
 		{
 			"animation": "cast_area",
@@ -1076,7 +1084,8 @@
 					"chance": 0.6,
 					"seconds": 2.0
 				}
-			]
+			],
+			"element": "water"
 		},
 		{
 			"animation": "cast_1h_b",
