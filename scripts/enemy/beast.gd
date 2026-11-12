@@ -73,7 +73,7 @@ func _ready() -> void:
 	golem = kind == "golem"
 	gilded = golem and bool(cfg.get("gold", false))
 	big = kind == "dragon" or troll
-	body = BeastModel.create(kind, DataFiles.color_from(cfg.get("color", "#4a3a34")), float(cfg.get("scale", 1.0)), gilded)
+	body = BeastModel.create(kind, DataFiles.color_from(cfg.get("color", "#4a3a34")), float(cfg.get("scale", 1.0)), gilded, String(cfg.get("model", "")))
 	model.add_child(body)
 	flying = bool(cfg.get("flying", not big and not golem))
 	fly_height = float(cfg.get("fly_height", 2.6))
@@ -428,7 +428,7 @@ func _smash_length() -> float:
 func _smash_point() -> Vector3:
 	var fwd := -model.global_basis.z
 	fwd.y = 0.0
-	return global_position + fwd.normalized() * (body_radius + 1.8)
+	return global_position + fwd.normalized() * (body_radius + 1.8 * float(cfg.get("scale", 1.0)))
 
 
 ## A red ring on the ground showing how far the smash reaches, filling in as it winds up.

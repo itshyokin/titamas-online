@@ -147,10 +147,13 @@ defeat_switch = "troll_defeated"
 stays_dead = true
 
 [node name="Golem" parent="Enemies" unique_id=1610023001 instance=ExtResource("102_golem")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 2, 160)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -196, 3, 176)
+
+[node name="Golem2" parent="Enemies" unique_id=1610023004 instance=ExtResource("102_golem")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -300, 3, 60)
 
 [node name="GildedGolem" parent="Enemies" unique_id=1610023002 instance=ExtResource("103_gold_golem")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2, 172)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -214, 3, 170)
 
 [node name="NPCs" type="Node3D" parent="." unique_id=1939955384]
 
