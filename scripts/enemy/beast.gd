@@ -64,6 +64,8 @@ var _steps_heard := 0
 var _buried := false        # golem ambush: under the ground until someone comes near
 var _sinking := false
 var _exploded := false
+var _sink_t := 0.0
+var _block_cool := 0.0        # golem: seconds until it may raise its guard again
 
 
 func _ready() -> void:
@@ -73,7 +75,7 @@ func _ready() -> void:
 	golem = kind == "golem"
 	gilded = golem and bool(cfg.get("gold", false))
 	big = kind == "dragon" or troll
-	body = BeastModel.create(kind, DataFiles.color_from(cfg.get("color", "#4a3a34")), float(cfg.get("scale", 1.0)), gilded, String(cfg.get("model", "")))
+	body = BeastModel.create(kind, DataFiles.color_from(cfg.get("color", "#4a3a34")), float(cfg.get("scale", 1.0)), gilded, String(cfg.get("model", "")), cfg.get("clips", {}) if cfg.get("clips") is Dictionary else {})
 	model.add_child(body)
 	flying = bool(cfg.get("flying", not big and not golem))
 	fly_height = float(cfg.get("fly_height", 2.6))
@@ -276,6 +278,7 @@ func _troll_chase(delta: float, to: Vector3, d: float) -> Vector3:
 ## Golems: club up close, shards from afar; the gilded one runs in and blows up.
 func _golem_chase(delta: float, to: Vector3, d: float) -> Vector3:
 	_throw_left = maxf(_throw_left - delta, 0.0)
+	_block_cool = maxf(_block_cool - delta, 0.0)
 	if gilded:
 		if d <= float(cfg.get("explode_range", 2.8)) + body_radius:
 			_begin("explode", float(cfg.get("explode_fuse", 1.6)) + 0.05)
@@ -321,14 +324,24 @@ func _fire_shards() -> void:
 func _bury() -> void:
 	_buried = true
 	_sinking = false
-	visible = false
-	model.visible = false
+	_end_block()
+	if body and body.has_clips:
+		# A model that can fall apart lies there as scattered stones instead.
+		visible = true
+		model.visible = true
+		body.position.y = 0.0
+		if _plate:
+			_plate.visible = false
+		hide_disc = true
+	else:
+		visible = false
+		model.visible = false
 	collision_layer = 0
 	remove_from_group(Combat.GROUP)
 	ai = AI.IDLE
 	target = null
 	threat.clear()
-	if body:
+	if body and not body.has_clips:
 		body.position.y = -float(cfg.get("height", 3.4)) * 1.1
 
 
@@ -336,6 +349,12 @@ func _bury() -> void:
 func _sink() -> void:
 	_sinking = true
 	_dust(global_position, 0.6)
+	if body and body.has_clips:
+		_sink_t = 0.0
+		get_tree().create_timer(float(body.clips.get("assemble_end", 2.0)) + 0.3).timeout.connect(func() -> void:
+			if _sinking:
+				_bury())
+		return
 	var tw := create_tween()
 	tw.tween_property(body, "position:y", -float(cfg.get("height", 3.4)) * 1.1, 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw.tween_callback(_bury)
@@ -349,6 +368,16 @@ func _burst_out(who: Node3D) -> void:
 	model.visible = true
 	collision_layer = 4
 	add_to_group(Combat.GROUP)
+	if body and body.has_clips:
+		# The stones roll together and it stands up, then comes for you.
+		if _plate:
+			_plate.visible = true
+		hide_disc = false
+		Combat.play_sound(self, GOLEM_GROAN, 4.0, randf_range(0.85, 1.0) * (1.2 if gilded else 1.0))
+		_dust(global_position, 0.7)
+		_engage(who)
+		_begin("assemble", float(body.clips.get("assemble_end", 2.0)) / maxf(float(cfg.get("assemble_speed", 1.0)), 0.1))
+		return
 	var root := Combat.world_root(self)
 	var tw := create_tween()
 	tw.tween_property(body, "position:y", 0.0, float(cfg.get("burst_time", 0.6))).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -607,6 +636,11 @@ func _attack_move(delta: float) -> Vector3:
 				_attack_hit = true
 				body.holding_rock = false
 				_fire_shards()
+		"assemble":
+			pass
+		"block":
+			if _target_valid():
+				_face(target.global_position, delta * 1.5)
 		"explode":
 			if not _attack_hit and _attack_time >= float(cfg.get("explode_fuse", 1.6)):
 				_attack_hit = true
@@ -698,6 +732,8 @@ func _attack_move(delta: float) -> Vector3:
 
 
 func _end_attack() -> void:
+	if _plan == "block":
+		_block_cool = float(cfg.get("block_cooldown", 5.0))
 	_hide_smash_marker()
 	if body:
 		body.holding_rock = false
@@ -786,6 +822,66 @@ func stagger(seconds := 0.7) -> void:
 	body.pose = "hurt"
 	body.pose_t = 0.0
 	FloatingText.spawn(self, "Staggered", Color(1.0, 0.8, 0.4), 0.8)
+
+
+# --- Guard (golems with a block clip) -------------------------------------------------
+
+## Whether it's standing in its guard right now.
+func is_blocking() -> bool:
+	return ai == AI.ATTACK and _plan == "block"
+
+
+func _end_block() -> void:
+	if _plan == "block":
+		_plan = ""
+		if ai == AI.ATTACK:
+			ai = AI.CHASE
+
+
+## Blows on its guard glance off like a sword on rock (sparks, clang, the swing bounces
+## back); a heavy, charged blow breaks the guard. Out of guard, a hit from the front may
+## make it raise it (beast "block_chance", "block_seconds", "block_cooldown").
+func modify_incoming_damage(amount: float, source: Node) -> float:
+	if body == null or not body.has_clips or String(body.clips.get("block", "")) == "" or gilded:
+		return amount
+	var from := source as Node3D
+	var in_front := true
+	if from:
+		var to := from.global_position - global_position
+		to.y = 0.0
+		var fwd := -model.global_basis.z
+		fwd.y = 0.0
+		in_front = to.length() < 0.1 or rad_to_deg(fwd.angle_to(to.normalized())) < float(cfg.get("block_arc", 140.0)) * 0.5
+	if is_blocking() and in_front:
+		if Combat.incoming_heavy:
+			_end_block()
+			_block_cool = float(cfg.get("block_cooldown", 5.0))
+			FloatingText.spawn(self, "Guard broken", Color(1.0, 0.75, 0.3), 1.4)
+			return amount * 0.6
+		_deflect(from)
+		return 0.0
+	if ai in [AI.CHASE, AI.IDLE] and in_front and _block_cool <= 0.0 and randf() < float(cfg.get("block_chance", 0.3)):
+		_begin("block", float(cfg.get("block_seconds", 1.8)))
+	return amount
+
+
+func _deflect(from: Node3D) -> void:
+	var at := aim_point()
+	var normal := Vector3.FORWARD
+	if from:
+		normal = from.global_position - global_position
+		normal.y = 0.0
+		normal = normal.normalized() if normal.length() > 0.01 else Vector3.FORWARD
+		at = global_position + normal * (body_radius + 0.1) + Vector3.UP * float(cfg.get("aim_height", 1.25))
+	FloatingText.spawn(self, "Blocked", Color(0.8, 0.8, 0.85), 1.2)
+	if from and from.is_in_group("player") and from.global_position.distance_to(global_position) < body_radius + 4.0:
+		WorldStrike.strike(from, {"position": at, "normal": normal, "surface": "stone"}, Database.player.get("combat", {}))
+		var pc := from.get_node_or_null("PlayerCombat")
+		if pc and pc.has_method("_bounce"):
+			pc.call("_bounce")
+	else:
+		Effects.strike_sparks(Combat.world_root(self), at, normal, float(Database.player.get("combat", {}).get("spark_size", 1.0)))
+		Combat.play_sound(self, WorldStrike.CLANGS.pick_random(), -1.0, randf_range(0.9, 1.1))
 
 
 func _on_damaged(_amount: float, source: Node, _crit: bool) -> void:
@@ -926,6 +1022,9 @@ func _pose_tick(delta: float) -> void:
 		body.pose = _net_anim
 		body.pose_t = clampf(_net_pose_t / 1.5, 0.0, 1.0)
 		body.flapping = ai != AI.DEAD and (flying or global_position.y - _ground_y > 0.8)
+		return
+	if body.has_clips and (_buried or _sinking) and ai != AI.DEAD:
+		body.pose = "pieces" if _buried else "disassemble"
 		return
 	if ai == AI.DEAD:
 		body.pose = "dead"

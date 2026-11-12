@@ -58,7 +58,7 @@ var _skel: Skeleton3D
 var _rig: Array = []  # [bone index, pivot, rest pose in model space]
 
 
-static func create(body_kind: String, body_color: Color, body_scale := 1.0, gilded := false, model_path := "") -> BeastModel:
+static func create(body_kind: String, body_color: Color, body_scale := 1.0, gilded := false, model_path := "", clips := {}) -> BeastModel:
 	var m := BeastModel.new()
 	m.kind = body_kind
 	m.color = body_color
@@ -67,6 +67,9 @@ static func create(body_kind: String, body_color: Color, body_scale := 1.0, gild
 	m.scale = Vector3.ONE * body_scale
 	if body_kind == "dragon":
 		m._build_dragon()
+	elif body_kind == "golem" and model_path != "" and ResourceLoader.exists(model_path) and not clips.is_empty() \
+			and m._build_clip_model(model_path, clips):
+		pass
 	elif body_kind == "troll":
 		if model_path != "" and ResourceLoader.exists(model_path) and m._build_golem_model(model_path):
 			pass
@@ -669,10 +672,191 @@ func _process_troll(delta: float) -> void:
 	_apply_rig()
 
 
+# --- Animated models (their own clips) -----------------------------------------------
+# A golem model that comes with animations (enemies.json beast "model" + "clips"): poses
+# pick its clips instead of moving pivots. Clip keys: idle, walk, smash (+ smash_hit 0..1,
+# where the fists land), throw (+ throw_hit), block (played to its end and held), roar,
+# assemble (+ assemble_end s: from scattered pieces to standing; held at 0 = "pieces",
+# played backwards = "disassemble" and death), hand (bone holding shards), head, turn (°),
+# walk_speed (m/s the walk clip covers at speed 1 × the model's scale), rock (texture),
+# rock_uv_scale, glow (colour of emissive parts).
+
+var _anim: AnimationPlayer
+var clips := {}
+var has_clips := false
+var _last_walk_pos := 0.0
+
+
+func _build_clip_model(path: String, cfg: Dictionary) -> bool:
+	var scene := (load(path) as PackedScene).instantiate() as Node3D
+	var players := scene.find_children("*", "AnimationPlayer", true, false)
+	var skels := scene.find_children("*", "Skeleton3D", true, false)
+	if players.is_empty() or skels.is_empty():
+		scene.free()
+		return false
+	clips = cfg
+	has_clips = true
+	_anim = players[0] as AnimationPlayer
+	_skel = skels[0] as Skeleton3D
+	scene.rotation.y = deg_to_rad(float(cfg.get("turn", 0.0)))
+	add_child(scene)
+	for key in ["idle", "walk"]:
+		var a := _anim.get_animation(String(cfg.get(key, "")))
+		if a:
+			a.loop_mode = Animation.LOOP_LINEAR
+	_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+	_retexture(scene, cfg)
+	# Where shards come from, and the head.
+	hand_r = _bone_point(String(cfg.get("hand", "")), "Hand")
+	head = _bone_point(String(cfg.get("head", "")), "Head")
+	mouth = head
+	_held = _part(hand_r, GolemShard.needle_mesh(1.0, 0.13), Vector3.ZERO, _mat(Color(0.7, 0.74, 0.8)), Vector3(-PI * 0.5, 0, 0))
+	_held.scale = Vector3.ONE / maxf(scale.x, 0.01) * 0.6
+	_held.visible = false
+	_play(String(cfg.get("idle", "")), 0.0)
+	return true
+
+
+## A point that follows a bone (BoneAttachment3D), or the model's middle without one.
+func _bone_point(bone: String, n: String) -> Node3D:
+	if bone != "" and _skel.find_bone(bone) >= 0:
+		var att := BoneAttachment3D.new()
+		att.name = n
+		att.bone_name = bone
+		_skel.add_child(att)
+		return att
+	return _pivot(self, Vector3(0, 1.4 / maxf(scale.y, 0.01), 0), n)
+
+
+## Our rock instead of the model's own colours (gold on the gilded one).
+func _retexture(scene: Node3D, cfg: Dictionary) -> void:
+	var rock_path := String(cfg.get("rock", "res://assets/materials/terrain/desert_stone_color.png"))
+	var rock: Texture2D = load(rock_path) if ResourceLoader.exists(rock_path) else null
+	var glow_col := DataFiles.color_from(cfg.get("glow", "#ffb050"))
+	for mi in scene.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		for i in m.mesh.get_surface_count():
+			var src := m.get_active_material(i) as StandardMaterial3D
+			var mat := ShaderMaterial.new()
+			mat.shader = load("res://assets/materials/creature_rock.gdshader")
+			if src:
+				mat.set_shader_parameter("detail", src.albedo_texture)
+			mat.set_shader_parameter("rock", rock)
+			mat.set_shader_parameter("rock_uv_scale", float(cfg.get("rock_uv_scale", 3.0)))
+			var glowing := src != null and src.resource_name.to_lower().contains("emission")
+			mat.set_shader_parameter("glowing", glowing)
+			mat.set_shader_parameter("glow_color", Color(1.0, 0.78, 0.3) if gold else glow_col)
+			if gold:
+				mat.set_shader_parameter("tint", Color(1.25, 0.95, 0.45))
+				mat.set_shader_parameter("metal", 0.65)
+				mat.set_shader_parameter("rough", 0.45)
+			else:
+				mat.set_shader_parameter("tint", Color.WHITE.lerp(color, 0.35) * 1.15)
+			m.set_surface_override_material(i, mat)
+			if glowing:
+				_glow_shader = mat
+	if gold:
+		_aura = OmniLight3D.new()
+		_aura.light_color = Color(1.0, 0.8, 0.3)
+		_aura.omni_range = 5.0
+		_aura.position = Vector3(0, 1.3 / maxf(scale.y, 0.01), 0)
+		add_child(_aura)
+
+
+var _glow_shader: ShaderMaterial
+
+
+func _play(clip: String, blend := 0.2) -> void:
+	if clip == "" or not _anim.has_animation(clip):
+		return
+	if _anim.current_animation != clip:
+		_anim.play(clip, blend)
+
+
+## Plays `clip` so its time follows `t` (seconds): the speed is set to catch up each frame,
+## so the clip keeps step with the attack's timing (and runs backwards when t goes down).
+func _follow_clip(clip: String, t: float, delta: float, blend := 0.15) -> void:
+	if clip == "" or not _anim.has_animation(clip):
+		return
+	if _anim.current_animation != clip:
+		_anim.play(clip, blend)
+		_anim.seek(clampf(t, 0.0, _anim.current_animation_length), true)
+	var pos := _anim.current_animation_position
+	_anim.speed_scale = clampf((t - pos) / maxf(delta, 0.001), -6.0, 6.0)
+
+
+## Clip time for a pose that hits at `hit_frac` of its clip while the attack hits at `at`
+## of its time (piecewise, so the blow lands when the code deals it).
+func _hit_time(clip: String, frac_key: String, at: float) -> float:
+	var length := _anim.get_animation(clip).length if _anim.has_animation(clip) else 1.0
+	var hit := float(clips.get(frac_key, 0.55))
+	var k := pose_t
+	var f := (k / maxf(at, 0.01)) * hit if k < at else hit + (k - at) / maxf(1.0 - at, 0.01) * (1.0 - hit)
+	return clampf(f, 0.0, 1.0) * length
+
+
+func _process_clips(delta: float) -> void:
+	var assemble := String(clips.get("assemble", ""))
+	var assembled := float(clips.get("assemble_end", 2.0))
+	_anim.speed_scale = 1.0
+	match pose:
+		"pieces":
+			_follow_clip(assemble, 0.0, delta, 0.0)
+		"assemble":
+			_follow_clip(assemble, clampf(pose_t, 0.0, 1.0) * assembled, delta, 0.0)
+		"disassemble", "dead":
+			if _anim.current_animation != assemble:
+				_anim.play(assemble, 0.25)
+				_anim.seek(assembled, true)
+			_anim.speed_scale = -1.0 if _anim.current_animation_position > 0.02 else 0.0
+		"smash":
+			var c := String(clips.get("smash", ""))
+			_follow_clip(c, _hit_time(c, "smash_hit", slam_at), delta)
+		"throw":
+			var c := String(clips.get("throw", ""))
+			_follow_clip(c, _hit_time(c, "throw_hit", release_at), delta)
+		"block":
+			var c := String(clips.get("block", ""))
+			if _anim.current_animation != c:
+				_play(c, 0.12)
+			_anim.speed_scale = 1.6 if _anim.current_animation_position < _anim.current_animation_length - 0.05 else 0.0
+		"roar", "explode":
+			_play(String(clips.get("roar", clips.get("idle", ""))), 0.2)
+			if pose == "explode":
+				position = Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)) * 0.04 / maxf(scale.x, 0.01) * clampf(pose_t, 0.0, 1.0)
+		"hurt":
+			pass
+		_:
+			position = Vector3.ZERO
+			if moving > 0.2:
+				var walk := String(clips.get("walk", ""))
+				_play(walk, 0.25)
+				_anim.speed_scale = clampf(moving * 1.2, 0.5, 2.0)
+				# A footstep at the start and middle of each walk cycle.
+				var p := _anim.current_animation_position
+				var half := _anim.current_animation_length * 0.5
+				if (p < _last_walk_pos) or (p >= half and _last_walk_pos < half):
+					steps += 1
+				_last_walk_pos = p
+			else:
+				_play(String(clips.get("idle", "")), 0.3)
+	_held.visible = holding_rock
+	if _glow_shader:
+		var fuse := clampf(pose_t, 0.0, 1.0) if pose == "explode" else 0.0
+		var pulse := 0.5 + 0.5 * sin(_t * lerpf(2.0, 22.0, fuse))
+		_glow_shader.set_shader_parameter("glow", 0.0 if pose == "dead" else (1.4 + 0.8 * pulse) * (1.0 + fuse * 2.0))
+	if _aura:
+		var fuse2 := clampf(pose_t, 0.0, 1.0) if pose == "explode" else 0.0
+		_aura.light_energy = 0.0 if pose == "dead" else 0.8 + 0.5 * sin(_t * 3.0) + fuse2 * 5.0
+
+
 # --- Animation ------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
 	_t += delta
+	if has_clips:
+		_process_clips(delta)
+		return
 	if kind == "troll" or kind == "golem":
 		_process_troll(delta)
 		return

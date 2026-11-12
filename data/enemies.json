@@ -363,13 +363,13 @@
 			"beast": {
 				"body": "golem",
 				"color": "#7d776c",
-				"scale": 0.55,
+				"scale": 0.155,
 				"radius": 0.5,
 				"height": 1.95,
 				"aim_height": 1.25,
 				"plate_height": 2.5,
 				"ambush": true,
-				"burst_range": 6.0,
+				"burst_range": 7.0,
 				"burst_radius": 2.5,
 				"burst_power": 0.5,
 				"burst_knockback": 6.0,
@@ -394,7 +394,29 @@
 				"shard_power": 0.6,
 				"shard_knockback": 2.0,
 				"shard_color": "#a8b0bc",
-				"model": ""
+				"model": "res://assets/models/creatures/desert_golem.glb",
+				"clips": {
+					"idle": "Idle",
+					"walk": "Walk",
+					"smash": "Attack2",
+					"smash_hit": 0.57,
+					"throw": "Attack3",
+					"throw_hit": 0.5,
+					"block": "Defence3",
+					"roar": "Defence1",
+					"assemble": "IdlePieces",
+					"assemble_end": 1.9,
+					"hand": "Boulder.r_12",
+					"head": "Head_0",
+					"turn": 180,
+					"rock": "res://assets/materials/terrain/desert_stone_color.png",
+					"rock_uv_scale": 3.0,
+					"glow": "#ffb050"
+				},
+				"block_chance": 0.3,
+				"block_seconds": 1.8,
+				"block_cooldown": 5.0,
+				"block_arc": 140
 			}
 		},
 		{
@@ -443,13 +465,13 @@
 			"beast": {
 				"body": "golem",
 				"color": "#a8842f",
-				"scale": 0.55,
+				"scale": 0.155,
 				"radius": 0.5,
 				"height": 1.95,
 				"aim_height": 1.25,
 				"plate_height": 2.5,
 				"ambush": true,
-				"burst_range": 6.0,
+				"burst_range": 7.0,
 				"burst_radius": 2.5,
 				"burst_power": 0.5,
 				"burst_knockback": 6.0,
@@ -481,7 +503,25 @@
 				"explode_power": 2.4,
 				"explode_knockback": 9.0,
 				"explode_down": 1.6,
-				"model": ""
+				"model": "res://assets/models/creatures/desert_golem.glb",
+				"clips": {
+					"idle": "Idle",
+					"walk": "Walk",
+					"smash": "Attack2",
+					"smash_hit": 0.57,
+					"throw": "Attack3",
+					"throw_hit": 0.5,
+					"block": "Defence3",
+					"roar": "Defence1",
+					"assemble": "IdlePieces",
+					"assemble_end": 1.9,
+					"hand": "Boulder.r_12",
+					"head": "Head_0",
+					"turn": 180,
+					"rock": "res://assets/materials/terrain/desert_stone_color.png",
+					"rock_uv_scale": 3.0,
+					"glow": "#ffb050"
+				}
 			}
 		}
 	]
