@@ -1,4 +1,4 @@
-# Handoff (10 Nov 2026)
+# Handoff (12 Nov 2026)
 
 Where things stand, for picking the work up in a new chat. Technical notes for each system are in `CLAUDE.md`; this file is the to-do list and the agreements made in conversation.
 
@@ -121,7 +121,20 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Blender: Paint Props box (select props, press Paint Props, drag; Shift+drag erases).
 
 ## Notes (11 Nov late)
-- The vine-covered Stone Plant Golem model is the Troll boss (Old Mossback). Golems are human-sized stone-carapace undead of the Singed Plains (placeholder shapes until the owner sends their model: rig it with tools/blender/prepare_golem.py, new joint positions).
+- The vine-covered Stone Plant Golem model is the Troll boss (Old Mossback). Golems are human-sized stone-carapace undead of the Singed Plains: they now use Phons' animated "Drugdör" model (assets/models/creatures/desert_golem.glb, CC-BY, credited).
+
+## To test in the editor (done 12 Nov, batch Z)
+- Backpack: click an item, then move to Use / To hotbar / Throw away (hover only previews). Throw away drops a spinning icon in front of you; walk over it after 1.5 s to take it back; it vanishes after 5 min or 150 m (Database → Player → Thrown-away items).
+- Potions used from the Codex close it first. The hearthstone keeps the time of day (the clock is saved with the character).
+- Tab with nothing on screen targets the nearest enemy anywhere in reach. Ladder going down: no growl. Maple/birch trunks: collision fits the trunk.
+- Z draws / puts away the weapon (no auto put-away: Database → Player → Combat "Weapon put away after" 0). Followers copy it. Followers climb ladders after you.
+- HUD: gold level badge at the end of the bars; portraits (Settings → Graphics → Portraits).
+- Talking: dark edges + blur behind the speaker (blur needs Forward+); enemies and missiles freeze until it ends (Database → Player → dialogue).
+- Golems (Singed Plains): lie as scattered stones, roll together and stand up when you come within 7 m, smash / throw shards, raise a guard that deflects your blows (sparks, clang, the swing bounces; a charged heavy blow breaks it), fall apart when they die. Database → Enemies → Beast "Animated" fields + "Golem guard".
+- Rivers: in Blender, a plane in the Water collection named river/stream/falls (or with such a material) exports as running water. It flows toward the plane's UV up (+V): a plain plane flows along its own +Y; for a winding strip, UV → Follow Active Quads. Steep faces become waterfalls (white water, roar, mist). Swimmers are carried along. Reinstall the add-on.
+- Monolith (Events/Monolith in front of it): Interact → hand raised, light-blue flash, blue sparks around you and followers, full health/mana, ailments cured. New event commands: Full recovery (party, cure), Sparkles, Fade out colour.
+- Campfires (Campfires/VillageCampfire near the start, PlainsCampfire in the Singed Plains; scenes/world/campfire.tscn): Interact = it becomes where you wake, and rest 2/4/6/8 h (6+ rested and cured, 8+ Well rested buff, less = Tired). Dying: "Wait for help" (a follower comes and revives you) or "Return to camp". Companions now finish enemies except the one you've targeted. Database → Player → Campfires and falling; statuses well_rested / tired.
+- Seats: scenes/world/seat_chair / seat_stool / seat_log / seat_bench (three placed round the village campfire). Interact to sit; move to stand. Followers sit near a lit fire or in a safe area after you stand still 4 s and do their Database "Resting in camp" activity (Katrina eats, Orrin reads, Maelis drinks, Wren warms her hands).
 
 ## Backlog (agreed, not started)
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
@@ -129,11 +142,10 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Wet rain look: more saturation, darker colours, drips from trees.
 - Menu navigation sounds (hover, click, tab, open/close).
 - Collectables: hidden cats to pet (Codex page "Cats found n/N", achievement), coin caches, XP shrines; counts on the region map.
-- Campfires: heal nearby over time; burn out after x hours unless fed items with a "flame fuel" toggle + hours in the Database; "permanent flame" toggle; relighting a dead one = rest spot; Rested bonus (small speed / XP / damage boost).
-- Tents: placeable if there's room; bedroll inside can be set as home and slept in; 5+ hours beside a campfire = Well Rested (better than Rested). Player houses much later (always Well Rested).
-- Seat and lay/bed interactions.
+- Campfires: heal nearby over time; burn out after x hours unless fed items with a "flame fuel" toggle + hours in the Database; "permanent flame" toggle; relighting a dead one. (Checkpoint + rest + rested/tired are done.)
+- Player houses much later (always Well Rested). Lying in beds.
 - Mimic enemies disguised as treasure chests (use the loot animation).
-- Rivers, streams, waterfalls from Blender planes named `_river`, `_stream`, `_waterfall`; need a way to mark flow direction; streams = shallow, walkable with splashes; rivers push the player (sprint-swim upstream); fish visible; fishing.
+- Rivers: splashes when wading through shallow streams; fish visible; fishing.
 - Minimap (corner), separate from the M region map.
 - Mage class: still "coming soon" in the creator; needs a starting kit and skill tree (its 75 % cast time is already in).
 - Boss intro (arena entrance, music cue, name card).
@@ -152,4 +164,4 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Not checkable in Claude's test renderer (verify in the editor): decals (blood on slopes, leaves, cloud shadows), SSAO, the finisher kill-cam.
 
 ## Latest work (all pushed)
-Batch V on 11 Nov: Base Character defaults, switch-gated props (ladder), Saturn-style skill trees, backpack in the Codex, hotbar drag fix, Esc cancels. Batch U on 11 Nov: multi-material pieces + max_side, chainmail belt/trim/skirt, rotated NPCs/enemies facing fix. Batch T on 11 Nov: per-part face placement (creator + Database). Batch S on 11 Nov: anime/cat eyes, anime noses/mouths/brows/extras, Database look preview, short hair sway off. Batch R on 11 Nov: bigger eyes, heterochromia, brows / noses / mouths / extras, looks + gear for enemies. Batch Q on 10 Nov: Halo-style nav marker, Database item groups + Saturn icons, hotbar defaults, Spells in the Codex, Hearthstone in the air, matte terrain. Batches L–P on 10 Nov: safe areas (SafeArea box, off switch), indoor weather (roof check, muffled sound, cover map: rain outside doors, dry floors), performance (smoother streaming, sleeping AI, prop ranges, occlusion, quality settings, F3 overlay), snow and blizzards, effect sprites for abilities, insect sprites and Swarm Spots, the pixel look for effects and icons, ants, the troll boss and player knockdowns. Batches E–K on 9–10 Nov: falling leaves, random ambience, statuses and icons, injured walk, rarity, stealth / Frost Edge / Burst Quake, finisher cam, bats and the dragon, hair and cape sway by material, threat and smarter companions (wait for the player, never steal kills, go down and take cover), recruitable archer / mage / healer, Tab targeting with lock-on, region map (M), fall damage, blood, rain splashes, colour picker, Body Models categories, night and dawn sounds.
+Batch Z on 12 Nov: inventory click-to-pick + dropped items, Z draw/stow, follower ladders, HUD badges/portraits, talk vignette/blur/freeze, animated desert golems with a guard, rivers and waterfalls, Monolith healing, campfires (checkpoint, rest, death choice, revive), seats and camp resting. Batch V on 11 Nov: Base Character defaults, switch-gated props (ladder), Saturn-style skill trees, backpack in the Codex, hotbar drag fix, Esc cancels. Batch U on 11 Nov: multi-material pieces + max_side, chainmail belt/trim/skirt, rotated NPCs/enemies facing fix. Batch T on 11 Nov: per-part face placement (creator + Database). Batch S on 11 Nov: anime/cat eyes, anime noses/mouths/brows/extras, Database look preview, short hair sway off. Batch R on 11 Nov: bigger eyes, heterochromia, brows / noses / mouths / extras, looks + gear for enemies. Batch Q on 10 Nov: Halo-style nav marker, Database item groups + Saturn icons, hotbar defaults, Spells in the Codex, Hearthstone in the air, matte terrain. Batches L–P on 10 Nov: safe areas (SafeArea box, off switch), indoor weather (roof check, muffled sound, cover map: rain outside doors, dry floors), performance (smoother streaming, sleeping AI, prop ranges, occlusion, quality settings, F3 overlay), snow and blizzards, effect sprites for abilities, insect sprites and Swarm Spots, the pixel look for effects and icons, ants, the troll boss and player knockdowns. Batches E–K on 9–10 Nov: falling leaves, random ambience, statuses and icons, injured walk, rarity, stealth / Frost Edge / Burst Quake, finisher cam, bats and the dragon, hair and cape sway by material, threat and smarter companions (wait for the player, never steal kills, go down and take cover), recruitable archer / mage / healer, Tab targeting with lock-on, region map (M), fall damage, blood, rain splashes, colour picker, Body Models categories, night and dawn sounds.
