@@ -5,6 +5,8 @@ extends Node
 signal bindings_changed
 ## Grass or other graphics settings that need the world rebuilt changed.
 signal graphics_changed
+## HUD options (portraits) changed.
+signal hud_changed
 ## The player switched between keyboard/mouse and controller (for button hints).
 signal device_changed(gamepad: bool)
 
@@ -50,6 +52,8 @@ var volumes := DEFAULT_VOLUMES.duplicate()
 var pixel := DEFAULT_PIXEL
 var grass := DEFAULT_GRASS
 var god_rays := true
+## Character portraits beside the health bars (player and party).
+var portraits := true
 ## Screen-space ambient occlusion: soft contact shadows in corners and under things.
 var ssao := true
 ## Trees, cliffs and characters reflected in water (costs a little on slower PCs).
@@ -178,6 +182,12 @@ func set_water_reflections(on: bool, save := true) -> void:
 		save_settings()
 
 
+func set_portraits(on: bool) -> void:
+	portraits = on
+	hud_changed.emit()
+	save_settings()
+
+
 func set_god_rays(on: bool) -> void:
 	god_rays = on
 	save_settings()
@@ -303,6 +313,7 @@ func save_settings() -> void:
 	cfg.set_value("graphics", "pixel", pixel)
 	cfg.set_value("graphics", "grass", grass)
 	cfg.set_value("graphics", "god_rays", god_rays)
+	cfg.set_value("interface", "portraits", portraits)
 	cfg.set_value("graphics", "screen_shake", screen_shake)
 	cfg.set_value("graphics", "water_reflections", water_reflections)
 	cfg.set_value("graphics", "ssao", ssao)
@@ -333,6 +344,7 @@ func load_settings() -> void:
 	pixel = String(cfg.get_value("graphics", "pixel", DEFAULT_PIXEL))
 	grass = String(cfg.get_value("graphics", "grass", DEFAULT_GRASS))
 	god_rays = bool(cfg.get_value("graphics", "god_rays", true))
+	portraits = bool(cfg.get_value("interface", "portraits", true))
 	screen_shake = float(cfg.get_value("graphics", "screen_shake", 1.0))
 	water_reflections = bool(cfg.get_value("graphics", "water_reflections", true))
 	ssao = bool(cfg.get_value("graphics", "ssao", true))

@@ -14,6 +14,9 @@ var _dragging := false
 var _yaw := PI  # models face -Z; turn them to the camera
 ## How much of the body the camera frames (1 = head to toe).
 var framing := 1.0
+## Portrait (HUD frames): head and shoulders, no dragging, redrawn only now and then.
+var portrait := false
+var _redraw := 0.0
 
 
 func _init(view_size := Vector2i(160, 230)) -> void:
@@ -57,14 +60,34 @@ func _init(view_size := Vector2i(160, 230)) -> void:
 
 
 func _ready() -> void:
+	if portrait:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_yaw = PI - 0.35  # a little three-quarter turn
+		_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	_pivot.rotation.y = _yaw
 	_frame()
 	if _model.has_method("play"):
 		_model.call_deferred("play", "idle")
 
 
+func _process(delta: float) -> void:
+	# Portraits redraw a few times a second (enough for blinking-free idling, cheap).
+	if not portrait:
+		return
+	_redraw -= delta
+	if _redraw <= 0.0 and is_visible_in_tree():
+		_redraw = 0.25
+		_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+
 func _frame() -> void:
 	var h := 1.86 * _pivot.scale.y
+	if portrait:
+		var head := _head_height()
+		_camera.fov = 26.0
+		_camera.position = Vector3(0, head - 0.02, 0.95)
+		_camera.look_at(Vector3(0, head - 0.06, 0))
+		return
 	var aim_y := h * (0.52 if framing >= 1.0 else 1.0 - framing * 0.5)
 	var dist := h * framing * 2.15
 	_camera.position = Vector3(0, aim_y + 0.05, dist)
@@ -94,7 +117,21 @@ func show_look(look: Dictionary, equipment: Dictionary) -> void:
 	_frame()
 
 
+## Height of the head (model space), from the head bone when there is one.
+func _head_height() -> float:
+	var sk := _model.find_children("*", "Skeleton3D", true, false)
+	if not sk.is_empty() and is_inside_tree():
+		var skel := sk[0] as Skeleton3D
+		var b := skel.find_bone("mixamorig_Head")
+		if b >= 0:
+			var p := _pivot.global_transform.affine_inverse() * (skel.global_transform * skel.get_bone_global_rest(b)).origin
+			return p.y + 0.1
+	return 1.62 * _model.scale.y
+
+
 func _gui_input(event: InputEvent) -> void:
+	if portrait:
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		_dragging = event.pressed
 		accept_event()

@@ -37,6 +37,8 @@ var _hotbar: Hotbar
 var _wheel: AbilityWheel
 var _spellbook: Spellbook
 var _name_label: Label
+var _level_badge: LevelBadge
+var _portrait: CharacterPreview
 var _bar_values := {}  # ProgressBar -> Label with "85 / 100"
 var _weakened: Label
 var _danger: Label
@@ -171,9 +173,13 @@ func _style_player_frame() -> void:
 	var bars := health_bar.get_parent() as VBoxContainer
 	bars.add_theme_constant_override("separation", 4)
 	_name_label = _label("", 17)
-	bars.add_child(_name_label)
-	bars.move_child(_name_label, 0)
+	_level_badge = LevelBadge.new(15)
+	var name_row := LevelBadge.name_row(_name_label, _level_badge)
+	bars.add_child(name_row)
+	bars.move_child(name_row, 0)
 	_refresh_name()
+	_update_portraits()
+	GameSettings.hud_changed.connect(_update_portraits)
 	_stats.level_changed.connect(func(_l: int) -> void: _refresh_name())
 	var looks := [[health_bar, Color(0.86, 0.2, 0.18), 22.0], [mana_bar, Color(0.25, 0.45, 0.95), 16.0],
 		[stamina_bar, Color(0.92, 0.72, 0.18), 12.0]]
@@ -210,7 +216,52 @@ func _style_player_frame() -> void:
 
 func _refresh_name() -> void:
 	var char_name := String(GameSession.data.get("name", _stats.display_name)) if GameSession.active() else _stats.display_name
-	_name_label.text = "%s   [Level %d]" % [char_name, _stats.level]
+	_name_label.text = char_name
+	_level_badge.set_level(_stats.level)
+	if _portrait and is_instance_valid(_portrait):
+		_portrait.show_player(_stats.get_parent())
+
+
+## Portraits beside the bars (Settings → Graphics: "Portraits"): the player's frame moves
+## right to make room; party rows show theirs in each row.
+func _update_portraits() -> void:
+	var bars := health_bar.get_parent() as VBoxContainer
+	var on := GameSettings.portraits
+	if on and _portrait == null:
+		_portrait = _make_portrait(Vector2i(76, 76))
+		_portrait.position = Vector2(20, 22)
+		add_child(_portrait)
+		_portrait.show_player(_stats.get_parent())
+	if _portrait:
+		_portrait.visible = on
+	bars.offset_left = 24.0 + (86.0 if on else 0.0)
+	bars.offset_right = bars.offset_left
+	for node in _party_rows.keys():
+		var p = _party_rows[node][4]
+		if p and is_instance_valid(p):
+			(p as Control).get_parent().visible = on
+
+
+## A framed head-and-shoulders view.
+func _make_portrait(px: Vector2i) -> CharacterPreview:
+	var p := CharacterPreview.new(px)
+	p.portrait = true
+	var frame := StyleBoxFlat.new()
+	frame.bg_color = Color(0.08, 0.07, 0.1, 0.85)
+	frame.border_color = Color(0.85, 0.66, 0.26)
+	frame.set_border_width_all(2)
+	frame.set_corner_radius_all(6)
+	var back := Panel.new()
+	back.add_theme_stylebox_override("panel", frame)
+	back.show_behind_parent = true
+	back.set_anchors_preset(Control.PRESET_FULL_RECT)
+	back.offset_left = -3
+	back.offset_top = -3
+	back.offset_right = 3
+	back.offset_bottom = 3
+	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.add_child(back)
+	return p
 
 
 
@@ -539,7 +590,7 @@ func _process_party(delta: float) -> void:
 	var members := get_tree().get_nodes_in_group("party_members") + get_tree().get_nodes_in_group("followers")
 	for node in _party_rows.keys():
 		if not is_instance_valid(node) or not node in members:
-			(_party_rows[node][0] as Control).get_parent().queue_free()
+			(_party_rows[node][2] as Control).queue_free()
 			_party_rows.erase(node)
 	for node in members:
 		var s := Combat.stats_of(node)
@@ -547,6 +598,8 @@ func _process_party(delta: float) -> void:
 			continue
 		if not _party_rows.has(node):
 			# Click a row to target that companion (heals then go to them).
+			var outer := HBoxContainer.new()
+			outer.add_theme_constant_override("separation", 8)
 			var row := VBoxContainer.new()
 			row.add_theme_constant_override("separation", 2)
 			row.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -562,18 +615,35 @@ func _process_party(delta: float) -> void:
 					row.accept_event())
 			var name_label := _label(s.display_name, 14)
 			name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			row.add_child(name_label)
+			var badge := LevelBadge.new(12)
+			row.add_child(LevelBadge.name_row(name_label, badge))
 			var bar := _progress(Color(0.3, 0.8, 0.35), Vector2(160, 10))
 			bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			row.add_child(bar)
-			_party.add_child(row)
-			_party_rows[node] = [name_label, bar]
+			# Portrait on the left (a holder keeps the frame's room in the row).
+			var holder := Control.new()
+			holder.custom_minimum_size = Vector2(40, 40)
+			holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var face := _make_portrait(Vector2i(40, 40))
+			holder.add_child(face)
+			holder.visible = GameSettings.portraits
+			outer.add_child(holder)
+			outer.add_child(row)
+			row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			_party.add_child(outer)
+			_party_rows[node] = [name_label, bar, outer, badge, face]
+			if node.get("data") is Dictionary:
+				var nd: Dictionary = node.get("data")
+				face.call_deferred("show_look", nd.get("look", {}), nd.get("equipment", {}))
+			elif node.has_node("Inventory"):
+				face.call_deferred("show_player", node)
 		var bar := _party_rows[node][1] as ProgressBar
 		bar.value = s.health / maxf(s.max_health, 1.0) * 100.0
 		_tint_fill(bar, HealthColors.of(s.health / maxf(s.max_health, 1.0)))
 		var downed: bool = s.is_dead() or (node.has_method("is_downed") and node.is_downed())
 		var picked: bool = _targeting != null and _targeting.target == node
 		var label := _party_rows[node][0] as Label
+		(_party_rows[node][3] as LevelBadge).set_level(s.level)
 		label.text = ("▶ " if picked else "") + s.display_name + ("  (down)" if downed else "")
 		label.modulate = Color(1.0, 0.85, 0.4) if picked else (Color(1.0, 0.55, 0.5) if downed else Color.WHITE)
 

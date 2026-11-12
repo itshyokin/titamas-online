@@ -321,6 +321,11 @@ func _graphics_tab() -> Control:
 	sync.button_pressed = GameSettings.vsync
 	sync.toggled.connect(func(on: bool) -> void: GameSettings.set_vsync(on))
 	page.add_child(sync)
+	var faces := CheckBox.new()
+	faces.text = "Portraits beside the health bars (you and your party)"
+	faces.button_pressed = GameSettings.portraits
+	faces.toggled.connect(func(on: bool) -> void: GameSettings.set_portraits(on))
+	page.add_child(faces)
 	var rays := CheckBox.new()
 	rays.text = "God rays (light shafts through the air)"
 	rays.button_pressed = GameSettings.god_rays
