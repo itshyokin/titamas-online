@@ -215,7 +215,12 @@ event_id = "road_lever"
 size = Vector3(0.8, 1, 0.6)
 
 [node name="RoadSign" parent="Events" unique_id=94758719 instance=ExtResource("98_event")]
-transform = Transform3D(0.93974036, 0, 0.34188893, 0, 1, 0, -0.34188893, 0, 0.93974036, -54.388557, 1.0102637, 65.1387)
+transform = Transform3D(-0.99737036, 0, -0.07247239, 0, 1, 0, 0.07247239, 0, -0.99737036, -54.388557, 1.0102637, 65.1387)
+event_id = "road_sign"
+size = Vector3(1, 1.6, 0.4)
+
+[node name="RoadSign2" parent="Events" unique_id=225981188 instance=ExtResource("98_event")]
+transform = Transform3D(-0.97263, 0, 0.23235896, 0, 1, 0, -0.23235896, 0, -0.97263, 64.55227, 13.139618, 124.72793)
 event_id = "road_sign"
 size = Vector3(1, 1.6, 0.4)
 

@@ -244,6 +244,35 @@
 			]
 		},
 		{
+			"id": "road_sign_copy",
+			"name": "Sign",
+			"note": "Alert! A Troll has been spotted in this area!",
+			"pages": [
+				{
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "Sign",
+							"text": "Alert! A Troll has been spotted in this area!"
+						},
+						{
+							"cmd": "text",
+							"speaker": "Sign",
+							"text": "Enter at your own risk!!!"
+						}
+					],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "builtin:sign",
+					"prompt": "Read",
+					"solid": true,
+					"speaker": "Signpost",
+					"trigger": "action"
+				}
+			]
+		},
+		{
 			"id": "welcome_area",
 			"name": "Welcome (walk in)",
 			"note": "Example: a touch area that runs once.",
@@ -430,8 +459,8 @@
 					"commands": [
 						{
 							"cmd": "log",
-							"text": "You find yourself in a strange forest...",
-							"color": "#f9fccb"
+							"color": "#f9fccb",
+							"text": "You find yourself in a strange forest..."
 						},
 						{
 							"cmd": "nav",
