@@ -242,14 +242,14 @@
 			"attack_range": 5.0,
 			"bar_width": 30.0,
 			"beast": {
-				"aim_height": 3.3,
+				"aim_height": 3.2,
 				"body": "troll",
 				"color": "#6f7d5c",
 				"flying": false,
 				"height": 5.2,
 				"plate_height": 6.6,
 				"radius": 1.5,
-				"scale": 1.45,
+				"scale": 1.0,
 				"smash_down": 1.6,
 				"smash_knockback": 7.0,
 				"smash_power": 1.6,
@@ -267,7 +267,7 @@
 				"throw_speed": 18.0,
 				"throw_splash": 1.8,
 				"throw_time": 1.9,
-				"model": "res://assets/models/creatures/stone_golem.glb"
+				"model": ""
 			},
 			"blood_color": "#6a2a1a",
 			"boss": true,

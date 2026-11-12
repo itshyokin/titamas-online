@@ -1,5 +1,4 @@
-"""Turns a high-poly, unrigged golem .glb (e.g. Pigcraft's "Stone Plant Golem", CC-BY 4.0)
-into the game's golem model: joined, welded, decimated (RATIO, ~16k triangles), turned to
+"""Turns a high-poly, unrigged golem .glb into the game's golem model: joined, welded, decimated (RATIO, ~16k triangles), turned to
 face the game's forward, HEIGHT m tall (3.6) with feet at 0, textures at most 1024 px, and
 rigged with the bones the game's golem animation moves (body, torso, head, shoulder/elbow/
 hand _L/_R, hip/knee _L/_R; weights from the distance to each bone).
@@ -8,8 +7,8 @@ hand _L/_R, hip/knee _L/_R; weights from the distance to each bone).
     or in Blender: set the two environment variables and run this file in the Text Editor.
 
 Writes OUT (unrigged) and OUT with _rigged before .glb: copy that one to
-assets/models/creatures/stone_golem.glb. The joint positions in BONES are for this model;
-another model needs its own (read them off front and side views, metres, Godot axes).
+assets/models/creatures/ and pick it in Database → Enemies → Beast "model". The joint
+positions in BONES were for an earlier (since removed) model; a new model needs its own (read them off front and side views, metres, Godot axes).
 """
 import sys, os
 if "BPYLIB" in os.environ:

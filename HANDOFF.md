@@ -121,7 +121,7 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Blender: Paint Props box (select props, press Paint Props, drag; Shift+drag erases).
 
 ## Notes (11 Nov late)
-- The vine-covered Stone Plant Golem model is the Troll boss (Old Mossback). Golems are human-sized stone-carapace undead of the Singed Plains: they now use Phons' animated "Drugdör" model (assets/models/creatures/desert_golem.glb, CC-BY, credited).
+- The Troll boss (Old Mossback) is back to the shape-built troll: the vine golem model was removed (12 Nov: it was AI-generated from copyrighted material, not usable commercially). Golems are human-sized stone-carapace undead of the Singed Plains: they now use Phons' animated "Drugdör" model (assets/models/creatures/desert_golem.glb, CC-BY, credited).
 
 ## To test in the editor (done 12 Nov, batch Z)
 - Backpack: click an item, then move to Use / To hotbar / Throw away (hover only previews). Throw away drops a spinning icon in front of you; walk over it after 1.5 s to take it back; it vanishes after 5 min or 150 m (Database → Player → Thrown-away items).
