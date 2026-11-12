@@ -428,7 +428,7 @@ func _smash_length() -> float:
 func _smash_point() -> Vector3:
 	var fwd := -model.global_basis.z
 	fwd.y = 0.0
-	return global_position + fwd.normalized() * (body_radius + 1.8)
+	return global_position + fwd.normalized() * (body_radius + 1.8 * float(cfg.get("scale", 1.0)))
 
 
 ## A red ring on the ground showing how far the smash reaches, filling in as it winds up.

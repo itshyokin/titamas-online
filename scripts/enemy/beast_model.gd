@@ -68,7 +68,10 @@ static func create(body_kind: String, body_color: Color, body_scale := 1.0, gild
 	if body_kind == "dragon":
 		m._build_dragon()
 	elif body_kind == "troll":
-		m._build_troll()
+		if model_path != "" and ResourceLoader.exists(model_path) and m._build_golem_model(model_path):
+			pass
+		else:
+			m._build_troll()
 	elif body_kind == "golem":
 		if model_path != "" and ResourceLoader.exists(model_path) and m._build_golem_model(model_path):
 			pass
@@ -421,12 +424,13 @@ func _build_golem() -> void:
 		add_child(_aura)
 
 
-## Bone names a golem model needs (tools/blender/prepare_golem.py makes them).
+## Bone names a rigged troll / golem model needs (tools/blender/prepare_golem.py makes them).
 const GOLEM_BONES := ["body", "torso", "head", "shoulder_L", "elbow_L", "hand_L", "shoulder_R", "elbow_R", "hand_R", "hip_L", "knee_L", "hip_R", "knee_R"]
 
 
-## A golem from a rigged model: invisible pivots at its joints (moved like the shape
-## golem's) drive the skeleton. False if the model lacks the bones.
+## A troll or golem from a rigged model: invisible pivots at its joints (moved like the
+## shape troll's / golem's) drive the skeleton. False if the model lacks the bones.
+## The troll holds a rock in its right fist to throw, the golem a stone shard.
 func _build_golem_model(path: String) -> bool:
 	var scene := (load(path) as PackedScene).instantiate() as Node3D
 	var skel := scene.find_children("*", "Skeleton3D", true, false)
@@ -470,7 +474,10 @@ func _build_golem_model(path: String) -> bool:
 	_knees = [pivots.knee_L, pivots.knee_R]
 	hand_r = pivots.hand_R
 	mouth = _pivot(head, Vector3(0, 0.1, -0.4), "Mouth")
-	_held = _part(hand_r, GolemShard.needle_mesh(1.0, 0.13), Vector3(0, -0.5, -0.25), _mat(Color(0.7, 0.74, 0.8)), Vector3(-PI * 0.5, 0, 0))
+	if kind == "troll":
+		_held = _part(hand_r, rock_mesh(0.42), Vector3(0, -0.55, -0.15), null)
+	else:
+		_held = _part(hand_r, GolemShard.needle_mesh(1.0, 0.13), Vector3(0, -0.5, -0.25), _mat(Color(0.7, 0.74, 0.8)), Vector3(-PI * 0.5, 0, 0))
 	_held.visible = false
 	# Gilded: the model's own colours turned to gold, glowing (pulses with the fuse).
 	if gold:

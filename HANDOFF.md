@@ -120,6 +120,9 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Herbs: import assets/props/herb_*.glb into Blender, paint them with the new Paint Props brush; press E to pick; they regrow (berries 1 game day, lavender 3).
 - Blender: Paint Props box (select props, press Paint Props, drag; Shift+drag erases).
 
+## Notes (11 Nov late)
+- The vine-covered Stone Plant Golem model is the Troll boss (Old Mossback). Golems are human-sized stone-carapace undead of the Singed Plains (placeholder shapes until the owner sends their model: rig it with tools/blender/prepare_golem.py, new joint positions).
+
 ## Backlog (agreed, not started)
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
 - Icicles on branches in snow (needs a small icicle model or sprite).
