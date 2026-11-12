@@ -58,7 +58,7 @@ from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector
 from mathutils.kdtree import KDTree
-from bpy.props import BoolProperty, FloatProperty, IntProperty, PointerProperty, StringProperty
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty, PointerProperty, StringProperty
 
 EPS = 1e-4
 PAINT_ATTR = "TerrainPaint"
@@ -198,6 +198,42 @@ class TITAMAS_OT_chunk_from_cursor(bpy.types.Operator):
 		s.start_i = round(c.x / s.chunk_size)
 		s.start_j = -round(c.y / s.chunk_size)
 		self.report({"INFO"}, f"Chunk X {s.start_i}, Chunk Y {s.start_j}")
+		return {"FINISHED"}
+
+
+class TITAMAS_OT_chunk_beside(bpy.types.Operator):
+	bl_idname = "titamas.chunk_beside"
+	bl_label = "Next to Selected"
+	bl_description = "Set Chunk X / Chunk Y so new chunks sit right beside the selected terrain on this side (no numbers to work out)"
+	bl_options = {"REGISTER", "UNDO"}
+
+	side: EnumProperty(items=[("EAST", "East", ""), ("WEST", "West", ""), ("NORTH", "North", ""), ("SOUTH", "South", "")])
+
+	def execute(self, context):
+		s = context.scene.titamas_terrain
+		obj = context.active_object
+		if obj is None or obj.type != "MESH" or not obj.data.vertices:
+			self.report({"WARNING"}, "Click your existing terrain first, then press an arrow")
+			return {"CANCELLED"}
+		size, half = s.chunk_size, s.chunk_size / 2
+		pts = [obj.matrix_world @ v.co for v in obj.data.vertices]
+		xmin, xmax = min(p.x for p in pts), max(p.x for p in pts)
+		ymin, ymax = min(p.y for p in pts), max(p.y for p in pts)
+		i0, i1 = round((xmin + half) / size), round((xmax - half) / size)
+		j0, j1 = round((half - ymax) / size), round((-ymin - half) / size)
+		if self.side == "EAST":
+			s.start_i, s.start_j = i1 + 1, j0
+			s.rows = j1 - j0 + 1
+		elif self.side == "WEST":
+			s.start_i, s.start_j = i0 - s.columns, j0
+			s.rows = j1 - j0 + 1
+		elif self.side == "NORTH":
+			s.start_i, s.start_j = i0, j0 - s.rows
+			s.columns = i1 - i0 + 1
+		else:
+			s.start_i, s.start_j = i0, j1 + 1
+			s.columns = i1 - i0 + 1
+		self.report({"INFO"}, f"New chunks go {self.side.lower()} of {obj.name}: chunk_{s.start_i}_{s.start_j} onward")
 		return {"FINISHED"}
 
 
@@ -1128,6 +1164,10 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 		row.prop(s, "start_i")
 		row.prop(s, "start_j")
 		box.operator(TITAMAS_OT_chunk_from_cursor.bl_idname, icon="PIVOT_CURSOR")
+		box.label(text="Or click a terrain, then pick a side:")
+		row = box.row(align=True)
+		for side, icon in (("WEST", "TRIA_LEFT"), ("NORTH", "TRIA_UP"), ("SOUTH", "TRIA_DOWN"), ("EAST", "TRIA_RIGHT")):
+			row.operator(TITAMAS_OT_chunk_beside.bl_idname, text=side.title(), icon=icon).side = side
 		box.prop(s, "columns")
 		box.prop(s, "rows")
 		# Where that lands: the grid is fixed in the world (chunk_I_J = its place in the game).
@@ -1177,6 +1217,7 @@ class TITAMAS_PT_terrain(bpy.types.Panel):
 
 classes = (
 	TITAMAS_OT_chunk_from_cursor,
+	TITAMAS_OT_chunk_beside,
 	TitamasTerrainSettings,
 	TITAMAS_OT_new_terrain,
 	TITAMAS_OT_extend_terrain,
