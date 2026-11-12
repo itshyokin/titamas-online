@@ -440,25 +440,41 @@ func _refresh_stats() -> void:
 	_stats_label.text = "\n".join(lines)
 
 
-## Shows an item's details.
+## Picks an item (click / gamepad focus): its details stay up and the buttons act on it.
 func inspect(slot: ItemSlot) -> void:
 	_selected = slot
 	_show_details(slot)
 
 
-func _show_details(slot: ItemSlot) -> void:
+## Pointing at a slot shows that item while nothing is picked (or while pointing at another
+## item); leaving it goes back to the picked one.
+func hover(slot: ItemSlot) -> void:
+	if not is_instance_valid(_selected) or String(contents(_selected)[0]).is_empty():
+		_show_details(slot)
+	elif not String(contents(slot)[0]).is_empty():
+		_show_details(slot, true)
+
+
+func unhover(_slot: ItemSlot) -> void:
+	if is_instance_valid(_selected):
+		_show_details(_selected)
+
+
+func _show_details(slot: ItemSlot, preview_only := false) -> void:
 	if _details == null:
 		return
 	var c := contents(slot) if slot else ["", 0]
 	var id: String = c[0]
 	var d := Database.item(id)
-	_use_button.visible = not d.is_empty()
-	_bar_button.visible = not d.is_empty() and inventory.is_usable(id) and slot.where == "bag"
-	_drop_button.visible = not d.is_empty() and slot.where == "bag"
+	if not preview_only:
+		_use_button.visible = not d.is_empty()
+		_bar_button.visible = not d.is_empty() and inventory.is_usable(id) and slot.where == "bag"
+		_drop_button.visible = not d.is_empty() and slot.where == "bag"
 	if d.is_empty():
 		_details.text = "[color=#999999]Point at an item to see what it is. Drag potions and other usable items onto the hotbar.[/color]"
 		return
-	_use_button.text = "Take off" if slot.where == "equip" else ("Equip" if not inventory.slot_of(id).is_empty() else "Use")
+	if not preview_only:
+		_use_button.text = "Take off" if slot.where == "equip" else ("Equip" if not inventory.slot_of(id).is_empty() else "Use")
 	_details.text = describe(d, _compare_text(d, slot))
 
 

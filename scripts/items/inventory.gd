@@ -199,11 +199,17 @@ func can_discard(index: int) -> bool:
 	return bag[index] != null and not bool(item(bag[index].id).get("keep", false))
 
 
-func discard(index: int) -> void:
+## Throws a stack out of the bag: it lands in front of the player as an ItemPickup they
+## can walk over to take back (after a short delay).
+func discard(index: int, drop := true) -> void:
 	if not can_discard(index):
 		return
+	var s = bag[index]
 	bag[index] = null
 	_changed()
+	var owner_node := get_parent() as Node3D
+	if drop and s and owner_node:
+		load("res://scripts/items/item_pickup.gd").call("drop", owner_node, String(s.id), int(s.count))
 
 
 # --- Equipment -----------------------------------------------------------------
@@ -394,6 +400,10 @@ func use_at(index: int) -> bool:
 	if not is_usable(s.id) or stats.is_dead():
 		return false
 	var d := item(s.id)
+	# Using something from the Codex backpack closes the book first, so you see it happen.
+	var codex := get_tree().get_first_node_in_group("codex")
+	if codex and codex.has_method("is_open") and codex.call("is_open"):
+		codex.call("close")
 	if bool(d.get("use_hearth", false)):
 		return _use_hearthstone(d)
 	var id: String = s.id

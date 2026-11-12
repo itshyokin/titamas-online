@@ -216,6 +216,7 @@ func _info(prop_name: String):
 func _trunk_bounds(meshes: Array[MeshInstance3D], root: Node3D, whole: AABB) -> AABB:
 	var box := AABB()
 	var found := false
+	var points: Array[Vector3] = []
 	for m in meshes:
 		var xf := _local_xform(m, root)
 		for s in m.mesh.get_surface_count():
@@ -226,11 +227,31 @@ func _trunk_bounds(meshes: Array[MeshInstance3D], root: Node3D, whole: AABB) -> 
 			var verts: PackedVector3Array = m.mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]
 			for v in verts:
 				var p := xf * v
+				points.append(p)
 				if not found:
 					box = AABB(p, Vector3.ZERO)
 					found = true
 				else:
 					box = box.expand(p)
+	if found and box.size.y >= maxf(box.size.x, box.size.z):
+		# Branches share the bark material and spread out up top: the trunk's width is
+		# taken from the bark low down (the bottom quarter), around its middle.
+		var low := box.position.y + box.size.y * 0.25
+		var centre := Vector2.ZERO
+		var n := 0
+		for p in points:
+			if p.y <= low:
+				centre += Vector2(p.x, p.z)
+				n += 1
+		if n > 3:
+			centre /= n
+			var dists: Array[float] = []
+			for p in points:
+				if p.y <= low:
+					dists.append(Vector2(p.x, p.z).distance_to(centre))
+			dists.sort()
+			var r := maxf(dists[int(dists.size() * 0.8)], 0.05)
+			return AABB(Vector3(centre.x - r, box.position.y, centre.y - r), Vector3(r * 2.0, box.size.y, r * 2.0))
 	if found:
 		return box
 	var c := whole.get_center()

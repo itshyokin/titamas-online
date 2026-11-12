@@ -236,6 +236,7 @@ func save_game() -> void:
 		var stats := player.get_node_or_null("Stats") if player else null
 		if stats:
 			data["level"] = int(stats.get("level"))
+	remember_clock()
 	if _play_started > 0:
 		var now := Time.get_ticks_msec()
 		data["play_time"] = float(data.get("play_time", 0.0)) + (now - _play_started) / 1000.0
@@ -243,6 +244,14 @@ func save_game() -> void:
 	_since_save = 0.0
 	_write()
 	saved.emit()
+
+
+## Keeps the world's day and hour in the save, so loading, the hearthstone and travel
+## carry on the same time of day (WorldCycle reads it back when a level starts).
+func remember_clock() -> void:
+	var cycle := get_tree().get_first_node_in_group("world_cycle") if is_inside_tree() else null
+	if cycle and not Engine.is_editor_hint():
+		data["clock"] = {"day": int(cycle.get("day")), "hour": float(cycle.get("hour"))}
 
 
 ## Seconds this character has been played, counting the time since the last save.

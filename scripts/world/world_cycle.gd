@@ -66,6 +66,13 @@ func _ready() -> void:
 	add_child(_moon)
 	_load()
 	hour = preview_hour if Engine.is_editor_hint() else start_hour
+	# A saved game carries on its own time of day.
+	var session := get_node_or_null("/root/GameSession") if not Engine.is_editor_hint() else null
+	if session and bool(session.call("active")):
+		var clock = (session.get("data") as Dictionary).get("clock")
+		if clock is Dictionary:
+			hour = float(clock.get("hour", hour))
+			day = int(clock.get("day", day))
 	_update(0.0)
 
 

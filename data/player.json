@@ -275,5 +275,14 @@
 		"max_stamina": 100.0,
 		"stamina_regen": 20.0,
 		"stamina_regen_delay": 1.0
+	},
+	"drops": {
+		"pickup_delay": 1.5,
+		"pickup_radius": 1.1,
+		"despawn_seconds": 300,
+		"despawn_distance": 150,
+		"size": 0.45,
+		"spin": 2.2,
+		"pickup_sound": ""
 	}
 }

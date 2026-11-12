@@ -204,14 +204,32 @@ func nearest_on_screen(except: Node3D = null) -> Node3D:
 	return best
 
 
-## Tab: targets the nearest enemy on screen; Tab again lets go.
+## Tab: targets the nearest enemy on screen (else the nearest anywhere); Tab again lets go.
 func tab_target() -> void:
 	if has_target():
 		set_target(null)
 		return
 	var n := nearest_on_screen()
+	if n == null:
+		# Nobody in view: the nearest one anywhere around (e.g. charging from behind);
+		# the lock-on swings the camera round to it.
+		n = nearest_anywhere()
 	if n:
 		set_target(n)
+
+
+## The nearest living enemy within reach, on screen or not.
+func nearest_anywhere() -> Node3D:
+	var best: Node3D = null
+	var best_d := INF
+	for n in Combat.enemies_near(player, player.global_position, tab_reach()):
+		if not Combat.is_alive(n) or (n.has_method("is_alive") and not n.is_alive()) or not n.is_visible_in_tree():
+			continue
+		var d := n.global_position.distance_to(player.global_position)
+		if d < best_d:
+			best_d = d
+			best = n
+	return best
 
 
 ## Next enemy in view; stays locked if it was.

@@ -31,7 +31,10 @@ func _init(owner_window: CharacterWindow, kind: String, slot_key: Variant) -> vo
 	_icon.offset_bottom = -5
 	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_icon)
-	mouse_entered.connect(func() -> void: window.inspect(self))
+	# Hover only previews; a click (focus) picks the item the buttons act on, so the mouse
+	# can travel to Use / To hotbar / Throw away without losing it.
+	mouse_entered.connect(func() -> void: window.hover(self))
+	mouse_exited.connect(func() -> void: window.unhover(self))
 	focus_entered.connect(func() -> void:
 		window.inspect(self)
 		refresh())
@@ -70,6 +73,8 @@ func _gui_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_RIGHT or (event.button_index == MOUSE_BUTTON_LEFT and event.double_click):
 			window.activate(self)
 			accept_event()
+		elif event.button_index == MOUSE_BUTTON_LEFT:
+			window.inspect(self)
 	elif event.is_action_pressed("ui_accept"):
 		window.activate(self)
 		accept_event()

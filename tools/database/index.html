@@ -821,6 +821,15 @@ const TABS = {
 				{ key: "loadout.spells", label: "Spellbook (known spells)", type: "abilities", wide: true },
 				{ key: "hotbar", label: "Hotbar (boxes 1–10)", type: "hotbar", wide: true, help: "New characters start with this bar: spells, abilities and usable items (weapons don't go on the hotbar)." },
 			]],
+			["Thrown-away items", [
+				{ key: "drops.pickup_delay", label: "Can be picked up after (s)", type: "number", help: "Items thrown out of the backpack land in front of the player as a spinning icon. Walk over it to take it back." },
+				{ key: "drops.pickup_radius", label: "Pick-up distance (m)", type: "number" },
+				{ key: "drops.despawn_seconds", label: "Vanishes after (s)", type: "number" },
+				{ key: "drops.despawn_distance", label: "Vanishes when the player is this far (m)", type: "number" },
+				{ key: "drops.size", label: "Icon size (m)", type: "number" },
+				{ key: "drops.spin", label: "Spin speed", type: "number" },
+				{ key: "drops.pickup_sound", label: "Pick-up sound", type: "sound" },
+			]],
 			["Discs (under NPCs and enemies)", [
 				{ key: "discs.enabled", label: "Show discs", type: "bool" },
 				{ key: "discs.hostile", label: "Hostile", type: "color" },

@@ -118,10 +118,24 @@ func _physics_process(delta: float) -> void:
 	# Animation-timed sounds: fire when the clip passes a contact time.
 	var anim := character.current_animation()
 	var pos := character.animation_position()
-	if anim == _last_anim and _contacts.has(anim):
+	if anim == _last_anim and _contacts.has(anim) and pos != _last_pos:
+		# Forward, wrapped round the loop, or playing backwards (going down a ladder):
+		# a small step back is backwards play, not a wrap (which fired every contact
+		# every frame: a rattling growl).
+		var length := maxf(character.get_animation_length(anim), 0.001)
+		var back := pos < _last_pos and _last_pos - pos < length * 0.5
+		var wrapped_back := pos > _last_pos and pos - _last_pos > length * 0.5
 		for entry: Array in _contacts[anim]:
 			for t: float in entry[0]:
-				var crossed := (_last_pos < t and t <= pos) if pos >= _last_pos else (t > _last_pos or t <= pos)
+				var crossed: bool
+				if back:
+					crossed = pos < t and t <= _last_pos
+				elif wrapped_back:
+					crossed = t <= _last_pos or t > pos
+				elif pos >= _last_pos:
+					crossed = _last_pos < t and t <= pos
+				else:
+					crossed = t > _last_pos or t <= pos
 				if crossed:
 					_contact_event(entry[1], state, on_floor)
 	_last_anim = anim
