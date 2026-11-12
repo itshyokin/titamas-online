@@ -305,5 +305,16 @@
 			"max_y": -1.0
 		}
 	],
-	"source": "res://assets/models/characters/src/lowpoly_guy.glb"
+	"source": "res://assets/models/characters/src/lowpoly_guy.glb",
+	"figure": {
+		"shoulders": 0.03,
+		"waist": 0.2,
+		"hips": 0.042,
+		"seat": 0.03,
+		"neck": 0.1,
+		"bust": 0.075,
+		"bust_height": 1.325,
+		"bust_apart": 0.085,
+		"bust_size": 1.0
+	}
 }

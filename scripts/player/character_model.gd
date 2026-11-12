@@ -299,7 +299,7 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 				(child as MeshInstance3D).skeleton = NodePath("..")
 				nodes.append(child)
 		piece.free()
-		if weight != 0.0:
+		if weight != 0.0 or figure != 0.0:
 			_morph_group(nodes.duplicate())
 	if with_rigid:
 		var fits: Array = item.get("fit", {}).get(body, [])
@@ -591,6 +591,12 @@ const THIN_PULL := 0.013
 ## -1 thin, 0 medium, 1 heavy. Uses "thin"/"heavy" shape keys if the body has them,
 ## otherwise pushes the mesh in or out (more at the belly, less on the limbs).
 var weight := 0.0
+## Body type: 0 = type 1 (as modelled), 1 = type 2 (narrower shoulders and waist, wider
+## hips, a bust): the same body and rig, its rest shape moved (_figure_offset). Gear cut
+## from the body moves with it.
+var figure := 0.0
+## Body type 2 amounts (body_models.json "figure", set by Database).
+static var figure_shape := {}
 var _look := {}
 var _eye_nodes: Array[Node] = []
 
@@ -619,7 +625,8 @@ var _blink_t := -1.0
 var _lid := -1.0
 var _talk_frame := -1
 var _talk_left := 0.0
-var _morph_cache := {}  # "body:weight" -> {part name: Mesh}
+var _morph_cache := {}  # "body:weight:figure:keyed" -> {part name: Mesh}
+var _has_build_keys := false
 var _batch := false
 
 
@@ -628,6 +635,7 @@ func apply_appearance(look: Dictionary) -> void:
 	_batch = true
 	scale = Vector3.ONE * float(look.get("height_scale", 1.0))
 	weight = float(look.get("weight", 0.0))
+	figure = float(look.get("figure", 0.0))
 	body_type = BodyType.FEMME if String(look.get("body", "masc")) == "femme" else BodyType.MASC
 	skin_color = look.get("skin", skin_color)
 	_batch = false
@@ -1053,19 +1061,21 @@ func _apply_morph() -> void:
 		parts.append(mi)
 	# Shape keys from Blender win if the body has them.
 	var keyed := false
+	_has_build_keys = false
 	for mi: MeshInstance3D in parts:
 		mi.mesh = mi.get_meta("base_mesh")
 		var heavy := mi.find_blend_shape_by_name("heavy")
 		var thin := mi.find_blend_shape_by_name("thin")
 		if heavy >= 0 or thin >= 0:
 			keyed = true
+			_has_build_keys = true
 			if heavy >= 0:
 				mi.set_blend_shape_value(heavy, maxf(weight, 0.0))
 			if thin >= 0:
 				mi.set_blend_shape_value(thin, maxf(-weight, 0.0))
-	if keyed or weight == 0.0:
+	if (keyed or weight == 0.0) and figure == 0.0:
 		return
-	var key := "%d:%.2f" % [body_type, weight]
+	var key := "%d:%.2f:%.2f:%d" % [body_type, weight, figure, int(keyed)]
 	if not _morph_cache.has(key):
 		var morphed := _morph_meshes(parts.map(func(mi: MeshInstance3D) -> Mesh: return mi.get_meta("base_mesh")))
 		var by_name := {}
@@ -1098,13 +1108,18 @@ func _morph_meshes(meshes: Array) -> Array:
 			var k := Vector3i((v[i] * 1000.0).round())
 			pooled[k] = pooled.get(k, Vector3.ZERO) + n[i]
 	var push := HEAVY_PUSH * weight if weight > 0.0 else THIN_PULL * weight
+	if _has_build_keys:
+		push = 0.0  # shape keys do the build; only the figure moves the mesh
 	var out := []
 	for a in all_arrays.size():
 		var arrays: Array = all_arrays[a]
 		var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		for i in v.size():
 			var nrm: Vector3 = pooled[Vector3i((v[i] * 1000.0).round())].normalized()
-			v[i] += nrm * push * _build_factor(v[i])
+			var base := v[i]
+			v[i] += nrm * push * _build_factor(base)
+			if figure != 0.0:
+				v[i] += _figure_offset(base, nrm) * figure
 		arrays[Mesh.ARRAY_VERTEX] = v
 		arrays[Mesh.ARRAY_TANGENT] = null
 		var mesh := ArrayMesh.new()
@@ -1114,6 +1129,44 @@ func _morph_meshes(meshes: Array) -> Array:
 			mesh.surface_set_material(0, src.surface_get_material(0))
 		out.append(mesh)
 	return out
+
+
+## Body type 2's shape change at a rest-pose point (metres, the body facing -Z, 1.86 m):
+## shoulders and arms in a little, a narrower waist and neck, wider hips and a fuller seat,
+## a bust on the chest. Only depends on the point (and its pooled normal), so seams between
+## body parts and gear cut from the body stay together.
+static func _figure_offset(p: Vector3, n: Vector3) -> Vector3:
+	var fs := figure_shape
+	var off := Vector3.ZERO
+	var ax := absf(p.x)
+	var side := signf(p.x)
+	# Shoulders + arms: in toward the body (most at the shoulder, all of the arm).
+	var shoulder_band := smoothstep(1.26, 1.4, p.y) * smoothstep(1.62, 1.52, p.y)
+	var arm := smoothstep(0.17, 0.24, ax) * smoothstep(1.1, 1.25, p.y)
+	off.x -= side * float(fs.get("shoulders", 0.03)) * maxf(arm, shoulder_band * smoothstep(0.06, 0.18, ax))
+	# Waist: pulled in round the middle.
+	var torso := 1.0 - smoothstep(0.17, 0.22, ax)
+	var waist := smoothstep(0.98, 1.08, p.y) * smoothstep(1.24, 1.12, p.y) * torso
+	off.x -= p.x * float(fs.get("waist", 0.2)) * waist
+	off.z -= p.z * float(fs.get("waist", 0.2)) * 0.5 * waist
+	# Hips and the top of the thighs: out to the sides, the seat a little back.
+	var hips := smoothstep(0.74, 0.86, p.y) * smoothstep(1.06, 0.94, p.y) * (1.0 - arm)
+	off.x += side * float(fs.get("hips", 0.042)) * hips * smoothstep(0.02, 0.12, ax)
+	off.z += float(fs.get("seat", 0.03)) * hips * smoothstep(-0.02, 0.06, p.z)
+	# Neck: a bit slimmer.
+	var neck := smoothstep(1.5, 1.56, p.y) * smoothstep(1.66, 1.6, p.y) * (1.0 - smoothstep(0.06, 0.1, ax))
+	off.x -= p.x * float(fs.get("neck", 0.1)) * neck
+	off.z -= p.z * float(fs.get("neck", 0.1)) * 0.6 * neck
+	# Bust: two soft rounds pushed out along the chest's front.
+	if p.z < 0.02:
+		var apart := float(fs.get("bust_apart", 0.085))
+		var size := maxf(float(fs.get("bust_size", 1.0)), 0.1)
+		for cx in [-apart, apart]:
+			# A dome (not a cone): full height in the middle, easing to nothing at the rim.
+			var d := Vector2((p.x - cx) / (0.095 * size), (p.y - float(fs.get("bust_height", 1.325))) / (0.09 * size))
+			var k := pow(maxf(1.0 - d.length_squared(), 0.0), 1.6) * smoothstep(0.02, -0.05, p.z)
+			off += (n * 0.4 + Vector3(0, -0.25, -1.0)).normalized() * float(fs.get("bust", 0.075)) * k
+	return off
 
 
 ## How much of the build's push a point gets (rest pose, metres): most on the belly and

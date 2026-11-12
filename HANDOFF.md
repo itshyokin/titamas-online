@@ -11,7 +11,7 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 
 ## Next up, in order
 1. **Your own art over Claude's** (art_sheets/, see its README): eyes, brows, noses, mouths, face extras, effects, item icons, ability/status/Codex icons. Draw over a sheet, save, run `python3 tools/art/sheets.py split`. (The Singed Plains region is done.)
-2. **Menus**: menu sounds and the Codex top tabs with icons are in (12 Nov). Keep checking every menu in the editor (title screen, creator, Codex pages, loot, dialogue, death choice, map) and list anything cramped or broken. Ideas noted: the Backpack page could use its spare width (more bag columns, bigger doll); class page attributes need scrolling to reach Vitality/Spirit.
+2. **Menus**: menu sounds and the Codex top tabs with icons are in (12 Nov). Keep checking every menu in the editor (title screen, creator, Codex pages, loot, dialogue, death choice, map) and list anything cramped or broken. Done 12 Nov: backpack 60 slots (12 × 5) + bigger doll; creator split into body/hair (left) and Face tabs Features / Eyes / Extras (right); Body Type 2 (reshaped body; tune in Database → Body Models). To check: class page attributes need scrolling to reach Vitality/Spirit; Body Type 2 with every outfit piece (gear cut from the body should follow; rigid pieces like the shield and hats don't move).
 
 ## To test in the editor (done 10 Nov, batch L: safe areas + indoor weather)
 - Test level: the village is a safe area (green box `Areas/VillageSafeArea`). Lead the bats or bandits to it: they should give up at the edge and walk home; "You are safe here." / "You are no longer safe." show on the way in and out; blows either way do nothing while you stand inside (the training dummy still takes hits).

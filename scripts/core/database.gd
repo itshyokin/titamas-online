@@ -129,6 +129,7 @@ func _load(which: String) -> void:
 				statuses[String(d.get("id", ""))] = d
 		"body_models":
 			body_models = data
+			CharacterModel.figure_shape = data.get("figure", {}) if data.get("figure") is Dictionary else {}
 			_merge_pieces()
 		"classes":
 			classes = data.get("classes", [])
@@ -341,6 +342,8 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 		"underwear": appearance.get("underwear", {}),
 		"height_scale": float(sp.get("height", appearance_option("heights", get.call("height")).get("scale", 1.0))),
 		"weight": float(sp.get("build", appearance_option("builds", get.call("build")).get("weight", 0.0))),
+		# Body type 1 (0) / 2 (1): the same body, morphed (CharacterModel._figure_offset).
+		"figure": clampf(float(look.get("figure", d.get("figure", 0.0))), 0.0, 1.0),
 	}
 
 

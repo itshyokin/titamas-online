@@ -288,6 +288,7 @@ const fxFields = (slot, what, sizeHelp) => [
 const LOOK_FIELDS = [
 	{ key: "_preview", label: "Preview", type: "lookpreview", wide: true },
 	{ key: "look.skin", label: "Skin colour", type: "color" },
+	{ key: "look.figure", label: "Body type", type: "select", options: [[0, "Body Type 1"], [1, "Body Type 2"]], help: "Type 2 = the same body reshaped (Body Models → Body type 2)." },
 	{ key: "look.species", label: "Species (sets head, height, build)", type: "select", empty: true, options: () => (((data.species || {}).species) || []).map(x => [x.id, x.name]) },
 	{ key: "look.head", label: "Head", type: "lookopt", list: "heads" },
 	{ key: "look.face", label: "Face", type: "lookopt", list: "faces", help: "Detailed = eyes, brows, nose, mouth and extras below. Painted = the simple painted face (ignores them). (none) = the default." },
@@ -1518,6 +1519,18 @@ const TABS = {
 				{ key: "height", label: "Height (m, top of the head)", type: "number" },
 				{ key: "body_meshes", label: "Meshes that make the body", type: "glbmeshes", wide: true },
 				{ key: "body_extra", label: "Body materials kept as their own part (not skin)", type: "glbextra", wide: true, help: "One material can make several parts by height (-1 = no limit): the underwear's shorts (underwear) and top (underwear_top), so trousers hide only the shorts and shirts only the top. Items hide parts by these names." },
+			]],
+			["Body type 2 (the same body, reshaped)", [
+				{ key: "_fig", label: "", type: "note", wide: true, text: "Characters pick Body Type 1 (the body as modelled) or Body Type 2 in the creator. Type 2 moves the body's rest shape by these amounts (metres or shares); gear cut from the body moves with it. NPCs and enemies: look → Body type." },
+				{ key: "figure.shoulders", label: "Shoulders and arms in (m)", type: "number", def: 0.03 },
+				{ key: "figure.waist", label: "Waist narrower (share)", type: "number", def: 0.2 },
+				{ key: "figure.hips", label: "Hips wider (m)", type: "number", def: 0.042 },
+				{ key: "figure.seat", label: "Seat fuller (m)", type: "number", def: 0.03 },
+				{ key: "figure.neck", label: "Neck slimmer (share)", type: "number", def: 0.1 },
+				{ key: "figure.bust", label: "Bust (m)", type: "number", def: 0.075 },
+				{ key: "figure.bust_height", label: "Bust height (m above the feet)", type: "number", def: 1.325 },
+				{ key: "figure.bust_apart", label: "Bust apart (m from the middle)", type: "number", def: 0.085 },
+				{ key: "figure.bust_size", label: "Bust width ×", type: "number", def: 1 },
 			]],
 			["Pieces (items, hair, heads, faces, hats…)", [
 				{ key: "pieces", label: "", type: "glbpieces", wide: true },

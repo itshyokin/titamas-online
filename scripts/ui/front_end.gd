@@ -841,31 +841,69 @@ func _creator_page() -> Control:
 	var page := _page_root()
 	var a: Dictionary = Database.appearance
 
-	# Left: species, body type, pronouns.
-	var left := _panel(Control.PRESET_TOP_LEFT, Vector2(30, 40), Vector2(300, 0))
+	# Left: the whole character — body, pronouns, skin, hair.
+	var left := _panel(Control.PRESET_TOP_LEFT, Vector2(30, 40), Vector2(320, 0))
 	page.add_child(left)
 	var lv := _scrolling(left, 10)
 	lv.add_child(_heading("Create your character", 24))
+	lv.add_child(_section("Body type"))
+	lv.add_child(_choice_row("figure", [["0", "Body Type 1"], ["1", "Body Type 2"]]))
 	lv.add_child(_section("Pronouns"))
 	lv.add_child(_choice_row("pronouns", _options(a.get("pronouns", []))))
 	lv.add_child(_section("Skin colour"))
-	lv.add_child(_swatch_grid("skin", a.get("skin_colors", []), 5))
+	lv.add_child(_swatch_grid("skin", a.get("skin_colors", []), 7))
+	lv.add_child(_stepper("Hair style", "hair", "hair_styles"))
+	lv.add_child(_swatch_grid("hair_color", a.get("hair_colors", []), 7))
+	lv.add_child(_stepper("Facial hair", "facial_hair", "facial_hair"))
+	lv.add_child(_swatch_grid("facial_color", a.get("hair_colors", []), 7))
+	lv.add_child(_button("Randomize", _randomize))
 	lv.add_child(_note("Drag to turn your character · mouse wheel to zoom"))
 
-	# Right: hair, facial hair, eyes.
-	var right := _panel(Control.PRESET_TOP_RIGHT, Vector2(-396, 40), Vector2(340, 0))
+	# Right: the face, in three tabs so it never needs a long scroll.
+	var right := _panel(Control.PRESET_TOP_RIGHT, Vector2(-376, 40), Vector2(320, 0))
 	page.add_child(right)
 	var rv := _scrolling(right, 10)
-	rv.add_child(_heading("Appearance", 24))
-	rv.add_child(_stepper("Face", "face", "faces"))
-	rv.add_child(_stepper("Hair style", "hair", "hair_styles"))
-	rv.add_child(_swatch_grid("hair_color", a.get("hair_colors", []), 7))
-	rv.add_child(_stepper("Facial hair", "facial_hair", "facial_hair"))
-	rv.add_child(_swatch_grid("facial_color", a.get("hair_colors", []), 7))
-	rv.add_child(_stepper("Eyes", "eyes", "eyes"))
-	rv.add_child(_placement_box("eyes", "Spacing"))
-	rv.add_child(_section("Eye colour"))
-	rv.add_child(_swatch_grid("eye_color", a.get("eye_colors", []), 5))
+	rv.add_child(_heading("Face", 24))
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 6)
+	rv.add_child(tabs)
+	var tab_group := ButtonGroup.new()
+	var face_page := VBoxContainer.new()
+	var eyes_page := VBoxContainer.new()
+	var extras_page := VBoxContainer.new()
+	for pg: VBoxContainer in [face_page, eyes_page, extras_page]:
+		pg.add_theme_constant_override("separation", 10)
+		rv.add_child(pg)
+	for t: Array in [["Features", face_page], ["Eyes", eyes_page], ["Extras", extras_page]]:
+		var tb := Button.new()
+		tb.text = t[0]
+		tb.toggle_mode = true
+		tb.button_group = tab_group
+		tb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tb.custom_minimum_size.y = 34
+		tb.set_meta("ui_sound", "tab")
+		var shown: VBoxContainer = t[1]
+		tb.pressed.connect(func() -> void:
+			for pg: VBoxContainer in [face_page, eyes_page, extras_page]:
+				pg.visible = pg == shown
+			_shot = "face"
+			_apply_look())
+		tabs.add_child(tb)
+		if t[0] == "Features":
+			tb.button_pressed = true
+	eyes_page.visible = false
+	extras_page.visible = false
+	face_page.add_child(_stepper("Face", "face", "faces"))
+	face_page.add_child(_stepper("Brows", "brows", "brows"))
+	face_page.add_child(_placement_box("brows", "Spacing"))
+	face_page.add_child(_stepper("Nose", "nose", "noses"))
+	face_page.add_child(_placement_box("nose", "Left / right"))
+	face_page.add_child(_stepper("Mouth", "mouth", "mouths"))
+	face_page.add_child(_placement_box("mouth", "Left / right"))
+	eyes_page.add_child(_stepper("Eyes", "eyes", "eyes"))
+	eyes_page.add_child(_placement_box("eyes", "Spacing"))
+	eyes_page.add_child(_section("Eye colour"))
+	eyes_page.add_child(_swatch_grid("eye_color", a.get("eye_colors", []), 7))
 	# Heterochromia (half-elves always have it): the right eye's own colour.
 	_mirror_check = CheckBox.new()
 	_mirror_check.text = "Same colour for both eyes"
@@ -875,20 +913,13 @@ func _creator_page() -> Control:
 			_look["eye_color_right"] = _look.get("eye_color", "#3f78c8")
 		_shot = "face"
 		_apply_look())
-	rv.add_child(_mirror_check)
+	eyes_page.add_child(_mirror_check)
 	_right_eye_box = VBoxContainer.new()
 	_right_eye_box.add_child(_section("Right eye colour"))
-	_right_eye_box.add_child(_swatch_grid("eye_color_right", a.get("eye_colors", []), 5))
-	rv.add_child(_right_eye_box)
-	rv.add_child(_stepper("Brows", "brows", "brows"))
-	rv.add_child(_placement_box("brows", "Spacing"))
-	rv.add_child(_stepper("Nose", "nose", "noses"))
-	rv.add_child(_placement_box("nose", "Left / right"))
-	rv.add_child(_stepper("Mouth", "mouth", "mouths"))
-	rv.add_child(_placement_box("mouth", "Left / right"))
-	rv.add_child(_section("Extras"))
-	rv.add_child(_extras_grid(a.get("face_extras", [])))
-	rv.add_child(_button("Randomize", _randomize))
+	_right_eye_box.add_child(_swatch_grid("eye_color_right", a.get("eye_colors", []), 7))
+	eyes_page.add_child(_right_eye_box)
+	extras_page.add_child(_section("Freckles, scars, marks…"))
+	extras_page.add_child(_extras_grid(a.get("face_extras", [])))
 
 	# Bottom: name and navigation.
 	var bottom := _panel(Control.PRESET_CENTER_BOTTOM, Vector2(-260, -24), Vector2(520, 0))
@@ -962,6 +993,11 @@ func _choice_row(key: String, options: Array) -> HBoxContainer:
 
 
 func _set_choice(key: String, id: String) -> void:
+	if key == "figure":
+		_look["figure"] = float(id)
+		_shot = "full"
+		_apply_look()
+		return
 	if key == "pronouns":
 		_pronouns = id
 		_pronouns_touched = true
@@ -1230,7 +1266,9 @@ func _refresh_creator() -> void:
 	for id: String in _extra_buttons:
 		(_extra_buttons[id] as Button).set_pressed_no_signal(id in extras)
 	for key: String in _choices:
-		var current := _pronouns if key == "pronouns" else String(_look.get(key, ""))
+		var current := _pronouns if key == "pronouns" else str(_look.get(key, ""))
+		if key == "figure":
+			current = str(roundi(float(_look.get("figure", 0.0))))
 		for e: Array in _choices[key]:
 			(e[1] as Button).set_pressed_no_signal(e[0] == current)
 	for key: String in _steppers:
