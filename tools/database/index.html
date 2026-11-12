@@ -1288,6 +1288,27 @@ const TABS = {
 			]],
 		],
 	},
+	ground: {
+		title: "Ground Sets", file: "ground", listKey: "sets", idKey: "id", nameKey: "name",
+		blank: () => ({ id: "new_ground", name: "New Ground", grass: 1, layers: [
+			{ name: "Layer 1", texture: "res://assets/materials/terrain/grass_color.jpg", surface: "grass" },
+			{ name: "Layer 2", texture: "res://assets/materials/terrain/dirt_color.jpg", surface: "dirt" },
+			{ name: "Layer 3", texture: "res://assets/materials/terrain/cliff_color.jpg", surface: "stone" }] }),
+		groups: [
+			["General", [
+				{ key: "id", label: "ID", type: "text", help: "Type this as the Ground Set on a terrain in Blender (Titamas panel → Paint ground). Its chunks export with the material terrain_<id>." },
+				{ key: "name", label: "Name", type: "text" },
+				{ key: "grass", label: "Grass amount × (0 = none)", type: "number", def: 1, help: "Grass grows on layer 1 (the red paint). 0 for sand." },
+				{ key: "tile_size", label: "Texture size, layers 1–2 (m)", type: "number", def: 4 },
+				{ key: "tile_size_b", label: "Texture size, layer 3 (m)", type: "number", def: 6 },
+			]],
+			...[0, 1, 2].map(i => [["Layer 1 (red paint)", "Layer 2 (green paint)", "Layer 3 (blue paint, also steep slopes)"][i], [
+				{ key: `layers.${i}.name`, label: "Name", type: "text" },
+				{ key: `layers.${i}.texture`, label: "Texture", type: "select", options: () => (assets.ground_textures || []).map(p => [p, p.split("/").pop()]), help: "Pictures in assets/materials/terrain (drop new ones in there)." },
+				{ key: `layers.${i}.surface`, label: "Footsteps sound like", type: "select", options: ["grass", "dirt", "stone", "wood", "snow", "metal"].map(x => [x, x]) },
+			]]),
+		],
+	},
 	lore: {
 		title: "Lore", file: "lore", listKey: "entries", idKey: "id", nameKey: "title",
 		blank: () => ({ id: "new_entry", title: "New Entry", category: "The World", text: "", conditions: [] }),

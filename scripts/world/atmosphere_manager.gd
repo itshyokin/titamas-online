@@ -395,3 +395,5 @@ func _apply_ssao() -> void:
 	var terrain := load("res://assets/materials/terrain/terrain.tres") as ShaderMaterial
 	if terrain:
 		terrain.set_shader_parameter("ao_light_affect", float(ao.get("terrain_light_affect", 0.85)))
+	for mat: ShaderMaterial in GroundSets.built():
+		mat.set_shader_parameter("ao_light_affect", float(ao.get("terrain_light_affect", 0.85)))

@@ -101,6 +101,11 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - **Esc cancels** casts, channels (drinking, the Hearthstone), charges / bow draws and aiming, before it clears targets or opens the Codex.
 - Next: the new region (needs your Blender export).
 
+## To test in the editor (done 11 Nov night, batch W: east region ground)
+- Blender: select the new terrain → Paint ground → Ground Set `desert` → (optional preview pictures) → Setup / Update Terrain Painting; paint buttons become Sand / Desert Stone / Cliff; export → chunks use material `terrain_desert`.
+- In game: sand + desert stone + the old cliff texture, no grass, footsteps dirt/stone. Database → Ground Sets edits show live. Region map colours.
+- Still to do for the east region: regions.json entry (chunk rect [3,0,4,4]?) once exported.
+
 ## Backlog (agreed, not started)
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
 - Icicles on branches in snow (needs a small icicle model or sprite).

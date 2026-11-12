@@ -36,6 +36,7 @@ extends Node3D
 			_refresh_editor_preview()
 
 var _shared_materials := {}  # name -> Material (or null if none)
+var _ground := {}  # Vector2i -> ground set id ("" = standard), from the chunk's terrain material
 var _props: PropLibrary
 const WATER_MATERIAL := preload("res://assets/materials/water.tres")
 ## How deep the swimmable box under a Blender water plane reaches.
@@ -110,6 +111,7 @@ func _physics_process(_delta: float) -> void:
 				_loaded.erase(cell)
 				_paint.erase(cell)
 				_heights.erase(cell)
+				_ground.erase(cell)
 				_water_rects.erase(cell)
 				_grass.erase(cell)
 
@@ -272,7 +274,7 @@ func _grass_density_at(cell: Vector2i) -> float:
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings:
 		density *= float(settings.call("grass_multiplier"))
-	return density
+	return density * GroundSets.grass_scale(String(_ground.get(cell, "")))
 
 
 func _paint_grid_size() -> int:
@@ -397,6 +399,7 @@ func _add_chunk(cell: Vector2i, scene: PackedScene, props_now := true) -> void:
 			if shared:
 				mi.set_surface_override_material(s, shared)
 	_place_props(cell, chunk, props_now)
+	_ground[cell] = ground_of(chunk)
 	if not Engine.is_editor_hint():
 		var terrain := _read_terrain(chunk)
 		_paint[cell] = terrain[0]
@@ -492,8 +495,33 @@ func _make_water(mi: MeshInstance3D, cell: Vector2i, chunk: Node3D) -> void:
 func _shared_material(mat_name: String) -> Material:
 	if not _shared_materials.has(mat_name):
 		var path := material_dir.path_join(mat_name + ".tres")
-		_shared_materials[mat_name] = load(path) if ResourceLoader.exists(path) else null
+		var mat: Material = load(path) if ResourceLoader.exists(path) else null
+		# "terrain_desert" etc.: a ground set (data/ground.json); an unknown set looks standard.
+		if mat == null and mat_name.begins_with("terrain_"):
+			mat = GroundSets.material(GroundSets.id_of_material(mat_name))
+			if mat == null:
+				push_warning("No ground set '%s' (Database → Ground Sets): using the standard terrain" % GroundSets.id_of_material(mat_name))
+				mat = _shared_material("terrain")
+		_shared_materials[mat_name] = mat
 	return _shared_materials[mat_name]
+
+
+## The ground set of a chunk's terrain ("" = standard), from its material names.
+static func ground_of(chunk: Node) -> String:
+	for node in chunk.find_children("*", "MeshInstance3D", true, false):
+		var mesh := (node as MeshInstance3D).mesh
+		if mesh == null:
+			continue
+		for s in mesh.get_surface_count():
+			var mat := mesh.surface_get_material(s)
+			if mat and mat.resource_name.begins_with("terrain_"):
+				return GroundSets.id_of_material(mat.resource_name)
+	return ""
+
+
+## Ground set id under a point ("" = standard or not loaded).
+func ground_at(point: Vector3) -> String:
+	return String(_ground.get(_cell_of(point), ""))
 
 
 func _cell_of(pos: Vector3) -> Vector2i:
