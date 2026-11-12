@@ -1051,7 +1051,7 @@
 						},
 						{
 							"cmd": "camera",
-							"look": "",
+							"look": "Campfire_lookatme",
 							"marker": "CampfireCam",
 							"op": "move",
 							"seconds": 1.6,
@@ -1069,7 +1069,7 @@
 							"seconds": 3.5,
 							"sound": "",
 							"text": "Let's take a break at that campfire. It'll give us time to patch up our wounds.",
-							"wait": false,
+							"wait": true,
 							"who": "npc"
 						},
 						{
