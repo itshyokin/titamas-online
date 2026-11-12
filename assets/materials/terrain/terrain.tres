@@ -12,6 +12,7 @@ shader = ExtResource("1_tlolt")
 shader_parameter/tex_r = ExtResource("4_fuao0")
 shader_parameter/tex_g = ExtResource("3_n1s72")
 shader_parameter/tex_b = ExtResource("2_j62lu")
+shader_parameter/tex_a = ExtResource("4_fuao0")
 shader_parameter/tile_size = null
 shader_parameter/tile_size_b = null
 shader_parameter/breakup = null

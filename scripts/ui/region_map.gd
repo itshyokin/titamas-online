@@ -140,6 +140,8 @@ static func build(streamer: Node) -> Dictionary:
 	var water := PackedFloat32Array()
 	water.resize(w * h)
 	water.fill(-1000.0)
+	var fourth := PackedFloat32Array()  # 4th paint layer
+	fourth.resize(w * h)
 	var ground := PackedByteArray()  # index into ground_ids per pixel
 	ground.resize(w * h)
 	var ground_ids: Array = [""]
@@ -156,6 +158,7 @@ static func build(streamer: Node) -> Dictionary:
 		var gi := ground_ids.find(gid)
 		var p: PackedVector2Array = grids[0]
 		var hs: PackedFloat32Array = grids[1]
+		var f4: PackedFloat32Array = grids[2] if grids.size() > 2 else PackedFloat32Array()
 		var ox := (c.x - lo.x) * per
 		var oy := (c.y - lo.y) * per
 		for gz in n:
@@ -166,6 +169,8 @@ static func build(streamer: Node) -> Dictionary:
 					height[i] = maxf(height[i], hs[k])
 				if not p.is_empty():
 					paint[i] = p[k]
+				if not f4.is_empty():
+					fourth[i] = f4[k]
 				ground[i] = gi
 		# Lakes and rivers: meshes named *-water, filled across their extent.
 		for node in chunk.find_children("*-water", "MeshInstance3D", true, false):
@@ -185,9 +190,9 @@ static func build(streamer: Node) -> Dictionary:
 	# Colours from the terrain's own textures (grass / dirt / cliff, or a ground set's).
 	var palettes := {}  # set id -> [3 colours]
 	for id in ground_ids:
-		var tex := [Color(0.35, 0.55, 0.25), Color(0.5, 0.4, 0.28), Color(0.5, 0.5, 0.5)]
+		var tex := [Color(0.35, 0.55, 0.25), Color(0.5, 0.4, 0.28), Color(0.5, 0.5, 0.5), Color(0.35, 0.55, 0.25)]
 		var texs: Array = GroundSets.textures(id)
-		for t in 3:
+		for t in 4:
 			var tx = texs[t]
 			if tx is Texture2D:
 				var img := (tx as Texture2D).get_image()
@@ -213,7 +218,8 @@ static func build(streamer: Node) -> Dictionary:
 				continue
 			var pv := paint[i]
 			var tex: Array = palettes[ground_ids[ground[i]]]
-			var col: Color = tex[0] * maxf(1.0 - pv.x - pv.y, 0.0) + tex[1] * pv.x + tex[2] * pv.y
+			var pa := fourth[i]
+			var col: Color = tex[0] * maxf(1.0 - pv.x - pv.y - pa, 0.0) + tex[1] * pv.x + tex[2] * pv.y + tex[3] * pa
 			# Steep ground reads as cliff; light from the north-west for relief.
 			var hx := height[mini(i + 1, y * w + w - 1)] - height[maxi(i - 1, y * w)]
 			var hz := height[mini(i + w, w * h - 1)] - height[maxi(i - w, 0)]

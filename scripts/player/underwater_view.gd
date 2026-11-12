@@ -59,6 +59,8 @@ func _process(_delta: float) -> void:
 		_set_bubbles(under, cam)
 	if under:
 		_mat.set_shader_parameter("depth", water.surface_height() - at.y)
+		var lava: bool = water is WaterVolume and water.lava
+		_mat.set_shader_parameter("tint", Color(0.9, 0.3, 0.05) if lava else Color(0.12, 0.45, 0.5))
 
 
 func _set_muffled(on: bool) -> void:

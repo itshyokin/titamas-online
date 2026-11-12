@@ -1,6 +1,6 @@
 @tool
 class_name GroundSets
-## Ground sets: other trios of terrain textures (desert: sand / desert stone / cliff...).
+## Ground sets: other sets of terrain textures (desert: sand / desert stone / cliff...).
 ## A Blender terrain painted with set "desert" exports its material as "terrain_desert";
 ## ChunkStreamer asks material("desert") for it, a copy of terrain.tres with the set's three
 ## textures. The standard set is terrain.tres itself (grass / dirt / cliff).
@@ -9,9 +9,9 @@ class_name GroundSets
 
 const FILE := "res://data/ground.json"
 const BASE := "res://assets/materials/terrain/terrain.tres"
-## What the standard set's three layers sound like underfoot.
-const STANDARD_SURFACES := ["grass", "dirt", "stone"]
-const PARAMS := ["tex_r", "tex_g", "tex_b"]
+## What the standard set's layers sound like underfoot (4th = black paint: grass patches).
+const STANDARD_SURFACES := ["grass", "dirt", "stone", "grass"]
+const PARAMS := ["tex_r", "tex_g", "tex_b", "tex_a"]
 
 static var _sets := {}  # id -> Dictionary
 static var _stamp := -1
@@ -55,27 +55,33 @@ static func built() -> Array:
 	return _materials.values()
 
 
-## Footstep surface for paint (dirt share, cliff share) on this set's ground.
-static func surface(id: String, paint: Vector2, normal_y: float) -> String:
+## Footstep surface for paint (dirt share, cliff share) + the 4th layer's share.
+static func surface(id: String, paint: Vector2, normal_y: float, fourth := 0.0) -> String:
 	var names: Array = STANDARD_SURFACES
 	var d := set_data(id)
 	if not d.is_empty():
 		names = []
 		var layers: Array = d.get("layers", [])
-		for i in 3:
+		for i in 4:
 			var layer: Dictionary = layers[i] if i < layers.size() else {}
 			names.append(String(layer.get("surface", STANDARD_SURFACES[i])))
 	if paint.y > 0.5 or normal_y < 0.7:
 		return names[2]
 	if paint.x > 0.5:
 		return names[1]
+	if fourth > 0.5:
+		return names[3]
 	return names[0]
 
 
-## Grass density × for chunks of this set (sand: 0).
-static func grass_scale(id: String) -> float:
+## Grass density × on layer 1 (red) and layer 4 (black) of this set: desert [0, 1].
+static func grass_scales(id: String) -> Vector2:
 	var d := set_data(id)
-	return float(d.get("grass", 1.0)) if not d.is_empty() else 1.0
+	if d.is_empty():
+		return Vector2.ONE
+	var layers: Array = d.get("layers", [])
+	var fourth: Dictionary = layers[3] if layers.size() > 3 else {}
+	return Vector2(float(d.get("grass", 1.0)), float(fourth.get("grass", 1.0)))
 
 
 ## The three textures of a set ("" = standard), for the region map's colours.
@@ -121,7 +127,7 @@ static func _apply(id: String) -> void:
 		return
 	var base := load(BASE) as ShaderMaterial
 	var layers: Array = d.get("layers", [])
-	for i in 3:
+	for i in 4:
 		var layer: Dictionary = layers[i] if i < layers.size() else {}
 		var path := String(layer.get("texture", ""))
 		var tex: Texture2D = load(path) as Texture2D if path != "" and ResourceLoader.exists(path) else null

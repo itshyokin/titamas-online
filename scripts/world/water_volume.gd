@@ -2,6 +2,7 @@
 class_name WaterVolume
 extends Area3D
 ## A box of swimmable water. The top of the box is the water surface.
+## `lava`: swimming is much slower and it burns (PlayerController, player.json movement lava_*).
 ## Sits on physics layer 4 ("water"), which the player checks to start swimming.
 
 const WATER_LAYER := 8  # layer 4
@@ -20,6 +21,12 @@ const WATER_LAYER := 8  # layer 4
 	set(value):
 		water_material = value
 		_rebuild()
+@export var lava := false:
+	set(value):
+		lava = value
+		_rebuild()
+
+const LAVA_MATERIAL := preload("res://assets/materials/lava.tres")
 
 var _shape: CollisionShape3D
 var _mesh: MeshInstance3D
@@ -59,7 +66,7 @@ func _rebuild() -> void:
 	plane.size = Vector2(size.x, size.z)
 	plane.subdivide_width = int(size.x / 2.0)
 	plane.subdivide_depth = int(size.z / 2.0)
-	plane.material = water_material
+	plane.material = LAVA_MATERIAL if lava else water_material
 	_mesh.mesh = plane
 	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_mesh.position = Vector3(0, size.y * 0.5, 0)

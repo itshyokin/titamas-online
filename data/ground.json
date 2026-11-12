@@ -5,9 +5,27 @@
 			"name": "Desert",
 			"grass": 0,
 			"layers": [
-				{ "name": "Sand", "texture": "res://assets/materials/terrain/sand_color.png", "surface": "dirt" },
-				{ "name": "Desert stone", "texture": "res://assets/materials/terrain/desert_stone_color.png", "surface": "stone" },
-				{ "name": "Cliff", "texture": "res://assets/materials/terrain/cliff_color.jpg", "surface": "stone" }
+				{
+					"name": "Sand",
+					"texture": "res://assets/materials/terrain/sand_color.png",
+					"surface": "dirt"
+				},
+				{
+					"name": "Desert stone",
+					"texture": "res://assets/materials/terrain/desert_stone_color.png",
+					"surface": "stone"
+				},
+				{
+					"name": "Cliff",
+					"texture": "res://assets/materials/terrain/cliff_color.jpg",
+					"surface": "stone"
+				},
+				{
+					"name": "Grass patches",
+					"texture": "res://assets/materials/terrain/grass_color.jpg",
+					"surface": "grass",
+					"grass": 1
+				}
 			]
 		}
 	]
