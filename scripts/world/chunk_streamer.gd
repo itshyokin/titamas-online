@@ -448,6 +448,11 @@ func _place_prop(holder: Node3D, entry) -> void:
 	prop.transform = Transform3D(basis, Vector3(entry.pos[0], entry.pos[1], entry.pos[2]))
 	if not Engine.is_editor_hint():
 		_apply_range(prop)
+		# Blender custom properties show_switch / hide_switch: there only while a switch says so.
+		var show_on := String(entry.get("show_switch", "")) if entry is Dictionary else ""
+		var hide_on := String(entry.get("hide_switch", "")) if entry is Dictionary else ""
+		if show_on != "" or hide_on != "":
+			prop.add_child(SwitchGate.new(show_on, hide_on))
 	holder.add_child(prop)
 
 

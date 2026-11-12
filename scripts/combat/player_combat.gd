@@ -1469,7 +1469,24 @@ func modify_incoming_damage(amount: float, source: Node) -> float:
 
 
 ## Stops a cast, charge or wind-up.
-func _interrupt(reason: String, flinch := true) -> void:
+## Esc cancels what's in progress: a cast, a channel (drinking, the Hearthstone…), a
+## charge or bow draw, or aiming. Handled before Targeting and the Codex, so the first Esc
+## only cancels.
+func _input(event: InputEvent) -> void:
+	if GameSettings.menu_open or stats.is_dead():
+		return
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo or key.physical_keycode != KEY_ESCAPE:
+		return
+	if _casting or _channel or _charging:
+		_interrupt("Cancelled", false, false)
+		get_viewport().set_input_as_handled()
+	elif _aiming:
+		_set_aiming(false)
+		get_viewport().set_input_as_handled()
+
+
+func _interrupt(reason: String, flinch := true, lockout := true) -> void:
 	var ab: Ability = _casting if _casting else (_charging if _charging else _current)
 	_stop_channel()
 	if _casting:
@@ -1479,7 +1496,7 @@ func _interrupt(reason: String, flinch := true) -> void:
 	if _current:
 		_finish_action()
 	_attack_down = false
-	if ab and not _is_weapon_move(ab):
+	if lockout and ab and not _is_weapon_move(ab):
 		_cooldowns[ab] = maxf(cooldown_left(ab), 0.5)  # a short lockout
 	cast_interrupted.emit(reason)
 	HUD.notify(player, reason, Color(1.0, 0.45, 0.4), 1.2)

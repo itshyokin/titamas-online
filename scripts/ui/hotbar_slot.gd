@@ -1,7 +1,7 @@
 class_name HotbarSlot
 extends Panel
 ## One box on the hotbar (Inventory.hotbar[index]): a spell, an item or a weapon. Click
-## to use (a weapon: take it in hand). Drag between boxes to rearrange, off the bar to
+## (press and release on it, without dragging) to use (a weapon: take it in hand). Drag between boxes to rearrange, off the bar to
 ## clear; drop spells from the spellbook, items and weapons from the backpack or the
 ## weapon slot.
 
@@ -139,9 +139,24 @@ func update_state(combat: PlayerCombat) -> void:
 	_ability_icon.modulate = Color(0.55, 0.55, 0.95) if dim else Color.WHITE
 
 
+var _pressed := false
+var _dragged := false
+
+
+## Used on release, and only when the press wasn't the start of a drag (rearranging a box
+## shouldn't fire it).
 func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not event.double_click:
-		bar.use(index)
+	var mb := event as InputEventMouseButton
+	if mb == null or mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if mb.pressed:
+		_pressed = not mb.double_click
+		_dragged = false
+		accept_event()
+	elif _pressed:
+		_pressed = false
+		if not _dragged and not get_viewport().gui_is_dragging() and Rect2(Vector2.ZERO, size).has_point(mb.position):
+			bar.use(index)
 		accept_event()
 
 
@@ -163,6 +178,8 @@ func _get_drag_data(_at: Vector2) -> Variant:
 		holder.add_child(it)
 		it.position = -it.size * 0.5
 	set_drag_preview(holder)
+	_dragged = true
+	_pressed = false
 	bar.drag_from = index
 	return {"where": "hotbar", "key": index}
 

@@ -510,7 +510,15 @@ def _prop_entry(obj, i: int, k: int, size: float, rest) -> dict:
 		relative = m.to_3x3()
 	basis = _TO_GODOT @ relative @ _TO_GODOT.transposed()
 	cols = [[round(basis[r][c], 5) for r in range(3)] for c in range(3)]
-	return {"name": prop_name(obj), "pos": [round(v, 4) for v in pos], "basis": cols}
+	entry = {"name": prop_name(obj), "pos": [round(v, 4) for v in pos], "basis": cols}
+	# Custom properties (Object Properties → Custom Properties): "show_switch" = only there
+	# once that switch is on (a ladder after the troll falls), "hide_switch" = gone once
+	# it's on (rubble that gets cleared).
+	for key in ("show_switch", "hide_switch"):
+		val = str(obj.get(key, "") or "").strip()
+		if val:
+			entry[key] = val
+	return entry
 
 
 def _activate_paint(mesh) -> None:

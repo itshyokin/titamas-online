@@ -294,9 +294,10 @@ func cant_rank(id: String) -> String:
 	var above := int(n.get("points_above", 0))
 	if points_spent(String(tree_of(id).get("id", ""))) < above:
 		return "Needs %d points in %s" % [above, tree_of(id).get("name", "this tree")]
+	# Saturn-style: a rank in each skill it's linked from.
 	for req in n.get("requires", []):
 		var r := skill(String(req))
-		if not r.is_empty() and rank(String(req)) < int(r.get("max_rank", 1)):
+		if not r.is_empty() and rank(String(req)) < 1:
 			return "Needs %s" % r.get("name", req)
 	if points_free() < int(n.get("cost", 1)):
 		return "No skill points"
