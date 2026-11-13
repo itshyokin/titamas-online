@@ -105,6 +105,29 @@ func _load() -> void:
 	gust_seconds = float(w.get("gust_seconds", gust_seconds))
 
 
+## Times of day enemies can keep (Enemy spawn_times): [from hour, to hour), wrapping past
+## midnight. "twilight" is dawn or dusk.
+const PERIODS := {"dawn": [5.0, 7.0], "morning": [7.0, 11.0], "day": [11.0, 17.0], "dusk": [17.0, 20.0], "night": [20.0, 5.0]}
+
+
+static func in_period(hour: float, periods: PackedStringArray) -> bool:
+	for p: String in periods:
+		var name := p.strip_edges().to_lower()
+		if name == "twilight":
+			if in_period(hour, PackedStringArray(["dawn", "dusk"])):
+				return true
+			continue
+		if name in ["any", "always", ""]:
+			return true
+		var r: Array = PERIODS.get(name, [])
+		if r.size() == 2:
+			var a := float(r[0])
+			var b := float(r[1])
+			if (a <= b and hour >= a and hour < b) or (a > b and (hour >= a or hour < b)):
+				return true
+	return false
+
+
 ## "Fri 13 Nov  14:05": the real date (Calendar) with the game's time of day.
 func clock_text() -> String:
 	var h := int(hour)

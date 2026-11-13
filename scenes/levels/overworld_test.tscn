@@ -204,6 +204,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 3, 70)
 visible = false
 npc_id = "guard_healer"
 
+[node name="TowerTrader" parent="NPCs" unique_id=1950577901 instance=ExtResource("95_npc")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 79, 10.6, 140.5)
+npc_id = "tower_merchant"
+
 [node name="Katrina" parent="NPCs" unique_id=1950577435 instance=ExtResource("95_npc")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -50, 2.3, 53)
 npc_id = "katrina"

@@ -331,5 +331,9 @@
 		"close": "res://assets/audio/ui/ui_close.ogg",
 		"back": "res://assets/audio/ui/ui_back.ogg",
 		"error": "res://assets/audio/ui/ui_error.ogg"
+	},
+	"menu_fade": {
+		"out": 0.6,
+		"in": 1.0
 	}
 }

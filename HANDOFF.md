@@ -13,6 +13,14 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 1. **Your own art over Claude's** (art_sheets/, see its README): eyes, brows, noses, mouths, face extras, effects, item icons, ability/status/Codex icons. Draw over a sheet, save, run `python3 tools/art/sheets.py split`. (The Singed Plains region is done.)
 2. **Menus**: menu sounds and the Codex top tabs with icons are in (12 Nov). Keep checking every menu in the editor (title screen, creator, Codex pages, loot, dialogue, death choice, map) and list anything cramped or broken. Done 12 Nov: backpack 60 slots (12 × 5) + bigger doll; creator split into body/hair (left) and Face tabs Features / Eyes / Extras (right); Body Type 2 (reshaped body; tune in Database → Body Models). To check: class page attributes need scrolling to reach Vitality/Spirit; Body Type 2 with every outfit piece (gear cut from the body should follow; rigid pieces like the shield and hats don't move).
 
+## To test in the editor (done 13 Nov, batch AD)
+- **Shop**: the Trader stands east of the watchtower by the ladder (NPCs/TowerTrader). Talk → "Let me see your wares" → Buy / Sell (click = one, Shift-click = five). Stock and prices: Database → Shops (count 0 = never runs out; price 0 = the item's value × buy rate; limited stock comes back after the restock hours of play). His look and lines: Database → NPCs → Trader (tower_merchant) and Events → Watchtower trader. More shops: add one in Database → Shops and an event with the "Open shop" command.
+- **Fade from the title screen**: the menu fades to black, "Loading…", then the level fades in (Database → Player → Menu sounds → menu fade times). Quit to title fades out too.
+- **Time-of-day enemies**: Database → Enemies → Death → "Spawns at" (dawn, morning, day, dusk, night, twilight; none = always). Bats are set to dusk/night/dawn. When its hour ends an enemy fades away (after any fight it's in) and fades back in at home when it starts. One placed enemy can override it (Inspector → Story → Spawn times here).
+- **Hair second colour**: creator → "Second hair colour" (tips, roots, streaks, front) + its colour; NPC looks have it too (Database look → Hair dye).
+- **Eyes look around**: pupils follow whoever a character is looking at, and glance about when idle (appearance.json face_motion gaze_x / gaze_y set how far).
+- **Troll/golem smash** anyone near it (companions too), not only the player.
+
 ## To test in the editor (done 12–13 Nov: sky, retro, elements, ladders, backpack, calendar, Emitter)
 - **Retro look**: Settings → Retro (intensity, pixelate, colours, dither, scanlines, terrain wobble, fog, narrow FOV, pixel font, texture pixels). Fog distance per region: Database → Regions → Fog (retro fog start/end); the editor shows the real hard-edged fog, the test renders can't. Turning Retro off used to white-out the screen (fixed).
 - **Sky**: the ringed planet is bigger and drawn as chunky pixels (Database → World → Sky: size, pixels, colour steps); shooting stars; the moon station shows the **real moon phase** (hover the clock for it).
@@ -155,15 +163,10 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 
 ## Backlog (agreed, not started)
 - **From the owner's notes (13 Nov):**
-  - Pupils separate from the eyes so they can look around.
-  - Hair secondary colour, on/off (streaks or a gradient).
-  - Fade in/out when loading from the main menu (it's a hard cut now).
-  - Enemies that only spawn at certain times: night, twilight, morning, day.
   - Enemies that drop on the player from the trees.
   - Enemies standing on tree branches attacking from range (archers, spellcasters).
   - Shield enemies that crouch behind their shield and block from the front (beat them with burst/area damage, or hit them as they swing).
   - Spellcasters with a magic aura shield: knocks attacks back with an electric effect until a spell breaks it; an area burst spell pops it for a few seconds.
-  - The Troll smashes whenever anyone (companions too) is close, not only the player.
 - **Sheaths/scabbards**: big weapons (greatswords, axes) on the back, blades in a scabbard at the hip (the bare sword at the hip looks odd). Just an idea so far.
 - The index finger still looks claw-like on some builds (hands).
 - Enemies and companions still just stop casting when out of mana (only the player pays with health).
@@ -177,7 +180,9 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Player houses much later (always Well Rested). Lying in beds.
 - Mimic enemies disguised as treasure chests (use the loot animation).
 - Rivers: splashes when wading through shallow streams; fish visible; fishing.
-- Minimap (corner), separate from the M region map.
+- Minimap (corner), separate from the M region map: build it from every chunk's terrain (like the region map) centred on the player, so it runs on across region borders with no hard edge.
+- Organise the level: one sub-scene per region (enemies, NPCs, events under it) and a region/category on events so the Events list groups like Items.
+- Quaternius Universal Animation Library: owner tries the free pack; Claude needs the files to map its bones onto the Mixamo rig.
 - Mage: a staff weapon, robes (owner modelling), and turning the test spells into skill-tree nodes.
 - Boss intro (arena entrance, music cue, name card).
 - Stealth sneak-walk animation; paired finisher animations (Mixamo).
@@ -195,5 +200,5 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Not checkable in Claude's test renderer (verify in the editor): decals (blood on slopes, leaves, cloud shadows), SSAO, the finisher kill-cam.
 
 ## Latest work (all pushed)
-13 Nov: retro-fog fix, ladders/under-map recovery, hearthstone in water, enemy alerts + bandit bows, backpack with pins + look toggles, 25 achievements, real calendar/moon/holidays, retro planet, golem nameplates, rounder pack, Remnant-style numbers, 12/24 h clock, Emitter, mana-from-health. 12 Nov: classes + mage spells, sky extras, elements, retro look.
+13 Nov: shop + tower trader, menu fades, time-of-day enemies, hair second colour, moving pupils, troll smashes anyone near; retro-fog fix, ladders/under-map recovery, hearthstone in water, enemy alerts + bandit bows, backpack with pins + look toggles, 25 achievements, real calendar/moon/holidays, retro planet, golem nameplates, rounder pack, Remnant-style numbers, 12/24 h clock, Emitter, mana-from-health. 12 Nov: classes + mage spells, sky extras, elements, retro look.
 Batch Z on 12 Nov: inventory click-to-pick + dropped items, Z draw/stow, follower ladders, HUD badges/portraits, talk vignette/blur/freeze, animated desert golems with a guard, rivers and waterfalls, Monolith healing, campfires (checkpoint, rest, death choice, revive), seats and camp resting. Batch V on 11 Nov: Base Character defaults, switch-gated props (ladder), Saturn-style skill trees, backpack in the Codex, hotbar drag fix, Esc cancels. Batch U on 11 Nov: multi-material pieces + max_side, chainmail belt/trim/skirt, rotated NPCs/enemies facing fix. Batch T on 11 Nov: per-part face placement (creator + Database). Batch S on 11 Nov: anime/cat eyes, anime noses/mouths/brows/extras, Database look preview, short hair sway off. Batch R on 11 Nov: bigger eyes, heterochromia, brows / noses / mouths / extras, looks + gear for enemies. Batch Q on 10 Nov: Halo-style nav marker, Database item groups + Saturn icons, hotbar defaults, Spells in the Codex, Hearthstone in the air, matte terrain. Batches L–P on 10 Nov: safe areas (SafeArea box, off switch), indoor weather (roof check, muffled sound, cover map: rain outside doors, dry floors), performance (smoother streaming, sleeping AI, prop ranges, occlusion, quality settings, F3 overlay), snow and blizzards, effect sprites for abilities, insect sprites and Swarm Spots, the pixel look for effects and icons, ants, the troll boss and player knockdowns. Batches E–K on 9–10 Nov: falling leaves, random ambience, statuses and icons, injured walk, rarity, stealth / Frost Edge / Burst Quake, finisher cam, bats and the dragon, hair and cape sway by material, threat and smarter companions (wait for the player, never steal kills, go down and take cover), recruitable archer / mage / healer, Tab targeting with lock-on, region map (M), fall damage, blood, rain splashes, colour picker, Body Models categories, night and dawn sounds.

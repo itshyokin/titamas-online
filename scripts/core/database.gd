@@ -326,6 +326,9 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 		"face": appearance_option("faces", get.call("face")),
 		"hair": _hair_option(get.call("hair"), String(d.get("hair", ""))),
 		"hair_color": Color.html(get.call("hair_color")) if Color.html_is_valid(get.call("hair_color")) else Color(0.25, 0.15, 0.1),
+		# Second hair colour: dye "" (off) / tips / roots / streaks / front, in hair_color2.
+		"hair_dye": String(look.get("hair_dye", d.get("hair_dye", ""))),
+		"hair_color2": Color.html(String(look.get("hair_color2", ""))) if Color.html_is_valid(String(look.get("hair_color2", ""))) else Color(0.85, 0.75, 0.55),
 		"facial_hair": appearance_option("facial_hair", get.call("facial_hair")),
 		"facial_color": Color.html(get.call("facial_color")) if Color.html_is_valid(get.call("facial_color")) else Color(0.25, 0.15, 0.1),
 		"eyes": appearance_option("eyes", get.call("eyes")),

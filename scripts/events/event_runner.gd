@@ -34,6 +34,7 @@ extends Node
 ##   video {video, skippable, pause}         full-screen .ogv; the event waits for it
 ##   camera {op move/back, marker, look, npc, seconds, wait}   cutscene camera glides
 ##   letterbox {on, seconds}                 black bars top and bottom
+##   shop {id}                               opens a shop (data/shops.json); waits until it closes
 ## Text can use {player} and pronouns (DialogueBox), {var:id}, {gold} and {item:id} (its name).
 
 signal finished
@@ -53,6 +54,7 @@ var _done := false
 var _waiting_for: Dictionary = {}  # wait_for: {conditions, left}
 var _bubble: Node  # say with wait: the bubble being read
 var _video: Node
+var _shop: Node
 
 
 ## Starts `commands`. `self_key`: whose self switches (A–D) they use.
@@ -103,7 +105,7 @@ func _step(delta: float) -> void:
 			if not EventState.test_all(_waiting_for.conditions, self_key, player) and float(_waiting_for.left) > 0.0:
 				return
 			_waiting_for = {}
-		if is_instance_valid(_bubble) or is_instance_valid(_video):
+		if is_instance_valid(_bubble) or is_instance_valid(_video) or is_instance_valid(_shop):
 			return
 		if is_instance_valid(_box):
 			return
@@ -268,6 +270,8 @@ func _execute(c: Dictionary, list: Array, top: Dictionary) -> void:
 				at = player
 			if at:
 				Effects.burst(Combat.world_root(at), at.global_position + Vector3.UP, Color.from_string(String(c.get("color", "#ffd76a")), Color.WHITE), float(c.get("size", 1.0)))
+		"shop":
+			_shop = ShopWindow.open(String(c.get("id", "")), player)
 		"quest":
 			match String(c.get("op", "start")):
 				"offer":

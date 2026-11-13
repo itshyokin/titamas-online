@@ -308,7 +308,7 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 			if node:
 				nodes.append(node)
 	if item.has("tint"):
-		_tint(nodes, item.tint)
+		_tint(nodes, item.tint, item.get("tint2", Color.WHITE), String(item.get("tint_mode", "")))
 	var sway := float(item.get("sway", 0.0))
 	if sway > 0.0 and not Engine.is_editor_hint():
 		_add_sway(nodes, sway, String(item.get("sway_anchors", SWAY_ANCHORS)), tag == "facial_hair")
@@ -695,6 +695,9 @@ func _apply_look_parts() -> void:
 				item["tint"] = Color.html(String(entry.get("color", "#cbbd9f")))
 			else:
 				item["tint"] = _look.get("facial_color" if tag == "facial_hair" else "hair_color", Color(0.3, 0.2, 0.1))
+				if tag == "hair" and String(_look.get("hair_dye", "")) in HAIR_DYES:
+					item["tint2"] = _look.get("hair_color2", Color(0.85, 0.75, 0.55))
+					item["tint_mode"] = String(_look.hair_dye)
 				# Mustaches sit on the lip: they don't swing unless their piece says so.
 				var short := tag == "facial_hair" and String(entry.get("id", "")).contains("stache")
 				item["sway"] = float(entry.get("sway", 0.25 if tag == "hair" else (0.0 if short else 0.1)))
@@ -710,9 +713,17 @@ func _apply_look_parts() -> void:
 		_build_eyes()
 
 
-func _tint(nodes: Array, color: Color) -> void:
+## Second-colour patterns for hair (look "hair_dye").
+const HAIR_DYES := ["tips", "roots", "streaks", "front"]
+
+
+## `mode` (one of HAIR_DYES) paints part of each mesh in `second`: the colours go into the
+## mesh's vertex colours and the material multiplies by them (sway shader too).
+func _tint(nodes: Array, color: Color, second := Color.WHITE, mode := "") -> void:
+	var two := mode in HAIR_DYES
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
+	mat.albedo_color = Color.WHITE if two else color
+	mat.vertex_color_use_as_albedo = two
 	mat.roughness = 0.9
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	for node in nodes:
@@ -720,6 +731,8 @@ func _tint(nodes: Array, color: Color) -> void:
 		if node is MeshInstance3D:
 			meshes.append(node)
 		for mi: MeshInstance3D in meshes:
+			if two:
+				_paint_two_tone(mi, color, second, mode)
 			# A textured piece (hair painted in Blender) keeps its texture, multiplied by the
 			# colour; plain pieces get the flat colour.
 			var textured := false
@@ -727,11 +740,60 @@ func _tint(nodes: Array, color: Color) -> void:
 				var m := mi.get_active_material(i) as BaseMaterial3D
 				if m and m.albedo_texture:
 					var t := m.duplicate() as BaseMaterial3D
-					t.albedo_color = color
+					t.albedo_color = Color.WHITE if two else color
+					t.vertex_color_use_as_albedo = two
 					mi.set_surface_override_material(i, t)
 					textured = true
 			if not textured:
 				mi.material_override = mat
+
+
+## Vertex colours: `main`, with the dyed part in `second` (linear colours; the materials
+## multiply by them). Pattern in the mesh's own space (rest pose, front = -Z):
+##   tips    the lower ends        roots   near the scalp
+##   streaks stripes around the head        front   the strands framing the face
+func _paint_two_tone(mi: MeshInstance3D, main: Color, second: Color, mode: String) -> void:
+	var src := mi.mesh as ArrayMesh
+	if src == null:
+		return
+	var box := src.get_aabb()
+	var top := box.end.y
+	var height := maxf(box.size.y, 0.01)
+	var mid := box.get_center()
+	var a := main.srgb_to_linear()
+	var b := second.srgb_to_linear()
+	var out := ArrayMesh.new()
+	for k in src.get_blend_shape_count():
+		out.add_blend_shape(src.get_blend_shape_name(k))
+	out.blend_shape_mode = src.blend_shape_mode
+	for i in src.get_surface_count():
+		var arrays := src.surface_get_arrays(i)
+		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var colors := PackedColorArray()
+		colors.resize(verts.size())
+		for j in verts.size():
+			var v := verts[j]
+			var f := 0.0
+			var down := (top - v.y) / height
+			match mode:
+				"tips":
+					f = smoothstep(0.45, 0.8, down)
+				"roots":
+					f = 1.0 - smoothstep(0.12, 0.4, down)
+				"streaks":
+					var ang := atan2(v.x - mid.x, v.z - mid.z)
+					var stripe := fposmod(ang / TAU * 9.0 + 0.08 * sin(ang * 3.0), 1.0)
+					f = 1.0 if stripe < 0.26 else 0.0
+				"front":
+					var fwd := (mid.z - v.z) / maxf(box.size.z * 0.5, 0.01)  # 1 at the front
+					f = 1.0 if fwd > 0.45 and absf(v.x - mid.x) < box.size.x * 0.4 else 0.0
+			colors[j] = a.lerp(b, f)
+		arrays[Mesh.ARRAY_COLOR] = colors
+		var blends: Array = src.surface_get_blend_shape_arrays(i) if src.get_blend_shape_count() > 0 else []
+		var flags := src.surface_get_format(i) & Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS
+		out.add_surface_from_arrays(src.surface_get_primitive_type(i), arrays, blends, {}, flags)
+		out.surface_set_material(i, src.surface_get_material(i))
+	mi.mesh = out
 
 
 ## The face: two eye quads (each its own colour: heterochromia when the look's
@@ -870,9 +932,45 @@ func _set_talk_frame(f: int) -> void:
 
 
 ## Blinks now and then; flaps the mouth between talking frames while `talking`.
+## Eyes looking around: toward what HeadLook is looking at (beyond what the head turns),
+## else small idle glances now and then (appearance.json face_motion gaze_*).
+var _gaze := Vector2.ZERO
+var _gaze_goal := Vector2.ZERO
+var _glance_left := 1.0
+
+
+func _animate_gaze(delta: float, fm: Dictionary) -> void:
+	var reach := Vector2(float(fm.get("gaze_x", 0.14)), float(fm.get("gaze_y", 0.08)))
+	var skel := get_skeleton()
+	var hl := skel.get_node_or_null("HeadLook") as HeadLook if skel else null
+	var goal := Vector2.ZERO
+	if hl and hl.looking:
+		# Direction to the target in the model's space (front = -Z, +X = its right).
+		var head_at := global_position + Vector3.UP * 1.65 * scale.y
+		var to := global_transform.basis.inverse() * (hl.target_position - head_at)
+		if to.length() > 0.05:
+			to = to.normalized()
+			goal = Vector2(clampf(to.x * 1.6, -1.0, 1.0), clampf(-to.y * 1.6, -1.0, 1.0))
+	else:
+		_glance_left -= delta
+		if _glance_left <= 0.0:
+			_glance_left = randf_range(float(fm.get("glance_every_min", 1.2)), float(fm.get("glance_every_max", 3.5)))
+			_gaze_goal = Vector2.ZERO if randf() < 0.45 else Vector2(randf_range(-0.8, 0.8), randf_range(-0.5, 0.4))
+		goal = _gaze_goal
+	# Eyes dart (fast) rather than drift.
+	_gaze = _gaze.move_toward(goal, delta * 9.0)
+	var g := _gaze * reach
+	for i in _eye_mats.size():
+		# Eye quads run from the inner corner (u = 0) outward: the right eye's u follows +X,
+		# the left one's -X.
+		var right := i == 1
+		_eye_mats[i].set_shader_parameter("gaze", Vector2(g.x if right else -g.x, g.y))
+
+
 func _animate_face(delta: float) -> void:
 	var fm: Dictionary = face_library.get("face_motion", {})
 	if not _eye_mats.is_empty():
+		_animate_gaze(delta, fm)
 		_blink_left -= delta
 		if _blink_left <= 0.0:
 			_blink_left = randf_range(float(fm.get("blink_every_min", 2.0)), float(fm.get("blink_every_max", 5.5)))
@@ -1299,6 +1397,7 @@ func _add_sway(nodes: Array, amount: float, anchors := SWAY_ANCHORS, in_front :=
 					var b := src as BaseMaterial3D
 					sm.set_shader_parameter("albedo", b.albedo_color)
 					sm.set_shader_parameter("roughness", b.roughness)
+					sm.set_shader_parameter("use_color", b.vertex_color_use_as_albedo)
 					if b.albedo_texture:
 						sm.set_shader_parameter("albedo_tex", b.albedo_texture)
 						sm.set_shader_parameter("use_tex", true)

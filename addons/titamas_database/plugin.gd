@@ -20,6 +20,7 @@ const FILES := {
 	"skill_trees": "res://data/skill_trees.json",
 	"quests": "res://data/quests.json",
 	"lore": "res://data/lore.json",
+	"shops": "res://data/shops.json",
 	"species": "res://data/species.json",
 	"statuses": "res://data/statuses.json",
 	"ground": "res://data/ground.json",

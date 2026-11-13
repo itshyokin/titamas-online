@@ -161,7 +161,12 @@
 			"run_speed": 5.0,
 			"walk_speed": 2.0,
 			"wander_radius": 6.0,
-			"xp": 0.0
+			"xp": 0.0,
+			"spawn_times": [
+				"dusk",
+				"night",
+				"dawn"
+			]
 		},
 		{
 			"aggro_radius": 24.0,

@@ -8,6 +8,7 @@ global uniform float wind_strength;
 uniform vec4 albedo : source_color = vec4(1.0);
 uniform sampler2D albedo_tex : source_color, filter_nearest_mipmap, hint_default_white;
 uniform bool use_tex = false;
+uniform bool use_color = false;  // multiply by vertex colours (two-tone hair)
 uniform float roughness = 0.9;
 uniform float alpha_cut = 0.0;
 uniform float top = 1.8;
@@ -39,6 +40,9 @@ void vertex() {
 
 void fragment() {
 	vec4 c = albedo;
+	if (use_color) {
+		c.rgb *= COLOR.rgb;
+	}
 	if (use_tex) {
 		c *= texture(albedo_tex, UV);
 	}

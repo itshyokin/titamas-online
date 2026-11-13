@@ -75,6 +75,8 @@ var _placement_sliders := {}  # part -> {"x"/"y"/"scale": HSlider}
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	GameSettings.menu_open = false
+	if ScreenFade.is_black():
+		ScreenFade.clear(self, float(Database.player.get("menu_fade", {}).get("in", 1.0)))
 	_build_stage()
 	_build_ui()
 	_saves = GameSession.list_saves()
@@ -328,7 +330,7 @@ func _build_ui() -> void:
 	lab.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_loading.add_child(lab)
 	var top := CanvasLayer.new()
-	top.layer = 30
+	top.layer = 61  # over the ScreenFade (60): "Loading…" shows on the faded-out screen
 	add_child(top)
 	top.add_child(_loading)
 
@@ -704,11 +706,17 @@ func _on_net_failed(reason: String) -> void:
 
 
 func _start() -> void:
+	# Fade the title out, show "Loading…" on black, load, then fade the level in
+	# (GameSession.start_game(fade_in)).
+	var fade := float(Database.player.get("menu_fade", {}).get("out", 0.6))
+	if fade > 0.0:
+		ScreenFade.to_black(self, fade)
+		await get_tree().create_timer(fade + 0.05).timeout
 	_loading.visible = true
 	# Let "Loading…" draw before the level loads.
 	await get_tree().process_frame
 	await get_tree().process_frame
-	GameSession.start_game()
+	GameSession.start_game(float(Database.player.get("menu_fade", {}).get("in", 1.0)))
 
 
 static func _date(unix: float) -> String:
@@ -863,6 +871,10 @@ func _creator_page() -> Control:
 	lv.add_child(_swatch_grid("skin", a.get("skin_colors", []), 7))
 	lv.add_child(_stepper("Hair style", "hair", "hair_styles"))
 	lv.add_child(_swatch_grid("hair_color", a.get("hair_colors", []), 7))
+	lv.add_child(_section("Second hair colour"))
+	lv.add_child(_choice_row("hair_dye", [["", "Off"], ["tips", "Tips"], ["roots", "Roots"], ["streaks", "Streaks"], ["front", "Front"]]))
+	_dye_swatches = _swatch_grid("hair_color2", a.get("hair_colors", []), 7)
+	lv.add_child(_dye_swatches)
 	lv.add_child(_stepper("Facial hair", "facial_hair", "facial_hair"))
 	lv.add_child(_swatch_grid("facial_color", a.get("hair_colors", []), 7))
 	_pack_check = CheckBox.new()
@@ -1264,9 +1276,12 @@ func _apply_look() -> void:
 
 
 var _pack_check: CheckBox
+var _dye_swatches: Control
 
 
 func _refresh_creator() -> void:
+	if _dye_swatches:
+		_dye_swatches.visible = String(_look.get("hair_dye", "")) != ""
 	if _pack_check:
 		_pack_check.set_pressed_no_signal(PlayerGear.look_flag(_look, "show_backpack"))
 	var mirror := bool(_look.get("mirror_eyes", true))

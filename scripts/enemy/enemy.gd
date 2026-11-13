@@ -59,6 +59,9 @@ var tagged_by_player := false
 @export var defeat_variable := ""
 ## Never comes back once killed, even after saving and loading.
 @export var stays_dead := false
+## Only about at these times of day: any of dawn, morning, day, dusk, night, twilight
+## (= dawn or dusk). Empty = the enemy's Database entry ("Out at"), and that empty = always.
+@export var spawn_times_here: PackedStringArray = []
 
 @export_group("Death")
 ## Seconds before the body disappears, and before it comes back.
@@ -139,6 +142,7 @@ func _ready() -> void:
 	if not appear_switch.is_empty() or stays_dead:
 		add_to_group("event_watchers")
 		_check_story.call_deferred(false)
+	_start_clock_watch.call_deferred()
 
 
 # --- Story: appearing on a switch, staying dead -------------------------------------
@@ -154,13 +158,85 @@ func refresh() -> void:
 
 func _check_story(animate: bool) -> void:
 	var gone := stays_dead and EventState.is_defeated(EventState.node_key(self))
-	var want := not gone and (appear_switch.is_empty() or EventState.get_switch(appear_switch))
-	if want == _present or _emerging:
+	var want := not gone and (appear_switch.is_empty() or EventState.get_switch(appear_switch)) and _time_ok()
+	if want == _present or _emerging or _time_fading:
 		return
-	if want and animate and emerge:
+	if not want and _out_of_time() and (ai == AI.DEAD or (ai != AI.IDLE and ai != AI.RETURN)):
+		return  # its hour is over, but it's mid-fight (or lying dead): it leaves after
+	if _out_of_time() or (want and _time_back):
+		_time_back = false
+		_fade_with_time(want)
+	elif want and animate and emerge:
 		_emerge()
 	else:
 		_set_present(want)
+
+
+# --- Times of day ---------------------------------------------------------------------
+
+var _time_fading := false
+var _time_back := false  # it left because of the hour: comes back with a fade
+
+
+func spawn_times() -> PackedStringArray:
+	if not spawn_times_here.is_empty():
+		return spawn_times_here
+	var t = Database.enemy(enemy_id).get("spawn_times", [])
+	return PackedStringArray(t) if t is Array else PackedStringArray()
+
+
+## Is the hour one of its times? (Always, with no times set or no WorldCycle.)
+func _time_ok() -> bool:
+	var times := spawn_times()
+	if times.is_empty():
+		return true
+	var cycle := get_tree().get_first_node_in_group("world_cycle") if is_inside_tree() else null
+	if cycle == null:
+		return true
+	return WorldCycle.in_period(float(cycle.get("hour")), times)
+
+
+func _out_of_time() -> bool:
+	return not spawn_times().is_empty() and not _time_ok()
+
+
+## Checks the clock every couple of seconds, even while it's away (its own processing is
+## off then, so a Timer that always runs).
+func _start_clock_watch() -> void:
+	var t := Timer.new()
+	t.name = "ClockWatch"
+	t.wait_time = 2.0 + randf() * 0.5
+	t.process_mode = Node.PROCESS_MODE_ALWAYS
+	t.autostart = true
+	t.timeout.connect(func() -> void:
+		if not spawn_times().is_empty() or not _present:
+			_check_story(true))
+	add_child(t)
+	if _out_of_time():
+		_set_present(false)
+		_time_back = true
+
+
+## Leaves (fades out where it stands) or comes back (at home, fading in) as its hour
+## ends or starts.
+func _fade_with_time(on: bool) -> void:
+	_time_fading = true
+	if on:
+		global_position = _home
+		velocity = Vector3.ZERO
+		if stats.is_dead():
+			_respawn()
+		_fade_body(1.0, 0.0)
+		_set_present(true)
+		await _fade_body(0.0, 1.2)
+	else:
+		_time_back = true
+		threat.clear()
+		target = null
+		await _fade_body(1.0, 1.2)
+		_set_present(false)
+		_fade_body(0.0, 0.0)
+	_time_fading = false
 
 
 ## In the level or not: hidden, not thinking, not targetable, no collision.
@@ -830,15 +906,15 @@ func _on_died() -> void:
 ## Fades every mesh of the body to `to` transparency (1 = gone) over fade_time.
 func _fade_body(to: float, seconds := -1.0) -> void:
 	var t := fade_time if seconds < 0.0 else seconds
-	var tween := create_tween().set_parallel(true)
-	for mi in model.find_children("*", "GeometryInstance3D", true, false):
-		if seconds == 0.0:
+	var parts := model.find_children("*", "GeometryInstance3D", true, false) if model else []
+	if seconds == 0.0 or parts.is_empty():
+		for mi in parts:
 			(mi as GeometryInstance3D).transparency = to
-		else:
-			tween.tween_property(mi, "transparency", to, maxf(t, 0.01))
-	if seconds == 0.0:
-		tween.kill()
 		return
+	# A SceneTree tween: keeps going if the body is put to sleep (WorldPerf) mid-fade.
+	var tween := get_tree().create_tween().set_parallel(true)
+	for mi in parts:
+		tween.tween_property(mi, "transparency", to, maxf(t, 0.01))
 	await tween.finished
 
 
@@ -857,7 +933,7 @@ func _respawn() -> void:
 	global_position = _home
 	velocity = Vector3.ZERO
 	stats.restore()
-	collision_layer = 4
+	collision_layer = 4 if _present else 0
 	model.visible = true
 	ai = AI.IDLE
 	_wait = randf_range(1.0, 3.0)

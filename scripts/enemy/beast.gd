@@ -267,7 +267,7 @@ func _troll_chase(delta: float, to: Vector3, d: float) -> Vector3:
 		return Vector3.ZERO
 	var smash_reach := float(cfg.get("smash_range", 3.5)) + body_radius
 	if _cooldown <= 0.0:
-		if d <= smash_reach:
+		if d <= smash_reach or _smash_anyone_near(smash_reach):
 			_begin("smash", _smash_length())
 			return Vector3.ZERO
 		if d >= float(cfg.get("throw_min", 9.0)) and d <= float(cfg.get("throw_max", 40.0)) and _throw_left <= 0.0:
@@ -277,6 +277,27 @@ func _troll_chase(delta: float, to: Vector3, d: float) -> Vector3:
 	if d > smash_reach * 0.7:
 		return to.normalized() * (run_speed if d > 16.0 else walk_speed)
 	return Vector3.ZERO
+
+
+## Someone else on the other side (a companion, another player) is within the smash: turn
+## to the nearest of them so the slam lands on them. True when there is one.
+func _smash_anyone_near(reach: float) -> bool:
+	var best: Node3D = null
+	var best_d := reach
+	for n in Combat.enemies_near(self, global_position, reach + 1.0):
+		if n == target:
+			continue
+		var flat := Vector2(n.global_position.x - global_position.x, n.global_position.z - global_position.z).length()
+		if flat <= best_d:
+			best_d = flat
+			best = n
+	if best == null:
+		return false
+	_smash_face = best
+	return true
+
+
+var _smash_face: Node3D = null  # someone other than the target the next smash turns to
 
 
 ## Golems: club up close, shards from afar; the gilded one runs in and blows up.
@@ -291,7 +312,7 @@ func _golem_chase(delta: float, to: Vector3, d: float) -> Vector3:
 		return to.normalized() * run_speed
 	var smash_reach := float(cfg.get("smash_range", 2.4)) + body_radius
 	if _cooldown <= 0.0:
-		if d <= smash_reach:
+		if d <= smash_reach or _smash_anyone_near(smash_reach):
 			_begin("smash", _smash_length())
 			return Vector3.ZERO
 		if int(cfg.get("shard_count", 3)) > 0 and d >= float(cfg.get("shard_min", 8.0)) and d <= float(cfg.get("shard_max", 30.0)) and _throw_left <= 0.0:
@@ -607,9 +628,12 @@ func _begin(plan: String, seconds: float) -> void:
 				Combat.play_sound(self, GOLEM_GROAN, 2.0, 1.15)
 			else:
 				Combat.play_sound(self, TROLL_GRUNT, 4.0, 0.8)
-			_show_smash_marker()
-			if _target_valid():
+			if _smash_face and is_instance_valid(_smash_face):
+				_face(_smash_face.global_position, 0.0)
+			elif _target_valid():
 				_face(target.global_position, 0.0)
+			_smash_face = null
+			_show_smash_marker()
 			body.slam_at = (float(cfg.get("smash_windup", 1.9)) + 0.15) / _att_len
 		"throw":
 			Combat.play_sound(self, TROLL_GRUNT, 2.0, 1.1)

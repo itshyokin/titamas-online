@@ -1,0 +1,55 @@
+{
+	"shops": [
+		{
+			"id": "tower_trader",
+			"name": "Watchtower Trader",
+			"greeting": "Supplies for the road. Fair prices, mostly.",
+			"buy_rate": 1.0,
+			"sell_rate": 0.4,
+			"buys": "all",
+			"restock_hours": 2.0,
+			"stock": [
+				{
+					"item": "minor_healing_potion",
+					"count": 0,
+					"price": 0
+				},
+				{
+					"item": "mana_draught",
+					"count": 0,
+					"price": 0
+				},
+				{
+					"item": "bandage",
+					"count": 0,
+					"price": 0
+				},
+				{
+					"item": "antidote",
+					"count": 0,
+					"price": 0
+				},
+				{
+					"item": "major_healing_potion",
+					"count": 3,
+					"price": 0
+				},
+				{
+					"item": "leather_gloves",
+					"count": 1,
+					"price": 0
+				},
+				{
+					"item": "hunting_bow",
+					"count": 1,
+					"price": 0
+				},
+				{
+					"item": "emitter",
+					"count": 1,
+					"price": 0
+				}
+			]
+		}
+	]
+}

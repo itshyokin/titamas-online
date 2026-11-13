@@ -188,6 +188,7 @@
 	.list-field .row { display: flex; gap: 6px; margin-bottom: 4px; }
 	.list-field .row select { flex: 1; }
 	.list-field .row button { padding: 2px 8px; }
+	.field .row button.on { background: var(--select); color: var(--select-ink); border-color: #23497e; }
 	.parts { display: flex; flex-wrap: wrap; gap: 6px 14px; }
 	.parts .part { font-weight: normal; color: var(--ink); font-size: 13px; }
 	.list-field .row span { align-self: center; font-size: 12px; color: var(--soft); }
@@ -297,6 +298,8 @@ const LOOK_FIELDS = [
 	{ key: "look.face", label: "Face", type: "lookopt", list: "faces", help: "Detailed = eyes, brows, nose, mouth and extras below. Painted = the simple painted face (ignores them). (none) = the default." },
 	{ key: "look.hair", label: "Hair style", type: "lookopt", list: "hair_styles" },
 	{ key: "look.hair_color", label: "Hair colour", type: "color", help: "Also the brows." },
+	{ key: "look.hair_dye", label: "Second hair colour", type: "select", options: [["", "Off"], ["tips", "Tips (ends)"], ["roots", "Roots"], ["streaks", "Streaks"], ["front", "Front strands"]], rerender: true },
+	{ key: "look.hair_color2", label: "… second colour", type: "color", show: e => !!((e.look || {}).hair_dye) },
 	{ key: "look.facial_hair", label: "Facial hair", type: "lookopt", list: "facial_hair" },
 	{ key: "look.facial_color", label: "Facial hair colour", type: "color" },
 	{ key: "look.eyes", label: "Eyes", type: "lookopt", list: "eyes" },
@@ -757,6 +760,7 @@ const TABS = {
 			["Death", [
 				{ key: "corpse_time", label: "Body stays (s)", type: "number" },
 				{ key: "respawn_time", label: "Respawns after (s)", type: "number" },
+				{ key: "spawn_times", label: "Out at (times of day)", type: "timesofday", wide: true, help: "None ticked = always. Outside these hours it isn't there; when its time ends it fades away (after any fight) and fades back in at home when its time comes again. Dawn 5–7, morning 7–11, day 11–17, dusk 17–20, night 20–5; twilight = dawn + dusk. One placed in a level can override it (Inspector → Story → Spawn Times Here)." },
 				{ key: "loot_time", label: "Body with loot stays up to (s)", type: "number", help: "Unlooted bodies wait this long before fading (from death)." },
 				{ key: "ragdoll", label: "Goes limp (ragdoll, 1 = yes)", type: "number", help: "0 = plays its death animation instead." },
 				{ key: "death_push", label: "Thrown by the killing blow (m/s)", type: "number" },
@@ -927,6 +931,8 @@ const TABS = {
 				{ key: "ui_sounds.close_db", label: "… louder/quieter (dB)", type: "number", def: 0 },
 				{ key: "ui_sounds.back", label: "Back / cancel", type: "sound" },
 				{ key: "ui_sounds.error", label: "Can't do that", type: "sound" },
+				{ key: "menu_fade.out", label: "Title ↔ game: fade out (s)", type: "number", def: 0.6, help: "Starting or loading a game, and quitting to the title, fade to black instead of cutting. 0 = cut." },
+				{ key: "menu_fade.in", label: "… fade in (s)", type: "number", def: 1.0 },
 			]],
 			["Campfires and falling", [
 				{ key: "camp.rest_hours", label: "Rest choices (hours, comma list)", type: "numlist", help: "Using a campfire offers these rests. It also becomes where you wake if you fall." },
@@ -1522,6 +1528,24 @@ const TABS = {
 				{ key: `layers.${i}.surface`, label: "Footsteps sound like", type: "select", options: ["grass", "dirt", "stone", "wood", "snow", "metal"].map(x => [x, x]) },
 				...(i === 3 ? [{ key: "layers.3.grass", label: "Grass on this layer × (0 = none)", type: "number", def: 1 }] : []),
 			]]),
+		],
+	},
+	shops: {
+		title: "Shops", file: "shops", listKey: "shops", idKey: "id", nameKey: "name",
+		blank: () => ({ id: "new_shop", name: "New Shop", greeting: "", buy_rate: 1.0, sell_rate: 0.4, buys: "all", restock_hours: 2, stock: [] }),
+		groups: [
+			["Shop", [
+				{ key: "id", label: "ID", type: "text", help: "An event opens it with the Shop command (Events → Insert command → World → Open shop)." },
+				{ key: "name", label: "Name", type: "text", help: "The window's title." },
+				{ key: "greeting", label: "Line under the title", type: "textarea", wide: true },
+				{ key: "buy_rate", label: "Prices × item value", type: "number", def: 1, help: "What you pay: the item's Value × this (an entry's own price wins)." },
+				{ key: "sell_rate", label: "Pays × item value", type: "number", def: 0.4, help: "What they pay for your things." },
+				{ key: "buys", label: "Buys", type: "select", options: [["all", "Anything with a value"], ["none", "Nothing (sells only)"]], help: "Items marked Keep (the hearthstone) are never bought." },
+				{ key: "restock_hours", label: "Restocks after (hours of play)", type: "number", def: 2, help: "Limited items come back after this long. 0 = never." },
+			]],
+			["Stock", [
+				{ key: "stock", label: "For sale", type: "stocklist", wide: true, help: "Count 0 = endless. Price 0 = the item's value × the shop's rate." },
+			]],
 		],
 	},
 	lore: {
@@ -2537,6 +2561,19 @@ function fieldControl(t, entry, f) {
 			wrap.append(label, btn, log);
 			break;
 		}
+		case "timesofday": {
+			const list = Array.isArray(value) ? value.slice() : [];
+			wrap.appendChild(label);
+			const row = el("div", { className: "row" });
+			row.style.gap = "4px";
+			for (const [id, name] of [["dawn", "Dawn"], ["morning", "Morning"], ["day", "Day"], ["dusk", "Dusk"], ["night", "Night"], ["twilight", "Twilight"]]) {
+				const b = el("button", { textContent: name, className: list.includes(id) ? "on" : "" });
+				b.onclick = () => { const i = list.indexOf(id); if (i >= 0) list.splice(i, 1); else list.push(id); set(list.slice(), true); };
+				row.appendChild(b);
+			}
+			wrap.appendChild(row);
+			break;
+		}
 		case "numlist": {
 			const list = Array.isArray(value) ? value.slice() : [];
 			const t = el("input", { type: "text", value: list.join(", ") });
@@ -2977,6 +3014,25 @@ function fieldControl(t, entry, f) {
 			wrap.appendChild(add);
 			break;
 		}
+		case "stocklist": {
+			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const sel = selectOf(itemOptions(), r.item, false);
+				sel.onchange = () => { list[i].item = sel.value; set(list); };
+				const num = (key, title, w) => { const n = el("input", { type: "number", value: r[key] ?? 0, step: 1, title }); n.style.width = w; n.oninput = () => { const v = parseFloat(n.value); if (!Number.isNaN(v)) { list[i][key] = v; set(list); } }; return n; };
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); set(list, true); };
+				row.append(sel, el("span", { textContent: "count" }), num("count", "0 = endless", "60px"), el("span", { textContent: "price" }), num("price", "0 = value × rate", "70px"), rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Item" });
+			add.onclick = () => { list.push({ item: "", count: 0, price: 0 }); set(list, true); };
+			wrap.appendChild(add);
+			break;
+		}
 		case "weatherlist": {
 			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
 			wrap.className += " list-field";
@@ -3088,7 +3144,7 @@ const CMD_GROUPS = [
 	["Flow", ["if", "wait", "wait_for", "call", "stop", "erase", "note"]],
 	["Switches", ["switch", "self_switch", "variable"]],
 	["Player", ["give_item", "take_item", "gold", "xp", "heal", "follower", "animation"]],
-	["World", ["teleport", "set_home", "fade_out", "fade_in", "sound", "effect", "sparkles", "weather"]],
+	["World", ["teleport", "set_home", "fade_out", "fade_in", "sound", "effect", "sparkles", "weather", "shop"]],
 	["Progress", ["quest", "achievement", "nav"]],
 	["Cutscene", ["shake", "toss", "camera", "letterbox", "video"]],
 ];
@@ -3158,6 +3214,9 @@ const CMDS = {
 			["look", "Looks at (optional)", "select", () => [["", "Where the marker faces"], ["player", "The player"], ["event", "This event"], ["npc", "An NPC"]].concat([...new Set(Object.values(assets.markers || {}).flat())].sort().map(m => [m, "Marker: " + m]))], ["npc", "NPC (when looking at one)", "npc"],
 			["seconds", "Over (s)", "number"], ["wait", "Wait until it gets there", "bool"]],
 		show: c => c.op === "back" ? "Camera: back (" + c.seconds + " s)" : "Camera → " + (c.marker || "?") + (c.look ? " looking at " + c.look : "") },
+	shop: { label: "Open shop", make: () => ({ cmd: "shop", id: "" }),
+		fields: [["id", "Shop", "select", () => (((data.shops || {}).shops) || []).map(x => [x.id, (x.name || x.id) + "  (" + x.id + ")"])]],
+		show: c => "Shop: " + (c.id || "?") },
 	letterbox: { label: "Letterbox bars", make: () => ({ cmd: "letterbox", on: true, seconds: 0.6 }),
 		fields: [["on", "", "onoff"], ["seconds", "Over (s)", "number"]], show: c => "Letterbox " + (c.on === false ? "off" : "on") },
 	video: { label: "Play video", make: () => ({ cmd: "video", video: "", skippable: true, pause: true }),

@@ -88,7 +88,9 @@ func delete_save(save_path: String) -> void:
 
 ## Opens the character's level (the start scene for a new one) with the player placed
 ## where they were.
-func start_game() -> void:
+## `fade_in` > 0: the screen is black (the title faded out) and fades in once the
+## level has had a moment to stream in around the player.
+func start_game(fade_in := 0.0) -> void:
 	var scene_path := String(data.get("scene", START_SCENE))
 	if not ResourceLoader.exists(scene_path):
 		scene_path = START_SCENE
@@ -104,7 +106,14 @@ func start_game() -> void:
 		player.position = Vector3(pos[0], pos[1], pos[2])
 	_since_save = 0.0
 	_play_started = Time.get_ticks_msec()
-	_switch_to(level)
+	if fade_in > 0.0:
+		ScreenFade.cover(self)
+	await _switch_to(level)
+	if fade_in > 0.0:
+		for i in 4:
+			await get_tree().process_frame
+		await get_tree().create_timer(0.35).timeout
+		ScreenFade.clear(self, fade_in)
 
 
 ## Makes a spot the character's home (where the hearthstone takes them).
@@ -210,6 +219,12 @@ func _spot_in(level: Node, marker: String, at: Variant) -> Variant:
 ## Saves, forgets the character and goes back to the title screen.
 func quit_to_title() -> void:
 	save_game()
+	# Fade to black first; the title screen fades in from it (FrontEnd._ready).
+	var fade := float(Database.player.get("menu_fade", {}).get("out", 0.6))
+	if fade > 0.0 and is_inside_tree():
+		get_tree().paused = false
+		ScreenFade.to_black(self, fade)
+		await get_tree().create_timer(fade + 0.05, true).timeout
 	Net.leave()
 	data = {}
 	path = ""
@@ -263,6 +278,8 @@ func play_seconds() -> float:
 
 
 func _write() -> void:
+	if path.is_empty():
+		return  # no save file (a test run, or a co-op guest)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SAVE_DIR))
 	data["saved"] = Time.get_unix_time_from_system()
 	# Write to a temporary file first, so a crash mid-save can't ruin the old one.

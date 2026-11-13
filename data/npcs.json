@@ -460,6 +460,45 @@
 			"walk_speed": 1.3,
 			"wander_radius": 3.0,
 			"rest_activity": "drink"
+		},
+		{
+			"id": "tower_merchant",
+			"name": "Trader",
+			"title": "Merchant",
+			"kind": "merchant",
+			"behaviour": "stand",
+			"event": "tower_shop",
+			"can_fight": false,
+			"can_follow": false,
+			"immortal": true,
+			"level": 5.0,
+			"max_health": 100.0,
+			"dialogue": [
+				"Come back any time."
+			],
+			"equipment": {
+				"chest": "leather_jerkin",
+				"legs": "travelers_trousers",
+				"feet": "worn_boots"
+			},
+			"look": {
+				"body": "masc",
+				"species": "human",
+				"hair": "hair_short",
+				"hair_color": "#5a3c26",
+				"facial_hair": "",
+				"skin": "#d9a782",
+				"eye_color": "#6b4a2b",
+				"height": "medium",
+				"build": "medium"
+			},
+			"loot": [],
+			"gold_min": 0.0,
+			"gold_max": 0.0,
+			"walk_speed": 1.3,
+			"run_speed": 4.0,
+			"wander_radius": 0.0,
+			"aggro_radius": 0.0
 		}
 	]
 }

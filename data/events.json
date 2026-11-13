@@ -1367,6 +1367,53 @@
 					"trigger": "action"
 				}
 			]
+		},
+		{
+			"id": "tower_shop",
+			"name": "Watchtower trader (shop)",
+			"note": "Runs when you talk to the trader by the watchtower (npcs.json tower_merchant: event). Shop stock: data/shops.json tower_trader.",
+			"pages": [
+				{
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "Talk",
+					"solid": false,
+					"speaker": "Trader",
+					"trigger": "action",
+					"commands": [
+						{
+							"cmd": "text",
+							"speaker": "Trader",
+							"text": "Well met, {player}. Need anything?"
+						},
+						{
+							"cmd": "choice",
+							"options": [
+								"Let me see your wares.",
+								"Not now."
+							],
+							"cancel": 1.0,
+							"branches": [
+								[
+									{
+										"cmd": "shop",
+										"id": "tower_trader"
+									}
+								],
+								[
+									{
+										"cmd": "text",
+										"speaker": "Trader",
+										"text": "Safe travels, then."
+									}
+								]
+							]
+						}
+					]
+				}
+			]
 		}
 	],
 	"switches": [
