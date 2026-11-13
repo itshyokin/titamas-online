@@ -72,6 +72,11 @@ var retro_colors := true
 var retro_dither := true
 var retro_scanlines := false
 var retro_wobble := false
+var retro_fog := true
+var retro_fov := true
+var retro_font := true
+const RETRO_KEYS := ["retro_on", "retro_intensity", "retro_pixelate", "retro_colors", "retro_dither", "retro_scanlines", "retro_wobble", "retro_fog", "retro_fov", "retro_font"]
+const PIXEL_FONT := "res://assets/fonts/PixelifySans.ttf"
 var _retro: RetroFilter
 ## Camera shake on hits: 0 = off, 1 = full.
 var screen_shake := 1.0
@@ -110,15 +115,52 @@ func apply_all() -> void:
 	_apply_retro()
 
 
+## The pixel font for every menu and the HUD: swapped into Godot's default theme (a theme
+## on the root window doesn't reach controls under CanvasLayers), then every control is
+## told its theme changed.
+var _plain_font: Font
+var _pixel_font: Font
+
+
+func _apply_font() -> void:
+	var theme := ThemeDB.get_default_theme()
+	if theme == null:
+		return
+	if _plain_font == null:
+		_plain_font = theme.default_font if theme.default_font else ThemeDB.fallback_font
+	var want: Font = _plain_font
+	if retro_on and retro_font and ResourceLoader.exists(PIXEL_FONT):
+		if _pixel_font == null:
+			var f := (load(PIXEL_FONT) as FontFile).duplicate() as FontFile
+			f.fallbacks = [_plain_font]  # symbols the pixel font lacks
+			_pixel_font = f
+		want = _pixel_font
+	if theme.default_font == want:
+		return
+	theme.default_font = want
+	get_tree().root.propagate_notification(Control.NOTIFICATION_THEME_CHANGED)
+
+
 func set_retro(key: String, value: Variant) -> void:
 	set(key, value)
 	save_settings()
 	_apply_retro()
 
 
+## Retro fog on (the regions' retro_fog_start / end; AtmosphereManager reads this).
+func retro_fog_on() -> bool:
+	return retro_on and retro_fog and retro_intensity > 0.0
+
+
+## The game camera's field of view × this (narrower, like old consoles).
+func fov_scale() -> float:
+	return lerpf(1.0, 0.78, retro_intensity) if retro_on and retro_fov else 1.0
+
+
 func _apply_retro() -> void:
 	if not is_inside_tree():
 		return
+	_apply_font()
 	if _retro == null or not is_instance_valid(_retro):
 		_retro = RetroFilter.new()
 		_retro.name = "RetroFilter"
@@ -349,7 +391,7 @@ func save_settings() -> void:
 	cfg.set_value("graphics", "render_scale", render_scale)
 	cfg.set_value("graphics", "fps_limit", fps_limit)
 	cfg.set_value("graphics", "vsync", vsync)
-	for key in ["retro_on", "retro_intensity", "retro_pixelate", "retro_colors", "retro_dither", "retro_scanlines", "retro_wobble"]:
+	for key in RETRO_KEYS:
 		cfg.set_value("retro", key, get(key))
 	cfg.set_value("controls", "camera_sensitivity", camera_sensitivity)
 	cfg.set_value("controls", "invert_camera_y", invert_camera_y)
@@ -382,7 +424,7 @@ func load_settings() -> void:
 	render_scale = clampf(float(cfg.get_value("graphics", "render_scale", 1.0)), 0.5, 1.0)
 	fps_limit = String(cfg.get_value("graphics", "fps_limit", DEFAULT_FPS))
 	vsync = bool(cfg.get_value("graphics", "vsync", true))
-	for key in ["retro_on", "retro_intensity", "retro_pixelate", "retro_colors", "retro_dither", "retro_scanlines", "retro_wobble"]:
+	for key in RETRO_KEYS:
 		set(key, cfg.get_value("retro", key, get(key)))
 	camera_sensitivity = float(cfg.get_value("controls", "camera_sensitivity", 1.0))
 	invert_camera_y = bool(cfg.get_value("controls", "invert_camera_y", false))

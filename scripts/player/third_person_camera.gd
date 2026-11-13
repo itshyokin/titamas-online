@@ -97,7 +97,7 @@ func _process(delta: float) -> void:
 	spring_arm.spring_length = lerpf(spring_arm.spring_length, distance, zoom_smoothing * delta)
 	spring_arm.position = Vector3(aim_shoulder * k, 0.0, 0.0)
 	if _camera:
-		_camera.fov = lerpf(_base_fov, aim_fov, k)
+		_camera.fov = lerpf(_base_fov * GameSettings.fov_scale(), aim_fov, k)  # narrower with the retro look
 
 
 ## Aiming a ranged weapon: over-the-shoulder zoom.

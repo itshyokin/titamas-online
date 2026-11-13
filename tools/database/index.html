@@ -1772,6 +1772,8 @@ const TABS = {
 				{ key: "fog_color", label: "Fog colour", type: "color" },
 				{ key: "fog_density", label: "Density", type: "number", step: 0.001 },
 				{ key: "fog_sky_affect", label: "Fog on the sky (0–1)", type: "number" },
+				{ key: "retro_fog_start", label: "Retro fog starts at (m)", type: "number", def: 25, help: "With Settings → Retro → Retro fog on: the fog begins this far away…" },
+				{ key: "retro_fog_end", label: "Retro fog hides all by (m)", type: "number", def: 110, help: "…and nothing past this distance shows (an old console's short draw distance)." },
 			]],
 			["Sky", [
 				{ key: "sky_top", label: "Top", type: "color" },

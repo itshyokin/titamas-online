@@ -66,7 +66,7 @@ var _wind: AudioStreamPlayer
 
 # Property name -> how it's applied.
 const FIELDS := [
-	"fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
+	"fog_color", "fog_density", "fog_sky_affect", "retro_fog_start", "retro_fog_end", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
 	"shadow_strength", "shadow_color", "shadow_fill", "night_sky_top", "night_sky_horizon", "night_fog", "stars",
 	"sky_panorama_strength", "saturation", "contrast", "brightness", "god_rays", "heat_haze",
@@ -223,6 +223,24 @@ func _apply() -> void:
 		_env.fog_light_color = v.fog_color
 		_env.fog_density = v.fog_density
 		_env.fog_sky_affect = v.fog_sky_affect
+		# Retro fog (Settings → Retro): a hard draw-distance fog from the region's distances.
+		var gs := get_node_or_null("/root/GameSettings")
+		var retro_fog: bool = gs != null and not Engine.is_editor_hint() and bool(gs.call("retro_fog_on"))
+		var depth_fog := retro_fog and RenderingServer.get_current_rendering_method() != "gl_compatibility"
+		_env.fog_mode = Environment.FOG_MODE_DEPTH if depth_fog else Environment.FOG_MODE_EXPONENTIAL
+		if retro_fog:
+			var start := float(v.get("retro_fog_start", 25.0))
+			var end := maxf(float(v.get("retro_fog_end", 110.0)), start + 5.0)
+			if depth_fog:
+				_env.fog_depth_begin = start
+				_env.fog_depth_end = end
+				_env.fog_depth_curve = 1.0
+				_env.fog_density = 1.0
+			else:
+				# The Compatibility renderer has no depth fog: thick enough to be nearly
+				# solid by the end distance.
+				_env.fog_density = maxf(float(v.fog_density), 3.5 / end)
+			_env.fog_sky_affect = maxf(float(v.fog_sky_affect), 0.85)
 		_env.ambient_light_energy = v.ambient_energy
 		# Shade colour: part of the ambient light is the region's shadow colour, so the
 		# unlit sides are dark blue-grey instead of black (and ambient occlusion shows).

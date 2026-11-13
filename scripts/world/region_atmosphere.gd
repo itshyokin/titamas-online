@@ -13,6 +13,10 @@ extends Resource
 @export var fog_density := 0.004
 ## How much the fog colours the sky near the horizon.
 @export_range(0.0, 1.0) var fog_sky_affect := 0.5
+## Retro fog (Settings → Retro → Retro fog): fog starts here (m) and hides everything by
+## the end, like an old console's short draw distance.
+@export var retro_fog_start := 25.0
+@export var retro_fog_end := 110.0
 
 @export_group("Sky")
 @export var sky_top := Color(0.24, 0.45, 0.78)

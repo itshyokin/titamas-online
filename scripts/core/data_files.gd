@@ -43,7 +43,7 @@ const REGION_COLORS := ["fog_color", "sky_top", "sky_horizon", "sky_ground", "cl
 ## Region fields that are sounds (res:// paths in the file).
 const REGION_STREAMS := ["ambient_loop", "ambient_loop_night", "music", "music_night"]
 const REGION_FIELDS := [
-	"region_name", "fog_color", "fog_density", "fog_sky_affect", "sky_top", "sky_horizon", "sky_ground",
+	"region_name", "fog_color", "fog_density", "fog_sky_affect", "retro_fog_start", "retro_fog_end", "sky_top", "sky_horizon", "sky_ground",
 	"cloud_color", "cloud_shade", "cloud_coverage", "sun_color", "sun_energy", "ambient_energy",
 	"shadow_strength", "shadow_color", "shadow_fill", "night_sky_top", "night_sky_horizon", "night_fog", "stars",
 	"sky_panorama", "sky_panorama_strength", "weather", "weather_minutes_min", "weather_minutes_max", "saturation", "contrast", "brightness", "god_rays", "heat_haze", "grass_density", "grass_base",

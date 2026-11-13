@@ -306,6 +306,9 @@ func _retro_tab() -> Control:
 		["retro_dither", "Dithering (checkered blending between the colours)"],
 		["retro_scanlines", "Scanlines and a dark edge (old TV)"],
 		["retro_wobble", "Wobbly terrain (the ground's corners snap and jitter as the camera moves)"],
+		["retro_fog", "Retro fog (a short draw distance; each region sets how far)"],
+		["retro_fov", "Narrower camera view"],
+		["retro_font", "Pixel font (menus and HUD)"],
 	]:
 		var key: String = part[0]
 		var c := CheckBox.new()
@@ -313,8 +316,11 @@ func _retro_tab() -> Control:
 		c.button_pressed = bool(g.get(key))
 		c.toggled.connect(func(v: bool) -> void: g.set_retro(key, v))
 		page.add_child(c)
+	page.add_child(_option_row("Texture pixels", GameSettings.PIXEL_OPTIONS.keys(), GameSettings.pixel,
+		func(o: String) -> void: GameSettings.set_pixel(o),
+		"How blocky the textures are (also on the Graphics tab). Retro = the biggest texels."))
 	var note := Label.new()
-	note.text = "Pixel textures (Graphics tab) go well with this. Only the ground wobbles; characters and props stay steady."
+	note.text = "Only the ground wobbles; characters and props stay steady. The lighting is unchanged."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_color_override("font_color", Color(0.75, 0.72, 0.65))
 	page.add_child(note)
