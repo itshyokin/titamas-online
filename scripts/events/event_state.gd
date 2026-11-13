@@ -99,6 +99,17 @@ static func node_key(node: Node) -> String:
 	return "%s:%s" % [scene.scene_file_path, String(scene.get_path_to(node))]
 
 
+## Has `node` been marked defeated? (Also under its key from before the level was split
+## into region sub-scenes: the path without "Regions/<Region>/", so old saves still match.)
+static func node_defeated(node: Node) -> bool:
+	var key := node_key(node)
+	if is_defeated(key):
+		return true
+	var rx := RegEx.create_from_string(":Regions/[^/]+/")
+	var old := rx.sub(key, ":")
+	return old != key and is_defeated(old)
+
+
 ## Forgets everything (a new character while testing).
 static func reset_unsaved() -> void:
 	_unsaved = {"switches": {}, "variables": {}, "self_switches": {}, "defeated": {}, "nav": {}}

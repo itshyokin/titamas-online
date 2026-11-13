@@ -91,7 +91,8 @@
 					"speaker": "",
 					"trigger": "action"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "road_chest",
@@ -150,7 +151,8 @@
 					"speaker": "",
 					"trigger": "action"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "road_lever",
@@ -217,7 +219,8 @@
 					"speaker": "",
 					"trigger": "action"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "road_sign",
@@ -241,7 +244,8 @@
 					"speaker": "Signpost",
 					"trigger": "action"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "road_sign_copy",
@@ -270,7 +274,8 @@
 					"speaker": "Signpost",
 					"trigger": "action"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "welcome_area",
@@ -316,7 +321,8 @@
 					"speaker": "",
 					"trigger": "none"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "insignia_villager",
@@ -448,7 +454,8 @@
 					"speaker": "",
 					"trigger": "action"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "tut_wake",
@@ -503,7 +510,8 @@
 					"speaker": "",
 					"trigger": "none"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "katrina_intro",
@@ -712,7 +720,8 @@
 					"speaker": "Katrina",
 					"trigger": "action"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "tut_guide",
@@ -885,7 +894,8 @@
 					"speaker": "",
 					"trigger": "none"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "tut_rumble",
@@ -1024,7 +1034,8 @@
 					"speaker": "",
 					"trigger": "none"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "tut_campfire",
@@ -1126,7 +1137,8 @@
 					"speaker": "",
 					"trigger": "none"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "quarry_vines",
@@ -1199,7 +1211,8 @@
 					"speaker": "",
 					"trigger": "none"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "tut_victory",
@@ -1297,7 +1310,8 @@
 					"speaker": "",
 					"trigger": "none"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "monolith_touch",
@@ -1366,7 +1380,8 @@
 					"speaker": "",
 					"trigger": "action"
 				}
-			]
+			],
+			"region": "starting_region"
 		},
 		{
 			"id": "tower_shop",
@@ -1413,7 +1428,8 @@
 						}
 					]
 				}
-			]
+			],
+			"region": "starting_region"
 		}
 	],
 	"switches": [

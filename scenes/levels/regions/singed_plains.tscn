@@ -1,0 +1,53 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/enemies/golem.tscn" id="1_p6iit"]
+[ext_resource type="Script" path="res://scripts/world/region_content.gd" id="1_w18yg"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/gold_golem.tscn" id="2_w18yg"]
+[ext_resource type="PackedScene" path="res://scenes/world/loot_chest.tscn" id="3_f6qlu"]
+[ext_resource type="PackedScene" path="res://scenes/world/campfire.tscn" id="4_x0b8d"]
+[ext_resource type="PackedScene" path="res://scenes/world/seat_log.tscn" id="5_fkpsm"]
+
+[node name="SingedPlains" type="Node3D" unique_id=1977985315]
+script = ExtResource("1_w18yg")
+region_id = "singed_plains"
+metadata/region = "singed_plains"
+
+[node name="Enemies" type="Node3D" parent="." unique_id=823926518]
+
+[node name="Golem" parent="Enemies" unique_id=1610023001 instance=ExtResource("1_p6iit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -196, 3, 176)
+spawn_times_here = PackedStringArray()
+
+[node name="Golem2" parent="Enemies" unique_id=1610023004 instance=ExtResource("1_p6iit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -300, 3, 60)
+spawn_times_here = PackedStringArray()
+
+[node name="GildedGolem" parent="Enemies" unique_id=1610023002 instance=ExtResource("2_w18yg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -214.17961, 3, 171.70444)
+spawn_times_here = PackedStringArray()
+
+[node name="Places" type="Node3D" parent="." unique_id=1037920078]
+
+[node name="WeaponChest2" parent="Places" unique_id=1262233055 instance=ExtResource("3_f6qlu")]
+transform = Transform3D(0.7706579, 0, -0.6372491, 0, 1, 0, 0.6372491, 0, 0.7706579, -110.54438, 1.0351229, 160.42094)
+visible = false
+chest_id = "start_weapon_chest"
+title = "Weapon Chest"
+items = Array[String](["major_healing_potion"])
+gold = 150
+greeting = ""
+
+[node name="Campfires" type="Node3D" parent="." unique_id=1841231107]
+
+[node name="PlainsCampfire" parent="Campfires" unique_id=1902733417 instance=ExtResource("4_x0b8d")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -114.00509, 1.0128798, 159.25446)
+camp_name = "Singed Plains Camp"
+
+[node name="CampLog3" parent="Campfires" unique_id=1935156788 instance=ExtResource("5_fkpsm")]
+transform = Transform3D(0.108363725, 0, 0.9941113, 0, 1, 0, -0.9941113, 0, 0.108363725, -112.14211, 0.9411633, 159.13673)
+
+[node name="CampLog4" parent="Campfires" unique_id=918910566 instance=ExtResource("5_fkpsm")]
+transform = Transform3D(0.38489145, 0, -0.92296183, 0, 1, 0, 0.92296183, 0, 0.38489145, -115.84498, 0.9411633, 159.13673)
+
+[node name="CampLog5" parent="Campfires" unique_id=1425120678 instance=ExtResource("5_fkpsm")]
+transform = Transform3D(0.9962974, 0, -0.085973345, 0, 1, 0, 0.085973345, 0, 0.9962974, -114.01172, 0.9411633, 161.21219)

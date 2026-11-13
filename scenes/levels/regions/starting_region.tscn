@@ -1,0 +1,265 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/region_content.gd" id="1_m4yl8"]
+[ext_resource type="Script" path="res://scripts/enemy/training_dummy.gd" id="1_wx5t3"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/bandit.tscn" id="2_m4yl8"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="3_jwysh"]
+[ext_resource type="PackedScene" path="res://scenes/npcs/npc.tscn" id="4_dus3k"]
+[ext_resource type="PackedScene" path="res://scenes/world/home_point.tscn" id="5_ih7pg"]
+[ext_resource type="PackedScene" path="res://scenes/world/loot_chest.tscn" id="6_0026i"]
+[ext_resource type="PackedScene" path="res://scenes/world/map_event.tscn" id="7_jbop3"]
+[ext_resource type="PackedScene" path="res://scenes/world/climb_lock.tscn" id="8_8ip6p"]
+[ext_resource type="PackedScene" path="res://scenes/world/music_zone.tscn" id="9_6yqqm"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/monolith.ogg" id="10_ptlrm"]
+[ext_resource type="PackedScene" path="res://scenes/world/safe_area.tscn" id="11_mck1a"]
+[ext_resource type="PackedScene" path="res://scenes/world/swarm_spot.tscn" id="12_j83wj"]
+[ext_resource type="PackedScene" path="res://scenes/world/campfire.tscn" id="13_8ryub"]
+[ext_resource type="PackedScene" path="res://scenes/world/seat_log.tscn" id="14_v67ud"]
+[ext_resource type="PackedScene" path="res://scenes/world/seat_stool.tscn" id="15_xrlo2"]
+
+[node name="StartingRegion" type="Node3D" unique_id=1122928219]
+script = ExtResource("1_m4yl8")
+region_id = "starting_region"
+metadata/region = "starting_region"
+
+[node name="Enemies" type="Node3D" parent="." unique_id=458538806]
+
+[node name="TrainingDummy" type="StaticBody3D" parent="Enemies" unique_id=1295057077]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -56.130466, 2.6304288, 50.010624)
+script = ExtResource("1_wx5t3")
+hit_variable = "dummy_hits"
+
+[node name="TrainingDummy2" type="StaticBody3D" parent="Enemies" unique_id=926457814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53.091194, 2.6304288, 50.010624)
+script = ExtResource("1_wx5t3")
+hit_variable = "dummy_hits"
+
+[node name="TrainingDummy3" type="StaticBody3D" parent="Enemies" unique_id=1378317541]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -59.924137, 2.6304288, 50.010624)
+script = ExtResource("1_wx5t3")
+hit_variable = "dummy_hits"
+
+[node name="Bandit" parent="Enemies" unique_id=1918972890 instance=ExtResource("2_m4yl8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2.795746, 2)
+defeat_variable = "tut_bandits"
+spawn_times_here = PackedStringArray()
+
+[node name="Bandit2" parent="Enemies" unique_id=417441187 instance=ExtResource("2_m4yl8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.70174, 2.795746, 10)
+defeat_variable = "tut_bandits"
+spawn_times_here = PackedStringArray()
+
+[node name="Bandit3" parent="Enemies" unique_id=808439722 instance=ExtResource("2_m4yl8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.915064, 3.6172962, 6.782336)
+defeat_variable = "tut_bandits"
+spawn_times_here = PackedStringArray()
+
+[node name="Troll" parent="Enemies" unique_id=1177397848 instance=ExtResource("3_jwysh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 68.30203, 2.4, 88.60991)
+appear_switch = "troll_awake"
+emerge = true
+defeat_switch = "troll_defeated"
+stays_dead = true
+spawn_times_here = PackedStringArray()
+
+[node name="NPCs" type="Node3D" parent="." unique_id=282390144]
+
+[node name="VillageGuard" parent="NPCs" unique_id=167749516 instance=ExtResource("4_dus3k")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -54, 3, 70)
+visible = false
+npc_id = "village_guard"
+
+[node name="Patrol" type="Node3D" parent="NPCs/VillageGuard" unique_id=1042662519]
+
+[node name="Point1" type="Marker3D" parent="NPCs/VillageGuard/Patrol" unique_id=2020094109]
+
+[node name="Point2" type="Marker3D" parent="NPCs/VillageGuard/Patrol" unique_id=1997654850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -4)
+
+[node name="Point3" type="Marker3D" parent="NPCs/VillageGuard/Patrol" unique_id=1226507129]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 6)
+
+[node name="GuardArcher" parent="NPCs" unique_id=1485815995 instance=ExtResource("4_dus3k")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -46, 3, 66)
+visible = false
+npc_id = "guard_archer"
+
+[node name="GuardMage" parent="NPCs" unique_id=204765442 instance=ExtResource("4_dus3k")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 3, 68)
+visible = false
+npc_id = "guard_mage"
+
+[node name="GuardHealer" parent="NPCs" unique_id=2075688443 instance=ExtResource("4_dus3k")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 3, 70)
+visible = false
+npc_id = "guard_healer"
+
+[node name="TowerTrader" parent="NPCs" unique_id=1950577901 instance=ExtResource("4_dus3k")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 79, 10.6, 140.5)
+npc_id = "tower_merchant"
+
+[node name="Katrina" parent="NPCs" unique_id=1950577435 instance=ExtResource("4_dus3k")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -50, 2.3, 53)
+npc_id = "katrina"
+
+[node name="Villager" parent="NPCs" unique_id=91995911 instance=ExtResource("4_dus3k")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 3, 72)
+visible = false
+
+[node name="Places" type="Node3D" parent="." unique_id=1302972093]
+
+[node name="InnBed" parent="Places" unique_id=261041230 instance=ExtResource("5_ih7pg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 3, 82)
+visible = false
+home_name = "the village inn"
+
+[node name="WeaponChest" parent="Places" unique_id=950996312 instance=ExtResource("6_0026i")]
+transform = Transform3D(0.8660254, 0, 0.5, 0, 1, 0, -0.5, 0, 0.8660254, -46.5, 3, 73.5)
+visible = false
+chest_id = "start_weapon_chest"
+title = "Weapon Chest"
+items = Array[String](["worn_dagger", "iron_greatsword", "smiths_hammer", "woodcutters_axe", "light_crossbow", "flintlock_pistol", "flintlock_rifle", "emitter"])
+greeting = "Someone left a chest of practice weapons by the road."
+
+[node name="Events" type="Node3D" parent="." unique_id=2065216119]
+
+[node name="OldStone" parent="Events" unique_id=1412088578 instance=ExtResource("7_jbop3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53.5, 3, 77)
+visible = false
+event_id = "old_stone"
+size = Vector3(1.2, 2.2, 1)
+
+[node name="RoadChest" parent="Events" unique_id=671285401 instance=ExtResource("7_jbop3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50.5, 3, 71)
+visible = false
+event_id = "road_chest"
+size = Vector3(1.2, 1, 0.8)
+
+[node name="RoadLever" parent="Events" unique_id=958543233 instance=ExtResource("7_jbop3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44.5, 3, 78)
+visible = false
+event_id = "road_lever"
+size = Vector3(0.8, 1, 0.6)
+
+[node name="RoadSign" parent="Events" unique_id=94758719 instance=ExtResource("7_jbop3")]
+transform = Transform3D(-0.99737036, 0, -0.07247239, 0, 1, 0, 0.07247239, 0, -0.99737036, -54.388557, 1.0102637, 65.1387)
+event_id = "road_sign"
+size = Vector3(1, 1.6, 0.4)
+
+[node name="RoadSign2" parent="Events" unique_id=225981188 instance=ExtResource("7_jbop3")]
+transform = Transform3D(0.9181632, 0, -0.3962025, 0, 1, 0, 0.3962025, 0, 0.9181632, 64.55227, 13.139618, 124.72793)
+event_id = "road_sign_copy"
+size = Vector3(1, 1.6, 0.4)
+
+[node name="WelcomeArea" parent="Events" unique_id=1215007725 instance=ExtResource("7_jbop3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43, 3, 72)
+visible = false
+event_id = "welcome_area"
+size = Vector3(5, 3, 5)
+
+[node name="InsigniaVillager" parent="Events" unique_id=455319948 instance=ExtResource("7_jbop3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 3, 72)
+visible = false
+event_id = "insignia_villager"
+size = Vector3(1, 2, 1)
+
+[node name="LookoutPoint" type="Marker3D" parent="Events" unique_id=593464410]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.00539, 7, 60)
+
+[node name="Monolith" parent="Events" unique_id=1844102931 instance=ExtResource("7_jbop3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49.4, 1.5, 95.2)
+visible = false
+event_id = "monolith_touch"
+size = Vector3(3.5, 3, 3.5)
+
+[node name="Tutorial" type="Node3D" parent="Events" unique_id=1487523754]
+
+[node name="TutWake" parent="Events/Tutorial" unique_id=65192816 instance=ExtResource("7_jbop3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 2, 89.35834)
+event_id = "tut_wake"
+
+[node name="TutGuide" parent="Events/Tutorial" unique_id=1160840300 instance=ExtResource("7_jbop3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, -2.6543746, 87.79448)
+event_id = "tut_guide"
+size = Vector3(45, 8, 2)
+
+[node name="TutVictory" parent="Events/Tutorial" unique_id=777870319 instance=ExtResource("7_jbop3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 69.50197, 2.4, 89.905785)
+event_id = "tut_victory"
+
+[node name="TutRumble" parent="Events/Tutorial" unique_id=1877634962 instance=ExtResource("7_jbop3")]
+transform = Transform3D(0.9560697, 0, 0.2931394, 0, 1, 0, -0.2931394, 0, 0.9560697, 70.21431, -0.33385277, 61.113945)
+event_id = "tut_rumble"
+size = Vector3(85, 15, 18)
+
+[node name="QuarryVines" parent="Events/Tutorial" unique_id=1917941121 instance=ExtResource("7_jbop3")]
+transform = Transform3D(0.1607942, 0, 0.98698795, 0, 1, 0, -0.98698795, 0, 0.1607942, 64.323425, -1.3319988, 115.80385)
+event_id = "quarry_vines"
+size = Vector3(8, 8, 12)
+
+[node name="VinesLock" parent="Events/Tutorial" unique_id=2091573642 instance=ExtResource("8_8ip6p")]
+transform = Transform3D(0.10017073, 0, 0.99497026, 0, 1, 0, -0.99497026, 0, 0.10017073, 63.611725, -0.3417406, 116.636)
+size = Vector3(6, 16, 10)
+unlock_switch = "troll_defeated"
+
+[node name="TrollArena" type="Marker3D" parent="Events/Tutorial" unique_id=334368028]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 69.08765, 4.499998, 92.402565)
+
+[node name="TrollCam" type="Marker3D" parent="Events/Tutorial" unique_id=1033373466]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70.973015, 1.4908915, 74.55521)
+
+[node name="Tutorial2" type="Node3D" parent="Events" unique_id=1641476893]
+
+[node name="TutWake" parent="Events/Tutorial2" unique_id=983980489 instance=ExtResource("7_jbop3")]
+transform = Transform3D(0.94722706, 0, -0.3205634, 0, 1, 0, 0.3205634, 0, 0.94722706, 61.698784, 10.620794, 124.79861)
+event_id = "tut_campfire"
+size = Vector3(30, 10, 15)
+
+[node name="CampfireCam" type="Marker3D" parent="Events/Tutorial2" unique_id=46823077]
+transform = Transform3D(0.77004576, 0, -0.6379886, 0, 1, 0, 0.6379886, 0, 0.77004576, 64.47911, 16.497126, 119.890465)
+
+[node name="Campfire_lookatme" type="Marker3D" parent="Events/Tutorial2" unique_id=1801343239]
+transform = Transform3D(0.77004576, 0, -0.6379886, 0, 1, 0, 0.6379886, 0, 0.77004576, 60.754967, 13.694487, 127.08079)
+
+[node name="Areas" type="Node3D" parent="." unique_id=1140853780]
+
+[node name="MonolithMusic" parent="Areas" unique_id=1610023003 instance=ExtResource("9_6yqqm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 2, 89)
+radius = 22.0
+music = ExtResource("10_ptlrm")
+volume_db = -11.0
+
+[node name="VillageSafeArea" parent="Areas" unique_id=845066492 instance=ExtResource("11_mck1a")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -59.371716, -4, 78.35388)
+size = Vector3(75, 24.03, 65)
+off_switch = "village_attacked"
+
+[node name="InnIndoors" parent="Areas" unique_id=268068342 instance=ExtResource("11_mck1a")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 2, 82)
+visible = false
+size = Vector3(7, 5, 7)
+safe = false
+indoors = true
+
+[node name="FliesByTheRoad" parent="Areas" unique_id=1073066422 instance=ExtResource("12_j83wj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51, 2.1, 74)
+visible = false
+
+[node name="Campfires" type="Node3D" parent="." unique_id=702062976]
+
+[node name="VillageCampfire" parent="Campfires" unique_id=1902733416 instance=ExtResource("13_8ryub")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 3, 62)
+camp_name = "Village Campfire"
+
+[node name="PlainsCampfire2" parent="Campfires" unique_id=168099102 instance=ExtResource("13_8ryub")]
+transform = Transform3D(1, 0, 0, 0, 0.9933507, -0.11512786, 0, 0.11512786, 0.9933507, 60.68717, 13.0732155, 127.232635)
+camp_name = "Singed Plains Camp"
+
+[node name="CampLog" parent="Campfires" unique_id=1902733420 instance=ExtResource("14_v67ud")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -50, 3, 59.3)
+
+[node name="CampLog2" parent="Campfires" unique_id=1902733421 instance=ExtResource("14_v67ud")]
+transform = Transform3D(0.41906, 0, 0.90796, 0, 1, 0, -0.90796, 0, 0.41906, -47.4, 3, 63.2)
+
+[node name="CampStool" parent="Campfires" unique_id=1902733422 instance=ExtResource("15_xrlo2")]
+transform = Transform3D(0.6, 0, -0.8, 0, 1, 0, 0.8, 0, 0.6, -52.4, 3, 63.8)

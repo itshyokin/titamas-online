@@ -348,6 +348,15 @@ function schedulePreview() {
 
 // Item groups (same as the backpack tabs, CharacterWindow.tab_of).
 const ITEM_CATS = [["consumables", "Consumables"], ["weapons", "Weapons"], ["armor", "Armour"], ["key", "Key items"], ["misc", "Misc"]];
+// Events list groups: the regions (not the open sea), then events with none.
+function regionCats() {
+	const rs = (((data.regions || {}).regions) || []).filter(r => !r.default);
+	return rs.map(r => [r.id, r.region_name || r.id]).concat([["_none", "No region"]]);
+}
+function eventRegion(e) {
+	const id = e.region || "";
+	return id && (((data.regions || {}).regions) || []).some(r => r.id === id && !r.default) ? id : "_none";
+}
 function itemCategory(it) {
 	const k = it.kind || "";
 	if (it.keep || k === "quest" || k === "key") return "key";
@@ -1276,11 +1285,13 @@ const TABS = {
 	},
 	events: {
 		title: "Events", file: "events", listKey: "events", idKey: "id", nameKey: "name",
-		blank: () => ({ id: "new_event", name: "New Event", note: "", pages: [blankPage()] }),
+		blank: () => ({ id: "new_event", name: "New Event", note: "", region: (listCat.events && listCat.events !== "_none") ? listCat.events : "", pages: [blankPage()] }),
+		get categories() { return regionCats(); }, categoryOf: e => eventRegion(e),
 		groups: [
 			["General", [
 				{ key: "id", label: "ID", type: "text", help: "Set as the Event Id of a MapEvent in a level (scenes/world/map_event.tscn). Self switches are kept per ID." },
 				{ key: "name", label: "Name", type: "text", help: "Default speaker name." },
+				{ key: "region", label: "Region", type: "select", empty: true, rerender: true, options: () => regionCats().filter(([id]) => id !== "_none"), help: "Groups the Events list. tools/godot/split_regions.gd fills it in for events placed in a region's scene (scenes/levels/regions)." },
 				{ key: "note", label: "Note", type: "textarea", wide: true },
 			]],
 			["Pages", [

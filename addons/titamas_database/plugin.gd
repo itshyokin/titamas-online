@@ -243,7 +243,10 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 			var props := []
 			for f in _files("res://assets/props", ["glb"]):
 				props.append(String(f).get_file().get_basename())
-			var levels := _files("res://scenes/levels", ["tscn"])
+			var levels := []
+			for f in _files("res://scenes/levels", ["tscn"]):
+				if not "/regions/" in String(f):  # region sub-scenes are parts of a level
+					levels.append(f)
 			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"]), "fbx": fbx,
 				"props": props, "levels": levels, "markers": _markers(levels),
 				"glbs": _files("res://assets/models/characters/src", ["glb"]), "glb_meshes": _glb_meshes(), "glb_bones": _glb_bones(),
@@ -392,10 +395,18 @@ func _animations() -> Array:
 func _markers(levels: Array) -> Dictionary:
 	var out := {}
 	var rx := RegEx.create_from_string('\\[node name="([^"]+)" type="Marker3D"')
+	# Region sub-scenes (scenes/levels/regions, instanced in the level) count as the level's.
+	var sub := RegEx.create_from_string('\\[ext_resource type="PackedScene"[^\\]]*path="(res://scenes/levels/regions/[^"]+)"')
 	for level in levels:
 		var names := []
-		for m in rx.search_all(FileAccess.get_file_as_string(level)):
-			names.append(m.get_string(1))
+		var text := FileAccess.get_file_as_string(level)
+		var texts := [text]
+		for m in sub.search_all(text):
+			texts.append(FileAccess.get_file_as_string(m.get_string(1)))
+		for t in texts:
+			for m in rx.search_all(t):
+				if not m.get_string(1) in names:
+					names.append(m.get_string(1))
 		out[level] = names
 	return out
 

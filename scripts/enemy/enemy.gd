@@ -157,7 +157,7 @@ func refresh() -> void:
 
 
 func _check_story(animate: bool) -> void:
-	var gone := stays_dead and EventState.is_defeated(EventState.node_key(self))
+	var gone := stays_dead and EventState.node_defeated(self)
 	var want := not gone and (appear_switch.is_empty() or EventState.get_switch(appear_switch)) and _time_ok()
 	if want == _present or _emerging or _time_fading:
 		return
