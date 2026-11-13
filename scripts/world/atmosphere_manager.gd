@@ -220,14 +220,17 @@ func _apply() -> void:
 	if weather:
 		v = weather.modify(v)
 	if _env:
-		_env.fog_light_color = v.fog_color
-		_env.fog_density = v.fog_density
-		_env.fog_sky_affect = v.fog_sky_affect
 		# Retro fog (Settings → Retro): a hard draw-distance fog from the region's distances.
 		var gs := get_node_or_null("/root/GameSettings")
 		var retro_fog: bool = gs != null and not Engine.is_editor_hint() and bool(gs.call("retro_fog_on"))
 		var depth_fog := retro_fog and RenderingServer.get_current_rendering_method() != "gl_compatibility"
-		_env.fog_mode = Environment.FOG_MODE_DEPTH if depth_fog else Environment.FOG_MODE_EXPONENTIAL
+		# The mode goes first, and only when it changes: setting it resets the density to 1.
+		var mode := Environment.FOG_MODE_DEPTH if depth_fog else Environment.FOG_MODE_EXPONENTIAL
+		if _env.fog_mode != mode:
+			_env.fog_mode = mode
+		_env.fog_light_color = v.fog_color
+		_env.fog_density = v.fog_density
+		_env.fog_sky_affect = v.fog_sky_affect
 		if retro_fog:
 			var start := float(v.get("retro_fog_start", 25.0))
 			var end := maxf(float(v.get("retro_fog_end", 110.0)), start + 5.0)
