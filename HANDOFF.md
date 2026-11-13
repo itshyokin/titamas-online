@@ -1,4 +1,4 @@
-# Handoff (12 Nov 2026)
+# Handoff (13 Nov 2026)
 
 Where things stand, for picking the work up in a new chat. Technical notes for each system are in `CLAUDE.md`; this file is the to-do list and the agreements made in conversation.
 
@@ -12,6 +12,21 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 ## Next up, in order
 1. **Your own art over Claude's** (art_sheets/, see its README): eyes, brows, noses, mouths, face extras, effects, item icons, ability/status/Codex icons. Draw over a sheet, save, run `python3 tools/art/sheets.py split`. (The Singed Plains region is done.)
 2. **Menus**: menu sounds and the Codex top tabs with icons are in (12 Nov). Keep checking every menu in the editor (title screen, creator, Codex pages, loot, dialogue, death choice, map) and list anything cramped or broken. Done 12 Nov: backpack 60 slots (12 × 5) + bigger doll; creator split into body/hair (left) and Face tabs Features / Eyes / Extras (right); Body Type 2 (reshaped body; tune in Database → Body Models). To check: class page attributes need scrolling to reach Vitality/Spirit; Body Type 2 with every outfit piece (gear cut from the body should follow; rigid pieces like the shield and hats don't move).
+
+## To test in the editor (done 12–13 Nov: sky, retro, elements, ladders, backpack, calendar, Emitter)
+- **Retro look**: Settings → Retro (intensity, pixelate, colours, dither, scanlines, terrain wobble, fog, narrow FOV, pixel font, texture pixels). Fog distance per region: Database → Regions → Fog (retro fog start/end); the editor shows the real hard-edged fog, the test renders can't. Turning Retro off used to white-out the screen (fixed).
+- **Sky**: the ringed planet is bigger and drawn as chunky pixels (Database → World → Sky: size, pixels, colour steps); shooting stars; the moon station shows the **real moon phase** (hover the clock for it).
+- **Calendar**: the HUD shows the real date (12/24 h clock in Settings → Graphics); holidays in Database → World → Calendar & holidays show beside the date; events can check Holiday / Moon phase / Date between.
+- **Elements**: water/frost hurt golems more ("Effective!"), shock less ("Resisted"); dragon/troll have their own (Database → Enemies → Elements).
+- **Damage numbers** arc out to the sides (Remnant 2 style); words stack above the name bar.
+- **Ladders**: the watchtower rope ladder is a real ladder now (climb all the way and step off at the top); letting go near the bottom no longer drops you through the ground; falling under the map puts you back on solid ground.
+- **Hearthstone in water** (stand still while swimming). **Enemies alert** idle friends within 14 m. **Bandits switch to a bow** when you're out of reach (on a rock).
+- **Flung bodies**: ragdolls are capped; loot from a body that ends up out of reach becomes a sack where it died.
+- **Backpack + pins**: every player wears a rounded pack; each achievement earned puts a pin on it (scattered spots, 25 max). Codex → Character: Show backpack / Show helmet (hidden helmet keeps its stats); creator has a Backpack box. One-handed swords hang at the hip while the pack is on.
+- **Achievements**: 25 (21 are placeholders to rewrite or delete), icons in assets/icons/achievements (32 px; sheet "achievements").
+- **Golems**: no name/health bar until they burst out; name bars are bigger.
+- **Emitter** (TitanTech revolver) in the weapon chest by the road (new characters; the chest opens once). Guns cost mana per shot (pistol 8, rifle 14, Emitter 5; Database → Items / Weapon Types). **Out of mana**: spells and shots take health instead (never below 1) and you're Weakened until regeneration pays it back; a mana potion clears it.
+- Also 12 Nov: elements, weapon auto-stow after 15 s, sitting hands (lap / warming at the fire), hands keep their size on thin/heavy builds, quest banner + objective pop-ups, still portraits, heat-haze fix (name bars in the desert), golem bounce crash fix.
 
 ## To test in the editor (done 12 Nov: classes and mage spells)
 - Each class starts with one skill from its tree's starting node (free, in hotbar box 1; hearthstone in 0): Fighter **Rage** (glows red 10 s, double damage), Rogue **Stealth** (now 10 s), Mage **Firebolt**. The Mage can now be chosen. Old saves: the old Firebolt/Mend boxes are cleared and the class skill goes in box 1. The other skill trees and nodes were removed (Frost Edge, Burst Quake, Cleave and Riposte are still in the game; add them back as nodes when you want them).
@@ -139,6 +154,10 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - **Rename the Hearthstone** (Blizzard's trademark). Owner picks the new name; then Claude renames the item, its Database fields, messages and the `use_hearth` wording, keeping old saves working (item id mapped).
 
 ## Backlog (agreed, not started)
+- **Sheaths/scabbards**: big weapons (greatswords, axes) on the back, blades in a scabbard at the hip (the bare sword at the hip looks odd). Just an idea so far.
+- The index finger still looks claw-like on some builds (hands).
+- Enemies and companions still just stop casting when out of mana (only the player pays with health).
+- Achievements: the owner writes the real set (21 are placeholders; keep the 25-pin layout).
 - (See Next up 1.) Owner may replace Claude-made art with their own: effect sprites (`tools/art/make_effect_sprites.py`), item/status/ability glyph icons (drawn in code), face parts and anime faces (`tools/art/make_face_parts.py`, `make_anime_face.py`), eyes, grass card; and the synthesised sounds/music. Same file names = drop-in replacements. Until then, list them on Steam's AI disclosure to be safe.
 - NPC idle animation per Database entry (sitting, leaning, sweeping…) for camps and inns.
 - Icicles on branches in snow (needs a small icicle model or sprite).
@@ -166,4 +185,5 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - Not checkable in Claude's test renderer (verify in the editor): decals (blood on slopes, leaves, cloud shadows), SSAO, the finisher kill-cam.
 
 ## Latest work (all pushed)
+13 Nov: retro-fog fix, ladders/under-map recovery, hearthstone in water, enemy alerts + bandit bows, backpack with pins + look toggles, 25 achievements, real calendar/moon/holidays, retro planet, golem nameplates, rounder pack, Remnant-style numbers, 12/24 h clock, Emitter, mana-from-health. 12 Nov: classes + mage spells, sky extras, elements, retro look.
 Batch Z on 12 Nov: inventory click-to-pick + dropped items, Z draw/stow, follower ladders, HUD badges/portraits, talk vignette/blur/freeze, animated desert golems with a guard, rivers and waterfalls, Monolith healing, campfires (checkpoint, rest, death choice, revive), seats and camp resting. Batch V on 11 Nov: Base Character defaults, switch-gated props (ladder), Saturn-style skill trees, backpack in the Codex, hotbar drag fix, Esc cancels. Batch U on 11 Nov: multi-material pieces + max_side, chainmail belt/trim/skirt, rotated NPCs/enemies facing fix. Batch T on 11 Nov: per-part face placement (creator + Database). Batch S on 11 Nov: anime/cat eyes, anime noses/mouths/brows/extras, Database look preview, short hair sway off. Batch R on 11 Nov: bigger eyes, heterochromia, brows / noses / mouths / extras, looks + gear for enemies. Batch Q on 10 Nov: Halo-style nav marker, Database item groups + Saturn icons, hotbar defaults, Spells in the Codex, Hearthstone in the air, matte terrain. Batches L–P on 10 Nov: safe areas (SafeArea box, off switch), indoor weather (roof check, muffled sound, cover map: rain outside doors, dry floors), performance (smoother streaming, sleeping AI, prop ranges, occlusion, quality settings, F3 overlay), snow and blizzards, effect sprites for abilities, insect sprites and Swarm Spots, the pixel look for effects and icons, ants, the troll boss and player knockdowns. Batches E–K on 9–10 Nov: falling leaves, random ambience, statuses and icons, injured walk, rarity, stealth / Frost Edge / Burst Quake, finisher cam, bats and the dragon, hair and cape sway by material, threat and smarter companions (wait for the player, never steal kills, go down and take cover), recruitable archer / mage / healer, Tab targeting with lock-on, region map (M), fall damage, blood, rain splashes, colour picker, Body Models categories, night and dawn sounds.
