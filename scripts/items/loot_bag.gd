@@ -22,6 +22,11 @@ var title := "Loot"
 var open := false
 
 var _age := 0.0
+## Where it was dropped (the spot the enemy died on, which someone could stand on). If the
+## body ends up somewhere it can't be reached (flung far, onto a cliff, into a rock), the
+## loot leaves it and waits here as a sack instead.
+var _home := Vector3.ZERO
+var _checked := false
 var _sack: Node3D
 var _prompt: Label3D
 var _sparkle: CPUParticles3D
@@ -45,6 +50,7 @@ static func drop_for(enemy_data: Dictionary, parent: Node, at: Vector3, body: No
 	bag.title = s.display_name if s else String(enemy_data.get("name", "Loot"))
 	parent.add_child(bag)
 	bag.global_position = at
+	bag._home = bag._ground_under(at)
 	return bag
 
 
@@ -127,7 +133,11 @@ func _physics_process(delta: float) -> void:
 		if model and not model.visible:
 			queue_free()  # the body is gone, and the loot with it
 			return
-		global_position = _body_spot()
+		var spot := _body_spot()
+		if _strayed(spot):
+			_leave_body()
+		else:
+			global_position = spot
 	elif _age > lifetime:
 		queue_free()
 		return
@@ -155,6 +165,46 @@ func _body_spot() -> Vector3:
 		return corpse.global_position
 	var hips := skel.global_transform * skel.get_bone_global_pose(bone).origin
 	return Vector3(hips.x, corpse.global_position.y + 0.05, hips.z)
+
+
+## Too far from where it died, or (once the body lies still) not on ground anyone can
+## stand on, or under something solid.
+func _strayed(spot: Vector3) -> bool:
+	var flat := Vector2(spot.x - _home.x, spot.z - _home.z).length()
+	if flat > 6.0 or absf(spot.y - _home.y) > 3.0:
+		return true
+	if _checked or not _body_settled():
+		return false
+	_checked = true
+	var space := get_world_3d().direct_space_state
+	var down := space.intersect_ray(PhysicsRayQueryParameters3D.create(spot + Vector3.UP * 1.0, spot + Vector3.DOWN * 1.5, 1))
+	if down.is_empty() or (down.normal as Vector3).y < 0.5:
+		return true
+	var up := space.intersect_ray(PhysicsRayQueryParameters3D.create(spot + Vector3.UP * 0.25, spot + Vector3.UP * 1.6, 1))
+	return not up.is_empty()
+
+
+func _body_settled() -> bool:
+	var cm := corpse.get_node_or_null("Model/Character") as CharacterModel
+	var skel := cm.get_skeleton() if cm else null
+	var rag := skel.get_node_or_null("Ragdoll") as Ragdoll if skel else null
+	if rag == null:
+		return _age > 2.0  # no ragdoll: the death clip has played out
+	return rag.is_settled()
+
+
+## Stops following the body and sits as a sack where it died.
+func _leave_body() -> void:
+	corpse = null
+	_age = 0.0
+	global_position = _home
+
+
+func _ground_under(at: Vector3) -> Vector3:
+	if not is_inside_tree():
+		return at
+	var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(at + Vector3.UP * 1.0, at + Vector3.DOWN * 4.0, 1))
+	return hit.position if not hit.is_empty() else at
 
 
 # --- Talkable -------------------------------------------------------------------

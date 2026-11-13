@@ -26,6 +26,12 @@ const BONES := [
 ]
 
 ## Still for this long (s) counts as settled; it settles anyway after max_time.
+const MAX_PUSH_FLAT := 7.0
+const MAX_PUSH_UP := 4.5
+## Parts never move faster than this (m/s): a part that starts inside a rock gets shoved
+## out hard by the physics, which used to launch whole bodies into the sky.
+const MAX_PART_SPEED := 12.0
+
 var still_time := 0.7
 var max_time := 6.0
 
@@ -49,7 +55,10 @@ static func start(model: CharacterModel, push := Vector3.ZERO) -> Ragdoll:
 		skel.add_child(rag)
 	rag._clear()
 	model.set_speed(0.0)
-	rag._build(skel, push)
+	# Big hits stacking up (knockback + knockdown + death push) shouldn't fling bodies
+	# over cliffs or into the scenery.
+	var flat := Vector3(push.x, 0.0, push.z).limit_length(MAX_PUSH_FLAT)
+	rag._build(skel, Vector3(flat.x, clampf(push.y, -MAX_PUSH_UP, MAX_PUSH_UP), flat.z))
 	rag.active = true
 	return rag
 
@@ -173,6 +182,10 @@ func _physics_process(delta: float) -> void:
 		return
 	_age += delta
 	var moving := false
+	for p: Array in _parts:
+		var body := p[1] as RigidBody3D
+		if is_instance_valid(body) and body.linear_velocity.length() > MAX_PART_SPEED:
+			body.linear_velocity = body.linear_velocity.limit_length(MAX_PART_SPEED)
 	for p: Array in _parts:
 		var body := p[1] as RigidBody3D
 		if is_instance_valid(body) and not body.sleeping and (body.linear_velocity.length() > 0.25 or body.angular_velocity.length() > 1.5):
