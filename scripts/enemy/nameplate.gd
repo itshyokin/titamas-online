@@ -4,7 +4,7 @@ extends Node3D
 ## shows when the camera is close enough, or when the combatant is hurt or targeted.
 
 @export var show_distance := 30.0
-@export var width := 0.9
+@export var width := 1.15
 
 var stats: Stats
 var targeted := false
@@ -31,7 +31,7 @@ func _ready() -> void:
 	stats = Combat.stats_of(get_parent())
 	_label = Label3D.new()
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_label.pixel_size = 0.0035
+	_label.pixel_size = 0.004
 	_label.font_size = 40
 	_label.outline_size = 10
 	_label.position = Vector3.UP * 0.16
@@ -39,9 +39,9 @@ func _ready() -> void:
 	add_child(_label)
 	_bar_holder = Node3D.new()
 	add_child(_bar_holder)
-	_back = _bar(Color(0, 0, 0, 0.6), 0.09, 0)
-	_chunk = _bar(Color(1.0, 0.85, 0.3), 0.06, 1)
-	_fill = _bar(Color(0.85, 0.15, 0.12), 0.06, 2)
+	_back = _bar(Color(0, 0, 0, 0.6), 0.12, 0)
+	_chunk = _bar(Color(1.0, 0.85, 0.3), 0.085, 1)
+	_fill = _bar(Color(0.85, 0.15, 0.12), 0.085, 2)
 	if stats:
 		stats.health_changed.connect(_on_health)
 		_on_health(stats.health, stats.max_health)
@@ -102,7 +102,9 @@ func _process(delta: float) -> void:
 		return
 	var dist := cam.global_position.distance_to(global_position)
 	var hurt := stats.health < stats.max_health
-	visible = not stats.is_dead() and dist > 2.5 and (targeted or dist < show_distance * (1.5 if hurt else 1.0))
+	# A golem still hiding in the ground (its owner's `_buried`) keeps its secret.
+	var hiding: bool = get_parent().get("_buried") == true
+	visible = not hiding and not stats.is_dead() and dist > 2.5 and (targeted or dist < show_distance * (1.5 if hurt else 1.0))
 	if visible:
 		# Face the camera (the bar is two flat quads, so turn the holder, not each quad).
 		_bar_holder.global_basis = cam.global_basis

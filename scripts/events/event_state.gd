@@ -136,6 +136,13 @@ static func test(c: Dictionary, self_key: String, player: Node) -> bool:
 			return String(data.get("class", "")) == String(c.get("id", ""))
 		"quest":
 			return Quests.test(c)
+		# The real-world calendar (Calendar): holidays from data/world.json, the real moon.
+		"holiday":
+			return Calendar.is_holiday(String(c.get("id", ""))) == is_on
+		"moon":
+			return (Calendar.moon_phase_id() == String(c.get("phase", "full"))) == is_on
+		"date":
+			return Calendar.in_dates(String(c.get("from", "")), String(c.get("to", ""))) == is_on
 	return true
 
 

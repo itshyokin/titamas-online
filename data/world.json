@@ -42,8 +42,8 @@
 	"sky": {
 		"planet": true,
 		"planet_bearing": 0.0,
-		"planet_elevation": 24.0,
-		"planet_size": 9.0,
+		"planet_elevation": 30.0,
+		"planet_size": 15.0,
 		"planet_tilt": 18.0,
 		"planet_roll": 0.22,
 		"planet_band_a": "#eed6a8",
@@ -54,6 +54,75 @@
 		"moon_hull": "#9ea3ad",
 		"moon_lines": "#40c7ff",
 		"moon_line_glow": 1.6,
-		"shooting_stars": 4.0
-	}
+		"shooting_stars": 4.0,
+		"planet_pixels": 96.0,
+		"planet_colors": 10.0,
+		"moon_phase": -1.0
+	},
+	"holidays": [
+		{
+			"id": "new_year",
+			"name": "New Year's Day",
+			"month": 1,
+			"day": 1,
+			"days": 1
+		},
+		{
+			"id": "valentines",
+			"name": "Valentine's Day",
+			"month": 2,
+			"day": 14,
+			"days": 1
+		},
+		{
+			"id": "st_patricks",
+			"name": "St. Patrick's Day",
+			"month": 3,
+			"day": 17,
+			"days": 1
+		},
+		{
+			"id": "april_fools",
+			"name": "April Fools' Day",
+			"month": 4,
+			"day": 1,
+			"days": 1
+		},
+		{
+			"id": "easter",
+			"name": "Easter",
+			"easter": true,
+			"offset": 0,
+			"days": 1
+		},
+		{
+			"id": "halloween",
+			"name": "Halloween",
+			"month": 10,
+			"day": 25,
+			"days": 7
+		},
+		{
+			"id": "thanksgiving",
+			"name": "Thanksgiving",
+			"month": 11,
+			"weekday": 4,
+			"nth": 4,
+			"days": 1
+		},
+		{
+			"id": "winter_festival",
+			"name": "Winter Festival",
+			"month": 12,
+			"day": 24,
+			"days": 3
+		},
+		{
+			"id": "new_years_eve",
+			"name": "New Year's Eve",
+			"month": 12,
+			"day": 31,
+			"days": 1
+		}
+	]
 }

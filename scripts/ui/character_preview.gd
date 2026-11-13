@@ -16,6 +16,8 @@ var _yaw := PI  # models face -Z; turn them to the camera
 var framing := 1.0
 ## Portrait (HUD frames): head and shoulders, no dragging, a still picture.
 var portrait := false
+## Show the player's backpack (with the account's achievement pins) when the look has it on.
+var backpack := true
 var _redraw := 0.0
 
 
@@ -107,7 +109,7 @@ func _frame() -> void:
 func show_player(player: Node) -> void:
 	var look := {}
 	var session := get_tree().root.get_node_or_null("GameSession") if is_inside_tree() else null
-	if session and session.call("active"):
+	if session:
 		look = session.get("data").get("look", {})
 	var inv := player.get_node_or_null("Inventory") if player else null
 	show_look(look, inv.get("equipped") if inv else {})
@@ -120,9 +122,15 @@ func show_look(look: Dictionary, equipment: Dictionary) -> void:
 	# The model node's scale is the character's height; frame it.
 	_pivot.scale = Vector3.ONE
 	for slot in ["head", "shoulders", "chest", "hands", "legs", "feet", "off_hand"]:
+		if slot == "head" and not PlayerGear.look_flag(look, "show_helmet"):
+			continue
 		var item := Database.item(String(equipment.get(slot, "")))
 		if not item.is_empty():
 			_model.wear(item, slot)
+	if backpack:
+		var ach := get_tree().root.get_node_or_null("Achievements") if is_inside_tree() else null
+		var ids: Array = ach.call("earned") if ach else []
+		_model.set_backpack(PlayerGear.look_flag(look, "show_backpack"), Backpack.pins_of(ids, Database.achievements))
 	_frame()
 	if portrait and is_inside_tree():
 		_snapshot()

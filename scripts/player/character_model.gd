@@ -356,6 +356,32 @@ func set_worn_visible(tag: String, on: bool) -> void:
 			(node as Node3D).visible = on
 
 
+## The player's backpack (Backpack) on the upper back, with these achievement pins
+## (entries from data/achievements.json). `on` false takes it off.
+func set_backpack(on: bool, pins: Array = []) -> void:
+	if _backpack and is_instance_valid(_backpack):
+		_backpack.get_parent().queue_free()  # its BoneAttachment3D
+	_backpack = null
+	if not on or get_skeleton() == null:
+		return
+	var pack := Backpack.new()
+	# Bigger builds push it out a little.
+	var out := maxf(weight, 0.0) * 0.045
+	var at := Backpack.CENTER + Vector3(0, 0, out)
+	if attach_to_bone(pack, "mixamorig_Spine2", Transform3D(Basis.IDENTITY, at)) == null:
+		pack.free()
+		return
+	pack.set_pins(pins)
+	_backpack = pack
+
+
+func has_backpack() -> bool:
+	return _backpack != null and is_instance_valid(_backpack)
+
+
+var _backpack: Backpack = null
+
+
 func take_off_all() -> void:
 	for tag in _worn.keys():
 		take_off(tag)

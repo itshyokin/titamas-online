@@ -65,9 +65,15 @@ func apply_info(info: Dictionary) -> void:
 	stats.display_name = String(info.get("name", "Player"))
 	stats.level = int(info.get("level", 1))
 	character.take_off_all()
-	character.apply_appearance(Database.resolve_appearance(info.get("look", {})))
+	var look: Dictionary = info.get("look", {}) if info.get("look") is Dictionary else {}
+	character.apply_appearance(Database.resolve_appearance(look))
+	# Their backpack with their own achievement pins (sent with their info).
+	character.set_backpack(PlayerGear.look_flag(look, "show_backpack"),
+		Backpack.pins_of(info.get("pins", []) if info.get("pins") is Array else [], Database.achievements))
 	var eq: Dictionary = info.get("equipment", {})
 	for slot in ["head", "shoulders", "chest", "hands", "legs", "feet", "off_hand"]:
+		if slot == "head" and not PlayerGear.look_flag(look, "show_helmet"):
+			continue
 		var item := Database.item(String(eq.get(slot, "")))
 		if not item.is_empty():
 			character.wear(item, slot)

@@ -3,7 +3,7 @@
 		{
 			"description": "Collect 3 Bandit Insignias for the villager.",
 			"hidden": false,
-			"icon": "",
+			"icon": "res://assets/icons/achievements/BANDIT_BASHER.png",
 			"id": "BANDIT_BASHER",
 			"name": "Bandit Basher",
 			"points": 10.0,
@@ -15,7 +15,7 @@
 		{
 			"description": "Defeat your first enemy.",
 			"hidden": false,
-			"icon": "",
+			"icon": "res://assets/icons/achievements/FIRST_BLOOD.png",
 			"id": "FIRST_BLOOD",
 			"name": "First Blood",
 			"points": 5.0,
@@ -29,7 +29,7 @@
 		{
 			"description": "Defeat Mossback the Troll.",
 			"hidden": false,
-			"icon": "",
+			"icon": "res://assets/icons/achievements/mossback_beat.png",
 			"id": "mossback_beat",
 			"name": "Stoned",
 			"points": 5.0,
@@ -44,12 +44,296 @@
 			"id": "knights_to_meet_ya",
 			"name": "Knights to Meet Ya",
 			"description": "Get Katrina to join your party.",
-			"icon": "",
+			"icon": "res://assets/icons/achievements/knights_to_meet_ya.png",
 			"points": 5.0,
 			"hidden": false,
 			"steam_id": "",
 			"rule": {
 				"kind": "event"
+			}
+		},
+		{
+			"id": "awakening",
+			"name": "A Strange Awakening",
+			"description": "Wake beside the Monolith.",
+			"icon": "res://assets/icons/achievements/awakening.png",
+			"points": 5.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "switch",
+				"switch": "tut_started"
+			}
+		},
+		{
+			"id": "practice_makes_perfect",
+			"name": "Practice Makes Perfect",
+			"description": "Finish your practice on the training dummy.",
+			"icon": "res://assets/icons/achievements/practice_makes_perfect.png",
+			"points": 5.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "switch",
+				"switch": "tut_practice_done"
+			}
+		},
+		{
+			"id": "rumble_in_the_quarry",
+			"name": "Rumble in the Quarry",
+			"description": "Wake something big in the quarry.",
+			"icon": "res://assets/icons/achievements/rumble_in_the_quarry.png",
+			"points": 5.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "switch",
+				"switch": "troll_awake"
+			}
+		},
+		{
+			"id": "level_5",
+			"name": "Finding Your Feet",
+			"description": "Reach level 5.",
+			"icon": "res://assets/icons/achievements/level_5.png",
+			"points": 10.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "level",
+				"level": 5.0
+			}
+		},
+		{
+			"id": "level_8",
+			"name": "Seasoned",
+			"description": "Reach level 8.",
+			"icon": "res://assets/icons/achievements/level_8.png",
+			"points": 15.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "level",
+				"level": 8.0
+			}
+		},
+		{
+			"id": "level_max",
+			"name": "Legend of Titamas",
+			"description": "Reach the highest level.",
+			"icon": "res://assets/icons/achievements/level_max.png",
+			"points": 25.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "level",
+				"level": 10.0
+			}
+		},
+		{
+			"id": "slayer_25",
+			"name": "Monster Hunter",
+			"description": "Defeat 25 enemies.",
+			"icon": "res://assets/icons/achievements/slayer_25.png",
+			"points": 10.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "defeat",
+				"enemy": "",
+				"count": 25.0
+			}
+		},
+		{
+			"id": "slayer_100",
+			"name": "Slayer",
+			"description": "Defeat 100 enemies.",
+			"icon": "res://assets/icons/achievements/slayer_100.png",
+			"points": 25.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "defeat",
+				"enemy": "",
+				"count": 100.0
+			}
+		},
+		{
+			"id": "highway_cleaner",
+			"name": "Highway Cleaner",
+			"description": "Defeat 10 bandits.",
+			"icon": "res://assets/icons/achievements/highway_cleaner.png",
+			"points": 10.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "defeat",
+				"enemy": "bandit",
+				"count": 10.0
+			}
+		},
+		{
+			"id": "batty",
+			"name": "Gone Batty",
+			"description": "Defeat 5 cave bats.",
+			"icon": "res://assets/icons/achievements/batty.png",
+			"points": 10.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "defeat",
+				"enemy": "cave_bat",
+				"count": 5.0
+			}
+		},
+		{
+			"id": "rock_bottom",
+			"name": "Rock Bottom",
+			"description": "Defeat a Stone Golem.",
+			"icon": "res://assets/icons/achievements/rock_bottom.png",
+			"points": 10.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "defeat",
+				"enemy": "golem",
+				"count": 1.0
+			}
+		},
+		{
+			"id": "fools_gold",
+			"name": "Fool's Gold",
+			"description": "Defeat a Gilded Golem before it goes off.",
+			"icon": "res://assets/icons/achievements/fools_gold.png",
+			"points": 15.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "defeat",
+				"enemy": "gold_golem",
+				"count": 1.0
+			}
+		},
+		{
+			"id": "dragonslayer",
+			"name": "Dragonslayer",
+			"description": "Defeat the dragon.",
+			"icon": "res://assets/icons/achievements/dragonslayer.png",
+			"points": 50.0,
+			"hidden": true,
+			"steam_id": "",
+			"rule": {
+				"kind": "defeat",
+				"enemy": "dragon",
+				"count": 1.0
+			}
+		},
+		{
+			"id": "pocket_change",
+			"name": "Pocket Change",
+			"description": "Carry 500 gold.",
+			"icon": "res://assets/icons/achievements/pocket_change.png",
+			"points": 5.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "gold",
+				"amount": 500.0
+			}
+		},
+		{
+			"id": "fat_purse",
+			"name": "Fat Purse",
+			"description": "Carry 1,000 gold.",
+			"icon": "res://assets/icons/achievements/fat_purse.png",
+			"points": 10.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "gold",
+				"amount": 1000.0
+			}
+		},
+		{
+			"id": "tycoon",
+			"name": "Tycoon",
+			"description": "Carry 5,000 gold.",
+			"icon": "res://assets/icons/achievements/tycoon.png",
+			"points": 25.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "gold",
+				"amount": 5000.0
+			}
+		},
+		{
+			"id": "herbalist",
+			"name": "Herbalist",
+			"description": "Carry 5 lavender.",
+			"icon": "res://assets/icons/achievements/herbalist.png",
+			"points": 5.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "item",
+				"item": "lavender",
+				"count": 5.0
+			}
+		},
+		{
+			"id": "berry_picker",
+			"name": "Berry Picker",
+			"description": "Carry 10 red berries.",
+			"icon": "res://assets/icons/achievements/berry_picker.png",
+			"points": 5.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "item",
+				"item": "red_berries",
+				"count": 10.0
+			}
+		},
+		{
+			"id": "lumberjack",
+			"name": "Lumberjack",
+			"description": "Carry 10 wood logs.",
+			"icon": "res://assets/icons/achievements/lumberjack.png",
+			"points": 10.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "item",
+				"item": "wood_log",
+				"count": 10.0
+			}
+		},
+		{
+			"id": "quarryman",
+			"name": "Quarryman",
+			"description": "Carry 10 stone chunks.",
+			"icon": "res://assets/icons/achievements/quarryman.png",
+			"points": 10.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "item",
+				"item": "stone_chunk",
+				"count": 10.0
+			}
+		},
+		{
+			"id": "pin_collector",
+			"name": "Pin Collector",
+			"description": "Earn 10 other achievements.",
+			"icon": "res://assets/icons/achievements/pin_collector.png",
+			"points": 20.0,
+			"hidden": false,
+			"steam_id": "",
+			"rule": {
+				"kind": "achievements",
+				"count": 10.0
 			}
 		}
 	]

@@ -17,6 +17,7 @@ Sheets:
                     x128, see tools/art/make_face_parts.py; anime_* are drawn as they are)
   effects           ability / weather / insect sprites (white on clear; _N = N frames)
   item_icons        the 16 px item icons
+  achievements      the 32 px achievement icons (also the backpack pins)
   icons             ability icons, status glyphs (white), Codex tabs and old item glyphs (24 px)
 """
 import json
@@ -64,6 +65,7 @@ def sheets():
 		"face_extras": files(FACE, lambda n: not face(PARTS)(n)),
 		"effects": files("assets/effects/builtin"),
 		"item_icons": files("assets/icons/items"),
+		"achievements": files("assets/icons/achievements"),
 		"icons": files("assets/icons/abilities") + files("assets/icons/statuses") + files("assets/icons/codex") + files("assets/icons/custom", lambda n: n.startswith("glyph_")),
 	}
 

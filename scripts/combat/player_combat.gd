@@ -313,18 +313,29 @@ func _equip_weapons() -> void:
 			held.basis = held.basis * Basis(Vector3(0, 0, 1), PI) * Basis(Vector3(1, 0, 0), PI * 0.5)
 		var back_model := WeaponModels.build(String(item.get("model", "")))
 		var back: Node3D = null
-		if back_model:
+		var pack := character.has_backpack()
+		if back_model and pack and slot == "primary" and not is_ranged(t) and int(t.get("hands", 1)) < 2:
+			# With the backpack on, one-handed blades hang at the left hip (the pins on the
+			# pack stay in view): hilt forward and up, blade down and back.
+			var hips := character.bone_rest_position("mixamorig_Hips")
+			var blade := Vector3(0, -0.6, 0.8).normalized()
+			var side := Vector3(1, 0, 0)
+			back = character.attach_to_bone(back_model, "mixamorig_Hips",
+				Transform3D(Basis(side, blade, side.cross(blade)), hips + Vector3(-0.21, 0.02, -0.02)))
+		elif back_model:
+			# Big weapons and bows: across the back, over the pack when there is one.
+			var over := Vector3(0, 0, Backpack.SIZE.z + 0.03) if pack else Vector3.ZERO
 			if slot == "primary":
 				# Hilt over the right shoulder.
 				var blade := Vector3(-0.5, -0.86, 0).normalized()
 				back = character.attach_to_bone(back_model, "mixamorig_Spine2",
-					Transform3D(Basis(blade.cross(flat).normalized(), blade, flat), spine + Vector3(0.16, 0.22, 0.17)))
+					Transform3D(Basis(blade.cross(flat).normalized(), blade, flat), spine + Vector3(0.16, 0.22, 0.17) + over))
 			else:
 				var limb := Vector3(0.55, 0.83, 0).normalized()
 				if not is_ranged(t):
 					limb = Vector3(0.5, -0.86, 0).normalized()  # hilt over the left shoulder
 				back = character.attach_to_bone(back_model, "mixamorig_Spine2",
-					Transform3D(Basis(limb.cross(-flat).normalized(), limb, -flat), spine + Vector3(-0.02, -0.05, 0.21)))
+					Transform3D(Basis(limb.cross(-flat).normalized(), limb, -flat), spine + Vector3(-0.02, -0.05, 0.21) + over))
 		_models[slot] = {"hand": hand, "back": back}
 	_show_weapons()
 

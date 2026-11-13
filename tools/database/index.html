@@ -1542,14 +1542,14 @@ const TABS = {
 				{ key: "description", label: "How it's earned", type: "textarea", wide: true, help: "The pop-up switches to this after the name; also listed on the title screen's Achievements page." },
 				{ key: "points", label: "Points", type: "int" },
 				{ key: "hidden", label: "Hidden until earned", type: "bool", help: "Listed as ??? on the Achievements page." },
-				{ key: "icon", label: "Icon image", type: "text", help: "A res:// image (PNG) shown on the badge. Empty = the trophy." },
+				{ key: "icon", label: "Icon image", type: "text", help: "A res:// image (PNG, 32×32 pixel art in assets/icons/achievements) shown on the badge and on the pin it puts on the player's backpack. Empty = the trophy. tools/art/make_achievement_icons.py draws placeholders for new ids (it never overwrites yours)." },
 				{ key: "steam_id", label: "Steam ID", type: "text", help: "Its API name on Steam, if different from the ID." },
 			]],
 			["Earned when", [
-				{ key: "rule.kind", label: "Rule", type: "select", options: [["event", "An event unlocks it (command)"], ["switch", "A switch turns on"], ["defeat", "Enemies defeated"], ["level", "Reaching a level"], ["item", "Carrying an item"], ["gold", "Holding gold"]] },
+				{ key: "rule.kind", label: "Rule", type: "select", options: [["event", "An event unlocks it (command)"], ["switch", "A switch turns on"], ["defeat", "Enemies defeated"], ["level", "Reaching a level"], ["item", "Carrying an item"], ["gold", "Holding gold"], ["achievements", "Earning other achievements"]] },
 				{ key: "rule.switch", label: "Switch", type: "select", empty: true, options: () => switchOptions(), show: e => (e.rule || {}).kind === "switch" },
 				{ key: "rule.enemy", label: "Enemy (empty = any)", type: "select", empty: true, options: () => (((data.enemies || {}).enemies) || []).map(x => [x.id, (x.display_name || x.name || x.id) + "  (" + x.id + ")"]), show: e => (e.rule || {}).kind === "defeat" },
-				{ key: "rule.count", label: "How many", type: "int", show: e => ["defeat", "item"].includes((e.rule || {}).kind) },
+				{ key: "rule.count", label: "How many", type: "int", show: e => ["defeat", "item", "achievements"].includes((e.rule || {}).kind) },
 				{ key: "rule.level", label: "Level", type: "int", show: e => (e.rule || {}).kind === "level" },
 				{ key: "rule.item", label: "Item", type: "select", empty: true, options: () => itemOptions(), show: e => (e.rule || {}).kind === "item" },
 				{ key: "rule.amount", label: "Gold", type: "int", show: e => (e.rule || {}).kind === "gold" },
@@ -1711,14 +1711,19 @@ const TABS = {
 				{ key: "music.fade_in", label: "Fades in over (s)", type: "number", def: 1.2 },
 				{ key: "music.fade_out", label: "Fades back to the area's music over (s)", type: "number", def: 4 },
 			]],
+			["Calendar & holidays (the real-world date)", [
+				{ key: "holidays", label: "Holidays (events can check “Holiday is”)", type: "holidaylist", wide: true, help: "Titamas uses the real date on the player's computer. A holiday is on from its date for its number of days. Fixed date: month + day. Like Thanksgiving: month + weekday + which one (−1 = last). Easter: tick Easter and an offset in days." },
+			]],
 			["Sea", [
 				{ key: "sea_level", label: "Sea level (m)", type: "number", def: -5, help: "Height of the endless ocean in Blender metres (Blender Z). Anything below it is water you swim in. Changes show live; grass already grown near the coast updates when you walk away and back." },
 			]],
 			["Sky (every region)", [
 				{ key: "sky.planet", label: "Ringed planet in the sky", type: "bool", def: true },
 				{ key: "sky.planet_bearing", label: "Planet direction (° from north, 90 = east)", type: "number", def: 0 },
-				{ key: "sky.planet_elevation", label: "Planet height above the horizon (°)", type: "number", def: 24 },
-				{ key: "sky.planet_size", label: "Planet size (° across its radius)", type: "number", def: 9 },
+				{ key: "sky.planet_elevation", label: "Planet height above the horizon (°)", type: "number", def: 30 },
+				{ key: "sky.planet_size", label: "Planet size (° across its radius)", type: "number", def: 15 },
+				{ key: "sky.planet_pixels", label: "Planet pixels across (retro look; 0 = smooth)", type: "number", def: 96, help: "The planet and its rings are drawn on a grid this many pixels across the planet, with a few colour steps and a dither, like the rest of the game." },
+				{ key: "sky.planet_colors", label: "Planet colour steps per channel", type: "number", def: 10 },
 				{ key: "sky.planet_tilt", label: "Rings tipped toward you (°)", type: "number", def: 18 },
 				{ key: "sky.planet_roll", label: "Rings leaning sideways", type: "number", def: 0.22 },
 				{ key: "sky.planet_band_a", label: "Planet light bands", type: "color" },
@@ -1729,6 +1734,7 @@ const TABS = {
 				{ key: "sky.moon_hull", label: "Moon hull colour", type: "color" },
 				{ key: "sky.moon_lines", label: "Moon line colour", type: "color" },
 				{ key: "sky.moon_line_glow", label: "Moon line glow", type: "number", def: 1.6 },
+				{ key: "sky.moon_phase", label: "Moon phase (−1 = the real moon today)", type: "number", def: -1, help: "The moon follows the real one on your computer's date. For testing: 0 = new, 0.25 = first quarter, 0.5 = full, 0.75 = last quarter." },
 				{ key: "sky.shooting_stars", label: "Shooting stars per minute (night)", type: "number", def: 4 },
 			]],
 			["Ambient occlusion (Settings → Graphics turns it on/off)", [
@@ -2988,6 +2994,39 @@ function fieldControl(t, entry, f) {
 			wrap.appendChild(add);
 			break;
 		}
+		case "holidaylist": {
+			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
+			wrap.className += " list-field";
+			wrap.appendChild(label);
+			const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m, i) => [String(i + 1), m]);
+			const weekdays = [["", "date"], ["0", "Sun"], ["1", "Mon"], ["2", "Tue"], ["3", "Wed"], ["4", "Thu"], ["5", "Fri"], ["6", "Sat"]];
+			list.forEach((r, i) => {
+				const row = el("div", { className: "row" });
+				const txt = (key, w, ph) => { const t = el("input", { type: "text", value: r[key] || "", placeholder: ph }); t.style.width = w; t.oninput = () => { list[i][key] = t.value; set(list); }; row.appendChild(t); };
+				const num = (key, w, title, def) => { const n = el("input", { type: "number", value: r[key] ?? def, step: 1, title }); n.style.width = w; n.oninput = () => { const v = parseInt(n.value); if (!Number.isNaN(v)) { list[i][key] = v; set(list); } }; row.appendChild(n); };
+				txt("id", "120px", "id"); txt("name", "150px", "Name");
+				const easter = el("input", { type: "checkbox", checked: !!r.easter, title: "Easter-based" });
+				easter.onchange = () => { if (easter.checked) list[i].easter = true; else delete list[i].easter; set(list, true); };
+				row.append(el("span", { textContent: "Easter" }), easter);
+				if (r.easter) { row.appendChild(el("span", { textContent: "offset" })); num("offset", "60px", "Days after Easter Sunday (negative = before)", 0); }
+				else {
+					const m = selectOf(months, String(r.month || 1), false); m.style.flex = "0 0 70px"; m.onchange = () => { list[i].month = parseInt(m.value); set(list); }; row.appendChild(m);
+					const wd = selectOf(weekdays, r.weekday === undefined ? "" : String(r.weekday), false); wd.style.flex = "0 0 70px"; wd.title = "A fixed date, or a weekday (e.g. the 4th Thursday)";
+					wd.onchange = () => { if (wd.value === "") { delete list[i].weekday; delete list[i].nth; list[i].day = list[i].day || 1; } else { list[i].weekday = parseInt(wd.value); list[i].nth = list[i].nth || 1; delete list[i].day; } set(list, true); };
+					row.appendChild(wd);
+					if (r.weekday === undefined) num("day", "55px", "Day of the month", 1); else { row.appendChild(el("span", { textContent: "no." })); num("nth", "50px", "Which one in the month (1–5, −1 = last)", 1); }
+				}
+				row.appendChild(el("span", { textContent: "days" })); num("days", "50px", "How many days it lasts", 1);
+				const rm = el("button", { textContent: "✕" });
+				rm.onclick = () => { list.splice(i, 1); set(list, true); };
+				row.appendChild(rm);
+				wrap.appendChild(row);
+			});
+			const add = el("button", { textContent: "+ Holiday" });
+			add.onclick = () => { list.push({ id: "new_holiday", name: "New Holiday", month: 1, day: 1, days: 1 }); set(list, true); };
+			wrap.appendChild(add);
+			break;
+		}
 		case "skillnodes": {
 			wrap.appendChild(skillTreeEditor(entry));
 			break;
@@ -3186,13 +3225,19 @@ function condText(conds) {
 			case "gold": return "gold ≥ " + c.value;
 			case "level": return "level ≥ " + c.value;
 			case "class": return "class is " + nameOf(classOptions(), c.id);
+			case "quest": return "quest " + (c.id || "?") + " is " + c.state;
+			case "holiday": return c.id ? "holiday " + c.id : "any holiday";
+			case "moon": return "moon is " + (MOON_PHASES.find(p => p[0] === c.phase) || [0, c.phase])[1];
+			case "date": return "date " + c.from + (c.to && c.to !== c.from ? " – " + c.to : "");
 		}
 		return "?";
 	}).join(" and ");
 }
 
-const COND_TYPES = [["switch", "Switch"], ["self", "Self switch"], ["variable", "Variable"], ["item", "Has item"], ["gold", "Has gold"], ["level", "Level at least"], ["class", "Class is"], ["quest", "Quest is"]];
-const COND_BLANK = { switch: { id: "", is: true }, self: { letter: "A", is: true }, variable: { id: "", op: ">=", value: 1 }, item: { item: "", count: 1 }, gold: { value: 10 }, level: { value: 2 }, class: { id: "" }, quest: { id: "", state: "active" } };
+const COND_TYPES = [["switch", "Switch"], ["self", "Self switch"], ["variable", "Variable"], ["item", "Has item"], ["gold", "Has gold"], ["level", "Level at least"], ["class", "Class is"], ["quest", "Quest is"], ["holiday", "Holiday is on (real date)"], ["moon", "Moon phase is (real moon)"], ["date", "Date is between (real date)"]];
+const COND_BLANK = { switch: { id: "", is: true }, self: { letter: "A", is: true }, variable: { id: "", op: ">=", value: 1 }, item: { item: "", count: 1 }, gold: { value: 10 }, level: { value: 2 }, class: { id: "" }, quest: { id: "", state: "active" }, holiday: { id: "", is: true }, moon: { phase: "full", is: true }, date: { from: "12-24", to: "12-26", is: true } };
+const MOON_PHASES = [["new", "New Moon"], ["waxing_crescent", "Waxing Crescent"], ["first_quarter", "First Quarter"], ["waxing_gibbous", "Waxing Gibbous"], ["full", "Full Moon"], ["waning_gibbous", "Waning Gibbous"], ["last_quarter", "Last Quarter"], ["waning_crescent", "Waning Crescent"]];
+const holidayOptions = () => (((data.world || {}).holidays) || []).map(h => [h.id, h.name || h.id]);
 
 // Rows of conditions, edited in place.
 function conditionsEditor(list, onChange) {
@@ -3214,6 +3259,12 @@ function conditionsEditor(list, onChange) {
 			case "gold": case "level": num("value", "100px"); break;
 			case "class": sel(classOptions(), "id", true); break;
 			case "quest": sel(questOptions(), "id", true); sel([["not_started", "not started"], ["active", "active"], ["ready", "ready to hand in"], ["done", "done"], ["failed", "failed"]], "state", false); break;
+			case "holiday": sel([["", "(any holiday)"]].concat(holidayOptions()), "id", false); onoff(); break;
+			case "moon": sel(MOON_PHASES, "phase", false); onoff(); break;
+			case "date": {
+				const t = key => { const i = el("input", { type: "text", value: c[key] || "", placeholder: "MM-DD" }); i.style.width = "70px"; i.oninput = () => { c[key] = i.value; onChange(); }; row.appendChild(i); };
+				t("from"); row.appendChild(el("span", { textContent: "to" })); t("to"); onoff(); break;
+			}
 		}
 		const rm = el("button", { textContent: "✕", title: "Remove" });
 		rm.onclick = () => { list.splice(i, 1); onChange(true); };

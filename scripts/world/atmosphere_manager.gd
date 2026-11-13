@@ -121,6 +121,8 @@ func _process(delta: float) -> void:
 		# Ambient occlusion settings (data/world.json) apply live as the Database saves them.
 		if not Engine.is_editor_hint() and DataFiles.modified_time(DataFiles.WORLD) != _world_time:
 			_apply_ssao()
+		if _sky:
+			_sky.set_shader_parameter("moon_phase", Calendar.moon_phase())  # the real moon moves on
 		if DataFiles.modified_time(regions_file) != _file_time:
 			_load_regions()
 			if current and not Engine.is_editor_hint():
@@ -497,10 +499,14 @@ func _apply_sky_extras(sky: Dictionary) -> void:
 	if _sky == null:
 		return
 	var b := deg_to_rad(float(sky.get("planet_bearing", 0.0)))
-	var e := deg_to_rad(float(sky.get("planet_elevation", 24.0)))
+	var e := deg_to_rad(float(sky.get("planet_elevation", 30.0)))
 	_sky.set_shader_parameter("planet_on", bool(sky.get("planet", true)))
 	_sky.set_shader_parameter("planet_dir", Vector3(sin(b) * cos(e), sin(e), -cos(b) * cos(e)))
-	_sky.set_shader_parameter("planet_radius", sin(deg_to_rad(float(sky.get("planet_size", 9.0)))))
+	_sky.set_shader_parameter("planet_radius", sin(deg_to_rad(float(sky.get("planet_size", 15.0)))))
+	_sky.set_shader_parameter("planet_pixels", float(sky.get("planet_pixels", 96.0)))
+	_sky.set_shader_parameter("planet_colors", float(sky.get("planet_colors", 10.0)))
+	Calendar.phase_override = float(sky.get("moon_phase", -1.0))
+	_sky.set_shader_parameter("moon_phase", Calendar.moon_phase())
 	_sky.set_shader_parameter("planet_tilt", deg_to_rad(float(sky.get("planet_tilt", 18.0))))
 	_sky.set_shader_parameter("planet_roll", float(sky.get("planet_roll", 0.22)))
 	_sky.set_shader_parameter("planet_day", float(sky.get("planet_day", 0.45)))

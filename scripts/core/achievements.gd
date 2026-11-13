@@ -11,6 +11,7 @@ extends Node
 ##   {kind: "level", level}                reach a level
 ##   {kind: "item", item, count}           carry an item
 ##   {kind: "gold", amount}                hold this much gold
+##   {kind: "achievements", count}         earn this many others
 ## Steam: when a Steam singleton (GodotSteam) is present, unlocks are sent to it too.
 
 signal unlocked(id: String)
@@ -46,6 +47,16 @@ func is_unlocked(id: String) -> bool:
 ## When it was earned (unix time), 0 if not.
 func unlocked_at(id: String) -> int:
 	return int(_cfg.get_value("unlocked", id, 0))
+
+
+## Ids of every earned achievement, oldest first (the order pins go on the backpack).
+func earned() -> Array[String]:
+	var list: Array[String] = []
+	if _cfg.has_section("unlocked"):
+		for id: String in _cfg.get_section_keys("unlocked"):
+			list.append(id)
+	list.sort_custom(func(a: String, b: String) -> bool: return unlocked_at(a) < unlocked_at(b))
+	return list
 
 
 func points() -> Vector2i:
@@ -123,6 +134,8 @@ func _check_rules() -> void:
 			"gold":
 				var inv := player.get_node_or_null("Inventory") if player else null
 				ok = inv != null and int(inv.get("gold")) >= int(rule.get("amount", 100))
+			"achievements":
+				ok = earned().size() >= int(rule.get("count", 10))
 		if ok:
 			unlock(id)
 

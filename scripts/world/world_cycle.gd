@@ -105,11 +105,11 @@ func _load() -> void:
 	gust_seconds = float(w.get("gust_seconds", gust_seconds))
 
 
-## "Day 3, 14:05"
+## "Fri 13 Nov  14:05": the real date (Calendar) with the game's time of day.
 func clock_text() -> String:
 	var h := int(hour)
 	var m := int((hour - h) * 60.0)
-	return "Day %d  %02d:%02d" % [day, h, m]
+	return "%s  %02d:%02d" % [Calendar.date_text(), h, m]
 
 
 func _update(delta: float) -> void:

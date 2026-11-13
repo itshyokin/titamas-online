@@ -256,12 +256,21 @@ func _build_stage() -> void:
 func _show_character(save: Dictionary) -> void:
 	_model.visible = true
 	_model.take_off_all()
-	_model.apply_appearance(Database.resolve_appearance(save.get("look", {})))
+	var look: Dictionary = save.get("look", {}) if save.get("look") is Dictionary else {}
+	_model.apply_appearance(Database.resolve_appearance(look))
 	var inv: Dictionary = save.get("inventory", {})
-	var eq: Dictionary = inv.get("equipped", {})
+	var eq: Dictionary = (inv.get("equipped", {}) as Dictionary).duplicate()
 	if eq.is_empty():
-		eq = _class_kit(String(save.get("class", ""))).get("equipment", {})
+		eq = _class_kit(String(save.get("class", ""))).get("equipment", {}).duplicate()
+	if not PlayerGear.look_flag(look, "show_helmet"):
+		eq.erase("head")
 	_dress(eq)
+	_wear_pack(look)
+
+
+## The backpack on the dais model, with this account's achievement pins.
+func _wear_pack(look: Dictionary) -> void:
+	_model.set_backpack(PlayerGear.look_flag(look, "show_backpack"), Backpack.pins_of(Achievements.earned(), Database.achievements))
 
 
 func _dress(equipment: Dictionary) -> void:
@@ -856,6 +865,13 @@ func _creator_page() -> Control:
 	lv.add_child(_swatch_grid("hair_color", a.get("hair_colors", []), 7))
 	lv.add_child(_stepper("Facial hair", "facial_hair", "facial_hair"))
 	lv.add_child(_swatch_grid("facial_color", a.get("hair_colors", []), 7))
+	_pack_check = CheckBox.new()
+	_pack_check.text = "Backpack (shows your achievement pins)"
+	_pack_check.button_pressed = true
+	_pack_check.toggled.connect(func(on: bool) -> void:
+		_look["show_backpack"] = on
+		_apply_look())
+	lv.add_child(_pack_check)
 	lv.add_child(_button("Randomize", _randomize))
 	lv.add_child(_note("Drag to turn your character · mouse wheel to zoom"))
 
@@ -1243,10 +1259,16 @@ func _randomize() -> void:
 
 func _apply_look() -> void:
 	_model.apply_appearance(Database.resolve_appearance(_look))
+	_wear_pack(_look)
 	_refresh_creator()
 
 
+var _pack_check: CheckBox
+
+
 func _refresh_creator() -> void:
+	if _pack_check:
+		_pack_check.set_pressed_no_signal(PlayerGear.look_flag(_look, "show_backpack"))
 	var mirror := bool(_look.get("mirror_eyes", true))
 	var forced := bool(Database.species_data(String(_look.get("species", ""))).get("heterochromia", false)) if _look.has("species") else false
 	if forced:

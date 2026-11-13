@@ -118,7 +118,8 @@ func my_info() -> Dictionary:
 		if inventory:
 			inv = inventory.call("to_dict")
 	return {"name": d.get("name", "Adventurer"), "look": d.get("look", {}), "class": d.get("class", "fighter"),
-		"level": int(d.get("level", 1)), "equipment": inv.get("equipped", {})}
+		"level": int(d.get("level", 1)), "equipment": inv.get("equipped", {}),
+		"pins": Achievements.earned()}
 
 
 # --- Connecting ---------------------------------------------------------------------

@@ -383,8 +383,20 @@ func _release_embedded() -> void:
 func _character_page() -> Control:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 18)
-	_preview = CharacterPreview.new(Vector2i(300, 540))
-	h.add_child(_preview)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 6)
+	h.add_child(left)
+	_preview = CharacterPreview.new(Vector2i(300, 500))
+	left.add_child(_preview)
+	# Customisation that doesn't change stats: hide the helmet (still worn) or the backpack.
+	for pair: Array in [["show_backpack", "Show backpack (achievement pins)"], ["show_helmet", "Show helmet"]]:
+		var cb := CheckButton.new()
+		cb.text = pair[1]
+		cb.focus_mode = Control.FOCUS_NONE
+		cb.set_meta("look_key", pair[0])
+		cb.toggled.connect(_set_look_flag.bind(String(pair[0])))
+		left.add_child(cb)
+		_look_toggles.append(cb)
 	_stats_text = RichTextLabel.new()
 	_stats_text.bbcode_enabled = true
 	_stats_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -394,10 +406,35 @@ func _character_page() -> Control:
 	return h
 
 
+var _look_toggles: Array[CheckButton] = []
+
+
+func _set_look_flag(on: bool, key: String) -> void:
+	var look = GameSession.data.get("look", {})
+	if not look is Dictionary:
+		look = {}
+	if bool(look.get(key, true)) == on:
+		return
+	look[key] = on
+	GameSession.data["look"] = look
+	var player := get_tree().get_first_node_in_group("player")
+	var gear := player.get_node_or_null("PlayerGear") if player else null
+	if gear and gear.has_method("look_changed"):
+		gear.call("look_changed")
+	if player:
+		_preview.show_player(player)
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_signal("hud_changed"):
+		hud.emit_signal("hud_changed")
+
+
 func _fill_character() -> void:
 	var player := get_tree().get_first_node_in_group("player")
 	if player == null:
 		return
+	var look = GameSession.data.get("look", {})
+	for cb in _look_toggles:
+		cb.set_pressed_no_signal(bool((look if look is Dictionary else {}).get(String(cb.get_meta("look_key")), true)))
 	_preview.show_player(player)
 	var st := player.get_node_or_null("Stats") as Stats
 	var progress := player.get_node_or_null("Progress")

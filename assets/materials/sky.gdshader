@@ -40,6 +40,9 @@ uniform vec3 planet_band_a : source_color = vec3(0.93, 0.84, 0.66);
 uniform vec3 planet_band_b : source_color = vec3(0.74, 0.58, 0.40);
 uniform vec3 ring_color : source_color = vec3(0.88, 0.82, 0.70);
 uniform float planet_day : hint_range(0.0, 1.0) = 0.45;  // how strongly it shows by day
+uniform float planet_pixels = 96.0;       // grid cells across the planet (retro look; 0 = smooth)
+uniform float planet_colors = 10.0;        // colour steps per channel
+uniform float moon_phase = 0.5;            // 0 new, 0.25 first quarter, 0.5 full (Calendar)
 // The moon: an artificial sphere with azure lines ("sky" → moon).
 uniform float moon_radius = 0.042;
 uniform vec3 moon_hull : source_color = vec3(0.62, 0.64, 0.68);
@@ -84,12 +87,40 @@ float sphere_hit(vec3 d, vec3 c, float r) {
 	return b - sqrt(disc);
 }
 
+// 4×4 Bayer threshold (0..1) for a grid cell.
+float bayer4(vec2 cell) {
+	ivec2 p = ivec2(mod(cell, 4.0));
+	int i = p.x + p.y * 4;
+	int m[16] = int[](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
+	return (float(m[i]) + 0.5) / 16.0;
+}
+
+// Snaps a sky direction to a grid laid across `c` (cells `step` wide in the tangent
+// plane), so things drawn there come out in big square pixels. `cell` = the grid cell.
+vec3 snap_dir(vec3 d, vec3 c, vec3 up, vec3 east, float step, out vec2 cell) {
+	float z = dot(d, c);
+	vec2 p = vec2(dot(d, east), dot(d, up)) / max(z, 0.05);
+	cell = floor(p / step);
+	vec2 q = (cell + 0.5) * step;
+	return normalize(c + east * q.x + up * q.y);
+}
+
+vec3 posterize(vec3 col, float levels, vec2 cell) {
+	if (levels <= 0.0) return col;
+	return floor(col * levels + bayer4(cell)) / levels;
+}
+
 // The ringed planet over the dir: rgb + coverage in a.
-vec4 planet(vec3 d, vec3 light) {
+vec4 planet(vec3 d_in, vec3 light) {
 	vec3 c = normalize(planet_dir);
 	float r = planet_radius;
 	vec3 up = normalize(vec3(0.0, 1.0, 0.0) - c * c.y);
 	vec3 east = normalize(cross(c, up));
+	vec2 cell = vec2(0.0);
+	vec3 d = d_in;
+	if (planet_pixels > 0.0) {
+		d = snap_dir(d_in, c, up, east, 2.0 * r / planet_pixels, cell);
+	}
 	vec3 axis = normalize(up * cos(planet_tilt) - c * sin(planet_tilt) + east * planet_roll);
 	float tp = sphere_hit(d, c, r);
 	vec4 body = vec4(0.0);
@@ -99,6 +130,7 @@ vec4 planet(vec3 d, vec3 light) {
 		float lon = atan(dot(n, east), dot(n, -c));
 		float wob = noise(vec2(lon * 3.0, lat * 18.0)) * 0.6;
 		float bands = 0.5 + 0.5 * sin(lat * 34.0 + wob * 2.0) * (0.6 + 0.4 * sin(lat * 9.0));
+		if (planet_pixels > 0.0) bands = floor(bands * 4.0 + 0.5) / 4.0;  // flat-coloured bands
 		vec3 surf = mix(planet_band_a, planet_band_b, bands);
 		surf = mix(surf, planet_band_b * 0.8, smoothstep(0.82, 0.98, abs(lat)));  // darker poles
 		float lit = clamp(dot(n, light), 0.0, 1.0);
@@ -107,7 +139,9 @@ vec4 planet(vec3 d, vec3 light) {
 		vec3 sp = n * r - light * dot(n * r, axis) / (dot(light, axis) + sign(dot(light, axis)) * 0.001);
 		float sr = length(sp) / r;
 		float ring_shadow = (sr > 1.25 && sr < 2.3 && dot(n, axis) * dot(light, axis) < 0.0) ? 0.45 : 1.0;
-		body = vec4(surf * (0.07 + 0.95 * lit * ring_shadow) + vec3(0.6, 0.7, 0.9) * rim * 0.15 * lit, 1.0);
+		// Its night side still glows faintly with light bounced off the rings and the moon.
+		float ambient = mix(0.07, 0.3, night_amount);
+		body = vec4(surf * (ambient + 0.95 * lit * ring_shadow) + vec3(0.6, 0.7, 0.9) * rim * 0.15 * lit, 1.0);
 	}
 	// The rings: a flat disc round it.
 	float den = dot(d, axis);
@@ -129,20 +163,31 @@ vec4 planet(vec3 d, vec3 light) {
 		}
 	}
 	// Whichever is nearer goes in front.
+	vec4 outc = ring;
 	if (body.a > 0.0 && ring.a > 0.0 && tr < tp) {
-		return vec4(mix(body.rgb, ring.rgb, ring.a), 1.0);
+		outc = vec4(mix(body.rgb, ring.rgb, ring.a), 1.0);
+	} else if (body.a > 0.0) {
+		outc = body;
 	}
-	if (body.a > 0.0) return body;
-	return ring;
+	if (planet_pixels > 0.0) {
+		outc.rgb = posterize(outc.rgb, planet_colors, cell);
+		outc.a = outc.a > 0.0 && outc.a < 1.0 ? floor(outc.a * 3.0 + 0.5) / 3.0 : outc.a;  // stepped ring density
+	}
+	return outc;
 }
 
 // The moon: a man-made sphere, grey panels crossed by glowing azure lines.
-vec4 station(vec3 d, vec3 m, vec3 light, float time) {
+vec4 station(vec3 d_in, vec3 m, vec3 light, float time) {
+	vec3 up = normalize(vec3(0.0, 1.0, 0.0) - m * m.y);
+	vec3 east = normalize(cross(m, up));
+	vec2 px = vec2(0.0);
+	vec3 d = d_in;
+	if (planet_pixels > 0.0) {
+		d = snap_dir(d_in, m, up, east, 2.0 * moon_radius / 32.0, px);
+	}
 	float t = sphere_hit(d, m, moon_radius);
 	if (t < 0.0) return vec4(0.0);
 	vec3 n = normalize(d * t - m);
-	vec3 up = normalize(vec3(0.0, 1.0, 0.0) - m * m.y);
-	vec3 east = normalize(cross(m, up));
 	float lat = asin(clamp(dot(n, up), -1.0, 1.0));
 	float lon = atan(dot(n, east), dot(n, -m));
 	vec2 cell = floor(vec2(lon * 9.0, lat * 9.0));
@@ -154,8 +199,13 @@ vec4 station(vec3 d, vec3 m, vec3 light, float time) {
 	// A few short glowing runs inside panels.
 	float run = step(0.86, hash(cell + 11.0)) * (1.0 - smoothstep(0.0, 0.012, abs(fract(lat * 9.0) - 0.5) * 0.11));
 	lines = max(lines, run * 0.7);
-	float lit = clamp(dot(n, light), 0.0, 1.0);
-	vec3 c = hull * (0.12 + 0.88 * lit) + moon_line_color * lines * moon_line_glow * (0.85 + 0.15 * sin(time * 1.3));
+	// Phase (the real moon's, from Calendar): the sunlit half turns from behind it (new)
+	// to facing us (full). Its lines glow on the dark side too: they're its own lights.
+	float ph = moon_phase * 6.2832;
+	vec3 sunward = normalize(m * cos(ph) + east * sin(ph) + up * 0.05);
+	float lit = smoothstep(-0.04, 0.08, dot(n, sunward)) * (0.75 + 0.25 * clamp(dot(n, light), 0.0, 1.0));
+	vec3 c = hull * (0.06 + 0.94 * lit) + moon_line_color * lines * moon_line_glow * (0.85 + 0.15 * sin(time * 1.3));
+	if (planet_pixels > 0.0) c = posterize(c, planet_colors, px);
 	return vec4(c, 1.0);
 }
 

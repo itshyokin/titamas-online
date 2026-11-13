@@ -79,6 +79,7 @@ func _ready() -> void:
 	_clock.position = Vector2(-230, 26)
 	_clock.size = Vector2(160, 24)
 	_clock.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_clock.grow_horizontal = Control.GROW_DIRECTION_BEGIN  # a holiday's name grows it leftward
 	_clock.add_theme_font_size_override("font_size", 16)
 	_clock.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	_clock.add_theme_constant_override("outline_size", 4)
@@ -257,6 +258,7 @@ func _update_portraits() -> void:
 func _make_portrait(px: Vector2i) -> CharacterPreview:
 	var p := CharacterPreview.new(px)
 	p.portrait = true
+	p.backpack = false
 	var frame := StyleBoxFlat.new()
 	frame.bg_color = Color(0.08, 0.07, 0.1, 0.85)
 	frame.border_color = Color(0.85, 0.66, 0.26)
@@ -460,12 +462,26 @@ func set_xp(current: int, needed: int, level: int, max_level: bool) -> void:
 		_hotbar.set_xp(current, needed, level, max_level)
 
 
+var _calendar_check := 0.0
+var _holiday_line := ""
+
+
 func _process(delta: float) -> void:
 	_process_party(delta)
 	var cycle := get_tree().get_first_node_in_group("world_cycle") as WorldCycle
 	_clock.visible = cycle != null
 	if cycle:
 		_clock.text = cycle.clock_text()
+		_calendar_check -= delta
+		if _calendar_check <= 0.0:
+			_calendar_check = 5.0
+			var names: Array[String] = []
+			for h: Dictionary in Calendar.holidays_today():
+				names.append(String(h.get("name", h.get("id", ""))))
+			_holiday_line = "" if names.is_empty() else ", ".join(names) + "  ·  "
+			_clock.mouse_filter = Control.MOUSE_FILTER_PASS
+			_clock.tooltip_text = "%s\nThe moon: %s (%d%% lit)" % [Calendar.date_text(), Calendar.moon_phase_name(), roundi(Calendar.moon_lit() * 100.0)]
+		_clock.text = _holiday_line + _clock.text
 	if _combat == null:
 		return
 	if _target_stats:
