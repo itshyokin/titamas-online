@@ -64,6 +64,15 @@ var shadows := DEFAULT_SHADOWS
 var render_scale := 1.0
 var fps_limit := DEFAULT_FPS
 var vsync := true
+## Retro look (Settings → Retro, RetroFilter): one intensity and which parts are on.
+var retro_on := true
+var retro_intensity := 0.5
+var retro_pixelate := true
+var retro_colors := true
+var retro_dither := true
+var retro_scanlines := false
+var retro_wobble := false
+var _retro: RetroFilter
 ## Camera shake on hits: 0 = off, 1 = full.
 var screen_shake := 1.0
 var camera_sensitivity := 1.0
@@ -98,6 +107,24 @@ func apply_all() -> void:
 	set_pixel(pixel, false)
 	set_water_reflections(water_reflections, false)
 	apply_display()
+	_apply_retro()
+
+
+func set_retro(key: String, value: Variant) -> void:
+	set(key, value)
+	save_settings()
+	_apply_retro()
+
+
+func _apply_retro() -> void:
+	if not is_inside_tree():
+		return
+	if _retro == null or not is_instance_valid(_retro):
+		_retro = RetroFilter.new()
+		_retro.name = "RetroFilter"
+		get_tree().root.add_child.call_deferred(_retro)
+		return  # applies itself when it enters the tree
+	_retro.apply()
 
 
 ## Render scale, frame limit and vsync (the window's own settings).
@@ -322,6 +349,8 @@ func save_settings() -> void:
 	cfg.set_value("graphics", "render_scale", render_scale)
 	cfg.set_value("graphics", "fps_limit", fps_limit)
 	cfg.set_value("graphics", "vsync", vsync)
+	for key in ["retro_on", "retro_intensity", "retro_pixelate", "retro_colors", "retro_dither", "retro_scanlines", "retro_wobble"]:
+		cfg.set_value("retro", key, get(key))
 	cfg.set_value("controls", "camera_sensitivity", camera_sensitivity)
 	cfg.set_value("controls", "invert_camera_y", invert_camera_y)
 	for entry in REBINDABLE:
@@ -353,6 +382,8 @@ func load_settings() -> void:
 	render_scale = clampf(float(cfg.get_value("graphics", "render_scale", 1.0)), 0.5, 1.0)
 	fps_limit = String(cfg.get_value("graphics", "fps_limit", DEFAULT_FPS))
 	vsync = bool(cfg.get_value("graphics", "vsync", true))
+	for key in ["retro_on", "retro_intensity", "retro_pixelate", "retro_colors", "retro_dither", "retro_scanlines", "retro_wobble"]:
+		set(key, cfg.get_value("retro", key, get(key)))
 	camera_sensitivity = float(cfg.get_value("controls", "camera_sensitivity", 1.0))
 	invert_camera_y = bool(cfg.get_value("controls", "invert_camera_y", false))
 	# Bindings saved before a default changed keep the new default for those actions.

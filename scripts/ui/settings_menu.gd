@@ -187,6 +187,7 @@ func _build_window() -> void:
 		_tabs.add_child(_help_tab())
 	_tabs.add_child(_sound_tab())
 	_tabs.add_child(_graphics_tab())
+	_tabs.add_child(_retro_tab())
 	_tabs.add_child(_controls_tab(false))
 	_tabs.add_child(_controls_tab(true))
 
@@ -272,6 +273,51 @@ func _sound_tab() -> Control:
 		var row := _row(names[key], slider)
 		row.add_child(percent)
 		page.add_child(row)
+	return page
+
+
+## The retro look: one intensity slider and which parts of it are on.
+func _retro_tab() -> Control:
+	var page := _page("Retro")
+	var g := GameSettings
+	var on := CheckBox.new()
+	on.text = "Retro look (like an old console's picture)"
+	on.button_pressed = g.retro_on
+	on.toggled.connect(func(v: bool) -> void: g.set_retro("retro_on", v))
+	page.add_child(on)
+	var amount := HSlider.new()
+	amount.min_value = 0.0
+	amount.max_value = 1.0
+	amount.step = 0.05
+	amount.value = g.retro_intensity
+	var amount_text := Label.new()
+	amount_text.custom_minimum_size = Vector2(52, 0)
+	amount_text.text = "%d%%" % int(round(g.retro_intensity * 100.0))
+	amount.value_changed.connect(func(v: float) -> void:
+		g.set_retro("retro_intensity", v)
+		amount_text.text = "%d%%" % int(round(v * 100.0)))
+	var row := _row("Intensity", amount)
+	row.tooltip_text = "How strong every part below is: bigger pixels, fewer colours, stronger scanlines and wobble."
+	row.add_child(amount_text)
+	page.add_child(row)
+	for part: Array in [
+		["retro_pixelate", "Chunky pixels (a low-resolution picture; the HUD stays sharp)"],
+		["retro_colors", "Fewer colours (PS1-style colour depth)"],
+		["retro_dither", "Dithering (checkered blending between the colours)"],
+		["retro_scanlines", "Scanlines and a dark edge (old TV)"],
+		["retro_wobble", "Wobbly terrain (the ground's corners snap and jitter as the camera moves)"],
+	]:
+		var key: String = part[0]
+		var c := CheckBox.new()
+		c.text = String(part[1])
+		c.button_pressed = bool(g.get(key))
+		c.toggled.connect(func(v: bool) -> void: g.set_retro(key, v))
+		page.add_child(c)
+	var note := Label.new()
+	note.text = "Pixel textures (Graphics tab) go well with this. Only the ground wobbles; characters and props stay steady."
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.add_theme_color_override("font_color", Color(0.75, 0.72, 0.65))
+	page.add_child(note)
 	return page
 
 

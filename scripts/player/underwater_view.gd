@@ -22,6 +22,10 @@ func _ready() -> void:
 	_mat.shader = preload("res://assets/materials/underwater.gdshader")
 	_rect.material = _mat
 	_rect.visible = false
+	# Its own copy of the screen (the retro filter drew over the first one).
+	var copy := BackBufferCopy.new()
+	copy.copy_mode = BackBufferCopy.COPY_MODE_VIEWPORT
+	add_child(copy)
 	add_child(_rect)
 	for bus_name: String in MUFFLED_BUSES:
 		var bus := AudioServer.get_bus_index(bus_name)

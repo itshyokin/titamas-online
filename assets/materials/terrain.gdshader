@@ -75,10 +75,19 @@ vec3 triplanar(sampler2D tex, vec3 p, vec3 n, float scale) {
 	return x * b.x + y * b.y + z * b.z;
 }
 
+global uniform float retro_snap;  // Settings → Retro → Wobbly terrain: grid rows (0 = off)
+
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	paint_a = clamp(CUSTOM0.x, 0.0, 1.0);
+	// PS1-style wobble: snap the vertex to a coarse grid on screen.
+	vec4 clip = PROJECTION_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0));
+	if (retro_snap > 0.0 && clip.w > 0.0) {
+		vec2 grid = vec2(retro_snap * VIEWPORT_SIZE.x / max(VIEWPORT_SIZE.y, 1.0), retro_snap) * 0.5;
+		clip.xy = round(clip.xy / clip.w * grid) / grid * clip.w;
+	}
+	POSITION = clip;
 }
 
 void fragment() {

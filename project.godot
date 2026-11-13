@@ -317,6 +317,10 @@ water_reflections={
 "type": "float",
 "value": 1.0
 }
+retro_snap={
+"type": "float",
+"value": 0.0
+}
 pixel_texels={
 "type": "float",
 "value": 64.0
