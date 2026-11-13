@@ -54,6 +54,8 @@ var grass := DEFAULT_GRASS
 var god_rays := true
 ## Character portraits beside the health bars (player and party).
 var portraits := true
+## The HUD clock: 24-hour (14:05) or 12-hour (2:05 PM).
+var clock_24h := true
 ## Screen-space ambient occlusion: soft contact shadows in corners and under things.
 var ssao := true
 ## Trees, cliffs and characters reflected in water (costs a little on slower PCs).
@@ -257,6 +259,11 @@ func set_portraits(on: bool) -> void:
 	save_settings()
 
 
+func set_clock_24h(on: bool) -> void:
+	clock_24h = on
+	save_settings()
+
+
 func set_god_rays(on: bool) -> void:
 	god_rays = on
 	save_settings()
@@ -383,6 +390,7 @@ func save_settings() -> void:
 	cfg.set_value("graphics", "grass", grass)
 	cfg.set_value("graphics", "god_rays", god_rays)
 	cfg.set_value("interface", "portraits", portraits)
+	cfg.set_value("interface", "clock_24h", clock_24h)
 	cfg.set_value("graphics", "screen_shake", screen_shake)
 	cfg.set_value("graphics", "water_reflections", water_reflections)
 	cfg.set_value("graphics", "ssao", ssao)
@@ -416,6 +424,7 @@ func load_settings() -> void:
 	grass = String(cfg.get_value("graphics", "grass", DEFAULT_GRASS))
 	god_rays = bool(cfg.get_value("graphics", "god_rays", true))
 	portraits = bool(cfg.get_value("interface", "portraits", true))
+	clock_24h = bool(cfg.get_value("interface", "clock_24h", true))
 	screen_shake = float(cfg.get_value("graphics", "screen_shake", 1.0))
 	water_reflections = bool(cfg.get_value("graphics", "water_reflections", true))
 	ssao = bool(cfg.get_value("graphics", "ssao", true))

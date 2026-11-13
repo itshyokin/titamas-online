@@ -565,6 +565,9 @@ static func describe(d: Dictionary, compare := "") -> String:
 		t += "Use: heals %d over %d seconds.\n" % [float(d.use_hot_per_tick) * int(d.get("use_hot_ticks", 1)), int(d.get("use_hot_ticks", 1)) * 2]
 	if float(d.get("use_mana", 0.0)) > 0.0:
 		t += "Use: restores %d mana.\n" % float(d.use_mana)
+	var per_shot := float(d.get("mana_per_shot", Database.weapon_type(String(d.get("weapon_type", ""))).get("mana_per_shot", 0.0) if d.has("weapon_type") else 0.0))
+	if per_shot > 0.0:
+		t += "[color=#7fb4ff]Each shot costs %s mana[/color] [color=#aaaaaa](health when you're out)[/color]\n" % (str(int(per_shot)) if per_shot == floorf(per_shot) else "%.1f" % per_shot)
 	if not String(d.get("description", "")).is_empty():
 		t += "[i]%s[/i]\n" % d.description
 	t += "[color=#ffd76a]Worth %d gold[/color]" % int(d.get("value", 0))

@@ -222,7 +222,7 @@ transform = Transform3D(0.8660254, 0, 0.5, 0, 1, 0, -0.5, 0, 0.8660254, -46.5, 3
 visible = false
 chest_id = "start_weapon_chest"
 title = "Weapon Chest"
-items = Array[String](["worn_dagger", "iron_greatsword", "smiths_hammer", "woodcutters_axe", "light_crossbow", "flintlock_pistol", "flintlock_rifle"])
+items = Array[String](["worn_dagger", "iron_greatsword", "smiths_hammer", "woodcutters_axe", "light_crossbow", "flintlock_pistol", "flintlock_rifle", "emitter"])
 greeting = "Someone left a chest of practice weapons by the road."
 
 [node name="WeaponChest2" parent="." unique_id=1262233055 instance=ExtResource("97_chest")]

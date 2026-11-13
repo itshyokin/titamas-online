@@ -378,6 +378,11 @@ func _graphics_tab() -> Control:
 	faces.button_pressed = GameSettings.portraits
 	faces.toggled.connect(func(on: bool) -> void: GameSettings.set_portraits(on))
 	page.add_child(faces)
+	var clock := CheckBox.new()
+	clock.text = "24-hour clock (off = 12-hour, AM/PM)"
+	clock.button_pressed = GameSettings.clock_24h
+	clock.toggled.connect(func(on: bool) -> void: GameSettings.set_clock_24h(on))
+	page.add_child(clock)
 	var rays := CheckBox.new()
 	rays.text = "God rays (light shafts through the air)"
 	rays.button_pressed = GameSettings.god_rays

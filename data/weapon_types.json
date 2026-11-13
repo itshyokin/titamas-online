@@ -192,7 +192,8 @@
 			"reload_anim": "gun_reload",
 			"draw_anim": "draw_pistol",
 			"hold": "gun",
-			"target_range": 20
+			"target_range": 20,
+			"mana_per_shot": 8.0
 		},
 		{
 			"id": "rifle",
@@ -214,7 +215,31 @@
 			"reload_anim": "gun_reload",
 			"draw_anim": "draw_rifle",
 			"hold": "gun",
-			"target_range": 40
+			"target_range": 40,
+			"mana_per_shot": 14.0
+		},
+		{
+			"id": "emitter",
+			"name": "Emitter (energy revolver)",
+			"category": "ranged",
+			"hands": 1,
+			"combo": [],
+			"heavy": "",
+			"shot": "emitter_shot",
+			"speed": 1.0,
+			"power": 1.0,
+			"draw": false,
+			"reload": 0.55,
+			"swap_sound": "res://assets/audio/weapons/emitter_swap.ogg",
+			"fire_sound": "res://assets/audio/weapons/emitter_shot.ogg",
+			"idle": "pistol_idle",
+			"draw_grip": 0.3,
+			"aim": "pistol_aim",
+			"reload_anim": "gun_reload",
+			"draw_anim": "draw_pistol",
+			"hold": "gun",
+			"target_range": 24,
+			"mana_per_shot": 5.0
 		}
 	]
 }

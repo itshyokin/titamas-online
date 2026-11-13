@@ -1255,6 +1255,40 @@
 				"blinds_allies": true,
 				"outlines": true
 			}
+		},
+		{
+			"animation": "pistol_fire",
+			"animation_speed": 1.0,
+			"arc": 120.0,
+			"charge_power": 0.9,
+			"charge_time": 1.0,
+			"color": "#40c7ff",
+			"cooldown": 0.0,
+			"delivery": "projectile",
+			"description": "A bolt of TitanTech energy.",
+			"display_name": "Emitter bolt",
+			"hit_sound": "",
+			"hit_time": 0.06,
+			"id": "emitter_shot",
+			"mana_cost": 0.0,
+			"max_charge_level": 1.0,
+			"move_scale": 0.3,
+			"power": 22.0,
+			"projectile_color": "#5fd4ff",
+			"projectile_speed": 120.0,
+			"projectile_style": "bullet",
+			"reach": 30.0,
+			"recovery_time": 0.3,
+			"sounds": [],
+			"staggers": false,
+			"stamina_cost": 0.0,
+			"tick_interval": 2.0,
+			"ticks": 4.0,
+			"knockback": 2.0,
+			"cast_time": 0.0,
+			"icon": "bullet",
+			"windup_time": 0.45,
+			"element": "arcane"
 		}
 	]
 }

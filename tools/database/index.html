@@ -549,6 +549,7 @@ const TABS = {
 			["Weapon", [
 				{ key: "weapon_type", label: "Weapon type", type: "weapontype", help: "Its family (Weapon Types tab): speed, damage, moves, reload, sounds." },
 				{ key: "speed", label: "Speed", type: "number", help: "1 = the family's normal speed; 1.1 = 10% faster." },
+				{ key: "mana_per_shot", label: "Mana per shot (guns)", type: "number", help: "Guns fire magical energy: each shot costs this much mana (empty = the weapon type's). Out of mana, health pays instead and you're Weakened until it's back." },
 				{ key: "auto_aim", label: "Auto-aim", type: "bool", help: "Ranged: shots home in on the target (the default). Off = aimed by hand with the crosshair." },
 			], e => e.slot === "weapon"],
 			["When used", [
@@ -867,6 +868,9 @@ const TABS = {
 				{ key: "combat.world_check", label: "Bounce check reach (share of weapon reach)", type: "number" },
 				{ key: "combat.gash_time", label: "Gash in wood lasts (s)", type: "number" },
 				{ key: "combat.heal_color", label: "Healing motes colour", type: "color", help: "The circles and diamonds rising around anyone healed (spells, potions, bandages)." },
+				{ key: "combat.blood_price", label: "Health per missing mana point", type: "number", def: 1, help: "Out of mana, spells and gunshots still go off: this much health pays for each point you don't have, and you're Weakened (status \"drained\") until regeneration has paid it back." },
+				{ key: "combat.effective_text", label: "Word for an elemental weakness hit", type: "text", def: "Effective!" },
+				{ key: "combat.resisted_text", label: "Word for a resisted hit", type: "text", def: "Resisted" },
 				{ key: "combat.require_target", label: "Shots need a target (1 = yes)", type: "number", help: "Bows, guns and projectile spells won't fire with nothing targeted. Weapons with auto-aim off, and holding aim, still shoot at the crosshair." },
 				{ key: "combat.blood_color", label: "Your blood colour", type: "color", help: "Hits spray blood that splatters on the ground and walls. Empty or \"none\" = no blood." },
 				{ key: "combat.blood_seconds", label: "Blood splatters last (s)", type: "number" },
@@ -1222,6 +1226,7 @@ const TABS = {
 			["Ranged", [
 				{ key: "shot", label: "Shot", type: "ability" },
 				{ key: "draw", label: "Hold to draw (bows)", type: "bool", help: "Tap = quick shot, hold = draw harder. Off = fires on the press." },
+				{ key: "mana_per_shot", label: "Mana per shot", type: "number", help: "Guns: each shot costs this much mana (an item's own value wins)." },
 				{ key: "reload", label: "Reload (s)", type: "number", help: "0 = no reloading. Crossbows and guns reload after every shot." },
 			], e => e.category === "ranged"],
 			["Animations", [

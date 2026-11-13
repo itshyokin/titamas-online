@@ -145,9 +145,9 @@ static func hit(source: Node3D, target: Node3D, power: float, stagger := false, 
 		amount = ts.health - 1.0
 	_tag(source, target)
 	if elem >= 1.25:
-		FloatingText.spawn(target, "Weak!", Color(1.0, 0.65, 0.25), 0.9)
+		FloatingText.spawn(target, String(_combat_settings().get("effective_text", "Effective!")), Color(1.0, 0.65, 0.25), 0.9)
 	elif elem <= 0.8:
-		FloatingText.spawn(target, "Resisted", Color(0.7, 0.72, 0.78), 0.9)
+		FloatingText.spawn(target, String(_combat_settings().get("resisted_text", "Resisted")), Color(0.7, 0.72, 0.78), 0.9)
 	ts.take_damage(amount, source, crit)
 	var blocked := amount < before * 0.75
 	play_sound(target, BLOCK_SOUND if blocked else HIT_SOUND, -2.0)
@@ -317,6 +317,8 @@ static func show_numbers(node: Node3D) -> void:
 			FloatingText.spawn(node, ("%d!" % amount) if crit else str(int(round(amount))), color, 1.4 if crit else 1.0)
 		else:
 			_trickle(node, "dmg", amount, color, "%d"))
+	s.blood_paid.connect(func(amount: float) -> void:
+		FloatingText.spawn(node, "-%d" % maxi(int(round(amount)), 1), Color(0.75, 0.25, 0.85), 0.85))
 	s.healed.connect(func(amount: float) -> void:
 		if amount >= 1.0:
 			FloatingText.spawn(node, "+%d" % int(round(amount)), Color(0.45, 1.0, 0.45), 0.9)
@@ -348,3 +350,7 @@ static func heal_threat(healer: Node3D, amount: float) -> void:
 				and n.get("target") != null:
 			n.call("add_threat", healer, amount * k)
 
+
+static func _combat_settings() -> Dictionary:
+	var c = Database.player.get("combat", {})
+	return c if c is Dictionary else {}

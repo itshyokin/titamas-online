@@ -109,6 +109,10 @@ func _load() -> void:
 func clock_text() -> String:
 	var h := int(hour)
 	var m := int((hour - h) * 60.0)
+	var gs := get_node_or_null("/root/GameSettings") if is_inside_tree() else null
+	if gs and not bool(gs.get("clock_24h")):
+		var h12 := h % 12
+		return "%s  %d:%02d %s" % [Calendar.date_text(), 12 if h12 == 0 else h12, m, "AM" if h < 12 else "PM"]
 	return "%s  %02d:%02d" % [Calendar.date_text(), h, m]
 
 

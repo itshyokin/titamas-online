@@ -571,8 +571,23 @@ func cooldown_left(ab: Ability) -> float:
 	return _cooldowns.get(ab, 0.0)
 
 
+## Mana an ability costs here: its own cost, plus the gun's per-shot cost for weapon
+## shots (guns fire magical energy: items.json `mana_per_shot`, else the weapon type's).
+func mana_cost_of(ab: Ability) -> float:
+	var cost := ab.mana_cost
+	if ab == shot and shot != null:
+		cost += float(weapon.get("mana_per_shot", weapon_type.get("mana_per_shot", 0.0)))
+	return cost
+
+
+## Health paid per point of mana you don't have (player.json combat blood_price).
+func blood_price() -> float:
+	return float(_world_settings().get("blood_price", 1.0))
+
+
+## Out of mana you can still cast or fire: health pays the rest (Stats.spend_mana).
 func can_afford(ab: Ability) -> bool:
-	return stats.mana >= ab.mana_cost and stats.stamina >= ab.stamina_cost
+	return stats.can_spend_mana(mana_cost_of(ab), blood_price()) and stats.stamina >= ab.stamina_cost
 
 
 func is_blocking() -> bool:
@@ -625,8 +640,9 @@ func _is_weapon_move(ab: Ability) -> bool:
 func _start(ab: Ability, power: float, anim_start := 0.0) -> bool:
 	if ab == null or cooldown_left(ab) > 0.0:
 		return false
-	if stats.mana < ab.mana_cost:
-		notice.emit("Not enough mana")
+	var mana_cost := mana_cost_of(ab)
+	if not stats.can_spend_mana(mana_cost, blood_price()):
+		notice.emit("Too weak: not enough mana or health")
 		return false
 	if stats.stamina < ab.stamina_cost:
 		notice.emit("Too tired")
@@ -647,8 +663,11 @@ func _start(ab: Ability, power: float, anim_start := 0.0) -> bool:
 	if not player.start_action(ab.move_scale):
 		return false
 	_aim_pose = false
-	if ab.mana_cost > 0.0:
-		stats.use_mana(ab.mana_cost)
+	if mana_cost > 0.0:
+		var had := stats.mana
+		stats.spend_mana(mana_cost, blood_price())
+		if had < mana_cost:
+			notice.emit("Out of mana: paying with your health")
 	if ab.stamina_cost > 0.0:
 		stats.use_stamina(ab.stamina_cost)
 	_enter_combat()
@@ -1194,8 +1213,8 @@ func cast(ab: Ability) -> bool:
 	if left > 0.0:
 		notice.emit("%s isn't ready (%.0f s)" % [ab.display_name, ceilf(left)])
 		return false
-	if stats.mana < ab.mana_cost:
-		notice.emit("Not enough mana")
+	if not stats.can_spend_mana(mana_cost_of(ab), blood_price()):
+		notice.emit("Too weak: not enough mana or health")
 		return false
 	if (ab.delivery == Ability.Delivery.PROJECTILE or ab.delivery == Ability.Delivery.CHAIN) and targeting.pick_for_attack(ab.reach) == null:
 		notice.emit("No target")

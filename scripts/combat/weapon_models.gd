@@ -4,7 +4,7 @@ extends RefCounted
 ## Blender. Weapons are built with the grip at the origin and the blade along +Y.
 ## Items refer to these as "builtin:<name>" (see build()).
 
-const BUILTIN := ["sword", "dagger", "greatsword", "hammer", "axe", "bow", "crossbow", "pistol", "rifle",
+const BUILTIN := ["sword", "dagger", "greatsword", "hammer", "axe", "bow", "crossbow", "pistol", "rifle", "emitter",
 	"shield", "helm", "pauldron_left", "pauldron_right"]
 
 
@@ -21,6 +21,7 @@ static func build(model: String) -> Node3D:
 			"crossbow": return crossbow()
 			"pistol": return pistol()
 			"rifle": return rifle()
+			"emitter": return emitter()
 			"shield": return shield()
 			"helm": return helm()
 			"pauldron_left": return pauldron(true)
@@ -131,6 +132,68 @@ static func pistol() -> Node3D:
 	_box(root, Vector3(0.045, 0.2, 0.05), Vector3(0, 0.1, 0.02), wood)  # stock
 	_box(root, Vector3(0.04, 0.13, 0.05), Vector3(0, -0.02, -0.03), wood, -25.0)  # grip
 	_box(root, Vector3(0.05, 0.04, 0.06), Vector3(0, -0.09, -0.06), brass)  # butt cap
+	return root
+
+
+## TitanTech Emitter: an energy revolver in the moon's style (pale panelled hull, azure
+## glowing lines). Laid out like the pistol: barrel along +Y, grip down and back.
+static func emitter() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Emitter"
+	var hull := _material(Color(0.66, 0.68, 0.72), 0.55, 0.35)
+	var panel := _material(Color(0.3, 0.32, 0.37), 0.6, 0.4)
+	var glow := _material(Color(0.25, 0.78, 1.0), 0.0, 0.3)
+	glow.emission_enabled = true
+	glow.emission = Color(0.25, 0.78, 1.0)
+	glow.emission_energy_multiplier = 2.5
+	_box(root, Vector3(0.042, 0.26, 0.046), Vector3(0, 0.2, 0.052), hull)  # barrel
+	_box(root, Vector3(0.03, 0.2, 0.03), Vector3(0, 0.17, 0.016), panel)  # lower rail
+	_box(root, Vector3(0.01, 0.24, 0.008), Vector3(0, 0.2, 0.078), glow)  # top line
+	for side: float in [-1.0, 1.0]:
+		_box(root, Vector3(0.004, 0.16, 0.008), Vector3(side * 0.022, 0.22, 0.052), glow)  # side lines
+	_box(root, Vector3(0.048, 0.11, 0.064), Vector3(0, 0.03, 0.032), hull)  # frame
+	# The revolving cylinder, with a glowing band.
+	var drum := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.036
+	cyl.bottom_radius = 0.036
+	cyl.height = 0.07
+	cyl.radial_segments = 8
+	cyl.material = panel
+	drum.mesh = cyl
+	drum.position = Vector3(0, 0.06, 0.045)
+	root.add_child(drum)
+	var band := MeshInstance3D.new()
+	var ring := CylinderMesh.new()
+	ring.top_radius = 0.038
+	ring.bottom_radius = 0.038
+	ring.height = 0.012
+	ring.radial_segments = 8
+	ring.material = glow
+	band.mesh = ring
+	band.position = drum.position
+	root.add_child(band)
+	# Muzzle: a glowing emitter ring.
+	var muzzle := MeshInstance3D.new()
+	var m := CylinderMesh.new()
+	m.top_radius = 0.028
+	m.bottom_radius = 0.032
+	m.height = 0.02
+	m.radial_segments = 10
+	m.material = glow
+	muzzle.mesh = m
+	muzzle.position = Vector3(0, 0.335, 0.052)
+	root.add_child(muzzle)
+	# Grip angled down and back from the frame, like a revolver's.
+	var grip := Node3D.new()
+	grip.position = Vector3(0, 0.0, 0.0)
+	grip.rotation_degrees.x = 55.0
+	root.add_child(grip)
+	_box(grip, Vector3(0.04, 0.14, 0.05), Vector3(0, -0.06, 0.0), panel)
+	_box(grip, Vector3(0.008, 0.11, 0.006), Vector3(0, -0.06, -0.027), glow)
+	_box(grip, Vector3(0.046, 0.03, 0.056), Vector3(0, -0.135, 0.0), hull)  # butt
+	# Trigger guard.
+	_box(root, Vector3(0.008, 0.05, 0.008), Vector3(0, 0.0, -0.035), panel)
 	return root
 
 

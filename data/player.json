@@ -93,7 +93,10 @@
 		"threat_switch": 1.1,
 		"world_bounce": true,
 		"world_check": 0.8,
-		"world_knockback": 4.5
+		"world_knockback": 4.5,
+		"blood_price": 1.0,
+		"effective_text": "Effective!",
+		"resisted_text": "Resisted"
 	},
 	"companions": {
 		"downed_speed": 1.6,

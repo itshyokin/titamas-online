@@ -10,6 +10,8 @@ signal stamina_changed(current: float, maximum: float)
 signal died
 ## A hit landed: `source` is the attacker (may be null).
 signal damaged(amount: float, source: Node, crit: bool)
+## Health spent in place of missing mana (spend_mana).
+signal blood_paid(amount: float)
 signal healed(amount: float)
 signal level_changed(level: int)
 
@@ -84,7 +86,16 @@ func _process(delta: float) -> void:
 	if _stamina_idle_time >= stamina_regen_delay and stamina < max_stamina:
 		stamina = minf(stamina + stamina_regen * delta, max_stamina)
 		stamina_changed.emit(stamina, max_stamina)
-	if mana < max_mana:
+	if mana_debt > 0.0:
+		# Paid for with health: regeneration goes to the debt first, mana stays empty
+		# (and the "drained" Weakened status stays on) until it's paid off.
+		mana_debt = maxf(mana_debt - mana_regen * delta, 0.0)
+		if has_status(DRAINED):
+			if mana_debt <= 0.0:
+				remove_status(DRAINED)
+		elif mana_debt > 0.0:
+			add_status(DRAINED, 3600.0)
+	elif mana < max_mana:
 		mana = minf(mana + mana_regen * delta, max_mana)
 		mana_changed.emit(mana, max_mana)
 
@@ -209,6 +220,40 @@ func heal(amount: float) -> void:
 		healed.emit(health - before)
 
 
+## The status that comes with running out of mana (data/statuses.json).
+const DRAINED := "drained"
+## Mana paid for with health that regeneration pays back before mana returns.
+var mana_debt := 0.0
+
+
+## Spends mana; what's missing comes out of health instead (`blood_price` health per
+## point), and the character is Weakened (status "drained") until regeneration has paid
+## it back. Returns false (and spends nothing) if that would take the last of its health.
+func spend_mana(amount: float, blood_price := 1.0) -> bool:
+	if amount <= 0.0:
+		return true
+	var from_mana := minf(mana, amount)
+	var short := amount - from_mana
+	var hp := short * blood_price
+	if short > 0.0 and health - hp < 1.0:
+		return false
+	mana -= from_mana
+	mana_changed.emit(mana, max_mana)
+	if short > 0.0:
+		mana = 0.0
+		mana_debt += short
+		health -= hp
+		health_changed.emit(health, max_health)
+		blood_paid.emit(hp)
+		add_status(DRAINED, 3600.0)
+	return true
+
+
+## Whether spend_mana would go through.
+func can_spend_mana(amount: float, blood_price := 1.0) -> bool:
+	return amount <= mana or health - (amount - mana) * blood_price >= 1.0
+
+
 ## Spends mana. Returns false (and spends nothing) if there isn't enough.
 func use_mana(amount: float) -> bool:
 	if mana < amount:
@@ -253,6 +298,9 @@ func restore() -> void:
 	_hots.clear()
 	health = max_health
 	mana = max_mana
+	mana_debt = 0.0
+	if has_status(DRAINED):
+		remove_status(DRAINED)
 	stamina = max_stamina
 	emit_all()
 
@@ -330,6 +378,12 @@ func set_max_health_scale(k: float) -> void:
 
 
 func restore_mana(amount: float) -> void:
+	# A potion pays back what health covered first.
+	var to_debt := minf(mana_debt, amount)
+	mana_debt -= to_debt
+	amount -= to_debt
+	if mana_debt <= 0.0 and has_status(DRAINED):
+		remove_status(DRAINED)
 	mana = minf(mana + amount, max_mana)
 	mana_changed.emit(mana, max_mana)
 

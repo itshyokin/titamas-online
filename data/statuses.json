@@ -162,6 +162,16 @@
 			"color": "#6a5a8a",
 			"miss_chance": 0.75,
 			"sightless": true
+		},
+		{
+			"id": "drained",
+			"name": "Weakened",
+			"description": "Out of mana: you paid with your health. Your blows are weaker and you move slower until your mana comes back.",
+			"kind": "debuff",
+			"icon": "moon",
+			"color": "#9a6ad0",
+			"damage_scale": 0.8,
+			"move_scale": 0.85
 		}
 	]
 }
