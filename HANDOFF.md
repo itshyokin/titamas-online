@@ -154,6 +154,16 @@ Where things stand, for picking the work up in a new chat. Technical notes for e
 - **Rename the Hearthstone** (Blizzard's trademark). Owner picks the new name; then Claude renames the item, its Database fields, messages and the `use_hearth` wording, keeping old saves working (item id mapped).
 
 ## Backlog (agreed, not started)
+- **From the owner's notes (13 Nov):**
+  - Pupils separate from the eyes so they can look around.
+  - Hair secondary colour, on/off (streaks or a gradient).
+  - Fade in/out when loading from the main menu (it's a hard cut now).
+  - Enemies that only spawn at certain times: night, twilight, morning, day.
+  - Enemies that drop on the player from the trees.
+  - Enemies standing on tree branches attacking from range (archers, spellcasters).
+  - Shield enemies that crouch behind their shield and block from the front (beat them with burst/area damage, or hit them as they swing).
+  - Spellcasters with a magic aura shield: knocks attacks back with an electric effect until a spell breaks it; an area burst spell pops it for a few seconds.
+  - The Troll smashes whenever anyone (companions too) is close, not only the player.
 - **Sheaths/scabbards**: big weapons (greatswords, axes) on the back, blades in a scabbard at the hip (the bare sword at the hip looks odd). Just an idea so far.
 - The index finger still looks claw-like on some builds (hands).
 - Enemies and companions still just stop casting when out of mana (only the player pays with health).
