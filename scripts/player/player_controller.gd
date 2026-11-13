@@ -190,6 +190,10 @@ var action_velocity := Vector3.ZERO
 var fatigue := 0.0
 var _last_safe := Vector3.ZERO
 var _safe_timer := 0.0
+var _safe_trail: Array[Vector3] = []
+var _under_check := 0.0
+var _under_time := 0.0
+var _air_time := 0.0
 var _push := Vector3.ZERO
 
 
@@ -1149,7 +1153,7 @@ var _ladder_rid := RID()
 
 
 ## The floor at the top of a ladder: straight down a little past the ladder's face, a
-## walkable surface 1–2.4 m above the feet (the ladder itself doesn't count). Returns a
+## walkable surface 0.4–1.3 m above the feet (the ladder itself doesn't count). Returns a
 ## ledge like _probe_ledge ({edge, normal}) or {}.
 func _ladder_top() -> Dictionary:
 	var space := get_world_3d().direct_space_state
@@ -1165,8 +1169,10 @@ func _ladder_top() -> Dictionary:
 		var hit := space.intersect_ray(q)
 		if hit.is_empty() or hit.normal.y < 0.7:
 			continue
-		var h: float = hit.position.y - global_position.y
-		if h < 1.0 or h > 2.4:
+		# Height above the climber's feet (the body sits ladder_feet below them on a
+		# ladder): the floor they just stepped off at the bottom doesn't count.
+		var h: float = hit.position.y - (global_position.y + ladder_feet)
+		if h < 0.4 or h > 1.3:
 			continue
 		return {"edge": Vector3(face.x, hit.position.y, face.z), "normal": _surface_normal}
 	return {}
@@ -1195,6 +1201,13 @@ func _jump_off_surface() -> void:
 
 func _let_go() -> void:
 	global_position += _surface_normal * 0.15
+	# On a ladder or wall the body hangs below the feet: near the bottom that is inside
+	# the ground, so letting go there would drop straight through it. Stand on it instead.
+	var feet := ladder_feet if state == State.LADDER else wall_climb_feet
+	var foot := global_position + Vector3.UP * feet
+	var ground := _ray(get_world_3d().direct_space_state, foot + Vector3.UP * 0.3, global_position - Vector3.UP * 0.1)
+	if not ground.is_empty() and (ground.position as Vector3).y > global_position.y:
+		global_position.y = (ground.position as Vector3).y + 0.02
 	velocity = Vector3.ZERO
 	state = State.NORMAL
 	_grab_cooldown = 0.6
@@ -1297,12 +1310,28 @@ func _update_survival(delta: float) -> void:
 		_respawn("fell")
 		return
 
-	# Remember where the player last stood on dry ground.
+	# Remember where the player last stood on dry ground (a few of them: the newest one can
+	# be the very spot something went wrong from).
 	_safe_timer += delta
 	if state == State.NORMAL and is_on_floor() and _safe_timer > 0.5:
 		_safe_timer = 0.0
-		if _water_at(global_position + Vector3.UP * 0.5) == null:
+		if _water_at(global_position + Vector3.UP * 0.5) == null and not _under_world():
 			_last_safe = global_position
+			_safe_trail.append(global_position)
+			if _safe_trail.size() > 8:
+				_safe_trail.pop_front()
+
+	# Slipped through the ground (falling or swimming underneath the terrain): back up.
+	_air_time = 0.0 if is_on_floor() else _air_time + delta
+	_under_check += delta
+	if _under_check > 0.25:
+		_under_check = 0.0
+		var loose := state == State.SWIM or (state == State.NORMAL and not is_on_floor() and _air_time > 0.5)
+		_under_time = _under_time + 0.25 if loose and _under_world() else 0.0
+		if _under_time >= 1.0:
+			_under_time = 0.0
+			_climb_out_of_ground()
+			return
 
 	# Lava burns while any of the body is in it (wading or swimming).
 	var molten = _water_at(global_position + Vector3.UP * 0.15)
@@ -1325,6 +1354,44 @@ func _update_survival(delta: float) -> void:
 		fatigue_changed.emit(fatigue, fatigue_max)
 	if fatigue >= fatigue_max:
 		stats.take_damage(stats.max_health * fatigue_damage * delta)
+
+
+## Underneath the world: the ground is above (a ray from high up hits a surface over the
+## player) but nothing faces down at the player from there. Terrain and buildings are
+## one-sided, so from below or inside them nothing is hit going up; a real roof or
+## overhang is hit from underneath.
+func _under_world() -> bool:
+	var space := get_world_3d().direct_space_state
+	var at := global_position + Vector3.UP * 0.9
+	var top := PhysicsRayQueryParameters3D.create(at + Vector3.UP * 120.0, at, 1)
+	top.exclude = [get_rid()]
+	var hit := space.intersect_ray(top)
+	if hit.is_empty() or (hit.position as Vector3).y < at.y + 0.5:
+		return false
+	var over := hit.collider as Node
+	if over == null or over.has_meta("prop_name") or (over.get_parent() and over.get_parent().has_meta("prop_name")):
+		return false  # under a bridge, a tower floor…: only the ground itself counts
+	var up := PhysicsRayQueryParameters3D.create(at, (hit.position as Vector3) + Vector3.UP * 0.05, 1)
+	up.exclude = [get_rid()]
+	up.hit_back_faces = true
+	return space.intersect_ray(up).is_empty()
+
+
+func _climb_out_of_ground() -> void:
+	var spot := _last_safe
+	if _safe_trail.size() >= 4:
+		spot = _safe_trail[_safe_trail.size() - 4]  # ~2 s before the last: not the spot it went wrong
+	_clear_knockdown()
+	global_position = spot + Vector3.UP * 0.3
+	velocity = Vector3.ZERO
+	state = State.NORMAL
+	model.position = Vector3.ZERO
+	_water = null
+	_air_peak = -INF
+	HUD.notify(self, "You slipped through the ground: back on solid footing", Color(0.9, 0.85, 0.6), 2.5)
+	var cam := get_tree().get_first_node_in_group("player_camera")
+	if cam and cam.has_method("snap"):
+		cam.call("snap")
 
 
 func _respawn(reason: String) -> void:

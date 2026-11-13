@@ -21,7 +21,7 @@ const ENEMY_FIELDS := [
 	"aggro_radius", "leash_distance", "wander_radius", "walk_speed", "run_speed", "attack_power",
 	"attack_range", "attack_cooldown", "attack_animation", "attack_animation_speed", "attack_hit_time",
 	"attack_arc", "corpse_time", "respawn_time", "loot_time", "knockback", "heavy_every", "heavy_power",
-	"heavy_animation", "heavy_animation_speed", "heavy_hit_time", "ragdoll", "death_push", "fade_time", "turn_speed",
+	"heavy_animation", "heavy_animation_speed", "heavy_hit_time", "ragdoll", "death_push", "fade_time", "turn_speed", "alert_radius",
 ]
 const PLAYER_STATS := ["max_health", "max_mana", "max_stamina", "stamina_regen", "stamina_regen_delay", "mana_regen"]
 const PLAYER_MOVEMENT := ["injured_speed", "injured_sprint_speed", "injured_health", "run_speed", "walk_speed", "sprint_speed", "jump_velocity", "sprint_stamina_cost", "swim_speed",

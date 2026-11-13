@@ -94,6 +94,16 @@
 				"legs": "travelers_trousers",
 				"feet": "worn_boots",
 				"primary": "rusty_sword"
+			},
+			"alert_radius": 14.0,
+			"ranged_backup": {
+				"ability": "arrow_shot",
+				"weapon": "hunting_bow",
+				"power": 0.8,
+				"range": 30.0,
+				"every": 2.2,
+				"height": 1.5,
+				"stuck_seconds": 1.5
 			}
 		},
 		{

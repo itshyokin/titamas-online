@@ -161,6 +161,17 @@ func _info(prop_name: String):
 		bounds = box if first else bounds.merge(box)
 		first = false
 
+	# A prop named for something else (watchtower_climb) is still a ladder when its
+	# material or texture says so (a "rope_ladder" picture).
+	if not ladder:
+		for m in meshes:
+			for s in m.mesh.get_surface_count():
+				var mat := m.mesh.surface_get_material(s)
+				var words := (mat.resource_name if mat else "").to_lower()
+				if mat is BaseMaterial3D and (mat as BaseMaterial3D).albedo_texture:
+					words += " " + (mat as BaseMaterial3D).albedo_texture.resource_path.get_file().to_lower()
+				if LADDER_WORDS.any(func(w: String) -> bool: return words.contains(w)):
+					ladder = true
 	var info := {"scene": scene, "materials": {}, "shape": null, "shape_xform": Transform3D.IDENTITY,
 		"group": "ladder" if ladder else ("climbable" if climbable else ""),
 		"size": maxf(bounds.get_longest_axis_size(), 0.1)}
@@ -179,7 +190,14 @@ func _info(prop_name: String):
 				info.materials[src] = mat
 
 	if solid and not meshes.is_empty():
-		if lower.contains("tree") and not climbable:
+		if ladder:
+			# A solid slab over the whole ladder: the climb probes would slip between the
+			# rungs of the exact mesh (and walk straight through a rope ladder).
+			var slab := BoxShape3D.new()
+			slab.size = bounds.size.max(Vector3.ONE * 0.08)
+			info.shape = slab
+			info.shape_xform = Transform3D(Basis.IDENTITY, bounds.get_center())
+		elif lower.contains("tree") and not climbable:
 			# The trunk's longest side is its length. Usually that's up (Y), but props
 			# exported lying down and stood up by their placement have it along another
 			# axis, so the cylinder follows whichever is longest. Sizes stay in prop units:

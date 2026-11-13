@@ -486,6 +486,14 @@ func _physics_process(delta: float) -> void:
 	var released := _attack_down and not Input.is_action_pressed("attack")
 	if _attack_down:
 		_press_time += delta
+	if _channel and _channel_swim:
+		# A channel started in the water (the hearthstone): no animation, ends if the
+		# player swims off or leaves the water.
+		if player.state != PlayerController.State.SWIM:
+			_interrupt("Cancelled", false, false)
+		else:
+			_update_channel(delta)
+		return
 	if player.state != PlayerController.State.NORMAL and player.state != PlayerController.State.ACTION:
 		if released:
 			_attack_down = false
@@ -1245,12 +1253,23 @@ func _end_cast() -> void:
 ## `anim`: the animation role/clip played while the bar fills. `timed`: the clip holds
 ## a pose (animations.json "drink" hold_at) while the bar fills, then plays out so it
 ## ends with the bar (faster if the bar is shorter than the clip).
-func channel(display: String, seconds: float, on_done: Callable, anim := "cast_channel", timed := false, loop: AudioStream = null, in_air := false) -> bool:
+func channel(display: String, seconds: float, on_done: Callable, anim := "cast_channel", timed := false, loop: AudioStream = null, in_air := false, in_water := false) -> bool:
 	if _channel or _current or _charging or _blocking or _casting:
 		notice.emit("You're busy")
 		return false
 	if _aiming:
 		_set_aiming(false)
+	_channel_swim = in_water and player.state == PlayerController.State.SWIM
+	if _channel_swim:
+		# Treading water: the bar fills while the player keeps still (no clip, no ACTION).
+		_channel = Ability.new()
+		_channel.display_name = display
+		_channel.cast_time = seconds
+		_channel_time = 0.0
+		_channel_done = on_done
+		_channel_play_at = -1.0
+		_start_loop(loop)
+		return true
 	if not player.start_action(0.0, in_air):
 		notice.emit("Can't do that now")
 		return false
@@ -1279,6 +1298,9 @@ func channel(display: String, seconds: float, on_done: Callable, anim := "cast_c
 	return true
 
 
+var _channel_swim := false
+
+
 func _update_channel(delta: float) -> void:
 	_channel_time += delta
 	if _move_input().length() > 0.5:
@@ -1294,7 +1316,9 @@ func _update_channel(delta: float) -> void:
 		var done := _channel_done
 		_channel = null
 		_stop_loop()
-		player.end_action()
+		if not _channel_swim:
+			player.end_action()
+		_channel_swim = false
 		if done.is_valid():
 			done.call()
 
@@ -1303,7 +1327,9 @@ func _stop_channel() -> void:
 	if _channel:
 		_channel = null
 		_stop_loop()
-		player.end_action()
+		if not _channel_swim:
+			player.end_action()
+		_channel_swim = false
 
 
 ## A sound looping on the player while a cast or channel fills (null = none).
@@ -1725,6 +1751,7 @@ func _cancel_all() -> void:
 	if _channel:
 		cast_interrupted.emit("Cancelled")
 		_channel = null
+		_channel_swim = false
 	if _casting:
 		cast_interrupted.emit("Cancelled")
 		_end_cast()

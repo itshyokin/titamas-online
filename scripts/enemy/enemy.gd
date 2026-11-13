@@ -18,6 +18,8 @@ var tagged_by_player := false
 @export var aggro_radius := 12.0
 ## Too far from home (m) and it gives up the chase.
 @export var leash_distance := 35.0
+## On first noticing someone, other idle enemies this close (m) join the fight (0 = none).
+@export var alert_radius := 14.0
 @export var wander_radius := 5.0
 @export var walk_speed := 1.4
 @export var run_speed := 4.0
@@ -230,10 +232,22 @@ func _equip() -> void:
 		var item := Database.item(String(eq.get(slot, "")))
 		if not item.is_empty():
 			character.wear(item, slot)
+	_ranged = false
+	_hold(String(eq.get("primary", "")))
+
+
+## Puts a weapon item in hand ("" = the enemy's usual: its primary, else the legacy sword).
+func _hold(item_id: String) -> void:
+	if character == null:
+		return
 	if _weapon_node and is_instance_valid(_weapon_node):
 		_weapon_node.queue_free()
 	_weapon_node = null
-	var main := Database.item(String(eq.get("primary", "")))
+	var d := Database.enemy(enemy_id)
+	if item_id == "":
+		var eq: Dictionary = d.get("equipment", {}) if d.get("equipment") is Dictionary else {}
+		item_id = String(eq.get("primary", ""))
+	var main := Database.item(item_id)
 	if not main.is_empty():
 		var fits: Array = main.get("fit", {}).get(character.body_key(), [])
 		_weapon_node = character.attach_fitted(fits[0] if not fits.is_empty() else {"bone": "mixamorig_RightHand", "grip": true}, String(main.get("model", "")))
@@ -348,18 +362,119 @@ func _chase(_delta: float) -> Vector3:
 		_give_up()
 		return Vector3.ZERO
 	var to := target.global_position - global_position
+	var rise := to.y
 	to.y = 0.0
+	var dt := get_physics_process_delta_time()
+	if _ranged or _cant_reach(to.length(), rise, dt):
+		return _shoot_from_below(to.length(), rise, dt)
 	if to.length() <= attack_range:
 		if _cooldown <= 0.0:
 			_start_attack()
 		else:
-			_face(target.global_position, get_physics_process_delta_time())
+			_face(target.global_position, dt)
 		return Vector3.ZERO
 	return to.normalized() * run_speed
 
 
+# --- Backup bow: the target is somewhere it can't walk to --------------------------
+
+var _ranged := false
+var _shooting := false
+var _shot_fired := false
+var _shot_left := 0.0
+var _best_gap := INF
+var _stuck := 0.0
+var _arrow: Ability = null
+
+
+## enemies.json "ranged_backup" {ability, weapon, power, range, every, stuck_seconds,
+## height}; {} = none.
+func _backup() -> Dictionary:
+	var b = Database.enemy(enemy_id).get("ranged_backup", {})
+	return b if b is Dictionary and String((b as Dictionary).get("ability", "")) != "" else {}
+
+
+## Up on a rock right above it, or chasing without getting any closer for a while.
+func _cant_reach(gap: float, rise: float, delta: float) -> bool:
+	var b := _backup()
+	if b.is_empty():
+		return false
+	var height := float(b.get("height", 1.5))
+	var on_ground: bool = not target.has_method("is_on_floor") or target.is_on_floor()
+	if rise > height and on_ground and gap <= attack_range + 1.5:
+		return true
+	if gap < _best_gap - 0.3:
+		_best_gap = gap
+		_stuck = 0.0
+	else:
+		_stuck += delta
+	return _stuck > float(b.get("stuck_seconds", 1.5)) and gap > attack_range and absf(rise) > 0.8
+
+
+func _shoot_from_below(gap: float, rise: float, delta: float) -> Vector3:
+	var b := _backup()
+	var on_ground: bool = not target.has_method("is_on_floor") or target.is_on_floor()
+	if not _ranged:
+		_ranged = true
+		_shot_left = 0.6
+		_hold(String(b.get("weapon", "")))
+		FloatingText.spawn(self, "!", Color(1.0, 0.85, 0.3), 1.0)
+	elif (rise < 1.0 and on_ground and absf(rise) < 1.0) or gap > float(b.get("range", 30.0)):
+		# Came back down (or got away): back to the sword.
+		_leave_ranged()
+		return Vector3.ZERO
+	_face(target.global_position, delta)
+	_shot_left -= delta
+	if _shot_left <= 0.0 and _cooldown <= 0.0:
+		_start_shot()
+	return Vector3.ZERO
+
+
+func _leave_ranged() -> void:
+	_ranged = false
+	_shooting = false
+	_best_gap = INF
+	_stuck = 0.0
+	_hold("")
+
+
+func _start_shot() -> void:
+	var b := _backup()
+	_arrow = Database.ability(String(b.get("ability", "arrow_shot")))
+	if _arrow == null:
+		_leave_ranged()
+		return
+	ai = AI.ATTACK
+	_shooting = true
+	_shot_fired = false
+	_attack_time = 0.0
+	_anim = _arrow.animation if _arrow.animation != "" and character.has_animation(_arrow.animation) else attack_animation
+	_anim_speed = 1.0
+	character.play_from(_anim, 0.0, 0.1, _anim_speed)
+
+
+func _shooting_step(delta: float) -> void:
+	_attack_time += delta
+	if _target_valid():
+		_face(target.global_position, delta)
+	if not _shot_fired and _attack_time >= maxf(_arrow.windup_time, 0.35):
+		_shot_fired = true
+		if _target_valid():
+			var b := _backup()
+			var from := global_position + Vector3.UP * 1.45 - model.global_basis.z * 0.5
+			var power := attack_power * float(b.get("power", 0.8))
+			Projectile.launch(from, self, target, _arrow, power, Combat.aim_point(target) - from)
+	if _attack_time >= clampf(character.get_animation_length(_anim), 0.6, 1.6):
+		_shooting = false
+		_cooldown = 0.0
+		_shot_left = float(_backup().get("every", 2.2)) * randf_range(0.85, 1.15)
+		ai = AI.CHASE
+
+
 func _start_attack() -> void:
 	ai = AI.ATTACK
+	_best_gap = INF
+	_stuck = 0.0
 	_attack_time = 0.0
 	_attack_hit = false
 	_attack_count += 1
@@ -376,6 +491,9 @@ func _start_attack() -> void:
 
 
 func _attacking(delta: float) -> void:
+	if _shooting:
+		_shooting_step(delta)
+		return
 	_attack_time += delta * _anim_speed
 	if not _attack_hit and _target_valid():
 		_face(target.global_position, delta * 0.5)  # tracks slowly, so side-steps work
@@ -387,7 +505,9 @@ func _attacking(delta: float) -> void:
 			var to := target.global_position - global_position
 			var fwd := -model.global_basis.z
 			to.y = 0.0
-			if to.length() <= attack_range + 0.6 and rad_to_deg(fwd.angle_to(to.normalized())) <= attack_arc * 0.5:
+			var rise := to.y
+			to.y = 0.0
+			if to.length() <= attack_range + 0.6 and absf(rise) < 2.0 and rad_to_deg(fwd.angle_to(to.normalized())) <= attack_arc * 0.5:
 				Combat.hit(self, target, attack_power * (heavy_power if _heavy else 1.0), _heavy, knockback * (2.0 if _heavy else 1.0), Database.enemy(enemy_id).get("applies", []))
 	if _attack_time >= character.get_animation_length(_anim):
 		_cooldown = attack_cooldown * randf_range(0.8, 1.2)
@@ -463,12 +583,52 @@ func _engage(who: Node3D) -> void:
 		s.died.connect(_on_target_died.bind(who))
 	if ai == AI.IDLE:
 		ai = AI.CHASE
+		_alert_others(who)
+
+
+## Shouts for help: idle enemies within alert_radius join in a moment later (they don't
+## pass it on, so one shout doesn't wake a whole valley).
+func _alert_others(who: Node3D) -> void:
+	if alert_radius <= 0.0 or _is_puppet():
+		return
+	var shouted := false
+	for n in get_tree().get_nodes_in_group("combatants"):
+		if n == self or not n is Enemy:
+			continue
+		var e := n as Enemy
+		if e.ai != AI.IDLE or not e._present or e.global_position.distance_to(global_position) > alert_radius:
+			continue
+		if not Combat.is_alive(e) or Combat.is_enemy_of(e, self):
+			continue
+		shouted = true
+		var delay := randf_range(0.25, 0.7)
+		get_tree().create_timer(delay).timeout.connect(e._hear_alarm.bind(who))
+	if shouted:
+		FloatingText.spawn(self, "!", Color(1.0, 0.35, 0.25), 1.2)
+
+
+func _hear_alarm(who: Node3D) -> void:
+	if not is_instance_valid(who) or ai != AI.IDLE or not Combat.is_alive(who) or SafeArea.protects(who):
+		return
+	if who.global_position.distance_to(global_position) > leash_distance:
+		return
+	target = who
+	var s := Combat.stats_of(who)
+	if s and not s.died.is_connected(_on_target_died.bind(who)):
+		s.died.connect(_on_target_died.bind(who))
+	ai = AI.CHASE
+	if process_mode == Node.PROCESS_MODE_DISABLED and has_meta("perf_asleep"):
+		process_mode = Node.PROCESS_MODE_INHERIT
+		remove_meta("perf_asleep")
+	FloatingText.spawn(self, "!", Color(1.0, 0.6, 0.2), 1.0)
 
 
 func _give_up() -> void:
 	threat.clear()
 	target = null
 	ai = AI.RETURN
+	if _ranged:
+		_leave_ranged()
 
 
 func _target_valid() -> bool:

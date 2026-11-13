@@ -474,7 +474,7 @@ func _use_hearthstone(d: Dictionary) -> bool:
 		var boom := String(d.get("teleport_sound", ""))
 		if boom != "":
 			Combat.play_sound(player, DataFiles.stream_from(boom), 0.0)
-		GameSession.travel_home(fade, float(d.get("hearth_fade_out", 0.7)), float(d.get("hearth_fade_in", 1.2))), "cast_channel", false, loop, true)  # in_air: works when stuck "falling"
+		GameSession.travel_home(fade, float(d.get("hearth_fade_out", 0.7)), float(d.get("hearth_fade_in", 1.2))), "cast_channel", false, loop, true, true)  # in_air: works when stuck "falling"; in_water: while swimming
 	if started:
 		_hearth_glow(player as Node3D, combat, seconds, glow, float(d.get("hearth_light_energy", 3.0)))
 	return started

@@ -719,11 +719,21 @@ const TABS = {
 			]],
 			["Behaviour", [
 				{ key: "aggro_radius", label: "Notices players within (m)", type: "number" },
+				{ key: "alert_radius", label: "Alerts idle enemies within (m)", type: "number", def: 14, help: "When it first notices someone, idle enemies this close join in a moment later. 0 = fights alone." },
 				{ key: "leash_distance", label: "Gives up beyond (m from home)", type: "number" },
 				{ key: "wander_radius", label: "Wanders within (m)", type: "number" },
 				{ key: "walk_speed", label: "Walk speed (m/s)", type: "number" },
 				{ key: "run_speed", label: "Run speed (m/s)", type: "number" },
 				{ key: "turn_speed", label: "Turn speed", type: "number", help: "How fast it turns to face you (8 = snappy; big beasts ~1.5)." },
+			]],
+			["Backup bow (when it can't reach you)", [
+				{ key: "ranged_backup.ability", label: "Shot", type: "ability", help: "Empty = no backup. When you're up on a rock or somewhere it can't walk to, it switches to this (e.g. Bow: arrow_shot) until you come back down." },
+				{ key: "ranged_backup.weapon", label: "Holds", type: "select", empty: true, options: () => itemOptions(), help: "The weapon shown in its hands while shooting (e.g. Hunting Bow)." },
+				{ key: "ranged_backup.power", label: "Damage × its attack power", type: "number", def: 0.8 },
+				{ key: "ranged_backup.range", label: "Shoots out to (m)", type: "number", def: 30 },
+				{ key: "ranged_backup.every", label: "Seconds between shots", type: "number", def: 2.2 },
+				{ key: "ranged_backup.height", label: "Counts as out of reach when you're this much higher (m)", type: "number", def: 1.5 },
+				{ key: "ranged_backup.stuck_seconds", label: "…or after chasing this long without getting closer (s)", type: "number", def: 1.5 },
 			]],
 			["Attack", [
 				{ key: "attack_power", label: "Damage", type: "number" },
