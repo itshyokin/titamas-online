@@ -293,6 +293,20 @@
 			"width": 0.072,
 			"tall": 0.058,
 			"forward": 0.002
+		},
+		"masc_hq": {
+			"height": 1.687,
+			"apart": 0.047,
+			"width": 0.064,
+			"tall": 0.05,
+			"forward": 0.002
+		},
+		"femme_hq": {
+			"height": 1.561,
+			"apart": 0.047,
+			"width": 0.062,
+			"tall": 0.05,
+			"forward": 0.002
 		}
 	},
 	"default": {
@@ -322,10 +336,14 @@
 		"name": "Underclothes",
 		"fitted_masc": "",
 		"fitted_femme": "res://assets/characters/underwear_femme.scn",
-		"color": "#cbbd9f"
+		"color": "#cbbd9f",
+		"fitted_masc_hq": "res://assets/characters/underwear_masc_hq.scn",
+		"fitted_femme_hq": "res://assets/characters/underwear_femme_hq.scn"
 	},
 	"bodies": [
-		"masc"
+		"masc",
+		"masc_hq",
+		"femme_hq"
 	],
 	"noses": [
 		{
@@ -641,6 +659,18 @@
 			"height": 1.715,
 			"width": 0.15,
 			"tall": 0.2,
+			"forward": 0.0015
+		},
+		"masc_hq": {
+			"height": 1.675,
+			"width": 0.15,
+			"tall": 0.2,
+			"forward": 0.0015
+		},
+		"femme_hq": {
+			"height": 1.55,
+			"width": 0.15,
+			"tall": 0.19,
 			"forward": 0.0015
 		}
 	},

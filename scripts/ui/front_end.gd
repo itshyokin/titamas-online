@@ -864,7 +864,8 @@ func _creator_page() -> Control:
 	var lv := _scrolling(left, 10)
 	lv.add_child(_heading("Create your character", 24))
 	lv.add_child(_section("Body type"))
-	lv.add_child(_choice_row("figure", [["0", "Body Type 1"], ["1", "Body Type 2"]]))
+	# 1 / 2 = the low-poly body as modelled / reshaped; 3 / 4 = their own bodies (masc_hq, femme_hq).
+	lv.add_child(_choice_row("figure", [["0", "Body Type 1"], ["1", "Body Type 2"], ["3", "Body Type 3"], ["4", "Body Type 4"]]))
 	lv.add_child(_section("Pronouns"))
 	lv.add_child(_choice_row("pronouns", _options(a.get("pronouns", []))))
 	lv.add_child(_section("Skin colour"))
@@ -1022,7 +1023,9 @@ func _choice_row(key: String, options: Array) -> HBoxContainer:
 
 func _set_choice(key: String, id: String) -> void:
 	if key == "figure":
-		_look["figure"] = float(id)
+		var other := {"3": "masc_hq", "4": "femme_hq"}
+		_look["body"] = String(other.get(id, "masc"))
+		_look["figure"] = 0.0 if other.has(id) else float(id)
 		_shot = "full"
 		_apply_look()
 		return
@@ -1306,6 +1309,9 @@ func _refresh_creator() -> void:
 		var current := _pronouns if key == "pronouns" else str(_look.get(key, ""))
 		if key == "figure":
 			current = str(roundi(float(_look.get("figure", 0.0))))
+			match String(_look.get("body", "masc")):
+				"masc_hq": current = "3"
+				"femme_hq": current = "4"
 		for e: Array in _choices[key]:
 			(e[1] as Button).set_pressed_no_signal(e[0] == current)
 	for key: String in _steppers:

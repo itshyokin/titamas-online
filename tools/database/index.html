@@ -292,7 +292,8 @@ const fxFields = (slot, what, sizeHelp) => [
 const LOOK_FIELDS = [
 	{ key: "_preview", label: "Preview", type: "lookpreview", wide: true },
 	{ key: "look.skin", label: "Skin colour", type: "color" },
-	{ key: "look.figure", label: "Body type", type: "select", options: [[0, "Body Type 1"], [1, "Body Type 2"]], help: "Type 2 = the same body reshaped (Body Models → Body type 2)." },
+	{ key: "look.body", label: "Body", type: "select", options: [["masc", "Body Types 1 / 2"], ["masc_hq", "Body Type 3"], ["femme_hq", "Body Type 4"]], rerender: true, help: "Types 3 and 4 are their own bodies (Body Models → Body Type 3 / 4)." },
+	{ key: "look.figure", label: "Body type", type: "select", options: [[0, "Body Type 1"], [1, "Body Type 2"]], help: "Type 2 = the same body reshaped (Body Models → Body type 2).", show: e => !((e.look || {}).body) || e.look.body === "masc" },
 	{ key: "look.species", label: "Species (sets head, height, build)", type: "select", empty: true, options: () => (((data.species || {}).species) || []).map(x => [x.id, x.name]) },
 	{ key: "look.head", label: "Head", type: "lookopt", list: "heads" },
 	{ key: "look.face", label: "Face", type: "lookopt", list: "faces", help: "Detailed = eyes, brows, nose, mouth and extras below. Painted = the simple painted face (ignores them). (none) = the default." },
@@ -1183,6 +1184,8 @@ const TABS = {
 			["Rebuilding", [
 				{ key: "arm_spread.masc", label: "Arm spread, masc (°)", type: "number", help: "Our bodies are broader than Mixamo's; this keeps hands off the thighs." },
 				{ key: "arm_spread.femme", label: "Arm spread, femme (°)", type: "number" },
+				{ key: "arm_spread.masc_hq", label: "Arm spread, Body Type 3 (°)", type: "number", def: 10 },
+				{ key: "arm_spread.femme_hq", label: "Arm spread, Body Type 4 (°)", type: "number", def: 10 },
 				{ key: "_rebuild", label: "Rebuild animations", type: "rebuild", wide: true },
 			]],
 		],
@@ -1635,6 +1638,17 @@ const TABS = {
 				{ key: "figure.bust_apart", label: "Bust apart (m from the middle)", type: "number", def: 0.085 },
 				{ key: "figure.bust_size", label: "Bust width ×", type: "number", def: 1 },
 			]],
+			...[0, 1].map(i => [`Body Type ${i + 3} (${i ? "femme_hq" : "masc_hq"})`, [
+				{ key: `_xb${i}`, label: "", type: "note", wide: true, text: i ? "" : "Body Types 3 and 4 are separate bodies (their own mesh and rig, same Mixamo bone names), picked in the creator's Body type row. Until a piece is made for them they wear the Body Type 1 piece, carried over bone by bone (hair, beards and hats moved by the head fit below), so it only roughly fits. To fit clothes or hair: in Blender, put the refitted meshes under this body's armature and export a .glb into assets/models/characters/src, pick it as the Source here, tick the body mesh(es), then add pieces with the SAME piece id as the Body Type 1 one (e.g. leather_tunic): Rebuild saves <id>_masc_hq.scn (or _femme_hq) and items use it on this body by themselves." },
+				{ key: `extra_bodies.${i}.name`, label: "Name", type: "text" },
+				{ key: `extra_bodies.${i}.source`, label: "Source (.glb / .fbx)", type: "select", options: () => (assets.glbs || []).map(g => [g, g.replace("res://assets/models/characters/src/", "")]) },
+				{ key: `extra_bodies.${i}.height`, label: "Height (m, top of the head)", type: "number" },
+				{ key: `extra_bodies.${i}.head_fit_grow`, label: "Borrowed hair: size ×", type: "number", def: 1.02, help: "Body Type 1 hair, beards and hats are scaled to this head; raise it if the scalp shows through." },
+				{ key: `extra_bodies.${i}.head_fit_raise`, label: "Borrowed hair: raise (m)", type: "number", def: 0 },
+				{ key: `extra_bodies.${i}.head_fit_back`, label: "Borrowed hair: move back (m)", type: "number", def: 0 },
+				{ key: `extra_bodies.${i}.body_meshes`, label: "Meshes that make the body", type: "glbmeshes", wide: true, meshes: () => ((assets.extra_meshes || {})[i ? "femme_hq" : "masc_hq"] || []) },
+				{ key: `extra_bodies.${i}.pieces`, label: "Pieces made for this body", type: "glbpieces", wide: true, meshes: () => ((assets.extra_meshes || {})[i ? "femme_hq" : "masc_hq"] || []), bodyMeshes: e => (((e.extra_bodies || [])[i] || {}).body_meshes || []) },
+			]]),
 			["Pieces (items, hair, heads, faces, hats…)", [
 				{ key: "pieces", label: "", type: "glbpieces", wide: true },
 			]],
@@ -2847,7 +2861,8 @@ function fieldControl(t, entry, f) {
 		case "glbmeshes": {
 			const list = Array.isArray(value) ? value.slice() : [];
 			const box = el("div");
-			for (const m of (assets.glb_meshes || [])) {
+			const gm = f.meshes ? f.meshes() : (assets.glb_meshes || []);
+			for (const m of gm) {
 				const lab = el("label", { className: "check" });
 				lab.style.cssText = "display:inline-flex;gap:4px;margin-right:14px";
 				const cb = el("input", { type: "checkbox", checked: list.includes(m.name) });
@@ -2855,7 +2870,7 @@ function fieldControl(t, entry, f) {
 				lab.append(cb, document.createTextNode(" " + m.name));
 				box.appendChild(lab);
 			}
-			if (!(assets.glb_meshes || []).length) box.textContent = "(No meshes found: is the Source .glb there?)";
+			if (!gm.length) box.textContent = "(No meshes found: is the Source file there? Save and reload the page after changing it.)";
 			wrap.append(label, box);
 			break;
 		}
@@ -2886,8 +2901,8 @@ function fieldControl(t, entry, f) {
 			// (each piece: what it's for → appearance option / item; see pieceUse)
 			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
 			wrap.className += " list-field";
-			const meshes = assets.glb_meshes || [];
-			const used = new Set(list.map(p => p.mesh).concat(entry.body_meshes || []));
+			const meshes = f.meshes ? f.meshes() : (assets.glb_meshes || []);
+			const used = new Set(list.map(p => p.mesh).concat((f.bodyMeshes ? f.bodyMeshes(entry) : entry.body_meshes) || []));
 			const unused = meshes.filter(m => !used.has(m.name));
 			if (unused.length) wrap.appendChild(el("div", { className: "help", textContent: "Not used yet: " + unused.map(m => m.name).join(", ") + "  (add a piece for each)" }));
 			const head = el("div", { className: "row" });

@@ -348,7 +348,8 @@ func resolve_appearance(look: Dictionary) -> Dictionary:
 		# Hands keep their size on thin/heavy builds unless the species says (dwarves: 1).
 		"hand_build": float(sp.get("hand_build", 0.0)),
 		# Body type 1 (0) / 2 (1): the same body, morphed (CharacterModel._figure_offset).
-		"figure": clampf(float(look.get("figure", d.get("figure", 0.0))), 0.0, 1.0),
+		# (Only the low-poly body has the Body Type 2 reshape; Types 3 / 4 are their own bodies.)
+		"figure": clampf(float(look.get("figure", d.get("figure", 0.0))), 0.0, 1.0) if body == "masc" else 0.0,
 	}
 
 

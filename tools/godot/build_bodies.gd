@@ -36,6 +36,14 @@ var BODY_MESHES: Array = []
 var BODY_EXTRA := {}
 var PIECES := {}
 var BONE_OF := {}
+## More bodies (body_models.json "extra_bodies", Database → Body Models → Body types 3 and 4):
+## [{key, name, source (.fbx/.glb with a Mixamo rig), height, body_meshes ([] = every skinned
+## mesh except teeth/tongue), pieces (same as above, saved as <id>_<key>.scn)}]. Each is
+## built like the masc body into Armature_<key>, parts named the same (head comes from the
+## bones, as these bodies are one mesh).
+var EXTRA_BODIES: Array = []
+var SUFFIX := "masc"  # file suffix of the pieces being saved
+var HEAD_BY_BONES := false
 
 ## Which part a bone's skin belongs to.
 const PART_OF := {
@@ -74,7 +82,14 @@ func _load_settings() -> void:
 		if not BODY_EXTRA.has(mat):
 			BODY_EXTRA[mat] = []
 		BODY_EXTRA[mat].append([String(e.part), float(e.get("min_y", -1)), float(e.get("max_y", -1))])
-	for p: Dictionary in d.get("pieces", []):
+	EXTRA_BODIES = d.get("extra_bodies", [])
+	_read_pieces(d.get("pieces", []))
+
+
+func _read_pieces(list: Array) -> void:
+	PIECES = {}
+	BONE_OF = {}
+	for p: Dictionary in list:
 		var id := String(p.get("id", ""))
 		if id == "" or String(p.get("mesh", "")) == "":
 			continue
@@ -94,6 +109,7 @@ func _initialize() -> void:
 	var masc := _build_skeleton("Armature_masc")
 	root.add_child(masc)
 	_build_body()
+	var masc_head := head_box(_out)
 	# The femme body, unchanged.
 	var old := (load(OLD_BODIES) as PackedScene).instantiate()
 	var femme := old.get_node("Armature_femme")
@@ -108,8 +124,58 @@ func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(GEAR_DIR))
 	for file: String in PIECES:
 		_save_piece(file, PIECES[file])
-	root.free()
 	_src.free()
+	# Body types 3, 4...: their own armatures in the same scene, and their own pieces.
+	for e: Dictionary in EXTRA_BODIES:
+		var key := String(e.get("key", ""))
+		var source := String(e.get("source", ""))
+		if key == "" or not ResourceLoader.exists(source):
+			push_warning("extra body '%s': no source %s" % [key, source])
+			continue
+		_src = (load(source) as PackedScene).instantiate()
+		_skel = _src.find_children("*", "Skeleton3D", true, false)[0]
+		_globals.clear()
+		HEIGHT = float(e.get("height", 1.86))
+		BODY_MESHES = e.get("body_meshes", [])
+		if BODY_MESHES.is_empty():
+			for mi in _src.find_children("*", "MeshInstance3D", true, false):
+				var low := String(mi.name).to_lower()
+				if mi.skin != null and not (low.contains("teeth") or low.contains("tongue")):
+					BODY_MESHES.append(String(mi.name))
+		BODY_EXTRA = {}
+		HEAD_BY_BONES = true
+		_read_pieces(e.get("pieces", []))
+		SUFFIX = key
+		var arm := _build_skeleton("Armature_" + key)
+		root.add_child(arm)
+		_build_body()
+		# Hair, hats and beards made on the masc head land on this head: the masc head's box
+		# (above the head bone, in its space) mapped onto this one's. CharacterModel puts it
+		# into the head bind of masc pieces worn here until they're refitted.
+		var mine := head_box(_out)
+		if masc_head.size != Vector3.ZERO and mine.size != Vector3.ZERO:
+			# One even scale, the largest of the three, so the masc hair always covers this
+			# head (a smaller axis would let the scalp poke through).
+			var ratio := mine.size / masc_head.size
+			var sc := Vector3.ONE * maxf(ratio.x, maxf(ratio.y, ratio.z)) * float(e.get("head_fit_grow", 1.02))
+			var b := Basis.from_scale(sc)
+			# Centred side to side and front to back; tops of the heads level (hair sits on
+			# the crown, not around the middle of the face).
+			var from := Vector3(masc_head.get_center().x, masc_head.end.y, masc_head.get_center().z)
+			var to := Vector3(mine.get_center().x, mine.end.y, mine.get_center().z) \
+				+ Vector3(0, float(e.get("head_fit_raise", 0.0)), float(e.get("head_fit_back", 0.0)))
+			var fit := Transform3D(b, to - b * from)
+			arm.set_meta("head_fit", fit)
+			print("  head fit %s: scale %s" % [key, sc])
+		arm.owner = root
+		_own(arm, root)
+		for file: String in PIECES:
+			_save_piece(file, PIECES[file])
+		_src.free()
+	var packed2 := PackedScene.new()
+	packed2.pack(root)
+	print("saved %s with %d extra bodies err=%d" % [OUT, EXTRA_BODIES.size(), ResourceSaver.save(packed2, OUT)])
+	root.free()
 	quit()
 
 
@@ -289,10 +355,18 @@ func _mesh_named(mesh_name: String) -> MeshInstance3D:
 func _build_body() -> void:
 	var parts := {}  # part -> Builder
 	var extra_mats := {}
+	var baked := []  # [mesh name, surface index, baked surface]
 	for mesh_name: String in BODY_MESHES:
 		var mi := _mesh_named(mesh_name)
 		for surf in mi.mesh.get_surface_count():
-			var s := _bake_surface(mi, surf)
+			baked.append([mesh_name, surf, _bake_surface(mi, surf)])
+	if HEAD_BY_BONES:
+		_smooth_normals(baked)
+	for entry: Array in baked:
+		var mesh_name: String = entry[0]
+		var surf: int = entry[1]
+		var s: Dictionary = entry[2]
+		if true:
 			var extras: Array = BODY_EXTRA.get(s.material_name, [])
 			for e: Array in extras:
 				extra_mats[e[0]] = _material(s.material)
@@ -318,7 +392,7 @@ func _build_body() -> void:
 							part = pn
 					if mesh_name.begins_with("head"):
 						part = "head"
-					elif part == "head":
+					elif part == "head" and not HEAD_BY_BONES:
 						part = "torso"  # the body's own neck stump stays with the torso
 				if not parts.has(part):
 					parts[part] = Builder.new()
@@ -340,7 +414,57 @@ func _build_body() -> void:
 		_out.add_child(mi)
 		mi.skeleton = NodePath("..")
 		print("  %-10s %5d verts %5d tris" % [part, (parts[part] as Builder).v.size(), (parts[part] as Builder).i.size() / 3])
-	print("masc: scale %.4f, %d bones" % [_scale, _out.get_bone_count()])
+	print("%s: scale %.4f, %d bones" % [SUFFIX, _scale, _out.get_bone_count()])
+
+
+## Bodies imported with hard (per-face) normals shade faceted and split anything pushed out
+## along them (underwear): average the face normals of every corner at the same spot,
+## across all the body's surfaces, so parts meet smoothly too.
+func _smooth_normals(baked: Array) -> void:
+	var sums := {}
+	for entry: Array in baked:
+		var s: Dictionary = entry[2]
+		for t in range(0, s.index.size(), 3):
+			var a: Vector3 = s.pos[s.index[t]]
+			var b: Vector3 = s.pos[s.index[t + 1]]
+			var c: Vector3 = s.pos[s.index[t + 2]]
+			var n := (b - a).cross(c - a)  # area-weighted
+			if n.dot(s.nrm[s.index[t]] + s.nrm[s.index[t + 1]] + s.nrm[s.index[t + 2]]) < 0.0:
+				n = -n
+			for k in 3:
+				var key := (s.pos[s.index[t + k]] as Vector3).snappedf(0.0001)
+				sums[key] = (sums.get(key, Vector3.ZERO) as Vector3) + n
+	for entry: Array in baked:
+		var s: Dictionary = entry[2]
+		var nrm: PackedVector3Array = s.nrm
+		for v in nrm.size():
+			var sum: Vector3 = sums.get((s.pos[v] as Vector3).snappedf(0.0001), Vector3.ZERO)
+			if sum.length() > 0.0:
+				nrm[v] = sum.normalized()
+		s.nrm = nrm
+
+
+## The head above the head bone (cranium and face), in the head bone's own space at rest.
+static func head_box(skel: Skeleton3D) -> AABB:
+	var head := skel.get_node_or_null("head") as MeshInstance3D
+	var bone := skel.find_bone("mixamorig_Head")
+	if head == null or bone < 0:
+		return AABB()
+	var xf := skel.get_bone_global_rest(bone)
+	var inv := xf.affine_inverse()
+	var box := AABB()
+	var first := true
+	for surf in head.mesh.get_surface_count():
+		for v: Vector3 in head.mesh.surface_get_arrays(surf)[Mesh.ARRAY_VERTEX]:
+			if v.y < xf.origin.y:
+				continue
+			var local := inv * v
+			if first:
+				box = AABB(local, Vector3.ZERO)
+				first = false
+			else:
+				box = box.expand(local)
+	return box
 
 
 ## A copy of a source material for the game (textures kept, pixel look, no specular glare).
@@ -392,7 +516,7 @@ func _save_piece(file: String, specs: Array) -> void:
 			count += 1
 	var packed := PackedScene.new()
 	packed.pack(root)
-	var path := "%s/%s_masc.scn" % [GEAR_DIR, file]
+	var path := "%s/%s_%s.scn" % [GEAR_DIR, file, SUFFIX]
 	var box := AABB()
 	for c in root.get_children():
 		box = (c as MeshInstance3D).get_aabb() if box.size == Vector3.ZERO else box.merge((c as MeshInstance3D).get_aabb())

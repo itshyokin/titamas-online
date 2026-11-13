@@ -150,7 +150,7 @@ func _dress() -> void:
 	var main := Database.item(String(eq.get("primary", eq.get("main_hand", ""))))
 	armed = not main.is_empty()
 	if armed:
-		var fits: Array = main.get("fit", {}).get(character.body_key(), [])
+		var fits: Array = CharacterModel.fits_for(main, character.body_key())
 		_weapon = character.attach_fitted(fits[0] if not fits.is_empty() else {"bone": "mixamorig_RightHand", "grip": true}, String(main.get("model", "")))
 		_show_weapon()
 

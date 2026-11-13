@@ -249,7 +249,7 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 					levels.append(f)
 			_json(peer, 200, {"animations": _animations(), "sounds": _files("res://assets/audio", ["ogg", "wav", "mp3"]), "fbx": fbx,
 				"props": props, "levels": levels, "markers": _markers(levels),
-				"glbs": _files("res://assets/models/characters/src", ["glb"]), "glb_meshes": _glb_meshes(), "glb_bones": _glb_bones(),
+				"glbs": _files("res://assets/models/characters/src", ["glb", "fbx"]), "glb_meshes": _glb_meshes(), "extra_meshes": _extra_meshes(), "glb_bones": _glb_bones(),
 				"pieces": _files("res://assets/characters/lowpoly", ["scn"]), "sprites": _files(SPRITE_DIR, ["png"]), "videos": _files("res://assets", ["ogv"]),
 				"item_icons": _item_icon_groups(), "ground_textures": _files("res://assets/materials/terrain", ["jpg", "png", "webp"]), "creature_models": _files("res://assets/models/creatures", ["glb", "gltf"]), "custom_icons": _files(ICON_DIR.path_join("custom"), ["png"])})
 		["POST", "/api/upload_sprite"]:
@@ -318,9 +318,42 @@ func _handle(peer: StreamPeerTCP, req: Dictionary) -> void:
 
 ## The meshes in the body .glb (data/body_models.json "source"): {name, materials, skinned},
 ## read from the file's glTF JSON so new Blender objects show up in Database → Body Models.
-func _glb_meshes() -> Array:
+## Meshes of each extra body's source (Body Types 3 and 4): {key: [{name, materials, skinned}]}.
+func _extra_meshes() -> Dictionary:
 	var settings = JSON.parse_string(FileAccess.get_file_as_string("res://data/body_models.json")) if FileAccess.file_exists("res://data/body_models.json") else {}
-	var path := String(settings.get("source", "")) if settings is Dictionary else ""
+	var out := {}
+	for e in (settings.get("extra_bodies", []) if settings is Dictionary else []):
+		if e is Dictionary and String(e.get("key", "")) != "":
+			out[String(e.key)] = _glb_meshes(String(e.get("source", "")))
+	return out
+
+
+## Meshes in a .glb (read from its JSON chunk) or any other imported scene (.fbx: loaded).
+func _scene_meshes(path: String) -> Array:
+	var out := []
+	if not ResourceLoader.exists(path):
+		return out
+	var scene := load(path) as PackedScene
+	if scene == null:
+		return out
+	var root := scene.instantiate()
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var mats := []
+		if (mi as MeshInstance3D).mesh:
+			for i in (mi as MeshInstance3D).mesh.get_surface_count():
+				var m := (mi as MeshInstance3D).mesh.surface_get_material(i)
+				mats.append(m.resource_name if m else "")
+		out.append({"name": String(mi.name), "materials": mats, "skinned": (mi as MeshInstance3D).skin != null})
+	root.free()
+	return out
+
+
+func _glb_meshes(path := "") -> Array:
+	var settings = JSON.parse_string(FileAccess.get_file_as_string("res://data/body_models.json")) if FileAccess.file_exists("res://data/body_models.json") else {}
+	if path == "":
+		path = String(settings.get("source", "")) if settings is Dictionary else ""
+	if path != "" and not path.ends_with(".glb"):
+		return _scene_meshes(path)
 	var f := FileAccess.open(path, FileAccess.READ) if path != "" else null
 	if f == null:
 		return []

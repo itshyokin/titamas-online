@@ -303,7 +303,7 @@ func _equip_weapons() -> void:
 			continue
 		var t := Database.weapon_type(String(item.get("weapon_type", "")))
 		var left := String(item.get("weapon_type", "")) == "bow"
-		var fits: Array = item.get("fit", {}).get(character.body_key(), [])
+		var fits: Array = CharacterModel.fits_for(item, character.body_key())
 		var hand := character.attach_fitted(fits[0] if not fits.is_empty() else
 			{"bone": "mixamorig_LeftHand" if left else "mixamorig_RightHand", "grip": true}, String(item.get("model", "")))
 		# Guns and crossbows: barrel along the hand (towards the knuckles), not out of the

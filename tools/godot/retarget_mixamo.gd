@@ -12,7 +12,9 @@ extends SceneTree
 ## hip height, so it works for both body proportions.
 
 const SOURCE_DIR := "res://assets/animations/mixamo"
-const BODIES := {"masc": "Armature_masc", "femme": "Armature_femme"}
+## Bodies to build a library for: these two plus body_models.json "extra_bodies" (Body
+## Types 3 and 4). BODIES=masc_hq,femme_hq in the environment builds only those.
+var BODIES := {"masc": "Armature_masc", "femme": "Armature_femme"}
 const BODY_SCENE := "res://assets/models/characters/base_bodies.scn"
 const ROOT_BONE := "mixamorig_Hips"
 ## Limb bones whose rest direction is matched to Mixamo's T-pose, and the child bone
@@ -237,6 +239,18 @@ const PLACEHOLDERS := {
 
 func _init() -> void:
 	_load_settings()
+	var models = JSON.parse_string(FileAccess.get_file_as_string("res://data/body_models.json"))
+	if models is Dictionary:
+		for e in models.get("extra_bodies", []):
+			if e is Dictionary and String(e.get("key", "")) != "":
+				BODIES[String(e.key)] = "Armature_" + String(e.key)
+	var only := OS.get_environment("BODIES")
+	if only != "":
+		var keep := {}
+		for k in only.split(",", false):
+			if BODIES.has(k.strip_edges()):
+				keep[k.strip_edges()] = BODIES[k.strip_edges()]
+		BODIES = keep
 	var body_scene: Node = (load(BODY_SCENE) as PackedScene).instantiate()
 	var sources := _load_sources()
 	for body in BODIES:
@@ -477,7 +491,7 @@ func _match_height(anim: Animation, reference: Animation, skel: Skeleton3D) -> v
 
 func _spread(body: String) -> float:
 	var override := OS.get_environment("ARM_SPREAD")  # for quick previews
-	return float(override) if not override.is_empty() else float(ARM_SPREAD[body])
+	return float(override) if not override.is_empty() else float(ARM_SPREAD.get(body, 10.0))
 
 
 ## Bone indices of a bone and all its descendants.

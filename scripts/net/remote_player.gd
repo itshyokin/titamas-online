@@ -90,7 +90,7 @@ func _hand_weapon(item: Dictionary) -> Node3D:
 	if item.is_empty():
 		return null
 	var bone := "mixamorig_LeftHand" if String(item.get("weapon_type", "")) == "bow" else "mixamorig_RightHand"
-	var fits: Array = item.get("fit", {}).get(character.body_key(), [])
+	var fits: Array = CharacterModel.fits_for(item, character.body_key())
 	var node := character.attach_fitted(fits[0] if not fits.is_empty() else {"bone": bone, "grip": true}, String(item.get("model", "")))
 	if node:
 		node.visible = false

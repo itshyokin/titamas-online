@@ -316,5 +316,33 @@
 		"bust_height": 1.325,
 		"bust_apart": 0.085,
 		"bust_size": 1.0
-	}
+	},
+	"extra_bodies": [
+		{
+			"key": "masc_hq",
+			"name": "Body Type 3",
+			"source": "res://assets/models/characters/src/body_masc_hq.fbx",
+			"height": 1.86,
+			"body_meshes": [
+				"Anime_Boy_Body_Base_by_Alexz_art"
+			],
+			"pieces": [],
+			"head_fit_grow": 1.02,
+			"head_fit_raise": 0.02,
+			"head_fit_back": 0.0
+		},
+		{
+			"key": "femme_hq",
+			"name": "Body Type 4",
+			"source": "res://assets/models/characters/src/body_femme_hq.fbx",
+			"height": 1.72,
+			"body_meshes": [
+				"Body"
+			],
+			"pieces": [],
+			"head_fit_grow": 1.02,
+			"head_fit_raise": 0.0,
+			"head_fit_back": 0.0
+		}
+	]
 }

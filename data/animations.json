@@ -1,7 +1,9 @@
 {
 	"arm_spread": {
 		"masc": 18.0,
-		"femme": 14.0
+		"femme": 14.0,
+		"masc_hq": 10.0,
+		"femme_hq": 10.0
 	},
 	"no_arm_spread_prefixes": [
 		"climbing_",

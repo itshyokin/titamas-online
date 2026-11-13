@@ -8,12 +8,55 @@ extends Node3D
 ## Animations come from assets/animations/<body>.res, built from the Mixamo FBX files
 ## by tools/godot/retarget_mixamo.gd.
 
-enum BodyType { MASC, FEMME }
+## MASC = the low-poly body (creator Body Types 1 and 2: 2 is the same body reshaped by
+## `figure`), FEMME = the old unused body, MASC_HQ / FEMME_HQ = Body Types 3 and 4
+## (body_models.json extra_bodies). New values go on the end: scenes store the number.
+enum BodyType { MASC, FEMME, MASC_HQ, FEMME_HQ }
+
+## Body key (look "body", "fitted_<key>", "fit.<key>", animations/<key>.res) per type.
+const KEYS := {
+	BodyType.MASC: "masc", BodyType.FEMME: "femme", BodyType.MASC_HQ: "masc_hq", BodyType.FEMME_HQ: "femme_hq",
+}
 
 const LIBRARIES := {
 	BodyType.MASC: "res://assets/animations/masc.res",
 	BodyType.FEMME: "res://assets/animations/femme.res",
+	BodyType.MASC_HQ: "res://assets/animations/masc_hq.res",
+	BodyType.FEMME_HQ: "res://assets/animations/femme_hq.res",
 }
+
+
+## The type for a body key ("masc" when unknown).
+static func type_of(key: String) -> BodyType:
+	for t in KEYS:
+		if KEYS[t] == key:
+			return t
+	return BodyType.MASC
+
+
+## The fitted (skinned) scene an item uses on body `key`: its own "fitted_<key>", else the
+## masc piece's copy made for that body (<id>_<key>.scn next to <id>_masc.scn, from
+## Body Models → Body types 3 and 4 pieces), else the masc piece itself (it follows the
+## bones, so it sits roughly right until a fitted version exists). The old femme body
+## gets no fallback.
+static func fitted_for(item: Dictionary, key: String) -> String:
+	var own := String(item.get("fitted_" + key, ""))
+	if own != "" or key == "masc" or key == "femme" or bool(item.get("no_fallback", false)):
+		return own
+	var masc := String(item.get("fitted_masc", ""))
+	if masc == "":
+		return ""
+	var copy := masc.trim_suffix("_masc.scn") + "_" + key + ".scn"
+	return copy if masc.ends_with("_masc.scn") and ResourceLoader.exists(copy) else masc
+
+
+## Rigid attachments (weapons, shields, hats) an item uses on body `key`: "fit.<key>", else
+## the masc ones (offsets from the same bones).
+static func fits_for(item: Dictionary, key: String) -> Array:
+	var fit: Dictionary = item.get("fit", {})
+	if fit.has(key) and not (fit[key] as Array).is_empty():
+		return fit[key]
+	return fit.get("masc", []) if key != "femme" else []
 
 @export var body_type: BodyType = BodyType.MASC:
 	set(value):
@@ -276,7 +319,7 @@ var _hidden_parts := {}  # part name -> how many worn items hide it
 
 
 func body_key() -> String:
-	return "femme" if body_type == BodyType.FEMME else "masc"
+	return String(KEYS.get(body_type, "masc"))
 
 
 ## Puts an item on. `tag` names it for take_off() (e.g. the equipment slot).
@@ -288,7 +331,9 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 	if skel == null or item.is_empty():
 		return nodes
 	var body := body_key()
-	var fitted := String(item.get("fitted_" + body, ""))
+	var fitted := fitted_for(item, body)
+	# A masc piece standing in on another body (not refitted yet): its skin is adapted.
+	var borrowed := body != "masc" and fitted == String(item.get("fitted_masc", "")) and fitted != ""
 	if not fitted.is_empty() and ResourceLoader.exists(fitted):
 		var piece := (load(fitted) as PackedScene).instantiate()
 		for child in piece.get_children():
@@ -297,12 +342,14 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 				child.owner = null
 				skel.add_child(child)
 				(child as MeshInstance3D).skeleton = NodePath("..")
+				if borrowed and (child as MeshInstance3D).skin:
+					(child as MeshInstance3D).skin = _borrowed_skin((child as MeshInstance3D).skin, skel)
 				nodes.append(child)
 		piece.free()
 		if weight != 0.0 or figure != 0.0:
 			_morph_group(nodes.duplicate())
 	if with_rigid:
-		var fits: Array = item.get("fit", {}).get(body, [])
+		var fits: Array = fits_for(item, body)
 		for att: Dictionary in fits:
 			var node := attach_fitted(att, String(item.get("model", "")))
 			if node:
@@ -318,6 +365,54 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 	_worn[tag] = {"nodes": nodes, "hides": hides, "item": item, "with_rigid": with_rigid}
 	_update_hidden_parts()
 	return nodes
+
+
+static var _borrowed_skins := {}  # "skin id:skeleton bones:fit" -> Skin
+
+
+## A masc piece's skin made to fit this body's skeleton: binds to bones it doesn't have
+## (the masc hand's middle finger) go to the nearest one it does (the hand), and anything
+## bound to the head gets the armature's "head_fit" (build_bodies: the masc head's box
+## mapped onto this head), so hair, beards and hats sit on a differently shaped head.
+func _borrowed_skin(src: Skin, skel: Skeleton3D) -> Skin:
+	var armature := skel.get_parent()
+	var fit: Transform3D = armature.get_meta("head_fit", Transform3D.IDENTITY) if armature else Transform3D.IDENTITY
+	var key := "%d:%d:%s" % [src.get_instance_id(), skel.get_instance_id(), fit]
+	if _borrowed_skins.has(key):
+		return _borrowed_skins[key]
+	var out := src.duplicate() as Skin
+	var by_name := {}
+	for i in src.get_bind_count():
+		by_name[String(src.get_bind_name(i))] = i
+	var head := skel.find_bone("mixamorig_Head")
+	var head_rest := skel.get_bone_global_rest(head) if head >= 0 else Transform3D.IDENTITY
+	for i in src.get_bind_count():
+		var bname := String(src.get_bind_name(i))
+		if bname == "":
+			continue
+		if skel.find_bone(bname) < 0:
+			var stand_in := _stand_in_bone(bname)
+			if by_name.has(stand_in):
+				out.set_bind_name(i, stand_in)
+				out.set_bind_pose(i, src.get_bind_pose(by_name[stand_in]))
+			continue
+		if head >= 0 and by_name.has("mixamorig_Head") and (bname == "mixamorig_Head" or bname == "mixamorig_HeadTop_End"):
+			# As if bound to the head, through the fit, then seen from this bone.
+			var b := skel.find_bone(bname)
+			var to_bone := skel.get_bone_global_rest(b).affine_inverse() * head_rest
+			out.set_bind_pose(i, to_bone * fit * src.get_bind_pose(by_name["mixamorig_Head"]))
+	_borrowed_skins[key] = out
+	return out
+
+
+## The bone a missing one's skin goes to (fingers → the hand, toes → the foot).
+static func _stand_in_bone(bone: String) -> String:
+	for side in ["Left", "Right"]:
+		if bone.begins_with("mixamorig_%sHand" % side):
+			return "mixamorig_%sHand" % side
+		if bone.begins_with("mixamorig_%sToe" % side):
+			return "mixamorig_%sFoot" % side
+	return "mixamorig_Hips"
 
 
 ## What an item hides: its "hides" list plus its head clipping ("head_clip"):
@@ -418,6 +513,16 @@ func _update_hidden_parts() -> void:
 		if child is MeshInstance3D and child.owner != null:  # the body's own parts
 			var part := String(child.name).trim_prefix(prefix)
 			(child as MeshInstance3D).visible = int(_hidden_parts.get(part, 0)) <= 0
+	# Underclothes worn as a piece (Body Types 3 / 4, femme) instead of being part of the
+	# body: trousers ("underwear") hide its leg parts and the torso part, shirts
+	# ("underwear_top") the torso part (the bands round the hips and the chest are one mesh).
+	if _worn.has("underwear"):
+		var low := int(_hidden_parts.get("underwear", 0)) > 0
+		var top := int(_hidden_parts.get("underwear_top", 0)) > 0
+		for node in _worn.underwear.nodes:
+			if is_instance_valid(node):
+				var part := String((node as Node).name).trim_prefix(prefix)
+				(node as Node3D).visible = not ((low or top) if part == "torso" else low)
 	# Helmets can hide the hair, its hat-clip parts, or the whole head (see _hides_of).
 	for tag: String in ["hair", "facial_hair", "face", "head"]:
 		if not _worn.has(tag):
@@ -667,7 +772,7 @@ func apply_appearance(look: Dictionary) -> void:
 	weight = float(look.get("weight", 0.0))
 	hand_build = float(look.get("hand_build", 0.0))
 	figure = float(look.get("figure", 0.0))
-	body_type = BodyType.FEMME if String(look.get("body", "masc")) == "femme" else BodyType.MASC
+	body_type = type_of(String(look.get("body", "masc")))
 	skin_color = look.get("skin", skin_color)
 	_batch = false
 	_apply()
@@ -690,7 +795,9 @@ func _apply_look_parts() -> void:
 		if entry.has("fitted_masc") or entry.has("model"):
 			var item := entry.duplicate()
 			if tag in ["head", "face"]:
-				pass  # their own materials (a head variant is skin: see below)
+				# Their own materials (a head variant is skin: see below). A head or face made
+				# for one body never goes on another.
+				item["no_fallback"] = true
 			elif tag == "underwear":
 				item["tint"] = Color.html(String(entry.get("color", "#cbbd9f")))
 			else:
@@ -1125,6 +1232,12 @@ static func _face_mesh(arrays: Array, x0: float, x1: float, y_top: float, y_bott
 			z.append(fz)
 			pts.append(Vector3(x, y, fz - forward))
 	var cell := maxf(absf(x1 - x0) / nx, absf(y_top - y_bottom) / ny)
+	# Misses read INF. Cells far behind the front of what's being drawn are the sides of
+	# the head (12 cm back: -2 cm on the low-poly head, whose face is 14 cm forward).
+	var front := INF
+	for fz in z:
+		front = minf(front, fz)
+	var limit := front + 0.12
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var any := false
@@ -1136,8 +1249,8 @@ static func _face_mesh(arrays: Array, x0: float, x1: float, y_top: float, y_bott
 			for k: int in ids:
 				lo = minf(lo, z[k])
 				hi = maxf(hi, z[k])
-			# A miss reads 0 (the middle of the head); a fold reads a jump of several cells.
-			if hi > -0.02 or hi - lo > cell * 3.0:
+			# A miss (INF) or a side of the head; a fold reads a jump of several cells.
+			if hi == INF or hi > limit or hi - lo > cell * 3.0:
 				continue
 			any = true
 			for k: int in [0, 1, 2, 0, 2, 3]:
@@ -1175,7 +1288,7 @@ static func _face_z(arrays: Array, x: float, y: float, _radius: float) -> float:
 		if u < 0.0 or v < 0.0 or u + v > 1.0:
 			continue
 		best = minf(best, a.z + u * (b.z - a.z) + v * (c.z - a.z))
-	return best if best != INF else 0.0
+	return best
 
 
 func _apply_morph() -> void:
@@ -1341,7 +1454,7 @@ func _setup_animator() -> void:
 
 
 func _armature_name(type: BodyType) -> String:
-	return "Armature_femme" if type == BodyType.FEMME else "Armature_masc"
+	return "Armature_" + String(KEYS.get(type, "masc"))
 
 
 # --- Hair and cape sway ------------------------------------------------------------------

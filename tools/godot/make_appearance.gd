@@ -35,12 +35,16 @@ const FACIAL := ["stubble", "mustache", "goatee", "short_beard", "full_beard"]
 const UNDERWEAR := {
 	"masc": {"torso": [[0.0, 1.05]], "leg": [[0.78, 2.0]]},
 	"femme": {"torso": [[0.0, 1.03], [1.22, 1.4]], "leg": [[0.76, 2.0]]},
+	"masc_hq": {"torso": [[0.0, 1.1]], "leg": [[0.82, 2.0]]},
+	"femme_hq": {"torso": [[0.0, 1.02], [1.24, 1.44]], "leg": [[0.8, 2.0]]},
 }
 
 
 func _initialize() -> void:
 	var bodies := (load(BODIES) as PackedScene).instantiate() as Node3D
-	for body: String in ["masc", "femme"]:
+	for body: String in UNDERWEAR:
+		if not bodies.has_node("Armature_%s/Skeleton3D" % body):
+			continue
 		var skel := bodies.get_node("Armature_%s/Skeleton3D" % body) as Skeleton3D
 		var head := skel.get_node(("f_" if body == "femme" else "") + "head") as MeshInstance3D
 		var hv: PackedVector3Array = head.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
