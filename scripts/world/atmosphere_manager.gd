@@ -237,9 +237,9 @@ func _apply() -> void:
 				_env.fog_depth_curve = 1.0
 				_env.fog_density = 1.0
 			else:
-				# The Compatibility renderer has no depth fog: thick enough to be nearly
-				# solid by the end distance.
-				_env.fog_density = maxf(float(v.fog_density), 3.5 / end)
+				# The Compatibility renderer has no depth fog: a gentle exponential haze that
+				# hides most of what lies past the end distance.
+				_env.fog_density = maxf(float(v.fog_density), 1.4 / end)
 			_env.fog_sky_affect = maxf(float(v.fog_sky_affect), 0.85)
 		_env.ambient_light_energy = v.ambient_energy
 		# Shade colour: part of the ambient light is the region's shadow colour, so the
