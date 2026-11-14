@@ -823,5 +823,5 @@
 			"ears_mesh": "ears_female_human"
 		}
 	],
-	"rig_source": "res://assets/models/characters/src/lowpoly_rig.fbx"
+	"rig_source": ""
 }
