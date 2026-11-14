@@ -4,6 +4,7 @@
 			"animation": "attack_light_1",
 			"animation_speed": 1.15,
 			"arc": 120.0,
+			"cast_time": 0.0,
 			"charge_power": 1.0,
 			"charge_time": 1.0,
 			"color": "#bfbfcc",
@@ -13,7 +14,9 @@
 			"display_name": "Slash",
 			"hit_sound": "",
 			"hit_time": 0.32,
+			"icon": "slash",
 			"id": "slash_1",
+			"knockback": 2.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.25,
@@ -31,15 +34,13 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 2.5,
-			"cast_time": 0.0,
-			"icon": "slash",
 			"windup_time": 0.45
 		},
 		{
 			"animation": "attack_light_2",
 			"animation_speed": 1.15,
 			"arc": 140.0,
+			"cast_time": 0.0,
 			"charge_power": 1.0,
 			"charge_time": 1.0,
 			"color": "#bfbfcc",
@@ -49,7 +50,9 @@
 			"display_name": "Backslash",
 			"hit_sound": "",
 			"hit_time": 0.33,
+			"icon": "slash",
 			"id": "slash_2",
+			"knockback": 3.0,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.25,
@@ -67,15 +70,13 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.0,
-			"cast_time": 0.0,
-			"icon": "slash",
 			"windup_time": 0.45
 		},
 		{
 			"animation": "attack_heavy",
 			"animation_speed": 1.4,
 			"arc": 110.0,
+			"cast_time": 0.0,
 			"charge_power": 1.0,
 			"charge_time": 1.0,
 			"color": "#e0b060",
@@ -85,7 +86,9 @@
 			"display_name": "Finishing Blow",
 			"hit_sound": "",
 			"hit_time": 0.7,
+			"icon": "slash",
 			"id": "slash_3",
+			"knockback": 6.0,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.15,
@@ -102,15 +105,20 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 6.0,
-			"cast_time": 0.0,
-			"icon": "slash",
 			"windup_time": 0.45
 		},
 		{
 			"animation": "attack_heavy",
 			"animation_speed": 1.0,
+			"applies": [
+				{
+					"chance": 0.35,
+					"seconds": 1.8,
+					"status": "knockdown"
+				}
+			],
 			"arc": 140.0,
+			"cast_time": 0.0,
 			"charge_power": 0.8,
 			"charge_time": 1.0,
 			"color": "#d98c4d",
@@ -120,7 +128,9 @@
 			"display_name": "Heavy Strike",
 			"hit_sound": "",
 			"hit_time": 0.7,
+			"icon": "heavy",
 			"id": "heavy_strike",
+			"knockback": 7.0,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.0,
@@ -137,22 +147,13 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 7.0,
-			"cast_time": 0.0,
-			"icon": "heavy",
-			"windup_time": 0.0,
-			"applies": [
-				{
-					"status": "knockdown",
-					"chance": 0.35,
-					"seconds": 1.8
-				}
-			]
+			"windup_time": 0.0
 		},
 		{
 			"animation": "bow_release",
 			"animation_speed": 1.0,
 			"arc": 120.0,
+			"cast_time": 0.0,
 			"charge_power": 0.9,
 			"charge_time": 1.0,
 			"color": "#8cbf66",
@@ -162,7 +163,9 @@
 			"display_name": "Bow",
 			"hit_sound": "",
 			"hit_time": 0.1,
+			"icon": "arrow",
 			"id": "arrow_shot",
+			"knockback": 1.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.3,
@@ -177,15 +180,14 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 1.5,
-			"cast_time": 0.0,
-			"icon": "arrow",
 			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_release",
 			"animation_speed": 1.2,
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 1.1,
 			"charge_power": 1.5,
 			"charge_time": 0.8,
 			"color": "#ff8026",
@@ -193,9 +195,28 @@
 			"delivery": "projectile",
 			"description": "Hurls a bolt of fire at your target.",
 			"display_name": "Firebolt",
+			"element": "fire",
+			"fx": {
+				"impact": {
+					"frames": 4.0,
+					"look": "glow",
+					"seconds": 0.35,
+					"size": 1.6,
+					"sprite": "res://assets/effects/builtin/burst_4.png"
+				},
+				"projectile": {
+					"frames": 1.0,
+					"look": "glow",
+					"seconds": 0.4,
+					"size": 0.6,
+					"sprite": "res://assets/effects/builtin/flame.png"
+				}
+			},
 			"hit_sound": "",
 			"hit_time": 0.37,
+			"icon": "fire",
 			"id": "firebolt",
+			"knockback": 3.5,
 			"mana_cost": 8.0,
 			"max_charge_level": 3.0,
 			"move_scale": 0.2,
@@ -205,6 +226,7 @@
 			"projectile_style": "bolt",
 			"reach": 30.0,
 			"recovery_time": 0.7,
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
 			"sounds": [
 				"res://assets/audio/combat/fireball_throw.ogg"
 			],
@@ -212,34 +234,14 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 1.1,
-			"icon": "fire",
-			"windup_time": 0.45,
-			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
-			"fx": {
-				"projectile": {
-					"sprite": "res://assets/effects/builtin/flame.png",
-					"size": 0.6,
-					"seconds": 0.4,
-					"frames": 1,
-					"look": "glow"
-				},
-				"impact": {
-					"sprite": "res://assets/effects/builtin/burst_4.png",
-					"size": 1.6,
-					"seconds": 0.35,
-					"frames": 4,
-					"look": "glow"
-				}
-			},
-			"element": "fire"
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_heal",
 			"animation_speed": 1.0,
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 1.4,
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#59d966",
@@ -247,9 +249,20 @@
 			"delivery": "heal_over_time",
 			"description": "Heals 4 times over 8 seconds.",
 			"display_name": "Mend",
+			"fx": {
+				"ground": {
+					"frames": 1.0,
+					"look": "glow",
+					"seconds": 1.6,
+					"size": 2.4,
+					"sprite": "res://assets/effects/builtin/rune_circle.png"
+				}
+			},
 			"hit_sound": "",
 			"hit_time": 0.45,
+			"icon": "heal",
 			"id": "mend",
+			"knockback": 0.0,
 			"mana_cost": 10.0,
 			"max_charge_level": 3.0,
 			"move_scale": 0.3,
@@ -259,6 +272,7 @@
 			"projectile_style": "bolt",
 			"reach": 30.0,
 			"recovery_time": 0.9,
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
 			"sounds": [
 				"res://assets/audio/combat/heal_chime.ogg"
 			],
@@ -266,26 +280,13 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 0.0,
-			"cast_time": 1.4,
-			"icon": "heal",
-			"windup_time": 0.45,
-			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
-			"fx": {
-				"ground": {
-					"sprite": "res://assets/effects/builtin/rune_circle.png",
-					"size": 2.4,
-					"seconds": 1.6,
-					"frames": 1,
-					"look": "glow"
-				}
-			}
+			"windup_time": 0.45
 		},
 		{
 			"animation": "gunplay",
 			"animation_speed": 1.0,
 			"arc": 120.0,
+			"cast_time": 0.0,
 			"charge_power": 0.9,
 			"charge_time": 1.0,
 			"color": "#9a7a4a",
@@ -295,7 +296,9 @@
 			"display_name": "Crossbow bolt",
 			"hit_sound": "",
 			"hit_time": 0.05,
+			"icon": "arrow",
 			"id": "crossbow_shot",
+			"knockback": 2.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.3,
@@ -310,15 +313,13 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 2.5,
-			"cast_time": 0.0,
-			"icon": "arrow",
 			"windup_time": 0.45
 		},
 		{
 			"animation": "pistol_fire",
 			"animation_speed": 1.0,
 			"arc": 120.0,
+			"cast_time": 0.0,
 			"charge_power": 0.9,
 			"charge_time": 1.0,
 			"color": "#8a8a90",
@@ -328,7 +329,9 @@
 			"display_name": "Pistol shot",
 			"hit_sound": "",
 			"hit_time": 0.06,
+			"icon": "bullet",
 			"id": "pistol_shot",
+			"knockback": 3.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.3,
@@ -343,15 +346,13 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 0.0,
-			"icon": "bullet",
 			"windup_time": 0.45
 		},
 		{
 			"animation": "gunplay",
 			"animation_speed": 1.0,
 			"arc": 120.0,
+			"cast_time": 0.0,
 			"charge_power": 0.9,
 			"charge_time": 1.0,
 			"color": "#70707a",
@@ -361,7 +362,9 @@
 			"display_name": "Rifle shot",
 			"hit_sound": "",
 			"hit_time": 0.05,
+			"icon": "bullet",
 			"id": "rifle_shot",
+			"knockback": 3.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.3,
@@ -376,15 +379,13 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 0.0,
-			"icon": "bullet",
 			"windup_time": 0.45
 		},
 		{
 			"animation": "greatsword_slash_1",
 			"animation_speed": 1.0,
 			"arc": 170.0,
+			"cast_time": 0.0,
 			"charge_power": 1.0,
 			"charge_time": 1.0,
 			"color": "#bfbfcc",
@@ -394,7 +395,9 @@
 			"display_name": "Greatsword cleave",
 			"hit_sound": "",
 			"hit_time": 0.45,
+			"icon": "slash",
 			"id": "gs_slash",
+			"knockback": 2.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.1,
@@ -412,15 +415,13 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 2.5,
-			"cast_time": 0.0,
-			"icon": "slash",
 			"windup_time": 0.45
 		},
 		{
 			"animation": "greatsword_slash_1_mirrored",
 			"animation_speed": 1.0,
 			"arc": 170.0,
+			"cast_time": 0.0,
 			"charge_power": 1.0,
 			"charge_time": 1.0,
 			"color": "#bfbfcc",
@@ -430,7 +431,9 @@
 			"display_name": "Greatsword chop",
 			"hit_sound": "",
 			"hit_time": 0.45,
+			"icon": "slash",
 			"id": "gs_slash_2",
+			"knockback": 2.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.1,
@@ -448,15 +451,20 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 2.5,
-			"cast_time": 0.0,
-			"icon": "slash",
 			"windup_time": 0.45
 		},
 		{
 			"animation": "greatsword_heavy",
 			"animation_speed": 1.0,
+			"applies": [
+				{
+					"chance": 0.35,
+					"seconds": 1.8,
+					"status": "knockdown"
+				}
+			],
 			"arc": 140.0,
+			"cast_time": 0.0,
 			"charge_power": 0.8,
 			"charge_time": 1.0,
 			"color": "#d98c4d",
@@ -466,7 +474,9 @@
 			"display_name": "Leaping slam",
 			"hit_sound": "",
 			"hit_time": 1.0,
+			"icon": "heavy",
 			"id": "gs_heavy",
+			"knockback": 7.0,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.0,
@@ -483,22 +493,14 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 7.0,
-			"cast_time": 0.0,
-			"icon": "heavy",
-			"windup_time": 0.0,
-			"applies": [
-				{
-					"status": "knockdown",
-					"chance": 0.35,
-					"seconds": 1.8
-				}
-			]
+			"windup_time": 0.0
 		},
 		{
 			"animation": "cast_heal",
 			"animation_speed": 1.0,
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 0.4,
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#ffd873",
@@ -508,7 +510,9 @@
 			"display_name": "Second Wind",
 			"hit_sound": "",
 			"hit_time": 0.45,
+			"icon": "heal",
 			"id": "second_wind",
+			"knockback": 0.0,
 			"mana_cost": 0.0,
 			"max_charge_level": 3.0,
 			"move_scale": 0.3,
@@ -516,8 +520,10 @@
 			"projectile_color": "#66ff80",
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
+			"racial": true,
 			"reach": 30.0,
 			"recovery_time": 0.9,
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
 			"sounds": [
 				"res://assets/audio/combat/heal_chime.ogg"
 			],
@@ -525,18 +531,14 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 1.5,
 			"ticks": 3.0,
-			"knockback": 0.0,
-			"cast_time": 0.4,
-			"icon": "heal",
-			"windup_time": 0.45,
-			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
-			"racial": true
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_release",
 			"animation_speed": 1.2,
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 0.6,
 			"charge_power": 1.5,
 			"charge_time": 0.8,
 			"color": "#9fd8ff",
@@ -544,9 +546,12 @@
 			"delivery": "projectile",
 			"description": "Elven racial: a shard of starlight that seeks your target. Grows stronger as you level.",
 			"display_name": "Starlight Bolt",
+			"element": "arcane",
 			"hit_sound": "",
 			"hit_time": 0.37,
+			"icon": "fire",
 			"id": "starlight_bolt",
+			"knockback": 3.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 3.0,
 			"move_scale": 0.2,
@@ -554,8 +559,10 @@
 			"projectile_color": "#bfe6ff",
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
+			"racial": true,
 			"reach": 30.0,
 			"recovery_time": 0.7,
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
 			"sounds": [
 				"res://assets/audio/combat/fireball_throw.ogg"
 			],
@@ -563,19 +570,14 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 0.6,
-			"icon": "fire",
-			"windup_time": 0.45,
-			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
-			"racial": true,
-			"element": "arcane"
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_heal",
 			"animation_speed": 1.0,
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 0.3,
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#c9a27a",
@@ -585,7 +587,9 @@
 			"display_name": "Stone Heart",
 			"hit_sound": "",
 			"hit_time": 0.45,
+			"icon": "heal",
 			"id": "stone_heart",
+			"knockback": 0.0,
 			"mana_cost": 0.0,
 			"max_charge_level": 3.0,
 			"move_scale": 0.3,
@@ -593,8 +597,10 @@
 			"projectile_color": "#66ff80",
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
+			"racial": true,
 			"reach": 30.0,
 			"recovery_time": 0.9,
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
 			"sounds": [
 				"res://assets/audio/combat/heal_chime.ogg"
 			],
@@ -602,18 +608,13 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 1.5,
 			"ticks": 4.0,
-			"knockback": 0.0,
-			"cast_time": 0.3,
-			"icon": "heal",
-			"windup_time": 0.45,
-			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
-			"racial": true
+			"windup_time": 0.45
 		},
 		{
 			"animation": "bow_release",
 			"animation_speed": 1.0,
 			"arc": 120.0,
+			"cast_time": 0.0,
 			"charge_power": 0.9,
 			"charge_time": 1.0,
 			"color": "#8cbf66",
@@ -621,9 +622,12 @@
 			"delivery": "projectile",
 			"description": "Halfling racial: a well-aimed pebble that always seems to find a weak spot. Grows stronger as you level.",
 			"display_name": "Lucky Stone",
+			"element": "earth",
 			"hit_sound": "",
 			"hit_time": 0.1,
+			"icon": "arrow",
 			"id": "lucky_stone",
+			"knockback": 1.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.3,
@@ -631,6 +635,7 @@
 			"projectile_color": "#e6d9b3",
 			"projectile_speed": 38.0,
 			"projectile_style": "arrow",
+			"racial": true,
 			"reach": 40.0,
 			"recovery_time": 0.45,
 			"sounds": [],
@@ -638,17 +643,20 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 1.5,
-			"cast_time": 0.0,
-			"icon": "arrow",
-			"windup_time": 0.45,
-			"racial": true,
-			"element": "earth"
+			"windup_time": 0.45
 		},
 		{
 			"animation": "attack_heavy",
 			"animation_speed": 1.0,
+			"applies": [
+				{
+					"chance": 0.35,
+					"seconds": 1.8,
+					"status": "knockdown"
+				}
+			],
 			"arc": 140.0,
+			"cast_time": 0.0,
 			"charge_power": 0.8,
 			"charge_time": 1.0,
 			"color": "#d98c4d",
@@ -658,7 +666,9 @@
 			"display_name": "Savage Blow",
 			"hit_sound": "",
 			"hit_time": 0.7,
+			"icon": "heavy",
 			"id": "savage_blow",
+			"knockback": 7.0,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.0,
@@ -666,6 +676,7 @@
 			"projectile_color": "#ff8026",
 			"projectile_speed": 18.0,
 			"projectile_style": "bolt",
+			"racial": true,
 			"reach": 2.7,
 			"recovery_time": 1.1,
 			"sounds": [
@@ -675,23 +686,14 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 7.0,
-			"cast_time": 0.0,
-			"icon": "heavy",
-			"windup_time": 0.0,
-			"racial": true,
-			"applies": [
-				{
-					"status": "knockdown",
-					"chance": 0.35,
-					"seconds": 1.8
-				}
-			]
+			"windup_time": 0.0
 		},
 		{
 			"animation": "cast_1h_b",
 			"animation_speed": 1.4,
 			"arc": 120.0,
+			"cast_loop_sound": "",
+			"cast_time": 0.0,
 			"charge_power": 1.5,
 			"charge_time": 0.8,
 			"color": "#7a6aa8",
@@ -701,7 +703,9 @@
 			"display_name": "Stealth",
 			"hit_sound": "",
 			"hit_time": 0.25,
+			"icon": "stealth",
 			"id": "stealth",
+			"knockback": 3.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 3.0,
 			"move_scale": 0.2,
@@ -711,29 +715,27 @@
 			"projectile_style": "bolt",
 			"reach": 0.0,
 			"recovery_time": 0.5,
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
+			"self_status": {
+				"rank_key": "stealth_time",
+				"seconds": 10.0,
+				"seconds_per_rank": 3.0,
+				"status": "stealth"
+			},
 			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 15.0,
+			"technique": true,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 0.0,
-			"icon": "stealth",
-			"windup_time": 0.45,
-			"cast_loop_sound": "",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
-			"technique": true,
-			"self_status": {
-				"status": "stealth",
-				"seconds": 10,
-				"rank_key": "stealth_time",
-				"seconds_per_rank": 3
-			}
+			"windup_time": 0.45
 		},
 		{
 			"animation": "enchant",
 			"animation_speed": 1.25,
 			"arc": 120.0,
+			"cast_loop_sound": "",
+			"cast_time": 0.0,
 			"charge_power": 1.5,
 			"charge_time": 0.8,
 			"color": "#9fd8ff",
@@ -741,9 +743,36 @@
 			"delivery": "buff",
 			"description": "Your weapon frosts over. Your next hit deals extra ice damage and chills the target. More hits with skill ranks.",
 			"display_name": "Frost Edge",
+			"enchant": {
+				"applies": [
+					{
+						"chance": 1.0,
+						"seconds": 4.0,
+						"status": "chilled"
+					}
+				],
+				"bonus_power": 8.0,
+				"color": "#9fd8ff",
+				"element": "frost",
+				"hits": 1.0,
+				"hits_per_rank": 1.0,
+				"rank_key": "enchant_hits",
+				"status": "frost_enchant"
+			},
+			"fx": {
+				"impact": {
+					"frames": 1.0,
+					"look": "glow",
+					"seconds": 0.7,
+					"size": 1.0,
+					"sprite": "res://assets/effects/builtin/snowflake.png"
+				}
+			},
 			"hit_sound": "",
 			"hit_time": 1.4,
+			"icon": "frost",
 			"id": "frost_edge",
+			"knockback": 3.5,
 			"mana_cost": 10.0,
 			"max_charge_level": 3.0,
 			"move_scale": 0.3,
@@ -753,48 +782,28 @@
 			"projectile_style": "bolt",
 			"reach": 0.0,
 			"recovery_time": 1.85,
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
 			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
+			"technique": true,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 0.0,
-			"icon": "frost",
-			"windup_time": 0.45,
-			"cast_loop_sound": "",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
-			"technique": true,
-			"enchant": {
-				"status": "frost_enchant",
-				"hits": 1,
-				"rank_key": "enchant_hits",
-				"hits_per_rank": 1,
-				"bonus_power": 8,
-				"color": "#9fd8ff",
-				"applies": [
-					{
-						"status": "chilled",
-						"chance": 1.0,
-						"seconds": 4
-					}
-				],
-				"element": "frost"
-			},
-			"fx": {
-				"impact": {
-					"sprite": "res://assets/effects/builtin/snowflake.png",
-					"size": 1.0,
-					"seconds": 0.7,
-					"frames": 1,
-					"look": "glow"
-				}
-			}
+			"windup_time": 0.45
 		},
 		{
 			"animation": "ground_quake",
 			"animation_speed": 1.3,
+			"applies": [
+				{
+					"chance": 1.0,
+					"seconds": 2.0,
+					"status": "knockdown"
+				}
+			],
 			"arc": 120.0,
+			"cast_loop_sound": "",
+			"cast_time": 0.0,
 			"charge_power": 1.5,
 			"charge_time": 0.8,
 			"color": "#c8a060",
@@ -802,9 +811,21 @@
 			"delivery": "area",
 			"description": "Punch the ground and send a shockwave out around you, knocking nearby foes off their feet.",
 			"display_name": "Burst Quake",
+			"element": "earth",
+			"fx": {
+				"ground": {
+					"frames": 1.0,
+					"look": "glow",
+					"seconds": 0.8,
+					"size": 6.0,
+					"sprite": "res://assets/effects/builtin/ring.png"
+				}
+			},
 			"hit_sound": "",
 			"hit_time": 1.78,
+			"icon": "quake",
 			"id": "burst_quake",
+			"knockback": 6.0,
 			"mana_cost": 18.0,
 			"max_charge_level": 3.0,
 			"move_scale": 0.0,
@@ -814,6 +835,7 @@
 			"projectile_style": "bolt",
 			"reach": 5.0,
 			"recovery_time": 2.4,
+			"release_sound": "",
 			"sounds": [
 				"res://assets/audio/combat/fireball_throw.ogg"
 			],
@@ -821,34 +843,14 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 6.0,
-			"cast_time": 0.0,
-			"icon": "quake",
-			"windup_time": 0.45,
-			"cast_loop_sound": "",
-			"release_sound": "",
-			"applies": [
-				{
-					"status": "knockdown",
-					"chance": 1.0,
-					"seconds": 2.0
-				}
-			],
-			"fx": {
-				"ground": {
-					"sprite": "res://assets/effects/builtin/ring.png",
-					"size": 6.0,
-					"seconds": 0.8,
-					"frames": 1,
-					"look": "glow"
-				}
-			},
-			"element": "earth"
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_release",
 			"animation_speed": 1.2,
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 0.8,
 			"charge_power": 1.5,
 			"charge_time": 0.8,
 			"color": "#ffe9a0",
@@ -856,9 +858,12 @@
 			"delivery": "projectile",
 			"description": "A bolt of holy light.",
 			"display_name": "Smite",
+			"element": "holy",
 			"hit_sound": "",
 			"hit_time": 0.37,
+			"icon": "heal",
 			"id": "smite",
+			"knockback": 3.5,
 			"mana_cost": 8.0,
 			"max_charge_level": 3.0,
 			"move_scale": 0.2,
@@ -868,6 +873,7 @@
 			"projectile_style": "bolt",
 			"reach": 30.0,
 			"recovery_time": 0.7,
+			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
 			"sounds": [
 				"res://assets/audio/combat/fireball_throw.ogg"
 			],
@@ -875,18 +881,14 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 0.8,
-			"icon": "heal",
-			"windup_time": 0.45,
-			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/sfx/spell_release.ogg",
-			"element": "holy"
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_area",
 			"animation_speed": 1.3,
 			"arc": 120.0,
+			"cast_loop_sound": "",
+			"cast_time": 0.0,
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#d8392a",
@@ -894,9 +896,20 @@
 			"delivery": "buff",
 			"description": "Let the anger out: for 10 seconds you glow red and every blow deals double damage.",
 			"display_name": "Rage",
+			"fx": {
+				"ground": {
+					"frames": 1.0,
+					"look": "glow",
+					"seconds": 0.6,
+					"size": 3.0,
+					"sprite": "res://assets/effects/builtin/ring.png"
+				}
+			},
 			"hit_sound": "",
 			"hit_time": 0.55,
+			"icon": "rage",
 			"id": "rage",
+			"knockback": 3.5,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.2,
@@ -906,38 +919,33 @@
 			"projectile_style": "bolt",
 			"reach": 0.0,
 			"recovery_time": 1.2,
+			"release_sound": "res://assets/audio/spells/rage_roar.ogg",
+			"self_status": {
+				"rank_key": "",
+				"seconds": 10.0,
+				"seconds_per_rank": 0.0,
+				"status": "rage"
+			},
+			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 20.0,
+			"technique": true,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 0.0,
-			"icon": "rage",
-			"windup_time": 0.45,
-			"sounds": [],
-			"cast_loop_sound": "",
-			"release_sound": "res://assets/audio/spells/rage_roar.ogg",
-			"technique": true,
-			"self_status": {
-				"status": "rage",
-				"seconds": 10,
-				"rank_key": "",
-				"seconds_per_rank": 0
-			},
-			"fx": {
-				"ground": {
-					"sprite": "res://assets/effects/builtin/ring.png",
-					"size": 3.0,
-					"seconds": 0.6,
-					"frames": 1,
-					"look": "glow"
-				}
-			}
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_1h_a",
 			"animation_speed": 1.3,
+			"applies": [],
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 1.0,
+			"chain": {
+				"falloff": 0.75,
+				"jumps": 3.0,
+				"range": 8.0
+			},
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#7aa8ff",
@@ -945,9 +953,12 @@
 			"delivery": "chain",
 			"description": "Lightning leaps from your hand to the target, then jumps to up to 3 enemies near it, a little weaker each jump.",
 			"display_name": "Chain Lightning",
+			"element": "shock",
 			"hit_sound": "",
 			"hit_time": 0.35,
+			"icon": "lightning",
 			"id": "chain_lightning",
+			"knockback": 1.0,
 			"mana_cost": 14.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.2,
@@ -957,29 +968,32 @@
 			"projectile_style": "bolt",
 			"reach": 25.0,
 			"recovery_time": 0.8,
+			"release_sound": "res://assets/audio/spells/lightning_zap.ogg",
+			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 1.0,
-			"cast_time": 1.0,
-			"icon": "lightning",
-			"windup_time": 0.45,
-			"sounds": [],
-			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/spells/lightning_zap.ogg",
-			"chain": {
-				"jumps": 3,
-				"range": 8.0,
-				"falloff": 0.75
-			},
-			"applies": [],
-			"element": "shock"
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_release",
 			"animation_speed": 1.2,
+			"applies": [
+				{
+					"chance": 1.0,
+					"seconds": 4.0,
+					"status": "chilled"
+				},
+				{
+					"chance": 0.2,
+					"seconds": 3.0,
+					"status": "frozen"
+				}
+			],
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 1.2,
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#6ab8e8",
@@ -987,9 +1001,28 @@
 			"delivery": "projectile",
 			"description": "A shard of ice that slows the target for 4 seconds, with a 20% chance to freeze it solid for 3.",
 			"display_name": "Frost Bolt",
+			"element": "frost",
+			"fx": {
+				"impact": {
+					"frames": 1.0,
+					"look": "glow",
+					"seconds": 0.6,
+					"size": 1.2,
+					"sprite": "res://assets/effects/builtin/snowflake.png"
+				},
+				"projectile": {
+					"frames": 1.0,
+					"look": "glow",
+					"seconds": 0.4,
+					"size": 0.55,
+					"sprite": "res://assets/effects/builtin/snowflake.png"
+				}
+			},
 			"hit_sound": "",
 			"hit_time": 0.37,
+			"icon": "frost",
 			"id": "frost_bolt",
+			"knockback": 1.5,
 			"mana_cost": 10.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.2,
@@ -999,51 +1032,27 @@
 			"projectile_style": "bolt",
 			"reach": 30.0,
 			"recovery_time": 0.7,
+			"release_sound": "res://assets/audio/spells/frost_cast.ogg",
+			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 1.5,
-			"cast_time": 1.2,
-			"icon": "frost",
-			"windup_time": 0.45,
-			"sounds": [],
-			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/spells/frost_cast.ogg",
-			"applies": [
-				{
-					"status": "chilled",
-					"chance": 1.0,
-					"seconds": 4
-				},
-				{
-					"status": "frozen",
-					"chance": 0.2,
-					"seconds": 3
-				}
-			],
-			"fx": {
-				"projectile": {
-					"sprite": "res://assets/effects/builtin/snowflake.png",
-					"size": 0.55,
-					"seconds": 0.4,
-					"frames": 1,
-					"look": "glow"
-				},
-				"impact": {
-					"sprite": "res://assets/effects/builtin/snowflake.png",
-					"size": 1.2,
-					"seconds": 0.6,
-					"frames": 1,
-					"look": "glow"
-				}
-			},
-			"element": "frost"
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_area",
 			"animation_speed": 1.3,
+			"applies": [
+				{
+					"chance": 0.6,
+					"seconds": 2.0,
+					"status": "knockdown"
+				}
+			],
 			"arc": 100.0,
+			"cast_loop_sound": "",
+			"cast_time": 0.0,
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#3a7ad8",
@@ -1051,9 +1060,12 @@
 			"delivery": "cone",
 			"description": "A wall of water rushes out in front of you, pushing enemies back and often knocking them off their feet.",
 			"display_name": "Tidal Wave",
+			"element": "water",
 			"hit_sound": "",
 			"hit_time": 0.55,
+			"icon": "wave",
 			"id": "tidal_wave",
+			"knockback": 9.0,
 			"mana_cost": 18.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.0,
@@ -1063,34 +1075,24 @@
 			"projectile_style": "bolt",
 			"reach": 8.0,
 			"recovery_time": 1.3,
+			"release_sound": "res://assets/audio/spells/water_wave.ogg",
+			"sounds": [],
 			"staggers": true,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 9.0,
-			"cast_time": 0.0,
-			"icon": "wave",
-			"windup_time": 0.45,
-			"sounds": [],
-			"cast_loop_sound": "",
-			"release_sound": "res://assets/audio/spells/water_wave.ogg",
 			"wave": {
-				"seconds": 0.5,
-				"height": 2.2
+				"height": 2.2,
+				"seconds": 0.5
 			},
-			"applies": [
-				{
-					"status": "knockdown",
-					"chance": 0.6,
-					"seconds": 2.0
-				}
-			],
-			"element": "water"
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_1h_b",
 			"animation_speed": 1.4,
 			"arc": 120.0,
+			"cast_loop_sound": "",
+			"cast_time": 0.0,
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#5a90d8",
@@ -1100,7 +1102,9 @@
 			"display_name": "Ward",
 			"hit_sound": "",
 			"hit_time": 0.3,
+			"icon": "shield",
 			"id": "ward",
+			"knockback": 3.5,
 			"mana_cost": 20.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.4,
@@ -1110,28 +1114,26 @@
 			"projectile_style": "bolt",
 			"reach": 0.0,
 			"recovery_time": 0.6,
+			"release_sound": "res://assets/audio/spells/ward_up.ogg",
+			"self_status": {
+				"rank_key": "",
+				"seconds": 4.0,
+				"seconds_per_rank": 0.0,
+				"status": "warded"
+			},
+			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 0.0,
-			"icon": "shield",
-			"windup_time": 0.45,
-			"sounds": [],
-			"cast_loop_sound": "",
-			"release_sound": "res://assets/audio/spells/ward_up.ogg",
-			"self_status": {
-				"status": "warded",
-				"seconds": 4,
-				"rank_key": "",
-				"seconds_per_rank": 0
-			}
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_1h_a",
 			"animation_speed": 1.4,
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 1.2,
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#9a6ad8",
@@ -1139,9 +1141,16 @@
 			"delivery": "ground",
 			"description": "Click a spot on the ground within 20 m: once the cast bar fills, you vanish and step out there.",
 			"display_name": "Blink",
+			"ground": {
+				"arrive_sound": "res://assets/audio/spells/teleport_in.ogg",
+				"kind": "teleport",
+				"radius": 0.7
+			},
 			"hit_sound": "",
 			"hit_time": 0.3,
+			"icon": "teleport",
 			"id": "blink",
+			"knockback": 3.5,
 			"mana_cost": 15.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.0,
@@ -1151,27 +1160,20 @@
 			"projectile_style": "bolt",
 			"reach": 20.0,
 			"recovery_time": 0.5,
+			"release_sound": "res://assets/audio/spells/teleport_out.ogg",
+			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 1.2,
-			"icon": "teleport",
-			"windup_time": 0.45,
-			"sounds": [],
-			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/spells/teleport_out.ogg",
-			"ground": {
-				"kind": "teleport",
-				"radius": 0.7,
-				"arrive_sound": "res://assets/audio/spells/teleport_in.ogg"
-			}
+			"windup_time": 0.45
 		},
 		{
 			"animation": "cast_heal",
 			"animation_speed": 1.0,
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 1.5,
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#e8c050",
@@ -1179,9 +1181,20 @@
 			"delivery": "heal",
 			"description": "Instantly restores a large amount of health to you or the friend you target.",
 			"display_name": "Heal",
+			"fx": {
+				"ground": {
+					"frames": 1.0,
+					"look": "glow",
+					"seconds": 1.0,
+					"size": 2.0,
+					"sprite": "res://assets/effects/builtin/rune_circle.png"
+				}
+			},
 			"hit_sound": "",
 			"hit_time": 0.45,
+			"icon": "heal",
 			"id": "heal",
+			"knockback": 0.0,
 			"mana_cost": 18.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.3,
@@ -1191,31 +1204,70 @@
 			"projectile_style": "bolt",
 			"reach": 30.0,
 			"recovery_time": 0.9,
+			"release_sound": "res://assets/audio/spells/heal_burst.ogg",
+			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 0.0,
-			"cast_time": 1.5,
-			"icon": "heal",
-			"windup_time": 0.45,
-			"sounds": [],
+			"windup_time": 0.45
+		},
+		{
+			"animation": "cast_heal_full",
+			"animation_speed": 1.0,
+			"arc": 120.0,
 			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/spells/heal_burst.ogg",
+			"cast_time": 5.0,
+			"charge_power": 1.0,
+			"charge_time": 0.8,
+			"color": "#9ff4e8",
+			"cooldown": 360.0,
+			"delivery": "heal",
+			"description": "Instantly restores a large amount of health to you or the friend you target.",
+			"display_name": "Revive",
 			"fx": {
 				"ground": {
-					"sprite": "res://assets/effects/builtin/rune_circle.png",
-					"size": 2.0,
+					"frames": 1.0,
+					"look": "glow",
 					"seconds": 1.0,
-					"frames": 1,
-					"look": "glow"
+					"size": 2.0,
+					"sprite": "res://assets/effects/builtin/diamond.png"
+				},
+				"cast": {
+					"sprite": "res://assets/effects/builtin/diamond.png"
 				}
-			}
+			},
+			"hit_sound": "",
+			"hit_time": 0.45,
+			"icon": "heal",
+			"id": "heal_revive",
+			"knockback": 0.0,
+			"mana_cost": 100.0,
+			"max_charge_level": 1.0,
+			"move_scale": 0.3,
+			"power": 100.0,
+			"projectile_color": "#ffe080",
+			"projectile_speed": 18.0,
+			"projectile_style": "bolt",
+			"reach": 5.0,
+			"recovery_time": 0.9,
+			"release_sound": "res://assets/audio/spells/heal_burst.ogg",
+			"sounds": [
+				"res://assets/audio/spells/heal_burst.ogg"
+			],
+			"staggers": false,
+			"stamina_cost": 0.0,
+			"tick_interval": 2.0,
+			"ticks": 4.0,
+			"windup_time": 0.45,
+			"applies": []
 		},
 		{
 			"animation": "cast_1h_b",
 			"animation_speed": 1.3,
 			"arc": 120.0,
+			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
+			"cast_time": 1.0,
 			"charge_power": 1.0,
 			"charge_time": 0.8,
 			"color": "#4a3a6a",
@@ -1223,9 +1275,20 @@
 			"delivery": "ground",
 			"description": "Click a spot to fill it with a choking black cloud for 8 seconds. Everyone inside is blinded: most of their attacks miss and enemies lose track of you. You can still make out the shapes inside.",
 			"display_name": "Dark Cloud",
+			"ground": {
+				"blinds_allies": true,
+				"blinds_caster": false,
+				"kind": "cloud",
+				"outlines": true,
+				"radius": 5.0,
+				"seconds": 8.0,
+				"status": "darkness"
+			},
 			"hit_sound": "",
 			"hit_time": 0.3,
+			"icon": "cloud",
 			"id": "dark_cloud",
+			"knockback": 3.5,
 			"mana_cost": 20.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.0,
@@ -1235,31 +1298,19 @@
 			"projectile_style": "bolt",
 			"reach": 25.0,
 			"recovery_time": 0.6,
+			"release_sound": "res://assets/audio/spells/dark_cloud.ogg",
+			"sounds": [],
 			"staggers": false,
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 3.5,
-			"cast_time": 1.0,
-			"icon": "cloud",
-			"windup_time": 0.45,
-			"sounds": [],
-			"cast_loop_sound": "res://assets/audio/sfx/spell_charge_loop.ogg",
-			"release_sound": "res://assets/audio/spells/dark_cloud.ogg",
-			"ground": {
-				"kind": "cloud",
-				"radius": 5.0,
-				"seconds": 8.0,
-				"status": "darkness",
-				"blinds_caster": false,
-				"blinds_allies": true,
-				"outlines": true
-			}
+			"windup_time": 0.45
 		},
 		{
 			"animation": "pistol_fire",
 			"animation_speed": 1.0,
 			"arc": 120.0,
+			"cast_time": 0.0,
 			"charge_power": 0.9,
 			"charge_time": 1.0,
 			"color": "#40c7ff",
@@ -1267,9 +1318,12 @@
 			"delivery": "projectile",
 			"description": "A bolt of TitanTech energy.",
 			"display_name": "Emitter bolt",
+			"element": "arcane",
 			"hit_sound": "",
 			"hit_time": 0.06,
+			"icon": "bullet",
 			"id": "emitter_shot",
+			"knockback": 2.0,
 			"mana_cost": 0.0,
 			"max_charge_level": 1.0,
 			"move_scale": 0.3,
@@ -1284,11 +1338,7 @@
 			"stamina_cost": 0.0,
 			"tick_interval": 2.0,
 			"ticks": 4.0,
-			"knockback": 2.0,
-			"cast_time": 0.0,
-			"icon": "bullet",
-			"windup_time": 0.45,
-			"element": "arcane"
+			"windup_time": 0.45
 		}
 	]
 }

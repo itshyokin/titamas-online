@@ -86,7 +86,7 @@
 					"when": "time"
 				}
 			],
-			"region_name": "Monolith",
+			"region_name": "Monolith Woods",
 			"saturation": 1.2,
 			"shadow_color": "#55637f",
 			"shadow_fill": 0.55,
@@ -194,65 +194,39 @@
 			"wind_volume_db": -15.0
 		},
 		{
-			"id": "singed_plains",
-			"default": false,
+			"ambient_energy": 0.6,
+			"ambient_loop": "res://assets/audio/ambience/desert_day_loop.ogg",
+			"ambient_loop_night": "res://assets/audio/ambience/desert_night_loop.ogg",
+			"ambient_volume_db": -8.0,
+			"brightness": 1.0,
 			"chunks": [
 				-5.0,
 				0.0,
 				4.0,
 				4.0
 			],
-			"region_name": "Singed Plains",
+			"cloud_color": "#ffffff",
+			"cloud_coverage": 0.45,
+			"cloud_shade": "#b3bdd1",
+			"contrast": 1.08,
+			"default": false,
 			"fog_color": "#d9c3a0",
 			"fog_density": 0.006,
 			"fog_sky_affect": 0.5,
-			"sky_top": "#4f86c9",
-			"sky_horizon": "#e3cfa8",
-			"sky_ground": "#6b5a44",
-			"cloud_color": "#ffffff",
-			"cloud_shade": "#b3bdd1",
-			"cloud_coverage": 0.45,
-			"sun_color": "#ffe6bf",
-			"sun_energy": 1.25,
-			"ambient_energy": 0.6,
-			"shadow_strength": 0.6,
-			"shadow_color": "#6b5a52",
-			"shadow_fill": 0.55,
-			"saturation": 1.1,
-			"night_sky_top": "#050916",
-			"night_sky_horizon": "#12172e",
-			"night_fog": "#0f1424",
-			"stars": 1.0,
-			"sky_panorama": "",
-			"sky_panorama_strength": 0.0,
-			"weather": [
-				{
-					"type": "clear",
-					"weight": 5.0
-				},
-				{
-					"type": "cloudy",
-					"weight": 1.0
-				}
-			],
-			"weather_minutes_min": 6.0,
-			"weather_minutes_max": 14.0,
-			"contrast": 1.08,
-			"brightness": 1.0,
 			"god_rays": 0.35,
-			"grass_density": 0.6,
-			"grass_height": 0.8,
-			"grass_ground_match": 0.85,
 			"grass_base": "#5a6a2a",
+			"grass_density": 0.6,
+			"grass_ground_match": 0.85,
+			"grass_height": 0.8,
 			"grass_tip": "#c2c46a",
-			"ambient_loop": "res://assets/audio/ambience/desert_day_loop.ogg",
-			"ambient_loop_night": "res://assets/audio/ambience/desert_night_loop.ogg",
+			"heat_haze": 0.55,
+			"id": "singed_plains",
 			"music": "res://assets/audio/music/singed_plains.ogg",
 			"music_night": "res://assets/audio/music/singed_plains_night.ogg",
 			"music_volume_db": -12.0,
-			"ambient_volume_db": -8.0,
-			"wind_volume_db": -20.0,
-			"heat_haze": 0.55,
+			"night_fog": "#0f1424",
+			"night_sky_horizon": "#12172e",
+			"night_sky_top": "#050916",
 			"random_sounds": [
 				{
 					"distance": 90.0,
@@ -281,7 +255,33 @@
 					"volume_db": -8.0,
 					"when": "random"
 				}
-			]
+			],
+			"region_name": "Singed Plains",
+			"saturation": 1.1,
+			"shadow_color": "#6b5a52",
+			"shadow_fill": 0.55,
+			"shadow_strength": 0.6,
+			"sky_ground": "#6b5a44",
+			"sky_horizon": "#e3cfa8",
+			"sky_panorama": "",
+			"sky_panorama_strength": 0.0,
+			"sky_top": "#4f86c9",
+			"stars": 1.0,
+			"sun_color": "#ffe6bf",
+			"sun_energy": 1.25,
+			"weather": [
+				{
+					"type": "clear",
+					"weight": 5.0
+				},
+				{
+					"type": "cloudy",
+					"weight": 1.0
+				}
+			],
+			"weather_minutes_max": 14.0,
+			"weather_minutes_min": 6.0,
+			"wind_volume_db": -20.0
 		}
 	]
 }

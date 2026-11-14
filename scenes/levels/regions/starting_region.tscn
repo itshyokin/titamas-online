@@ -1,7 +1,7 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://duhgvhnavk034"]
 
-[ext_resource type="Script" path="res://scripts/world/region_content.gd" id="1_m4yl8"]
-[ext_resource type="Script" path="res://scripts/enemy/training_dummy.gd" id="1_wx5t3"]
+[ext_resource type="Script" uid="uid://m3mohuyqqd63" path="res://scripts/world/region_content.gd" id="1_m4yl8"]
+[ext_resource type="Script" uid="uid://c0q1l2rd0tqsj" path="res://scripts/enemy/training_dummy.gd" id="1_wx5t3"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/bandit.tscn" id="2_m4yl8"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="3_jwysh"]
 [ext_resource type="PackedScene" path="res://scenes/npcs/npc.tscn" id="4_dus3k"]
@@ -10,7 +10,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/map_event.tscn" id="7_jbop3"]
 [ext_resource type="PackedScene" path="res://scenes/world/climb_lock.tscn" id="8_8ip6p"]
 [ext_resource type="PackedScene" path="res://scenes/world/music_zone.tscn" id="9_6yqqm"]
-[ext_resource type="AudioStream" path="res://assets/audio/music/monolith.ogg" id="10_ptlrm"]
+[ext_resource type="AudioStream" uid="uid://db136ycpxplvb" path="res://assets/audio/music/monolith.ogg" id="10_ptlrm"]
 [ext_resource type="PackedScene" path="res://scenes/world/safe_area.tscn" id="11_mck1a"]
 [ext_resource type="PackedScene" path="res://scenes/world/swarm_spot.tscn" id="12_j83wj"]
 [ext_resource type="PackedScene" path="res://scenes/world/campfire.tscn" id="13_8ryub"]
@@ -42,17 +42,14 @@ hit_variable = "dummy_hits"
 [node name="Bandit" parent="Enemies" unique_id=1918972890 instance=ExtResource("2_m4yl8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2.795746, 2)
 defeat_variable = "tut_bandits"
-spawn_times_here = PackedStringArray()
 
 [node name="Bandit2" parent="Enemies" unique_id=417441187 instance=ExtResource("2_m4yl8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.70174, 2.795746, 10)
 defeat_variable = "tut_bandits"
-spawn_times_here = PackedStringArray()
 
 [node name="Bandit3" parent="Enemies" unique_id=808439722 instance=ExtResource("2_m4yl8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.915064, 3.6172962, 6.782336)
 defeat_variable = "tut_bandits"
-spawn_times_here = PackedStringArray()
 
 [node name="Troll" parent="Enemies" unique_id=1177397848 instance=ExtResource("3_jwysh")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 68.30203, 2.4, 88.60991)
@@ -60,7 +57,6 @@ appear_switch = "troll_awake"
 emerge = true
 defeat_switch = "troll_defeated"
 stays_dead = true
-spawn_times_here = PackedStringArray()
 
 [node name="NPCs" type="Node3D" parent="." unique_id=282390144]
 
@@ -90,12 +86,11 @@ visible = false
 npc_id = "guard_mage"
 
 [node name="GuardHealer" parent="NPCs" unique_id=2075688443 instance=ExtResource("4_dus3k")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 3, 70)
-visible = false
+transform = Transform3D(0.73375356, 0, 0.6794157, 0, 1, 0, -0.6794157, 0, 0.73375356, 65.3727, 3.1525576, 27.157358)
 npc_id = "guard_healer"
 
 [node name="TowerTrader" parent="NPCs" unique_id=1950577901 instance=ExtResource("4_dus3k")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 79, 10.6, 140.5)
+transform = Transform3D(0.8227398, 0, 0.56841826, 0, 1, 0, -0.56841826, 0, 0.8227398, 61.02296, 10.672393, 137.68697)
 npc_id = "tower_merchant"
 
 [node name="Katrina" parent="NPCs" unique_id=1950577435 instance=ExtResource("4_dus3k")]
@@ -109,17 +104,26 @@ visible = false
 [node name="Places" type="Node3D" parent="." unique_id=1302972093]
 
 [node name="InnBed" parent="Places" unique_id=261041230 instance=ExtResource("5_ih7pg")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 3, 82)
-visible = false
+transform = Transform3D(-0.49181575, 0, -0.87069947, 0, 1, 0, 0.87069947, 0, -0.49181575, 66.894035, 11.01016, 145.70483)
+home_name = "the village inn"
+
+[node name="InnBed2" parent="Places" unique_id=1915980878 instance=ExtResource("5_ih7pg")]
+transform = Transform3D(0.020331852, 0, -0.99979335, 0, 1, 0, 0.99979335, 0, 0.020331852, 70.504845, 10.992388, 146.76418)
 home_name = "the village inn"
 
 [node name="WeaponChest" parent="Places" unique_id=950996312 instance=ExtResource("6_0026i")]
-transform = Transform3D(0.8660254, 0, 0.5, 0, 1, 0, -0.5, 0, 0.8660254, -46.5, 3, 73.5)
-visible = false
+transform = Transform3D(-0.8775064, 0, 0.47956508, 0, 1, 0, -0.47956508, 0, -0.8775064, 66.75976, 26.07864, 146.13269)
 chest_id = "start_weapon_chest"
 title = "Weapon Chest"
-items = Array[String](["worn_dagger", "iron_greatsword", "smiths_hammer", "woodcutters_axe", "light_crossbow", "flintlock_pistol", "flintlock_rifle", "emitter"])
-greeting = "Someone left a chest of practice weapons by the road."
+items = Array[String](["worn_dagger"])
+greeting = ""
+
+[node name="WeaponChest2" parent="Places" unique_id=410470715 instance=ExtResource("6_0026i")]
+transform = Transform3D(-0.15001771, 0.03411843, -0.98809445, 0.06333215, 0.99768347, 0.024834108, 0.98665285, -0.05885258, -0.151831, 67.62947, 2.846993, 25.995743)
+chest_id = "start_weapon_chest"
+title = "Weapon Chest"
+items = Array[String](["hunting_bow", "major_healing_potion", "major_healing_potion"])
+greeting = ""
 
 [node name="Events" type="Node3D" parent="." unique_id=2065216119]
 
@@ -219,7 +223,7 @@ size = Vector3(30, 10, 15)
 transform = Transform3D(0.77004576, 0, -0.6379886, 0, 1, 0, 0.6379886, 0, 0.77004576, 64.47911, 16.497126, 119.890465)
 
 [node name="Campfire_lookatme" type="Marker3D" parent="Events/Tutorial2" unique_id=1801343239]
-transform = Transform3D(0.77004576, 0, -0.6379886, 0, 1, 0, 0.6379886, 0, 0.77004576, 60.754967, 13.694487, 127.08079)
+transform = Transform3D(0.77004576, 0, -0.6379886, 0, 1, 0, 0.6379886, 0, 0.77004576, 59.514965, 11.863721, 134.92636)
 
 [node name="Areas" type="Node3D" parent="." unique_id=1140853780]
 
@@ -252,7 +256,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 3, 62)
 camp_name = "Village Campfire"
 
 [node name="PlainsCampfire2" parent="Campfires" unique_id=168099102 instance=ExtResource("13_8ryub")]
-transform = Transform3D(1, 0, 0, 0, 0.9933507, -0.11512786, 0, 0.11512786, 0.9933507, 60.68717, 13.0732155, 127.232635)
+transform = Transform3D(0.9960426, -0.08495933, 0.02609633, 0.08887691, 0.9521383, -0.29246128, 0, 0.29362327, 0.95592123, 60.173546, 11.135112, 134.8538)
 camp_name = "Singed Plains Camp"
 
 [node name="CampLog" parent="Campfires" unique_id=1902733420 instance=ExtResource("14_v67ud")]

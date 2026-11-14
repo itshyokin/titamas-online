@@ -903,17 +903,6 @@
 			"note": "Walk-in area on the way to the quarry. The troll (Enemies/Troll) has Appear Switch = troll_awake and Emerge on.",
 			"pages": [
 				{
-					"commands": [],
-					"conditions": [],
-					"freeze": true,
-					"marker": false,
-					"model": "",
-					"prompt": "",
-					"solid": false,
-					"speaker": "",
-					"trigger": "none"
-				},
-				{
 					"commands": [
 						{
 							"cmd": "nav",
@@ -997,13 +986,7 @@
 							"value": true
 						}
 					],
-					"conditions": [
-						{
-							"id": "tut_bandits_done",
-							"is": true,
-							"type": "switch"
-						}
-					],
+					"conditions": [],
 					"freeze": true,
 					"marker": false,
 					"model": "",
@@ -1015,11 +998,6 @@
 				{
 					"commands": [],
 					"conditions": [
-						{
-							"id": "tut_bandits_done",
-							"is": true,
-							"type": "switch"
-						},
 						{
 							"is": true,
 							"letter": "A",
@@ -1389,14 +1367,6 @@
 			"note": "Runs when you talk to the trader by the watchtower (npcs.json tower_merchant: event). Shop stock: data/shops.json tower_trader.",
 			"pages": [
 				{
-					"conditions": [],
-					"freeze": true,
-					"marker": false,
-					"model": "",
-					"prompt": "Talk",
-					"solid": false,
-					"speaker": "Trader",
-					"trigger": "action",
 					"commands": [
 						{
 							"cmd": "text",
@@ -1404,12 +1374,6 @@
 							"text": "Well met, {player}. Need anything?"
 						},
 						{
-							"cmd": "choice",
-							"options": [
-								"Let me see your wares.",
-								"Not now."
-							],
-							"cancel": 1.0,
 							"branches": [
 								[
 									{
@@ -1424,9 +1388,23 @@
 										"text": "Safe travels, then."
 									}
 								]
+							],
+							"cancel": 1.0,
+							"cmd": "choice",
+							"options": [
+								"Let me see your wares.",
+								"Not now."
 							]
 						}
-					]
+					],
+					"conditions": [],
+					"freeze": true,
+					"marker": false,
+					"model": "",
+					"prompt": "Talk",
+					"solid": false,
+					"speaker": "Trader",
+					"trigger": "action"
 				}
 			],
 			"region": "starting_region"

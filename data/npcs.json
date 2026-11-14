@@ -13,7 +13,10 @@
 			"can_fight": false,
 			"can_follow": false,
 			"dialogue": [],
-			"equipment": {},
+			"equipment": {
+
+			},
+			"event": "",
 			"gold_max": 0.0,
 			"gold_min": 0.0,
 			"id": "base_character",
@@ -23,23 +26,23 @@
 			"level": 1.0,
 			"look": {
 				"body": "masc",
-				"face": "sculpted",
-				"eyes": "anime_upturned",
-				"eye_color": "#3f78c8",
 				"brows": "natural",
-				"nose": "anime_nose_shadow",
-				"mouth": "neutral",
 				"extras": [],
+				"eye_color": "#3f78c8",
+				"eyes": "anime_upturned",
+				"face": "sculpted",
+				"mouth": "neutral",
+				"nose": "anime_nose_shadow",
 				"placement": {
+					"brows": {
+						"scale": 1.2,
+						"x": 0.4
+					},
 					"eyes": {
 						"scale": 0.75
 					},
 					"mouth": {
 						"y": 0.2
-					},
-					"brows": {
-						"scale": 1.2,
-						"x": 0.4
 					}
 				}
 			},
@@ -48,11 +51,10 @@
 			"name": "Base Character",
 			"respawn_time": 30.0,
 			"run_speed": 4.6,
+			"template": true,
 			"title": "",
 			"walk_speed": 1.1,
-			"wander_radius": 5.0,
-			"event": "",
-			"template": true
+			"wander_radius": 5.0
 		},
 		{
 			"abilities": [],
@@ -127,7 +129,6 @@
 		{
 			"abilities": [
 				"gs_slash",
-				"smite",
 				"arrow_shot"
 			],
 			"aggro_radius": 12.0,
@@ -194,12 +195,12 @@
 			"max_health": 110.0,
 			"name": "Katrina",
 			"respawn_time": 30.0,
+			"rest_activity": "eat",
 			"run_speed": 4.4,
 			"title": "",
 			"wait_line": "I'll wait here. Don't be long.",
 			"walk_speed": 1.3,
-			"wander_radius": 3.0,
-			"rest_activity": "eat"
+			"wander_radius": 3.0
 		},
 		{
 			"abilities": [],
@@ -348,12 +349,12 @@
 			"max_health": 120.0,
 			"name": "Wren",
 			"respawn_time": 120.0,
+			"rest_activity": "warm",
 			"run_speed": 4.4,
 			"title": "Guard Archer",
 			"wait_line": "I'll hold here.",
 			"walk_speed": 1.3,
-			"wander_radius": 3.0,
-			"rest_activity": "warm"
+			"wander_radius": 3.0
 		},
 		{
 			"abilities": [
@@ -400,12 +401,12 @@
 			"max_health": 95.0,
 			"name": "Orrin",
 			"respawn_time": 120.0,
+			"rest_activity": "read",
 			"run_speed": 4.4,
 			"title": "Guard Battlemage",
 			"wait_line": "I'll hold here.",
 			"walk_speed": 1.3,
-			"wander_radius": 3.0,
-			"rest_activity": "read"
+			"wander_radius": 3.0
 		},
 		{
 			"abilities": [
@@ -454,51 +455,66 @@
 			"max_health": 100.0,
 			"name": "Maelis",
 			"respawn_time": 120.0,
+			"rest_activity": "drink",
 			"run_speed": 4.4,
 			"title": "Guard Healer",
 			"wait_line": "I'll hold here.",
 			"walk_speed": 1.3,
-			"wander_radius": 3.0,
-			"rest_activity": "drink"
+			"wander_radius": 3.0
 		},
 		{
-			"id": "tower_merchant",
-			"name": "Trader",
-			"title": "Merchant",
-			"kind": "merchant",
+			"aggro_radius": 0.0,
 			"behaviour": "stand",
-			"event": "tower_shop",
 			"can_fight": false,
 			"can_follow": false,
-			"immortal": true,
-			"level": 5.0,
-			"max_health": 100.0,
 			"dialogue": [
 				"Come back any time."
 			],
 			"equipment": {
 				"chest": "leather_jerkin",
+				"feet": "worn_boots",
 				"legs": "travelers_trousers",
-				"feet": "worn_boots"
+				"hands": "leather_gloves",
+				"primary": "rusty_sword"
 			},
+			"event": "tower_shop",
+			"gold_max": 0.0,
+			"gold_min": 0.0,
+			"id": "tower_merchant",
+			"immortal": true,
+			"kind": "merchant",
+			"level": 5.0,
 			"look": {
 				"body": "masc",
-				"species": "human",
-				"hair": "hair_short",
-				"hair_color": "#5a3c26",
-				"facial_hair": "",
-				"skin": "#d9a782",
+				"build": "medium",
 				"eye_color": "#6b4a2b",
+				"facial_hair": "beard_goatee",
+				"hair": "hair_elegant",
+				"hair_color": "#5a3c26",
 				"height": "medium",
-				"build": "medium"
+				"skin": "#d9a782",
+				"species": "human",
+				"eyes": "almond",
+				"brows": "thick",
+				"placement": {
+					"brows": {
+						"x": 0.75,
+						"y": -0.35
+					}
+				},
+				"extras": [
+					"stubble_shadow",
+					"wrinkles"
+				]
 			},
 			"loot": [],
-			"gold_min": 0.0,
-			"gold_max": 0.0,
-			"walk_speed": 1.3,
+			"max_health": 100.0,
+			"name": "Trader",
 			"run_speed": 4.0,
+			"title": "Merchant",
+			"walk_speed": 1.3,
 			"wander_radius": 0.0,
-			"aggro_radius": 0.0
+			"blood_color": "#ab2c62"
 		}
 	]
 }

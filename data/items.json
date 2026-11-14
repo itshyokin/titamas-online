@@ -687,7 +687,7 @@
 			"use_hot_per_tick": 0.0,
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
-			"use_time": 1.5,
+			"use_time": 1.0,
 			"value": 5.0
 		},
 		{
@@ -1035,6 +1035,7 @@
 			"icon_color": "#6a6a72",
 			"id": "flintlock_pistol",
 			"kind": "weapon",
+			"mana_per_shot": 8.0,
 			"model": "builtin:pistol",
 			"name": "Flintlock Pistol",
 			"rarity": "rare",
@@ -1047,8 +1048,7 @@
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
 			"value": 40.0,
-			"weapon_type": "pistol",
-			"mana_per_shot": 8.0
+			"weapon_type": "pistol"
 		},
 		{
 			"armor": 0.0,
@@ -1069,6 +1069,7 @@
 			"icon_color": "#6a6a72",
 			"id": "flintlock_rifle",
 			"kind": "weapon",
+			"mana_per_shot": 14.0,
 			"model": "builtin:rifle",
 			"name": "Flintlock Rifle",
 			"rarity": "rare",
@@ -1081,8 +1082,7 @@
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
 			"value": 55.0,
-			"weapon_type": "rifle",
-			"mana_per_shot": 14.0
+			"weapon_type": "rifle"
 		},
 		{
 			"armor": 0.0,
@@ -1331,37 +1331,37 @@
 			"value": 4.0
 		},
 		{
-			"id": "major_healing_potion",
-			"name": "Major Healing Potion",
-			"description": "Restores 150 HP instantly.",
-			"kind": "consumable",
-			"slot": "",
-			"rarity": "uncommon",
-			"icon": "builtin:potion",
-			"icon_tint": "",
-			"icon_color": "#c0b090",
-			"value": 50.0,
-			"stack_max": 0.0,
-			"attack": 0.0,
-			"spell_power": 0.0,
 			"armor": 0.0,
+			"attack": 0.0,
 			"block": 0.0,
 			"bonus_health": 0.0,
 			"bonus_mana": 0.0,
+			"description": "Restores 150 HP instantly.",
+			"fit": {
+				"femme": [],
+				"masc": []
+			},
+			"fitted_femme": "",
+			"fitted_masc": "",
+			"hides": [],
+			"icon": "builtin:potion",
+			"icon_color": "#c0b090",
+			"icon_tint": "",
+			"id": "major_healing_potion",
+			"kind": "consumable",
+			"model": "",
+			"name": "Major Healing Potion",
+			"rarity": "uncommon",
+			"slot": "",
+			"spell_power": 0.0,
+			"stack_max": 0.0,
+			"use_anim": "drinking",
 			"use_heal": 150.0,
 			"use_hot_per_tick": 0.0,
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
-			"use_time": 2.5,
-			"use_anim": "drinking",
-			"model": "",
-			"fitted_masc": "",
-			"fitted_femme": "",
-			"hides": [],
-			"fit": {
-				"masc": [],
-				"femme": []
-			}
+			"use_time": 2.0,
+			"value": 50.0
 		},
 		{
 			"armor": 0.0,
@@ -1382,6 +1382,7 @@
 			"icon_color": "#40c7ff",
 			"id": "emitter",
 			"kind": "weapon",
+			"mana_per_shot": 5.0,
 			"model": "builtin:emitter",
 			"name": "Emitter",
 			"rarity": "epic",
@@ -1394,8 +1395,7 @@
 			"use_hot_ticks": 0.0,
 			"use_mana": 0.0,
 			"value": 120.0,
-			"weapon_type": "emitter",
-			"mana_per_shot": 5.0
+			"weapon_type": "emitter"
 		}
 	]
 }
