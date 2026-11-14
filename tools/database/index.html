@@ -1646,8 +1646,13 @@ const TABS = {
 				{ key: `extra_bodies.${i}.head_fit_grow`, label: "Borrowed hair: size ×", type: "number", def: 1.02, help: "Body Type 1 hair, beards and hats are scaled to this head; raise it if the scalp shows through." },
 				{ key: `extra_bodies.${i}.head_fit_raise`, label: "Borrowed hair: raise (m)", type: "number", def: 0 },
 				{ key: `extra_bodies.${i}.head_fit_back`, label: "Borrowed hair: move back (m)", type: "number", def: 0 },
+				{ key: `extra_bodies.${i}.armature`, label: "Armature in the file", type: "text", help: "Blender name of this body's armature when the file holds several (Armature, Armature.001). Empty = the first one. Meshes still attached to another armature are bound to this one by bone name." },
 				{ key: `extra_bodies.${i}.body_meshes`, label: "Meshes that make the body", type: "glbmeshes", wide: true, meshes: () => ((assets.extra_meshes || {})[i ? "femme_hq" : "masc_hq"] || []) },
-				{ key: `extra_bodies.${i}.pieces`, label: "Pieces made for this body", type: "glbpieces", wide: true, meshes: () => ((assets.extra_meshes || {})[i ? "femme_hq" : "masc_hq"] || []), bodyMeshes: e => (((e.extra_bodies || [])[i] || {}).body_meshes || []) },
+				{ key: `extra_bodies.${i}.ears_mesh`, label: "Ears (their own part)", type: "select", empty: true, options: () => ((assets.extra_meshes || {})[i ? "femme_hq" : "masc_hq"] || []).map(m => [m.name, m.name]), help: "Becomes the body part \"ears\", so an elf-ear piece (use Head, hides ears) can swap them." },
+				{ key: `extra_bodies.${i}.body_extra`, label: "Body materials kept as their own part (not skin)", type: "glbextra", wide: true, meshes: () => ((assets.extra_meshes || {})[i ? "femme_hq" : "masc_hq"] || []), help: "A part named scalp is tinted with the hair colour (the painted hairline); others keep the material's own colour." },
+				...["eyes", "brows", "mouth"].map(part => ({ key: `extra_bodies.${i}.face_marks.${part}`, label: `Face surface: ${part}`, type: "select", empty: true, options: () => ((assets.extra_meshes || {})[i ? "femme_hq" : "masc_hq"] || []).map(m => [m.name, m.name]), help: part === "eyes" ? "Small meshes laid on the face in Blender, mapped onto one cell of the eyes / brows / mouths art sheet. The game draws the chosen eyes, brows and mouth on them (blinking, talking and moods included). Empty = worked out from the head's shape, as on Body Type 1." : "" })),
+				...["eyes", "brows", "mouth"].map(part => ({ key: `extra_bodies.${i}.face_marks_raise.${part}`, label: `Move ${part} up (m)`, type: "number", def: 0, help: part === "eyes" ? "Nudges a face surface up (+) or down; it is laid back onto the face afterwards. Rebuild to see it." : "" })),
+				{ key: `extra_bodies.${i}.pieces`, label: "Pieces made for this body", type: "glbpieces", wide: true, hidesField: true, meshes: () => ((assets.extra_meshes || {})[i ? "femme_hq" : "masc_hq"] || []), bodyMeshes: e => { const b = (e.extra_bodies || [])[i] || {}; return (b.body_meshes || []).concat([b.ears_mesh], Object.values(b.face_marks || {})).filter(Boolean); } },
 			]]),
 			["Pieces (items, hair, heads, faces, hats…)", [
 				{ key: "pieces", label: "", type: "glbpieces", wide: true },
@@ -2878,7 +2883,7 @@ function fieldControl(t, entry, f) {
 			const list = Array.isArray(value) ? value.map(r => Object.assign({}, r)) : [];
 			wrap.className += " list-field";
 			wrap.appendChild(label);
-			const mats = [...new Set((assets.glb_meshes || []).flatMap(m => m.materials))];
+			const mats = [...new Set((f.meshes ? f.meshes() : (assets.glb_meshes || [])).flatMap(m => m.materials))];
 			list.forEach((r, i) => {
 				const row = el("div", { className: "row" });
 				const ms = selectOf(mats, r.material, false);
@@ -2955,6 +2960,12 @@ function fieldControl(t, entry, f) {
 						an.oninput = () => { if (an.value.trim()) list[i].sway_anchors = an.value; else delete list[i].sway_anchors; set(list); };
 						row.append(an);
 					}
+				}
+				if (f.hidesField && pieceUse(r) === "head") {
+					const hd = el("input", { type: "text", value: r.hides || "", placeholder: "hides (head)", title: "Body parts this piece hides on this body (comma list), e.g. ears for elf ears. Empty = what the Body Type 1 piece hides (the whole head)." });
+					hd.style.width = "90px";
+					hd.oninput = () => { if (hd.value.trim()) list[i].hides = hd.value.trim(); else delete list[i].hides; set(list); };
+					row.append(hd);
 				}
 				if (mesh && !mesh.skinned) {
 					// Dropdown of the armature's bones (from the .glb); old "mixamorig:" names read as "mixamorig_".

@@ -1064,7 +1064,9 @@ func _stepper(title: String, key: String, list: String) -> VBoxContainer:
 
 
 func _step(key: String, list: String, dir: int) -> void:
-	var options: Array = Database.appearance.get(list, [])
+	# Only what this body can wear (some hair / beards are made for Body Types 3 / 4 only).
+	var body := String(_look.get("body", "masc"))
+	var options: Array = (Database.appearance.get(list, []) as Array).filter(func(o: Variant) -> bool: return o is Dictionary and Database.option_fits(o, body))
 	if options.is_empty():
 		return
 	var i := 0
@@ -1242,7 +1244,8 @@ func _extras_grid(options: Array) -> GridContainer:
 func _randomize() -> void:
 	var a := Database.appearance
 	var pick := func(list: String) -> String:
-		var o: Array = a.get(list, [])
+		var body := String(_look.get("body", "masc"))
+		var o: Array = (a.get(list, []) as Array).filter(func(x: Variant) -> bool: return x is Dictionary and Database.option_fits(x, body))
 		return String(o[randi() % o.size()].get("id", "")) if not o.is_empty() else ""
 	var pick_color := func(list: String) -> String:
 		var o: Array = a.get(list, [])

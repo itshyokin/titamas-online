@@ -44,6 +44,23 @@ var BONE_OF := {}
 var EXTRA_BODIES: Array = []
 var SUFFIX := "masc"  # file suffix of the pieces being saved
 var HEAD_BY_BONES := false
+## Extra bodies only. MESH_PART: body mesh -> part name (ears as their own part, so an elf
+## ear piece can hide them). FACE_MARKS: {eyes|brows|mouth: mesh}: small textured meshes
+## laid on the face in Blender (mapped onto one cell of the eyes / brows / mouths art
+## sheet); the game draws the chosen eyes, brows and mouth on them (armature meta
+## "face_marks"). A file can hold several armatures: "armature" names this body's.
+var MESH_PART := {}
+var FACE_MARKS := {}
+## Meshes skinned to another armature in the file (parts made on one body and moved to the
+## other without changing their Armature modifier) are baked where they rest and bound to
+## this body's bones by name; they're then moved by this much (source space) so they sit
+## on this body's face (worked out from the brows / mouth marks, see _foreign_shift_for).
+var _foreign_shift := Vector3.ZERO
+var _body_baked: Array = []
+## {eyes|brows|mouth: metres}: a mark moved up (+) or down on the face, then laid back on it.
+var MARK_RAISE := {}
+## Cell sizes (px) of the art sheets the marks are mapped on.
+const MARK_CELLS := {"eyes": Vector2(32, 24), "brows": Vector2(64, 80), "mouth": Vector2(64, 80)}
 
 ## Which part a bone's skin belongs to.
 const PART_OF := {
@@ -133,7 +150,7 @@ func _initialize() -> void:
 			push_warning("extra body '%s': no source %s" % [key, source])
 			continue
 		_src = (load(source) as PackedScene).instantiate()
-		_skel = _src.find_children("*", "Skeleton3D", true, false)[0]
+		_skel = _skeleton_of(String(e.get("armature", "")))
 		_globals.clear()
 		HEIGHT = float(e.get("height", 1.86))
 		BODY_MESHES = e.get("body_meshes", [])
@@ -143,12 +160,32 @@ func _initialize() -> void:
 				if mi.skin != null and not (low.contains("teeth") or low.contains("tongue")):
 					BODY_MESHES.append(String(mi.name))
 		BODY_EXTRA = {}
+		for x in e.get("body_extra", []):
+			if x is Dictionary and String(x.get("material", "")) != "" and String(x.get("part", "")) != "":
+				if not BODY_EXTRA.has(String(x.material)):
+					BODY_EXTRA[String(x.material)] = []
+				BODY_EXTRA[String(x.material)].append([String(x.part), float(x.get("min_y", -1)), float(x.get("max_y", -1))])
+		MESH_PART = {}
+		var ears := String(e.get("ears_mesh", ""))
+		if ears != "":
+			MESH_PART[_godot_name(ears)] = "ears"
+			if not BODY_MESHES.has(ears):
+				BODY_MESHES = BODY_MESHES.duplicate()
+				BODY_MESHES.append(ears)
+		FACE_MARKS = e.get("face_marks", {}) if e.get("face_marks", {}) is Dictionary else {}
 		HEAD_BY_BONES = true
 		_read_pieces(e.get("pieces", []))
 		SUFFIX = key
 		var arm := _build_skeleton("Armature_" + key)
 		root.add_child(arm)
+		MARK_RAISE = e.get("face_marks_raise", {}) if e.get("face_marks_raise", {}) is Dictionary else {}
+		_body_baked = []
+		_foreign_shift = Vector3.ZERO
+		_foreign_shift = _foreign_shift_for()
 		_build_body()
+		var marks := _build_marks()
+		if not marks.is_empty():
+			arm.set_meta("face_marks", marks)
 		# Hair, hats and beards made on the masc head land on this head: the masc head's box
 		# (above the head bone, in its space) mapped onto this one's. CharacterModel puts it
 		# into the head bind of masc pieces worn here until they're refitted.
@@ -177,6 +214,24 @@ func _initialize() -> void:
 	print("saved %s with %d extra bodies err=%d" % [OUT, EXTRA_BODIES.size(), ResourceSaver.save(packed2, OUT)])
 	root.free()
 	quit()
+
+
+## This body's skeleton in the source: the one under the node named `armature` ("" or not
+## found = the first one in the file).
+func _skeleton_of(armature: String) -> Skeleton3D:
+	var all := _src.find_children("*", "Skeleton3D", true, false)
+	for sk in all:
+		var p := sk.get_parent()
+		if armature != "" and (String(sk.name) == _godot_name(armature) or (p and String(p.name) == _godot_name(armature))):
+			return sk
+	if armature != "":
+		push_warning("no armature '%s' in the source, using the first" % armature)
+	return all[0]
+
+
+## Blender names as Godot imports them ("hair_bob.001" -> "hair_bob_001").
+static func _godot_name(n: String) -> String:
+	return n.replace(".", "_").replace(":", "_")
 
 
 func _own(node: Node, owner_node: Node) -> void:
@@ -267,9 +322,21 @@ func _bake_surface(mi: MeshInstance3D, surf: int) -> Dictionary:
 	else:
 		var bind_bone := PackedInt32Array()
 		var bind_pose: Array[Transform3D] = []
+		# Skinned to another armature in the file: baked where it rests on that one, then
+		# bound to this body's bones of the same names.
+		var own_skel := mi.get_node_or_null(mi.skeleton) as Skeleton3D
+		var foreign := own_skel != null and own_skel != _skel
+		var foreign_xf := _scene_xform(own_skel, _src) if foreign else Transform3D.IDENTITY
+		var bind_rest: Array[Transform3D] = []
 		for i in src_skin.get_bind_count():
 			var bname := String(src_skin.get_bind_name(i))
-			bind_bone.append(_skel.find_bone(bname) if bname != "" else src_skin.get_bind_bone(i))
+			var here := _skel.find_bone(bname) if bname != "" else src_skin.get_bind_bone(i)
+			if foreign:
+				var there := own_skel.find_bone(bname) if bname != "" else src_skin.get_bind_bone(i)
+				bind_rest.append(foreign_xf * own_skel.get_bone_global_rest(maxi(there, 0)))
+				if here < 0:
+					here = _skel.find_bone(_stand_in(bname))
+			bind_bone.append(maxi(here, 0))
 			bind_pose.append(src_skin.get_bind_pose(i))
 		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
 		var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
@@ -285,13 +352,15 @@ func _bake_surface(mi: MeshInstance3D, surf: int) -> Dictionary:
 					continue
 				var bi := bones[v * per + k]
 				var bone := bind_bone[bi]
-				var m: Transform3D = _globals[bone] * bind_pose[bi]
+				var m: Transform3D = (bind_rest[bi] if foreign else _globals[bone]) * bind_pose[bi]
 				p += m * verts[v] * w
 				nn += (m.basis * normals[v]) * w
 				total += w
 				slots.append([bone, w])
 			if total > 0.0:
 				p /= total
+			if foreign:
+				p += _foreign_shift
 			pos[v] = _to_new(p)
 			nrm[v] = (_turn * nn).normalized()
 			slots.sort_custom(func(a: Array, c: Array) -> bool: return a[1] > c[1])
@@ -306,6 +375,16 @@ func _bake_surface(mi: MeshInstance3D, surf: int) -> Dictionary:
 	var mat := mi.get_active_material(surf)
 	return {"pos": pos, "nrm": nrm, "uv": uvs, "bones": vb, "weights": vw, "index": index,
 		"parts": part_weights, "material": mat, "material_name": mat.resource_name if mat else ""}
+
+
+## The bone a missing one's skin goes to (fingers → the hand, toes → the foot).
+static func _stand_in(bone: String) -> String:
+	for side in ["Left", "Right"]:
+		if bone.begins_with("mixamorig_%sHand" % side):
+			return "mixamorig_%sHand" % side
+		if bone.begins_with("mixamorig_%sToe" % side):
+			return "mixamorig_%sFoot" % side
+	return "mixamorig_Hips"
 
 
 ## Collects triangles into a new mesh (keyed groups of vertices).
@@ -346,7 +425,7 @@ class Builder:
 
 func _mesh_named(mesh_name: String) -> MeshInstance3D:
 	for mi in _src.find_children("*", "MeshInstance3D", true, false):
-		if String(mi.name) == mesh_name:
+		if String(mi.name) == mesh_name or String(mi.name) == _godot_name(mesh_name):
 			return mi
 	push_error("no mesh " + mesh_name)
 	return null
@@ -371,8 +450,8 @@ func _build_body() -> void:
 			for e: Array in extras:
 				extra_mats[e[0]] = _material(s.material)
 			for t in range(0, s.index.size(), 3):
-				var part := ""
-				if not extras.is_empty():
+				var part := String(MESH_PART.get(_godot_name(mesh_name), ""))
+				if part == "" and not extras.is_empty():
 					var cy: float = (s.pos[s.index[t]].y + s.pos[s.index[t + 1]].y + s.pos[s.index[t + 2]].y) / 3.0
 					part = String(extras[0][0])
 					for e: Array in extras:
@@ -409,12 +488,175 @@ func _build_body() -> void:
 		mesh.surface_set_material(0, extra_mats.get(part, skin_mat))
 		var mi := MeshInstance3D.new()
 		mi.name = part
+		if extra_mats.has(part):
+			mi.set_meta("own_material", true)  # not skin: CharacterModel leaves it (or tints "scalp")
 		mi.mesh = mesh
 		mi.skin = _skin
 		_out.add_child(mi)
 		mi.skeleton = NodePath("..")
 		print("  %-10s %5d verts %5d tris" % [part, (parts[part] as Builder).v.size(), (parts[part] as Builder).i.size() / 3])
 	print("%s: scale %.4f, %d bones" % [SUFFIX, _scale, _out.get_bone_count()])
+
+
+## How far this body's foreign-skinned face marks (brows, mouth) rest from its face, along
+## the facing axis: the move that lays them on it like the ones made on their own armature
+## (a hair's breadth in front). Zero when there are none or they already touch.
+func _foreign_shift_for() -> Vector3:
+	var marks := []
+	for part: String in ["brows", "mouth"]:
+		var mi := _mesh_named(String(FACE_MARKS.get(part, ""))) if String(FACE_MARKS.get(part, "")) != "" else null
+		if mi and mi.skin and (mi.get_node_or_null(mi.skeleton) as Skeleton3D) != _skel:
+			marks.append(mi)
+	if marks.is_empty():
+		return Vector3.ZERO
+	var body := _body_surfaces()
+	var gaps := []
+	for mi: MeshInstance3D in marks:
+		for surf in mi.mesh.get_surface_count():
+			var s := _bake_surface(mi, surf)
+			for p: Vector3 in s.pos:
+				var fz := _front_z_new(body, p.x, p.y)
+				if fz < INF:
+					gaps.append(p.z - fz)
+	if gaps.is_empty():
+		return Vector3.ZERO
+	gaps.sort()
+	var gap: float = gaps[gaps.size() / 2]  # + = behind the face (the new space faces -z)
+	if absf(gap) < 0.004:
+		return Vector3.ZERO
+	var move_new := Vector3(0, 0, -gap - 0.0015)
+	print("  parts made on another armature rest %.3f m %s the face: moved onto it" % [absf(gap), "behind" if gap > 0.0 else "in front of"])
+	return (_turn.inverse() * move_new) / _scale
+
+
+## The body's surfaces at rest in the new space (kept for this body's marks).
+func _body_surfaces() -> Array:
+	if _body_baked.is_empty():
+		for mesh_name: String in BODY_MESHES:
+			var bm := _mesh_named(mesh_name)
+			if bm:
+				for surf in bm.mesh.get_surface_count():
+					_body_baked.append(_bake_surface(bm, surf))
+	return _body_baked
+
+
+## Front of the body in the new space (smallest z) at (x, y), or INF.
+func _front_z_new(surfaces: Array, x: float, y: float) -> float:
+	var best := INF
+	var p := Vector2(x, y)
+	for s: Dictionary in surfaces:
+		var verts: PackedVector3Array = s.pos
+		var index = s.index
+		for t in range(0, index.size(), 3):
+			var a := verts[index[t]]
+			var b := verts[index[t + 1]]
+			var c := verts[index[t + 2]]
+			if minf(a.z, minf(b.z, c.z)) >= best:
+				continue
+			var v0 := Vector2(b.x - a.x, b.y - a.y)
+			var v1 := Vector2(c.x - a.x, c.y - a.y)
+			var v2 := p - Vector2(a.x, a.y)
+			var den := v0.x * v1.y - v1.x * v0.y
+			if absf(den) < 1e-12:
+				continue
+			var u := (v2.x * v1.y - v1.x * v2.y) / den
+			var v := (v0.x * v2.y - v2.x * v0.y) / den
+			if u < 0.0 or v < 0.0 or u + v > 1.0:
+				continue
+			best = minf(best, a.z + u * (b.z - a.z) + v * (c.z - a.z))
+	return best
+
+
+## The face marks as meshes in the model's space (metres, facing -Z), their UVs stretched
+## from the art-sheet cell they were mapped on to 0..1 (v = 0 at the top): {part: ArrayMesh}.
+func _build_marks() -> Dictionary:
+	var out := {}
+	var fit_u := []
+	var fit_v := []
+	for part: String in MARK_CELLS:
+		var mesh_name := String(FACE_MARKS.get(part, ""))
+		if mesh_name == "":
+			continue
+		var mi := _mesh_named(mesh_name)
+		if mi == null:
+			continue
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var count := 0
+		var raise := float(MARK_RAISE.get(part, 0.0))
+		for surf in mi.mesh.get_surface_count():
+			var s := _bake_surface(mi, surf)
+			if s.uv == null:
+				continue
+			if raise != 0.0:
+				# Moved up or down, then slid forward or back so it lies on the face as before.
+				var pos: PackedVector3Array = s.pos
+				var before := []
+				var after := []
+				for p: Vector3 in pos:
+					var z0 := _front_z_new(_body_surfaces(), p.x, p.y)
+					var z1 := _front_z_new(_body_surfaces(), p.x, p.y + raise)
+					if z0 < INF and z1 < INF:
+						before.append(p.z - z0)
+						after.append(p.z - z1)
+				before.sort()
+				after.sort()
+				var slide: float = (before[before.size() / 2] - after[after.size() / 2]) if not before.is_empty() else 0.0
+				for v in pos.size():
+					pos[v] += Vector3(0, raise, slide)
+				s.pos = pos
+			# Cells across and down the sheet, from the picture's size.
+			var grid := Vector2.ONE
+			var mat := s.material as BaseMaterial3D
+			if mat and mat.albedo_texture:
+				grid = (Vector2(mat.albedo_texture.get_size()) / (MARK_CELLS[part] as Vector2)).round().max(Vector2.ONE)
+			var mid := Vector2.ZERO
+			for uv: Vector2 in s.uv:
+				mid += uv
+			mid /= maxf(float((s.uv as PackedVector2Array).size()), 1.0)
+			var cell := (mid * grid).floor()
+			for i: int in s.index:
+				var uv := (s.uv[i] as Vector2) * grid - cell
+				st.set_uv(uv)
+				st.set_normal(s.nrm[i])
+				st.add_vertex(s.pos[i])
+				count += 1
+				if part != "eyes":
+					fit_u.append(Vector2(uv.x, s.pos[i].x))
+					fit_v.append(Vector2(uv.y, s.pos[i].y))
+		if count > 0:
+			out[part] = st.commit()
+			print("  face mark %-5s %s: %d corners" % [part, mesh_name, count])
+	# Where the whole face picture (of which the brows and mouth marks show their parts)
+	# lies on this head, for the layer with the nose and extras: straight-line fits of x
+	# over u and y over v.
+	var across := _line(fit_u)
+	var down := _line(fit_v)
+	if absf(across.y) > 0.01 and absf(down.y) > 0.01:
+		out["area"] = {"height": down.x + down.y * 0.5, "width": absf(across.y), "tall": absf(down.y)}
+		print("  face picture: middle %.3f m up, %.3f wide, %.3f tall" % [out.area.height, out.area.width, out.area.tall])
+	return out
+
+
+## Least-squares line through points (t, value): Vector2(value at t = 0, slope).
+static func _line(points: Array) -> Vector2:
+	if points.size() < 2:
+		return Vector2.ZERO
+	var mt := 0.0
+	var mv := 0.0
+	for p: Vector2 in points:
+		mt += p.x
+		mv += p.y
+	mt /= points.size()
+	mv /= points.size()
+	var num := 0.0
+	var den := 0.0
+	for p: Vector2 in points:
+		num += (p.x - mt) * (p.y - mv)
+		den += (p.x - mt) * (p.x - mt)
+	if den < 1e-9:
+		return Vector2.ZERO
+	return Vector2(mv - num / den * mt, num / den)
 
 
 ## Bodies imported with hard (per-face) normals shade faceted and split anything pushed out

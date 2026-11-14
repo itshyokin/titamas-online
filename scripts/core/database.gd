@@ -260,7 +260,48 @@ func _merge_pieces() -> void:
 			opt["sway_anchors"] = String(piece.sway_anchors)
 		list.append(opt)
 		appearance[list_key] = list
+	# Pieces made for Body Types 3 / 4 (body_models.json "extra_bodies"): one with the id
+	# of a Body Type 1 piece is that piece's refit (CharacterModel.fitted_for finds it by
+	# file name); a new id is an option only those bodies have ("bodies" lists them, so the
+	# creator skips it on the others). A piece's "hides" replaces the option's on that body.
+	for body in body_models.get("extra_bodies", []):
+		if not body is Dictionary:
+			continue
+		var key := String(body.get("key", ""))
+		for piece in body.get("pieces", []):
+			if not piece is Dictionary:
+				continue
+			var list_key: String = PIECE_LISTS.get(piece_use(piece), "")
+			var id := String(piece.get("id", ""))
+			var path := "%s%s_%s.scn" % [PIECE_DIR, id, key]
+			if list_key == "" or id == "" or key == "" or not ResourceLoader.exists(path):
+				continue
+			var list: Array = appearance.get(list_key, [])
+			var opt := {}
+			for o in list:
+				# Heads are listed by their own ids ("elf" wears the head_elf piece).
+				if o is Dictionary and (String(o.get("id", "")) == id or String(o.get("fitted_masc", "")) == PIECE_DIR + id + "_masc.scn"):
+					opt = o
+			if opt.is_empty():
+				opt = {"id": id, "name": piece_name(piece), "bodies": []}
+				if piece.has("sway"):
+					opt["sway"] = float(piece.sway)
+				list.append(opt)
+				appearance[list_key] = list
+			if opt.has("bodies") and not key in (opt.bodies as Array):
+				(opt.bodies as Array).append(key)
+			if not opt.has("fitted_masc"):
+				opt["fitted_" + key] = path
+			var hides := String(piece.get("hides", "")).replace(" ", "")
+			if hides != "":
+				opt["hides_" + key] = Array(hides.split(",", false))
 	CharacterModel.face_library = appearance
+
+
+## Whether an appearance option can be used on body `key` (options made only for some
+## bodies list them in "bodies").
+static func option_fits(option: Dictionary, key: String) -> bool:
+	return not option.has("bodies") or key in (option.bodies as Array)
 
 
 ## One entry of an appearance list ("hair_styles", "eyes", "heights"...) by id ({} if unknown).

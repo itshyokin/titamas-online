@@ -321,28 +321,506 @@
 		{
 			"key": "masc_hq",
 			"name": "Body Type 3",
-			"source": "res://assets/models/characters/src/body_masc_hq.fbx",
+			"source": "res://assets/models/characters/src/highpoly_bodies.glb",
 			"height": 1.86,
 			"body_meshes": [
-				"Anime_Boy_Body_Base_by_Alexz_art"
+				"body_male"
 			],
-			"pieces": [],
+			"pieces": [
+				{
+					"id": "hair_short",
+					"mesh": "hair_short.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0
+				},
+				{
+					"id": "hair_balding",
+					"mesh": "hair_balding.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0
+				},
+				{
+					"id": "hair_backbraid",
+					"mesh": "hair_backbraid.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_backswept",
+					"mesh": "hair_backswept.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_bob",
+					"mesh": "hair_bob.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_bun",
+					"mesh": "hair_bun.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_burns",
+					"mesh": "hair_burns.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_elegant",
+					"mesh": "hair_elegant.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_leftswept",
+					"mesh": "hair_leftswept.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_long",
+					"mesh": "hair_long.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_longpony",
+					"mesh": "hair_longpony.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_manbun",
+					"mesh": "hair_manbun.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_messy",
+					"mesh": "hair_messy.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_neat",
+					"mesh": "hair_neat.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_part",
+					"mesh": "hair_part.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_pixie",
+					"mesh": "hair_pixie.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_ponytail",
+					"mesh": "hair_ponytail.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_princely",
+					"mesh": "hair_princely.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_shoulder",
+					"mesh": "hair_shoulder.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_swept",
+					"mesh": "hair_swept.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_tied",
+					"mesh": "hair_tied.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "beard_hq_short",
+					"mesh": "beard_highpoly_short_m",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"name": "Short beard",
+					"use": "facial_hair"
+				},
+				{
+					"id": "beard_hq_regal",
+					"mesh": "beard_highpoly_regal_m",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"name": "Regal beard",
+					"use": "facial_hair"
+				},
+				{
+					"id": "beard_hq_long",
+					"mesh": "beard_highpoly_long_m",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"name": "Long beard",
+					"use": "facial_hair"
+				},
+				{
+					"id": "mustache_hq_basic",
+					"mesh": "mustache_highpoly_basic_m",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"name": "Mustache",
+					"use": "facial_hair"
+				},
+				{
+					"id": "head_elf",
+					"mesh": "ears_male_elf",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head",
+					"use": "head",
+					"hides": "ears"
+				}
+			],
 			"head_fit_grow": 1.02,
 			"head_fit_raise": 0.02,
-			"head_fit_back": 0.0
+			"head_fit_back": 0.0,
+			"armature": "Armature",
+			"body_extra": [
+				{
+					"material": "hair_blonde",
+					"part": "scalp",
+					"min_y": -1.0,
+					"max_y": -1.0
+				},
+				{
+					"material": "black_details",
+					"part": "details",
+					"min_y": -1.0,
+					"max_y": -1.0
+				}
+			],
+			"face_marks": {
+				"eyes": "eyes_male",
+				"brows": "brows_male",
+				"mouth": "mouth_male"
+			},
+			"face_marks_raise": {
+				"eyes": 0.0,
+				"brows": 0.0,
+				"mouth": 0.0
+			},
+			"ears_mesh": "ears_male_human"
 		},
 		{
 			"key": "femme_hq",
 			"name": "Body Type 4",
-			"source": "res://assets/models/characters/src/body_femme_hq.fbx",
+			"source": "res://assets/models/characters/src/highpoly_bodies.glb",
 			"height": 1.72,
 			"body_meshes": [
-				"Body"
+				"body_female_human"
 			],
-			"pieces": [],
+			"pieces": [
+				{
+					"id": "hair_short",
+					"mesh": "hair_short.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0
+				},
+				{
+					"id": "hair_balding",
+					"mesh": "hair_balding.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0
+				},
+				{
+					"id": "hair_backbraid",
+					"mesh": "hair_backbraid.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_backswept",
+					"mesh": "hair_backswept.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_bob",
+					"mesh": "hair_bob.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_bun",
+					"mesh": "hair_bun.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_burns",
+					"mesh": "hair_burns.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_elegant",
+					"mesh": "hair_elegant.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_leftswept",
+					"mesh": "hair_leftswept.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_long",
+					"mesh": "hair_long.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_longpony",
+					"mesh": "hair_longpony.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_manbun",
+					"mesh": "hair_manbun.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_messy",
+					"mesh": "hair_messy.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_neat",
+					"mesh": "hair_neat.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_part",
+					"mesh": "hair_part.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_pixie",
+					"mesh": "hair_pixie.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_ponytail",
+					"mesh": "hair_ponytail.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_princely",
+					"mesh": "hair_princely.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_shoulder",
+					"mesh": "hair_shoulder.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_swept",
+					"mesh": "hair_swept.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "hair_tied",
+					"mesh": "hair_tied.001",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head"
+				},
+				{
+					"id": "beard_hq_short",
+					"mesh": "beard_highpoly_short_f",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"name": "Short beard",
+					"use": "facial_hair"
+				},
+				{
+					"id": "beard_hq_regal",
+					"mesh": "beard_highpoly_regal_f",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"name": "Regal beard",
+					"use": "facial_hair"
+				},
+				{
+					"id": "beard_hq_long",
+					"mesh": "beard_highpoly_long_f",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"name": "Long beard",
+					"use": "facial_hair"
+				},
+				{
+					"id": "mustache_hq_basic",
+					"mesh": "mustache_highpoly_basic_f",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"name": "Mustache",
+					"use": "facial_hair"
+				},
+				{
+					"id": "head_elf",
+					"mesh": "ears_female_elf",
+					"material": "",
+					"min_y": -1.0,
+					"max_y": -1.0,
+					"bone": "mixamorig_Head",
+					"use": "head",
+					"hides": "ears"
+				}
+			],
 			"head_fit_grow": 1.02,
 			"head_fit_raise": 0.0,
-			"head_fit_back": 0.0
+			"head_fit_back": 0.0,
+			"armature": "Armature.001",
+			"body_extra": [
+				{
+					"material": "hair_blonde",
+					"part": "scalp",
+					"min_y": -1.0,
+					"max_y": -1.0
+				},
+				{
+					"material": "black_details",
+					"part": "details",
+					"min_y": -1.0,
+					"max_y": -1.0
+				}
+			],
+			"face_marks": {
+				"eyes": "eyes_female",
+				"brows": "brows_female",
+				"mouth": "mouth_female"
+			},
+			"face_marks_raise": {
+				"eyes": 0.0,
+				"brows": 0.0,
+				"mouth": 0.016
+			},
+			"ears_mesh": "ears_female_human"
 		}
 	]
 }

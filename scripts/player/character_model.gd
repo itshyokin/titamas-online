@@ -41,13 +41,16 @@ static func type_of(key: String) -> BodyType:
 ## gets no fallback.
 static func fitted_for(item: Dictionary, key: String) -> String:
 	var own := String(item.get("fitted_" + key, ""))
-	if own != "" or key == "masc" or key == "femme" or bool(item.get("no_fallback", false)):
+	if own != "" or key == "masc" or key == "femme":
 		return own
 	var masc := String(item.get("fitted_masc", ""))
 	if masc == "":
 		return ""
 	var copy := masc.trim_suffix("_masc.scn") + "_" + key + ".scn"
-	return copy if masc.ends_with("_masc.scn") and ResourceLoader.exists(copy) else masc
+	if masc.ends_with("_masc.scn") and ResourceLoader.exists(copy):
+		return copy
+	# Heads and faces made for one body are never borrowed by another ("no_fallback").
+	return "" if bool(item.get("no_fallback", false)) else masc
 
 
 ## Rigid attachments (weapons, shields, hats) an item uses on body `key`: "fit.<key>", else
@@ -359,7 +362,7 @@ func wear(item: Dictionary, tag: String, with_rigid := true) -> Array[Node]:
 	var sway := float(item.get("sway", 0.0))
 	if sway > 0.0 and not Engine.is_editor_hint():
 		_add_sway(nodes, sway, String(item.get("sway_anchors", SWAY_ANCHORS)), tag == "facial_hair")
-	var hides: Array = _hides_of(item)
+	var hides: Array = _hides_of(item, body)
 	for part in hides:
 		_hidden_parts[part] = int(_hidden_parts.get(part, 0)) + 1
 	_worn[tag] = {"nodes": nodes, "hides": hides, "item": item, "with_rigid": with_rigid}
@@ -420,8 +423,10 @@ static func _stand_in_bone(bone: String) -> String:
 ##   "hat"   the hair's hat-clip parts (meshes with "hat_clip" in their name, from faces
 ##           given a "hat_clip" material in Blender); hair without any is hidden whole
 ##   "total" the whole head: head, face, eyes, hair and facial hair (masked helmets)
-static func _hides_of(item: Dictionary) -> Array:
-	var hides: Array = (item.get("hides", []) as Array).duplicate()
+static func _hides_of(item: Dictionary, key := "") -> Array:
+	# "hides_<body key>" replaces "hides" on that body (elf ears hide only the ears of
+	# Body Types 3 / 4, where the low-poly elf head replaces the whole head).
+	var hides: Array = (item.get("hides_" + key, item.get("hides", [])) as Array).duplicate()
 	match String(item.get("head_clip", "")):
 		"hat":
 			hides.append("hat_clip")
@@ -543,7 +548,8 @@ func _update_hidden_parts() -> void:
 	for eye in _eye_nodes:
 		if is_instance_valid(eye):
 			(eye as Node3D).visible = int(_hidden_parts.get("eyes", 0)) <= 0 \
-				and not (eye == _face_node and _face_mat and _face_mat.albedo_texture == null)
+				and not (eye == _face_node and _face_mat and _face_mat.albedo_texture == null) \
+				and not (eye in _mark_nodes and _mark_mat and _mark_mat.albedo_texture == null)
 
 
 ## Where a bone sits in the rest pose, in this model's space.
@@ -688,6 +694,8 @@ func _apply() -> void:
 ## A body part drawn in skin (tinted); parts with their own textured material, like the
 ## low-poly body's `underwear`, keep it.
 func _is_skin(mi: MeshInstance3D) -> bool:
+	if mi.has_meta("own_material"):
+		return false  # build_bodies: a body material kept as its own part (scalp, details)
 	var mat := mi.mesh.surface_get_material(0) if mi.mesh and mi.mesh.get_surface_count() > 0 else null
 	return mat == null or not (mat is BaseMaterial3D and (mat as BaseMaterial3D).albedo_texture != null)
 
@@ -754,6 +762,10 @@ var mood := "":
 var _face_parts: Array = []  # [part ("" = extra), entry]
 var _face_mat: StandardMaterial3D
 var _face_node: Node3D
+## Brows / mouth drawn on the body's own surfaces (Body Types 3 / 4 "face_marks").
+var _mark_mat: StandardMaterial3D
+var _mark_nodes: Array[Node] = []
+var _mark_parts: Array[String] = []
 var _eye_mats: Array[ShaderMaterial] = []
 var _blink_left := 2.5
 var _blink_t := -1.0
@@ -787,12 +799,15 @@ func _apply_look_parts() -> void:
 	_face_parts.clear()
 	_face_mat = null
 	_face_node = null
+	_mark_mat = null
+	_mark_nodes.clear()
+	_mark_parts.clear()
 	_lid = -1.0
 	if _look.is_empty() or get_skeleton() == null:
 		return
 	for tag: String in LOOK_TAGS:
 		var entry: Dictionary = _look.get(tag, {})
-		if entry.has("fitted_masc") or entry.has("model"):
+		if entry.has("fitted_masc") or entry.has("model") or entry.has("fitted_" + body_key()):
 			var item := entry.duplicate()
 			if tag in ["head", "face"]:
 				# Their own materials (a head variant is skin: see below). A head or face made
@@ -815,6 +830,13 @@ func _apply_look_parts() -> void:
 				for n in nodes:
 					if n is MeshInstance3D:
 						(n as MeshInstance3D).material_override = _skin_material
+	# The body's own hair-coloured part (the hairline painted on the scalp of Body Types 3 / 4).
+	var scalp := get_skeleton().get_node_or_null("scalp") as MeshInstance3D
+	if scalp and scalp.mesh and scalp.mesh.get_surface_count() > 0:
+		var base := scalp.mesh.surface_get_material(0) as BaseMaterial3D
+		var tinted := (base.duplicate() if base else StandardMaterial3D.new()) as BaseMaterial3D
+		tinted.albedo_color = _look.get("hair_color", Color(0.3, 0.2, 0.1))
+		scalp.material_override = tinted
 	# A painted face (its own texture) replaces the eye quads.
 	if not bool((_look.get("face", {}) as Dictionary).get("painted", false)) or not _worn.has("face"):
 		_build_eyes()
@@ -914,7 +936,24 @@ func _build_eyes() -> void:
 	var head_arrays := head.mesh.surface_get_arrays(0)
 	var eyes: Dictionary = _look.get("eyes", {})
 	var place: Dictionary = _look.get("eye_placement", {})
-	if not eyes.is_empty() and not place.is_empty() and ResourceLoader.exists(String(eyes.get("texture", ""))):
+	var marks := _face_marks()
+	var has_eyes := not eyes.is_empty() and ResourceLoader.exists(String(eyes.get("texture", "")))
+	if has_eyes and marks.has("eyes"):
+		# This body has its own eye surfaces from Blender: the eyes are drawn on those.
+		var mine := part_placement(_look, "eyes")
+		for side: float in [-1.0, 1.0]:
+			var mat := ShaderMaterial.new()
+			mat.shader = EYE_SHADER
+			mat.set_shader_parameter("eye_texture", load(String(eyes.texture)))
+			if ResourceLoader.exists(String(eyes.get("iris", ""))):
+				mat.set_shader_parameter("iris_mask", load(String(eyes.iris)))
+			var col: Color = _look.get("eye_color_right" if side > 0.0 else "eye_color", _look.get("eye_color", Color(0.3, 0.5, 0.8)))
+			mat.set_shader_parameter("eye_color", col)
+			mat.set_shader_parameter("lid_color", _look.get("skin", skin_color))
+			_eye_mats.append(mat)
+			var mesh := _mark_mesh(marks.eyes, side, Vector3(mine.x * EYE_SHIFT.x, mine.y * EYE_SHIFT.y, mine.z), true, true, head_arrays)
+			_add_face_part(mesh, mat, "Eye%s" % ("R" if side > 0.0 else "L"))
+	elif has_eyes and not place.is_empty():
 		# The look's own placement (creator "Customize placement"): spacing, height, size.
 		var mine := part_placement(_look, "eyes")
 		var y := float(place.height) + mine.y * EYE_SHIFT.y
@@ -943,7 +982,15 @@ func _build_eyes() -> void:
 ## Brows, nose, mouth and extras stacked into one picture over the face area.
 func _build_face_layers(head_arrays: Array) -> void:
 	var area: Dictionary = _look.get("face_area", {})
-	if area.is_empty():
+	var marks := _face_marks()
+	if marks.get("area", null) is Dictionary:
+		# Where the face picture lies on this head, worked out from its brows / mouth surfaces.
+		area = area.duplicate()
+		area.merge(marks.area, true)
+	_mark_mat = null
+	_mark_nodes.clear()
+	_mark_parts.clear()
+	if area.is_empty() and not (marks.has("brows") or marks.has("mouth")):
 		return
 	var parts := [["brows", _look.get("brows", {})]]
 	for e in (_look.get("extras", []) as Array):
@@ -951,12 +998,31 @@ func _build_face_layers(head_arrays: Array) -> void:
 	parts.append(["nose", _look.get("nose", {})])
 	parts.append(["mouth", _look.get("mouth", {})])
 	_face_parts = parts.filter(func(p: Array) -> bool: return p[1] is Dictionary)
-	var mat := StandardMaterial3D.new()
-	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	mat.alpha_scissor_threshold = 0.5
-	mat.roughness = _skin_material.roughness
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var new_mat := func() -> StandardMaterial3D:
+		var m := StandardMaterial3D.new()
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		m.alpha_scissor_threshold = 0.5
+		m.roughness = _skin_material.roughness
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		return m
+	# Brows and mouth on this body's own surfaces from Blender (the same face picture, of
+	# which each surface shows its part); their placement moves the surface itself.
+	for part: String in ["brows", "mouth"]:
+		if not marks.has(part):
+			continue
+		if _mark_mat == null:
+			_mark_mat = new_mat.call()
+		var mine := part_placement(_look, part)
+		var mesh := _mark_mesh(marks[part], 0.0, Vector3(mine.x * EYE_SHIFT.x, mine.y * EYE_SHIFT.y, mine.z), part == "brows", false, head_arrays)
+		var node := _add_face_part(mesh, _mark_mat, part.capitalize() + "Mark")
+		if node:
+			_mark_nodes.append(node)
+			_mark_parts.append(part)
+	if area.is_empty():
+		_compose_face()
+		return
+	var mat: StandardMaterial3D = new_mat.call()
 	var cy := float(area.get("height", 1.7))
 	var hw := float(area.get("width", 0.15)) * 0.5
 	var hh := float(area.get("tall", 0.2)) * 0.5
@@ -969,8 +1035,9 @@ func _build_face_layers(head_arrays: Array) -> void:
 
 ## The face picture for the current mood and talking frame (cached per combination).
 func _compose_face() -> void:
-	if _face_mat == null:
+	if _face_mat == null and _mark_mat == null:
 		return
+	var marked: Array = []  # layers drawn on the body's own brows / mouth surfaces
 	var anime := _is_anime_face()
 	var m := _mood_data()
 	var frames: Array = (face_library.get("face_motion", {}) as Dictionary).get("talk_frames_anime" if anime else "talk_frames", [])
@@ -994,17 +1061,32 @@ func _compose_face() -> void:
 				o = alt
 			place.y = clampf(place.y + float(m.get("brows_y", 0.0)), -1.0, 1.0)
 		if ResourceLoader.exists(String(o.get("texture", ""))):
-			layers.append([o, place, part == "brows"])
+			if part in _mark_parts:
+				# The look's placement already moved the surface: only the mood's lift here.
+				var lift := place.y - part_placement(_look, part).y if part == "brows" else 0.0
+				marked.append([o, Vector3(0, lift, 1), part == "brows"])
+			else:
+				layers.append([o, place, part == "brows"])
 		if part == "brows":
 			# Mood extras (blush, tears, sweat...) go just above the brows.
 			for eid in m.get("extras_anime" if anime else "extras", []):
 				var e := _face_option("face_extras", String(eid))
 				if ResourceLoader.exists(String(e.get("texture", ""))):
 					layers.append([e, Vector3(0, 0, 1), false])
-	var tex: Texture2D = _face_texture(layers, _look.get("skin", skin_color), _look.get("hair_color", Color(0.25, 0.15, 0.1))) if not layers.is_empty() else null
-	_face_mat.albedo_texture = tex
-	if is_instance_valid(_face_node):
-		_face_node.visible = tex != null and int(_hidden_parts.get("eyes", 0)) <= 0
+	var skin: Color = _look.get("skin", skin_color)
+	var hair: Color = _look.get("hair_color", Color(0.25, 0.15, 0.1))
+	var shown := int(_hidden_parts.get("eyes", 0)) <= 0
+	if _face_mat:
+		var tex: Texture2D = _face_texture(layers, skin, hair) if not layers.is_empty() else null
+		_face_mat.albedo_texture = tex
+		if is_instance_valid(_face_node):
+			_face_node.visible = tex != null and shown
+	if _mark_mat:
+		var tex: Texture2D = _face_texture(marked, skin, hair) if not marked.is_empty() else null
+		_mark_mat.albedo_texture = tex
+		for node in _mark_nodes:
+			if is_instance_valid(node):
+				(node as Node3D).visible = tex != null and shown
 
 
 func _mood_data() -> Dictionary:
@@ -1094,7 +1176,7 @@ func _animate_face(delta: float) -> void:
 			_lid = lid
 			for mat in _eye_mats:
 				mat.set_shader_parameter("blink", lid)
-	if talking and _face_mat:
+	if talking and (_face_mat or _mark_mat):
 		_talk_left -= delta
 		if _talk_left <= 0.0:
 			_talk_left = float(fm.get("talk_frame_seconds", 0.1)) * randf_range(0.8, 1.4)
@@ -1199,6 +1281,69 @@ static func _placed(img: Image, place: Vector3, halves: bool) -> Image:
 				if col.a >= 0.5:
 					out.set_pixel(x, y, col)
 	return out
+
+
+## This body's own face surfaces (build_bodies "face_marks"): {eyes|brows|mouth: Mesh} in
+## the model's space with UVs 0..1 over one art-sheet cell. Empty on bodies without them.
+func _face_marks() -> Dictionary:
+	var skel := get_skeleton()
+	var armature := skel.get_parent() if skel else null
+	var marks = armature.get_meta("face_marks", {}) if armature else {}
+	return marks if marks is Dictionary else {}
+
+
+## A face mark ready to draw. `side` ±1 keeps that half only (eyes: +x = the character's
+## right) with u running from the inner corner outward, 0 keeps both. `move` = (sideways or
+## spacing in m, up in m, scale): `spread` moves each half away from the middle instead of
+## sideways; the result is slid along the face so it stays on the head's surface.
+static func _mark_mesh(src: Mesh, side: float, move: Vector3, spread: bool, inner_first: bool, head_arrays: Array) -> Mesh:
+	if src == null or src.get_surface_count() == 0:
+		return null
+	var a := src.surface_get_arrays(0)
+	var verts: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+	var uvs: PackedVector2Array = a[Mesh.ARRAY_TEX_UV]
+	var normals: PackedVector3Array = a[Mesh.ARRAY_NORMAL]
+	var index = a[Mesh.ARRAY_INDEX]
+	if index == null:
+		index = PackedInt32Array(range(verts.size()))
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var any := false
+	for half: float in ([side] if side != 0.0 else ([-1.0, 1.0] if spread else [0.0])):
+		var tris := PackedInt32Array()
+		var mid := Vector3.ZERO
+		var count := 0
+		for t in range(0, index.size(), 3):
+			var cx := (verts[index[t]].x + verts[index[t + 1]].x + verts[index[t + 2]].x) / 3.0
+			if half != 0.0 and cx * half < 0.0:
+				continue
+			for k in 3:
+				tris.append(index[t + k])
+				mid += verts[index[t + k]]
+				count += 1
+		if count == 0:
+			continue
+		mid /= float(count)
+		# Does u already run from the inner corner outward on this half?
+		var flip := false
+		if inner_first and half != 0.0:
+			var lean := 0.0
+			for i in tris:
+				lean += (uvs[i].x - 0.5) * (absf(verts[i].x) - absf(mid.x))
+			flip = lean < 0.0
+		var shift := Vector3((half if spread or half != 0.0 else 1.0) * move.x, move.y, 0.0)
+		if shift != Vector3.ZERO and not head_arrays.is_empty():
+			# Keep it on the face: follow the surface from the old middle to the new one.
+			var z0 := _face_z(head_arrays, mid.x, mid.y, 0.0)
+			var z1 := _face_z(head_arrays, mid.x + shift.x, mid.y + shift.y, 0.0)
+			if z0 < INF and z1 < INF:
+				shift.z = z1 - z0
+		for i in tris:
+			st.set_uv(Vector2(1.0 - uvs[i].x, uvs[i].y) if flip else uvs[i])
+			st.set_normal(normals[i])
+			st.add_vertex(mid + (verts[i] - mid) * move.z + shift)
+			any = true
+	return st.commit() if any else null
 
 
 func _add_face_part(mesh: Mesh, mat: Material, node_name: String) -> Node3D:
