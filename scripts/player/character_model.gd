@@ -262,7 +262,8 @@ func attach_to_hand(item: Node3D, right := true) -> BoneAttachment3D:
 	for finger in ["Pinky1", "Ring1", "Middle1"]:
 		if pinky < 0:
 			pinky = skel.find_bone("mixamorig_%sHand%s" % [side, finger])
-	if hand < 0 or index < 0 or pinky < 0:
+	var thumb := skel.find_bone("mixamorig_%sHandThumb1" % side)
+	if hand < 0 or index < 0 or (pinky < 0 and thumb < 0):
 		push_warning("CharacterModel: hand bones not found")
 		return null
 	var attach := BoneAttachment3D.new()
@@ -274,7 +275,18 @@ func attach_to_hand(item: Node3D, right := true) -> BoneAttachment3D:
 	var hand_rest := skel.get_bone_global_rest(hand)
 	var to_hand := hand_rest.affine_inverse()
 	var p_index := to_hand * skel.get_bone_global_rest(index).origin
-	var p_pinky := to_hand * skel.get_bone_global_rest(pinky).origin
+	var p_pinky: Vector3
+	if pinky >= 0:
+		p_pinky = to_hand * skel.get_bone_global_rest(pinky).origin
+	else:
+		# One finger chain for the whole hand (it sits mid-knuckles): the pinky side is
+		# away from the thumb, half a palm either way.
+		var p_thumb := to_hand * skel.get_bone_global_rest(thumb).origin
+		var along := p_index.normalized()
+		var to_thumb := (p_thumb - along * p_thumb.dot(along)).normalized()
+		var half := p_index.length() * 0.45
+		p_pinky = p_index - to_thumb * half
+		p_index += to_thumb * half
 	var p_middle := (p_index + p_pinky) * 0.5
 	var blade := (p_index - p_pinky).normalized()
 	var fingers := p_middle.normalized()

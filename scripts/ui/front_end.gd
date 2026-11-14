@@ -865,7 +865,14 @@ func _creator_page() -> Control:
 	lv.add_child(_heading("Create your character", 24))
 	lv.add_child(_section("Body type"))
 	# 1 / 2 = the low-poly body as modelled / reshaped; 3 / 4 = their own bodies (masc_hq, femme_hq).
-	lv.add_child(_choice_row("figure", [["0", "Body Type 1"], ["1", "Body Type 2"], ["3", "Body Type 3"], ["4", "Body Type 4"]]))
+	# Body Types 3 / 4 only when appearance.json "bodies" lists them (still being worked on).
+	var body_types := [["0", "Body Type 1"], ["1", "Body Type 2"]]
+	var allowed: Array = Database.appearance.get("bodies", ["masc"])
+	if "masc_hq" in allowed:
+		body_types.append(["3", "Body Type 3"])
+	if "femme_hq" in allowed:
+		body_types.append(["4", "Body Type 4"])
+	lv.add_child(_choice_row("figure", body_types))
 	lv.add_child(_section("Pronouns"))
 	lv.add_child(_choice_row("pronouns", _options(a.get("pronouns", []))))
 	lv.add_child(_section("Skin colour"))

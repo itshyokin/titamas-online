@@ -341,9 +341,7 @@
 		"fitted_femme_hq": "res://assets/characters/underwear_femme_hq.scn"
 	},
 	"bodies": [
-		"masc",
-		"masc_hq",
-		"femme_hq"
+		"masc"
 	],
 	"noses": [
 		{

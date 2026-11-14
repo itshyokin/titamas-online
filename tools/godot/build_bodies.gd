@@ -31,6 +31,13 @@ const GEAR_DIR := "res://assets/characters/lowpoly"
 const SETTINGS := "res://data/body_models.json"
 
 var SOURCE := "res://assets/models/characters/src/lowpoly_guy.glb"
+## body_models.json "rig_source": a file with the same body on a newer rig (the Mixamo
+## re-rig with the fingers on one chain). The skeleton and the body meshes come from it;
+## everything else (clothes, hair, heads...) still comes from SOURCE and is bound to the
+## new rig's bones by name (finger bones it no longer has go to the index chain).
+var RIG_SOURCE := ""
+var _rig: Node = null
+var _source_mats := {}
 var HEIGHT := 1.86
 var BODY_MESHES: Array = []
 var BODY_EXTRA := {}
@@ -90,6 +97,7 @@ func _load_settings() -> void:
 		push_error("Can't read " + SETTINGS)
 		return
 	SOURCE = String(d.get("source", SOURCE))
+	RIG_SOURCE = String(d.get("rig_source", ""))
 	HEIGHT = float(d.get("height", HEIGHT))
 	BODY_MESHES = d.get("body_meshes", [])
 	for e: Dictionary in d.get("body_extra", []):
@@ -121,6 +129,22 @@ func _initialize() -> void:
 	_load_settings()
 	_src = (load(SOURCE) as PackedScene).instantiate()
 	_skel = _src.find_children("*", "Skeleton3D", true, false)[0]
+	if RIG_SOURCE != "" and ResourceLoader.exists(RIG_SOURCE):
+		_rig = (load(RIG_SOURCE) as PackedScene).instantiate()
+		var rig_skels := _rig.find_children("*", "Skeleton3D", true, false)
+		if rig_skels.is_empty():
+			push_warning("rig_source has no skeleton: " + RIG_SOURCE)
+			_rig.free()
+			_rig = null
+		else:
+			_skel = rig_skels[0]
+			print("rig from %s (%d bones)" % [RIG_SOURCE, _skel.get_bone_count()])
+			# The re-rigged file may have lost its textures: materials by name from SOURCE.
+			for mi in _src.find_children("*", "MeshInstance3D", true, false):
+				for surf in (mi as MeshInstance3D).mesh.get_surface_count():
+					var m := (mi as MeshInstance3D).get_active_material(surf)
+					if m and not _source_mats.has(m.resource_name):
+						_source_mats[m.resource_name] = m
 	var root := Node3D.new()
 	root.name = "base_bodies"
 	var masc := _build_skeleton("Armature_masc")
@@ -142,6 +166,10 @@ func _initialize() -> void:
 	for file: String in PIECES:
 		_save_piece(file, PIECES[file])
 	_src.free()
+	if _rig:
+		_rig.free()
+		_rig = null
+	_source_mats = {}
 	# Body types 3, 4...: their own armatures in the same scene, and their own pieces.
 	for e: Dictionary in EXTRA_BODIES:
 		var key := String(e.get("key", ""))
@@ -373,12 +401,20 @@ func _bake_surface(mi: MeshInstance3D, surf: int) -> Dictionary:
 				pw[pn] = float(pw.get(pn, 0.0)) + float(slot[1]) / total * float(PART_BIAS.get(pn, 1.0))
 			part_weights.append(pw)
 	var mat := mi.get_active_material(surf)
+	if mat and _source_mats.has(mat.resource_name):
+		mat = _source_mats[mat.resource_name]
 	return {"pos": pos, "nrm": nrm, "uv": uvs, "bones": vb, "weights": vw, "index": index,
 		"parts": part_weights, "material": mat, "material_name": mat.resource_name if mat else ""}
 
 
 ## The bone a missing one's skin goes to (fingers → the hand, toes → the foot).
-static func _stand_in(bone: String) -> String:
+func _stand_in(bone: String) -> String:
+	# Fingers the rig no longer has follow its index chain (the one chain for all fingers).
+	for finger in ["Middle", "Ring", "Pinky"]:
+		if bone.contains("Hand" + finger):
+			var index := bone.replace("Hand" + finger, "HandIndex")
+			if _skel.find_bone(index) >= 0:
+				return index
 	for side in ["Left", "Right"]:
 		if bone.begins_with("mixamorig_%sHand" % side):
 			return "mixamorig_%sHand" % side
@@ -423,7 +459,11 @@ class Builder:
 		return arrays
 
 
-func _mesh_named(mesh_name: String) -> MeshInstance3D:
+func _mesh_named(mesh_name: String, body := false) -> MeshInstance3D:
+	if body and _rig:
+		for mi in _rig.find_children("*", "MeshInstance3D", true, false):
+			if String(mi.name) == mesh_name or String(mi.name) == _godot_name(mesh_name):
+				return mi
 	for mi in _src.find_children("*", "MeshInstance3D", true, false):
 		if String(mi.name) == mesh_name or String(mi.name) == _godot_name(mesh_name):
 			return mi
@@ -436,7 +476,7 @@ func _build_body() -> void:
 	var extra_mats := {}
 	var baked := []  # [mesh name, surface index, baked surface]
 	for mesh_name: String in BODY_MESHES:
-		var mi := _mesh_named(mesh_name)
+		var mi := _mesh_named(mesh_name, true)
 		for surf in mi.mesh.get_surface_count():
 			baked.append([mesh_name, surf, _bake_surface(mi, surf)])
 	if HEAD_BY_BONES:
